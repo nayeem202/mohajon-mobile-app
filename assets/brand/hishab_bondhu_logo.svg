@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Hishab Bondhu logo">
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <path d="M386 72c35 0 54 40 32 67L196 414c-30 37-90 16-90-32V126c0-30 24-54 54-54h226Z" fill="#f97316" opacity=".18"/>
+  <rect x="108" y="184" width="296" height="196" rx="34" fill="#f8fafc"/>
+  <path d="M132 132h248l38 70H94l38-70Z" fill="#f97316"/>
+  <path d="M94 202h324v18c0 26-21 47-47 47s-47-21-47-47c0 26-21 47-47 47s-47-21-47-47c0 26-21 47-47 47s-47-21-47-47c0 26-21 47-47 47s-47-21-47-47v-18Z" fill="#ffffff"/>
+  <path d="M160 132h64l-16 70h-84l36-70Zm128 0h64l36 70h-84l-16-70Z" fill="#fb923c"/>
+  <rect x="146" y="300" width="220" height="16" rx="8" fill="#99f6e4"/>
+  <rect x="146" y="338" width="152" height="16" rx="8" fill="#ccfbf1"/>
+  <text x="256" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#0f766e">HB</text>
+</svg>

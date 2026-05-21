@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validShopWrite(shopId) {
+      return signedIn()
+        && request.resource.data.shopId == shopId;
+    }
+
+    match /registrations/{userId} {
+      allow read: if signedIn()
+        && request.auth.uid == userId;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.userId == userId
+        && request.resource.data.shopId == 'shop_' + userId;
+      allow delete: if false;
+    }
+
+    match /shops/{shopId} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.data.shopId == shopId
+        && request.resource.data.ownerUserId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /shops/{shopId}/{collectionId}/{documentId} {
+      allow create: if validShopWrite(shopId);
+      allow read: if signedIn();
+      allow update, delete: if validShopWrite(shopId)
+        && resource.data.shopId == shopId
+        && request.resource.data.shopId == shopId;
+    }
+  }
+}
