@@ -4,16 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/async_action_state.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import '../providers/customer_providers.dart';
 
-class CustomerDetailScreen extends ConsumerWidget {
+class CustomerDetailScreen extends ConsumerStatefulWidget {
   const CustomerDetailScreen({super.key, required this.customer});
 
   final Customer customer;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CustomerDetailScreen> createState() =>
+      _CustomerDetailScreenState();
+}
+
+class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
+    with AsyncActionState<CustomerDetailScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    final customer = widget.customer;
     final due = ref.watch(customerDueProvider(customer.customerId));
     final ledger = ref.watch(customerLedgerProvider(customer.customerId));
     final debitTotal = ledger
@@ -24,16 +34,21 @@ class CustomerDetailScreen extends ConsumerWidget {
         .fold<double>(0, (sum, entry) => sum + entry.amount);
     var running = 0.0;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(customer.name)),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => AddPaymentScreen(customer: customer)),
+    return withLoadingOverlay(
+      Scaffold(
+        appBar: AppBar(title: Text(customer.name)),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: isBusy
+              ? null
+              : () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AddPaymentScreen(customer: customer),
+                  ),
+                ),
+          icon: const Icon(Icons.payments_outlined),
+          label: const Text('Add payment'),
         ),
-        icon: const Icon(Icons.payments_outlined),
-        label: const Text('Add payment'),
-      ),
-      body: ListView(
+        body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -113,7 +128,9 @@ class CustomerDetailScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () => _showLedgerEntrySheet(
+                          onPressed: isBusy
+                              ? null
+                              : () => _showLedgerEntrySheet(
                             context,
                             title: 'Add debit',
                             icon: Icons.call_made_rounded,
@@ -133,7 +150,9 @@ class CustomerDetailScreen extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _showLedgerEntrySheet(
+                          onPressed: isBusy
+                              ? null
+                              : () => _showLedgerEntrySheet(
                             context,
                             title: 'Add credit',
                             icon: Icons.call_received_rounded,
@@ -228,7 +247,9 @@ class CustomerDetailScreen extends ConsumerWidget {
               },
             ),
         ],
+        ),
       ),
+      label: 'Saving entry...',
     );
   }
 
@@ -247,64 +268,87 @@ class CustomerDetailScreen extends ConsumerWidget {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+        var saving = false;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: MediaQuery.viewInsetsOf(sheetContext).bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
+                        child: Icon(icon, color: color),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(labelText: 'Amount'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteController,
+                    enabled: !saving,
+                    decoration: const InputDecoration(labelText: 'Note'),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              final amount =
+                                  double.tryParse(amountController.text) ?? 0;
+                              if (amount <= 0) return;
+                              setSheetState(() => saving = true);
+                              try {
+                                await onSave(amount, noteController.text.trim());
+                                if (sheetContext.mounted) {
+                                  Navigator.of(sheetContext).pop();
+                                }
+                              } finally {
+                                if (sheetContext.mounted) {
+                                  setSheetState(() => saving = false);
+                                }
+                              }
+                            },
+                      child: saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Save entry'),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Amount'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteController,
-                decoration: const InputDecoration(labelText: 'Note'),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    final amount = double.tryParse(amountController.text) ?? 0;
-                    if (amount <= 0) return;
-                    await onSave(amount, noteController.text.trim());
-                    Navigator.of(sheetContext).pop();
-                  },
-                  child: const Text('Save entry'),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

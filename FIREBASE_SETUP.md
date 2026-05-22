@@ -26,7 +26,7 @@ Select Android and any other platforms you need. This generates `lib/firebase_op
 firebase deploy --only firestore:rules
 ```
 
-The included rules allow only authenticated users and only documents under the matching `shops/{shopId}` path. The app signs in anonymously on startup, so no paid Firebase plan is required for basic sync.
+The included rules allow authenticated users to access only their matching `shop_{uid}` path. Sign in with the app before using sync or profile save.
 
 ## 4. Free-plan sync notes
 

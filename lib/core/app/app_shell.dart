@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/purchases/presentation/purchase_screen.dart';
+import '../../features/receipts/presentation/receipt_generator_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
@@ -27,20 +27,20 @@ class _AppShellState extends ConsumerState<AppShell> {
     final screens = [
       const DashboardScreen(),
       const ProductListScreen(),
-      const PosScreen(),
       const CustomerListScreen(),
       const PurchaseScreen(),
+      const ReceiptGeneratorScreen(),
       const SettingsScreen(),
     ];
     final destinations = [
       _Destination(icon: Icons.dashboard_rounded, label: l10n.t('dashboard')),
       _Destination(icon: Icons.inventory_2_rounded, label: l10n.t('products')),
-      _Destination(icon: Icons.point_of_sale_rounded, label: l10n.t('pos')),
       _Destination(icon: Icons.people_alt_rounded, label: l10n.t('customers')),
       _Destination(
         icon: Icons.local_shipping_rounded,
         label: l10n.t('purchase'),
       ),
+      const _Destination(icon: Icons.shopping_bag_rounded, label: 'Checkout'),
       _Destination(icon: Icons.settings_rounded, label: l10n.t('settings')),
     ];
 

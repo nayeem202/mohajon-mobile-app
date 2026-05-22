@@ -108,9 +108,12 @@ class AuthService {
 
   Future<String> _ensureRegistration(User firebaseUser) async {
     final shopId = 'shop_${firebaseUser.uid}';
-    final registrationRef = FirebaseFirestore.instance
-        .collection('registrations')
-        .doc(firebaseUser.uid);
+    final firestore = FirebaseFirestore.instance;
+    final registrationRef = firestore.collection('registrations').doc(
+          firebaseUser.uid,
+        );
+    final shopRef = firestore.collection('shops').doc(shopId);
+    final phoneNumber = firebaseUser.phoneNumber ?? '';
 
     final now = FieldValue.serverTimestamp();
     await registrationRef.set({
@@ -118,17 +121,33 @@ class AuthService {
       'shopId': shopId,
       'email': firebaseUser.email ?? '',
       'name': firebaseUser.displayName ?? '',
+      'phoneNumber': phoneNumber,
       'photoUrl': firebaseUser.photoURL ?? '',
       'createdAt': now,
       'updatedAt': now,
     }, SetOptions(merge: true));
-    await FirebaseFirestore.instance.collection('shops').doc(shopId).set({
+
+    final existingShop = await shopRef.get();
+    final existingData = existingShop.data() ?? const <String, dynamic>{};
+    final existingName = (existingData['name'] ?? '').toString().trim();
+    final existingLocation = (existingData['location'] ?? '').toString().trim();
+    final existingPhone = (existingData['phoneNumber'] ?? '')
+        .toString()
+        .trim();
+
+    await shopRef.set({
       'shopId': shopId,
       'ownerUserId': firebaseUser.uid,
       'ownerEmail': firebaseUser.email ?? '',
-      'name': firebaseUser.displayName?.isNotEmpty == true
-          ? firebaseUser.displayName
-          : 'My Shop',
+      'name': existingName.isNotEmpty
+          ? existingName
+          : firebaseUser.displayName?.isNotEmpty == true
+              ? firebaseUser.displayName
+              : 'My Shop',
+      'location': existingLocation,
+      'phoneNumber': existingPhone.isNotEmpty
+          ? existingPhone
+          : phoneNumber,
       'createdAt': now,
       'updatedAt': now,
     }, SetOptions(merge: true));

@@ -5,6 +5,7 @@ import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/loading_overlay.dart';
 import '../providers/dashboard_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -15,27 +16,30 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final summary = ref.watch(dashboardProvider);
     final sync = ref.watch(syncStateProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.t('dashboard')),
-        actions: [
-          IconButton(
-            tooltip: l10n.t('syncNow'),
-            onPressed: sync.phase == SyncPhase.syncing
-                ? null
-                : () => ref.read(syncStateProvider.notifier).syncNow(),
-            icon: sync.phase == SyncPhase.syncing
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.sync),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(syncStateProvider.notifier).syncNow(),
-        child: ListView(
+    return LoadingOverlay(
+      loading: sync.phase == SyncPhase.syncing,
+      label: 'Syncing data...',
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.t('dashboard')),
+          actions: [
+            IconButton(
+              tooltip: l10n.t('syncNow'),
+              onPressed: sync.phase == SyncPhase.syncing
+                  ? null
+                  : () => ref.read(syncStateProvider.notifier).syncNow(),
+              icon: sync.phase == SyncPhase.syncing
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => ref.read(syncStateProvider.notifier).syncNow(),
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           children: [
             _HeroPanel(summary: summary, sync: sync),
@@ -63,12 +67,6 @@ class DashboardScreen extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.secondary,
                 ),
                 _RatioMetricCard(summary: summary),
-                _MetricCard(
-                  label: l10n.t('offlineReady'),
-                  value: '${sync.pendingCount} pending',
-                  icon: Icons.cloud_upload_rounded,
-                  color: const Color(0xFF7A5AF8),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -182,6 +180,7 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -199,38 +198,47 @@ class _MetricCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
+  static const double _cardWidth = 190;
+  static const double _cardHeight = 128;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: MediaQuery.sizeOf(context).width > 700
-          ? 220
+          ? _cardWidth
           : (MediaQuery.sizeOf(context).width - 44) / 2,
+      height: _cardHeight,
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color),
+                child: Icon(icon, color: color, size: 18),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(
                   context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 4),
-              Text(label, style: Theme.of(context).textTheme.bodySmall),
+              const Spacer(),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
         ),
@@ -252,69 +260,84 @@ class _RatioMetricCard extends StatelessWidget {
     final netColor = summary.netProfit >= 0
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.error;
+    final trendIcon = summary.grossProfit >= summary.grossLoss
+        ? Icons.north_east_rounded
+        : Icons.south_east_rounded;
 
     return SizedBox(
       width: MediaQuery.sizeOf(context).width > 700
-          ? 220
+          ? _MetricCard._cardWidth
           : (MediaQuery.sizeOf(context).width - 44) / 2,
+      height: _MetricCard._cardHeight,
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: netColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.balance_rounded,
+                      color: netColor,
+                      size: 17,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Stack(
-                  children: [
-                    const Align(
-                      alignment: Alignment.center,
-                      child: Icon(Icons.query_stats_rounded, color: Colors.white),
-                    ),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Icon(
-                        summary.grossProfit >= summary.grossLoss
-                            ? Icons.trending_up_rounded
-                            : Icons.trending_down_rounded,
-                        size: 14,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ],
-                ),
+                  const Spacer(),
+                  Icon(
+                    trendIcon,
+                    size: 16,
+                    color: netColor,
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
+              Text(
+                'P/L ratio',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+              const SizedBox(height: 1),
               Text(
                 ratioText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'P/L ratio',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Net ${money(summary.netProfit)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: netColor,
-                      fontWeight: FontWeight.w700,
+              const Spacer(),
+              Row(
+                children: [
+                  Text(
+                    'Net',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      money(summary.netProfit),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: netColor,
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -396,17 +419,42 @@ class _HeroPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Today at a glance',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 28,
-                ),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Today at a glance',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 28,
+                      ),
+                    ),
+                  ),
+                  if (sync.pendingCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${sync.pendingCount} pending',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 6),
               Text(
-                '${money(summary.todaySales)} sold today • ${sync.pendingCount} records waiting for cloud',
+                '${money(summary.todaySales)} sold today',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.82),
                   fontWeight: FontWeight.w600,

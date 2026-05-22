@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/widgets/async_action_state.dart';
 import '../providers/product_providers.dart';
 import 'barcode_scan_screen.dart';
 
@@ -14,7 +15,8 @@ class ProductFormScreen extends ConsumerStatefulWidget {
   ConsumerState<ProductFormScreen> createState() => _ProductFormScreenState();
 }
 
-class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
+class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
+    with AsyncActionState<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameEn;
   late final TextEditingController _nameBn;
@@ -54,58 +56,68 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.product == null ? 'Add product' : 'Edit product')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _field(_nameEn, 'Name (EN)'),
-            _field(_nameBn, 'Name (BN)'),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: TextFormField(
-                controller: _barcode,
-                decoration: InputDecoration(
-                  labelText: 'Barcode',
-                  suffixIcon: IconButton(
-                    tooltip: 'Scan',
-                    icon: const Icon(Icons.qr_code_scanner),
-                    onPressed: () async {
-                      final code = await Navigator.of(context).push<String>(
-                        MaterialPageRoute(builder: (_) => const BarcodeScanScreen()),
-                      );
-                      if (code != null) _barcode.text = code;
-                    },
+    return withLoadingOverlay(
+      Scaffold(
+        appBar: AppBar(
+          title: Text(widget.product == null ? 'Add product' : 'Edit product'),
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _field(_nameEn, 'Name (EN)'),
+              _field(_nameBn, 'Name (BN)'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TextFormField(
+                  controller: _barcode,
+                  decoration: InputDecoration(
+                    labelText: 'Barcode',
+                    suffixIcon: IconButton(
+                      tooltip: 'Scan',
+                      icon: const Icon(Icons.qr_code_scanner),
+                      onPressed: isBusy
+                          ? null
+                          : () async {
+                              final code = await Navigator.of(context)
+                                  .push<String>(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const BarcodeScanScreen(),
+                                    ),
+                                  );
+                              if (code != null) _barcode.text = code;
+                            },
+                    ),
                   ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? 'Required' : null,
                 ),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
               ),
-            ),
-            _field(_category, 'Category'),
-            _field(_purchasePrice, 'Purchase price', number: true),
-            _field(_sellingPrice, 'Selling price', number: true),
-            _field(_stockQty, 'Stock quantity', number: true),
-            _field(_lowStock, 'Low stock alert', number: true),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _save,
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('Save'),
-            ),
-            if (widget.product != null)
-              TextButton.icon(
-                onPressed: () async {
-                  await ref.read(productServiceProvider).delete(widget.product!.productId);
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete'),
+              _field(_category, 'Category'),
+              _field(_purchasePrice, 'Purchase price', number: true),
+              _field(_sellingPrice, 'Selling price', number: true),
+              _field(_stockQty, 'Stock quantity', number: true),
+              _field(_lowStock, 'Low stock alert', number: true),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: isBusy ? null : _save,
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save'),
               ),
-          ],
+              if (widget.product != null)
+                TextButton.icon(
+                  onPressed: isBusy ? null : _deleteProduct,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete'),
+                ),
+            ],
+          ),
         ),
       ),
+      label:
+          widget.product == null ? 'Saving product...' : 'Updating product...',
     );
   }
 
@@ -123,17 +135,26 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(productServiceProvider).save(
-          productId: widget.product?.productId,
-          nameEn: _nameEn.text.trim(),
-          nameBn: _nameBn.text.trim(),
-          barcode: _barcode.text.trim(),
-          category: _category.text.trim(),
-          purchasePrice: double.tryParse(_purchasePrice.text) ?? 0,
-          sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
-          stockQty: double.tryParse(_stockQty.text) ?? 0,
-          lowStockAlert: double.tryParse(_lowStock.text) ?? 0,
-        );
-    if (mounted) Navigator.of(context).pop();
+    await runBusyAction(() async {
+      await ref.read(productServiceProvider).save(
+            productId: widget.product?.productId,
+            nameEn: _nameEn.text.trim(),
+            nameBn: _nameBn.text.trim(),
+            barcode: _barcode.text.trim(),
+            category: _category.text.trim(),
+            purchasePrice: double.tryParse(_purchasePrice.text) ?? 0,
+            sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
+            stockQty: double.tryParse(_stockQty.text) ?? 0,
+            lowStockAlert: double.tryParse(_lowStock.text) ?? 0,
+          );
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  Future<void> _deleteProduct() async {
+    await runBusyAction(() async {
+      await ref.read(productServiceProvider).delete(widget.product!.productId);
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 }
