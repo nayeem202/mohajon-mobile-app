@@ -37,70 +37,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           children: [
             Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: null,
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          Icons.translate_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.t('language'),
-                              style: const TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                            const SizedBox(height: 10),
-                            SegmentedButton<String>(
-                              segments: [
-                                ButtonSegment(
-                                  value: 'en',
-                                  label: Text(l10n.t('english')),
-                                ),
-                                ButtonSegment(
-                                  value: 'bn',
-                                  label: Text(l10n.t('bangla')),
-                                ),
-                              ],
-                              selected: {locale.languageCode},
-                              onSelectionChanged: (value) {
-                                final code = value.first;
-                                ref
-                                    .read(localDatabaseProvider)
-                                    .settings
-                                    .put('languageCode', code);
-                                ref.read(localeProvider.notifier).state =
-                                    Locale(code);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
               child: ListTile(
                 leading: const Icon(Icons.account_circle_outlined),
                 title: Text(user?.displayName?.isNotEmpty == true
@@ -205,6 +141,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         ),
                       ),
                       const Icon(Icons.chevron_right_rounded),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: null,
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          Icons.translate_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.t('language'),
+                              style: const TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                            const SizedBox(height: 10),
+                            SegmentedButton<String>(
+                              segments: [
+                                ButtonSegment(
+                                  value: 'en',
+                                  label: Text(l10n.t('english')),
+                                ),
+                                ButtonSegment(
+                                  value: 'bn',
+                                  label: Text(l10n.t('bangla')),
+                                ),
+                              ],
+                              selected: {locale.languageCode},
+                              onSelectionChanged: (value) {
+                                final code = value.first;
+                                ref
+                                    .read(localDatabaseProvider)
+                                    .settings
+                                    .put('languageCode', code);
+                                ref.read(localeProvider.notifier).state =
+                                    Locale(code);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),

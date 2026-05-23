@@ -21,7 +21,10 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
   final todayEnd = todayStart.add(const Duration(days: 1));
 
   final todaySales = sales
-      .where((sale) => sale.createdAt.isAfter(todayStart) && sale.createdAt.isBefore(todayEnd))
+      .where(
+        (sale) =>
+            !sale.createdAt.isBefore(todayStart) && sale.createdAt.isBefore(todayEnd),
+      )
       .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
 
   final unlinkedPayments = payments.where((payment) => payment.saleId == null);
@@ -75,6 +78,25 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     monthlySales[sale.createdAt.month - 1] += sale.totalAmount;
   }
 
+  final dayWiseSales = List<DaySalesSummary>.generate(7, (index) {
+    final day = todayStart.subtract(Duration(days: 6 - index));
+    final dayEnd = day.add(const Duration(days: 1));
+    final dayTotal = sales
+        .where(
+          (sale) => !sale.createdAt.isBefore(day) && sale.createdAt.isBefore(dayEnd),
+        )
+        .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return DaySalesSummary(
+      label: labels[day.weekday - 1],
+      date: day,
+      sales: dayTotal,
+      isToday: day.year == todayStart.year &&
+          day.month == todayStart.month &&
+          day.day == todayStart.day,
+    );
+  });
+
   return DashboardSummary(
     todaySales: todaySales,
     totalDue: totalDue,
@@ -83,8 +105,17 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     grossLoss: grossLoss,
     netProfit: netProfit,
     profitLossRatio: profitLossRatio,
-    topSelling: topSelling.take(5).map((entry) => '${entry.key} (${entry.value})').toList(),
-    lowStock: lowStock.take(5).toList(),
+    topSelling: topSelling
+        .take(5)
+        .map(
+          (entry) => TopSellingProduct(
+            name: entry.key,
+            quantity: entry.value,
+          ),
+        )
+        .toList(),
+    lowStock: lowStock,
+    dayWiseSales: dayWiseSales,
     monthlySales: monthlySales,
   );
 });
@@ -100,6 +131,7 @@ class DashboardSummary {
     required this.profitLossRatio,
     required this.topSelling,
     required this.lowStock,
+    required this.dayWiseSales,
     required this.monthlySales,
   });
 
@@ -110,7 +142,32 @@ class DashboardSummary {
   final double grossLoss;
   final double netProfit;
   final double profitLossRatio;
-  final List<String> topSelling;
+  final List<TopSellingProduct> topSelling;
   final List<Product> lowStock;
+  final List<DaySalesSummary> dayWiseSales;
   final List<double> monthlySales;
+}
+
+class TopSellingProduct {
+  const TopSellingProduct({
+    required this.name,
+    required this.quantity,
+  });
+
+  final String name;
+  final double quantity;
+}
+
+class DaySalesSummary {
+  const DaySalesSummary({
+    required this.label,
+    required this.date,
+    required this.sales,
+    required this.isToday,
+  });
+
+  final String label;
+  final DateTime date;
+  final double sales;
+  final bool isToday;
 }

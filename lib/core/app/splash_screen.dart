@@ -26,11 +26,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       await Future<void>.delayed(const Duration(milliseconds: 450));
       if (mounted) {
         final signedInUser = FirebaseAuth.instance.currentUser;
+        final shopId = ref.read(shopIdProvider);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => signedInUser == null || signedInUser.isAnonymous
                 ? const LoginScreen()
-                : AppShell(key: ValueKey(ref.read(shopIdProvider))),
+                : AppShell(key: ValueKey(shopId)),
           ),
         );
       }

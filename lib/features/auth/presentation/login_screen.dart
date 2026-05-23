@@ -144,19 +144,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Future<void> _submit() async {
     await runBusyAction(() async {
       setState(() => _message = null);
-      if (_verificationId == null) {
-        await ref.read(authServiceProvider).sendOtp(
-              phone: _phone.text.trim(),
-              onCodeSent: (id) => setState(() => _verificationId = id),
-              onError: (message) => setState(() => _message = message),
-            );
-      } else {
-        await ref.read(authServiceProvider).verifyOtp(
-              verificationId: _verificationId!,
-              smsCode: _otp.text.trim(),
-              phone: _phone.text.trim(),
-            );
-        if (mounted) _openApp();
+      try {
+        if (_verificationId == null) {
+          await ref.read(authServiceProvider).sendOtp(
+                phone: _phone.text.trim(),
+                onCodeSent: (id) => setState(() => _verificationId = id),
+                onError: (message) => setState(() => _message = message),
+              );
+        } else {
+          await ref.read(authServiceProvider).verifyOtp(
+                verificationId: _verificationId!,
+                smsCode: _otp.text.trim(),
+                phone: _phone.text.trim(),
+              );
+          if (mounted) _openApp();
+        }
+      } catch (error) {
+        if (mounted) {
+          setState(() => _message = authErrorMessage(error));
+        }
       }
     });
   }
@@ -168,7 +174,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         await ref.read(authServiceProvider).signInWithGoogle();
         if (mounted) _openApp();
       } catch (error) {
-        if (mounted) setState(() => _message = error.toString());
+        if (mounted) {
+          setState(() => _message = authErrorMessage(error));
+        }
       }
     });
   }

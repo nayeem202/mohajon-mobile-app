@@ -11,6 +11,15 @@ import '../../../core/services/sync_service.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 
+class AuthMessageException implements Exception {
+  const AuthMessageException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class AuthService {
   AuthService(this._ref);
 
@@ -19,26 +28,54 @@ class AuthService {
 
   Future<UserCredential> signInWithGoogle() async {
     if (!AppBootstrap.firebaseReady) {
-      throw StateError('Firebase is not configured.');
+      throw const AuthMessageException(
+        'Google sign-in is not available right now. Please try again later.',
+      );
     }
 
-    final googleSignIn = GoogleSignIn.instance;
-    _googleSignInInit ??= googleSignIn.initialize();
-    await _googleSignInInit;
+    try {
+      final googleSignIn = GoogleSignIn.instance;
+      _googleSignInInit ??= googleSignIn.initialize();
+      await _googleSignInInit;
 
-    final googleUser = await googleSignIn.authenticate();
-    final googleAuth = googleUser.authentication;
-    final idToken = googleAuth.idToken;
-    if (idToken == null) {
-      throw StateError('Google sign-in did not return an ID token.');
+      final googleUser = await googleSignIn.authenticate();
+      final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        throw const AuthMessageException(
+          'Google sign-in failed. Please try again.',
+        );
+      }
+
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        throw const AuthMessageException(
+          'Google sign-in failed. Please try again.',
+        );
+      }
+      if ((firebaseUser.email ?? '').trim().isEmpty || !firebaseUser.emailVerified) {
+        await signOut();
+        throw const AuthMessageException(
+          'Please verify your Google account email before signing in.',
+        );
+      }
+      await _upsertFirebaseUser();
+      return userCredential;
+    } on GoogleSignInException catch (error) {
+      throw AuthMessageException(_googleSignInErrorMessage(error));
+    } on FirebaseAuthException catch (error) {
+      throw AuthMessageException(authErrorMessage(error));
+    } on AuthMessageException {
+      rethrow;
+    } catch (_) {
+      throw const AuthMessageException(
+        'Google sign-in failed. Please try again.',
+      );
     }
-
-    final credential = GoogleAuthProvider.credential(idToken: idToken);
-    final userCredential = await FirebaseAuth.instance.signInWithCredential(
-      credential,
-    );
-    await _upsertFirebaseUser();
-    return userCredential;
   }
 
   Future<void> signOut() async {
@@ -67,7 +104,7 @@ class AuthService {
         await FirebaseAuth.instance.signInWithCredential(credential);
         await _upsertFirebaseUser(phone: phone);
       },
-      verificationFailed: (error) => onError(error.message ?? error.code),
+      verificationFailed: (error) => onError(authErrorMessage(error)),
       codeSent: (verificationId, _) => onCodeSent(verificationId),
       codeAutoRetrievalTimeout: (_) {},
     );
@@ -134,8 +171,10 @@ class AuthService {
     final existingPhone = (existingData['phoneNumber'] ?? '')
         .toString()
         .trim();
+    final hasOwners = existingData['owners'] is List &&
+        (existingData['owners'] as List).isNotEmpty;
 
-    await shopRef.set({
+    final payload = <String, dynamic>{
       'shopId': shopId,
       'ownerUserId': firebaseUser.uid,
       'ownerEmail': firebaseUser.email ?? '',
@@ -150,7 +189,84 @@ class AuthService {
           : phoneNumber,
       'createdAt': now,
       'updatedAt': now,
-    }, SetOptions(merge: true));
+    };
+
+    if (!hasOwners) {
+      payload.addAll({
+        'owners': [
+          {
+            'ownerId': firebaseUser.uid,
+            'name': firebaseUser.displayName?.trim().isNotEmpty == true
+                ? firebaseUser.displayName!.trim()
+                : 'Owner',
+            'investmentAmount': 0,
+          },
+        ],
+        'ownerCount': 1,
+        'totalInvestment': 0,
+      });
+    }
+
+    await shopRef.set(payload, SetOptions(merge: true));
     return shopId;
+  }
+}
+
+String authErrorMessage(Object error) {
+  if (error is AuthMessageException) {
+    return error.message;
+  }
+  if (error is FirebaseAuthException) {
+    switch (error.code) {
+      case 'invalid-verification-code':
+        return 'The OTP code is invalid. Please try again.';
+      case 'invalid-verification-id':
+        return 'This OTP session has expired. Please request a new code.';
+      case 'session-expired':
+        return 'This OTP session has expired. Please request a new code.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      case 'user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'account-exists-with-different-credential':
+        return 'This email is already linked to another sign-in method.';
+      case 'invalid-credential':
+        return 'The sign-in credentials are invalid. Please try again.';
+      case 'operation-not-allowed':
+        return 'This sign-in method is not enabled for the app.';
+      default:
+        return error.message?.trim().isNotEmpty == true
+            ? error.message!.trim()
+            : 'Authentication failed. Please try again.';
+    }
+  }
+  if (error is GoogleSignInException) {
+    return _googleSignInErrorMessage(error);
+  }
+  if (error is StateError) {
+    return error.toString().replaceFirst('Bad state: ', '').trim();
+  }
+  return 'Authentication failed. Please try again.';
+}
+
+String _googleSignInErrorMessage(GoogleSignInException error) {
+  switch (error.code) {
+    case GoogleSignInExceptionCode.canceled:
+      return 'Google sign-in was canceled.';
+    case GoogleSignInExceptionCode.interrupted:
+      return 'Google sign-in was interrupted. Please try again.';
+    case GoogleSignInExceptionCode.clientConfigurationError:
+    case GoogleSignInExceptionCode.providerConfigurationError:
+      return 'Google sign-in is not configured correctly for this app.';
+    case GoogleSignInExceptionCode.uiUnavailable:
+      return 'Google sign-in cannot open right now. Please try again.';
+    case GoogleSignInExceptionCode.userMismatch:
+      return 'Please complete sign-in with the same Google account.';
+    case GoogleSignInExceptionCode.unknownError:
+      return error.description?.trim().isNotEmpty == true
+          ? error.description!.trim()
+          : 'Google sign-in failed. Please try again.';
   }
 }

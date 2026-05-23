@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/investments/presentation/investment_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/purchases/presentation/purchase_screen.dart';
 import '../../features/receipts/presentation/receipt_generator_screen.dart';
@@ -30,6 +31,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       const CustomerListScreen(),
       const PurchaseScreen(),
       const ReceiptGeneratorScreen(),
+      const InvestmentScreen(),
       const SettingsScreen(),
     ];
     final destinations = [
@@ -41,6 +43,10 @@ class _AppShellState extends ConsumerState<AppShell> {
         label: l10n.t('purchase'),
       ),
       const _Destination(icon: Icons.shopping_bag_rounded, label: 'Checkout'),
+      _Destination(
+        icon: Icons.pie_chart_rounded,
+        label: l10n.t('investments'),
+      ),
       _Destination(icon: Icons.settings_rounded, label: l10n.t('settings')),
     ];
 
