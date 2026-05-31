@@ -140,7 +140,7 @@ class _MetricCard extends StatelessWidget {
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
-              const Spacer(),
+              const SizedBox(height: 10),
               Text(
                 label,
                 maxLines: 1,
@@ -208,21 +208,19 @@ class _RatioMetricCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'P/L ratio',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Text(
                 ratioText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'P/L ratio',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),

@@ -42,7 +42,9 @@ class ReceiptViewModel extends StateNotifier<Receipt> {
           purchasePrice: 0,
         ),
       ],
+      discountType: ReceiptDiscountType.percentage,
       discountPercent: 0,
+      discountFixedAmount: 0,
       taxPercent: 0,
       date: now,
     );
@@ -115,6 +117,14 @@ class ReceiptViewModel extends StateNotifier<Receipt> {
 
   void updateDiscountPercent(double value) {
     state = state.copyWith(discountPercent: value.clamp(0, 100).toDouble());
+  }
+
+  void updateDiscountType(ReceiptDiscountType value) {
+    state = state.copyWith(discountType: value);
+  }
+
+  void updateDiscountFixedAmount(double value) {
+    state = state.copyWith(discountFixedAmount: value < 0 ? 0 : value);
   }
 
   void updateTaxPercent(double value) {

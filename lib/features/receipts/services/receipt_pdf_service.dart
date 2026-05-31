@@ -6,9 +6,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/services/download_export_service.dart';
 import '../models/receipt.dart';
 
 class ReceiptPdfService {
+  final _downloadExportService = DownloadExportService();
+
   Future<Uint8List> buildReceiptPdf(Receipt receipt) async {
     final document = pw.Document();
     final dateText = DateFormat('MMM dd, yyyy').format(receipt.date);
@@ -57,21 +60,31 @@ class ReceiptPdfService {
 
   Future<File> saveToDownloads(Receipt receipt) async {
     final bytes = await buildReceiptPdf(receipt);
+    final fileName = 'receipt-${receipt.safeReceiptNumber}.pdf';
+    final androidSavedPath = await _downloadExportService.saveFileToDownloads(
+      fileName: fileName,
+      mimeType: 'application/pdf',
+      bytes: bytes,
+    );
+    if (androidSavedPath != null) {
+      return File(androidSavedPath);
+    }
+
     final directory = await _downloadDirectory();
     try {
-      return _writeReceiptFile(directory, receipt, bytes);
+      return _writeReceiptFile(directory, fileName, bytes);
     } on FileSystemException {
       final fallback = await getApplicationDocumentsDirectory();
-      return _writeReceiptFile(fallback, receipt, bytes);
+      return _writeReceiptFile(fallback, fileName, bytes);
     }
   }
 
   Future<File> _writeReceiptFile(
     Directory directory,
-    Receipt receipt,
+    String fileName,
     Uint8List bytes,
   ) async {
-    final file = File('${directory.path}/receipt-${receipt.safeReceiptNumber}.pdf');
+    final file = File('${directory.path}/$fileName');
     await file.writeAsBytes(bytes, flush: true);
     return file;
   }
@@ -104,12 +117,7 @@ class ReceiptPdfService {
   pw.Widget _details(Receipt receipt, String dateText) {
     return pw.Column(
       children: [
-        _detailRow(
-          'Receipt Number',
-          receipt.receiptNumber,
-          'Date',
-          dateText,
-        ),
+        _detailRow('Receipt Number', receipt.receiptNumber, 'Date', dateText),
         pw.SizedBox(height: 8),
         _detailRow(
           'Customer Name',
@@ -198,7 +206,10 @@ class ReceiptPdfService {
     );
   }
 
-  pw.Widget _tableHeader(String text, {pw.TextAlign align = pw.TextAlign.left}) {
+  pw.Widget _tableHeader(
+    String text, {
+    pw.TextAlign align = pw.TextAlign.left,
+  }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 9),
       child: pw.Text(

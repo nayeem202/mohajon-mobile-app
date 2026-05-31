@@ -6,6 +6,8 @@ final _receiptCurrency = NumberFormat.currency(locale: 'en_US', symbol: r'$');
 
 String receiptMoney(num value) => _receiptCurrency.format(value);
 
+enum ReceiptDiscountType { percentage, fixedAmount }
+
 class ReceiptItem {
   const ReceiptItem({
     required this.id,
@@ -54,7 +56,9 @@ class Receipt {
     required this.receiptNumber,
     required this.paymentMethod,
     required this.items,
+    required this.discountType,
     required this.discountPercent,
+    required this.discountFixedAmount,
     required this.taxPercent,
     required this.date,
   });
@@ -68,7 +72,9 @@ class Receipt {
   final String receiptNumber;
   final String paymentMethod;
   final List<ReceiptItem> items;
+  final ReceiptDiscountType discountType;
   final double discountPercent;
+  final double discountFixedAmount;
   final double taxPercent;
   final DateTime date;
 
@@ -76,7 +82,13 @@ class Receipt {
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
 
-  double get discountAmount => subtotal * (discountPercent / 100);
+  double get discountAmount {
+    final rawDiscount = switch (discountType) {
+      ReceiptDiscountType.percentage => subtotal * (discountPercent / 100),
+      ReceiptDiscountType.fixedAmount => discountFixedAmount,
+    };
+    return rawDiscount.clamp(0, subtotal).toDouble();
+  }
 
   double get subtotalAfterDiscount => subtotal - discountAmount;
 
@@ -98,7 +110,9 @@ class Receipt {
     String? receiptNumber,
     String? paymentMethod,
     List<ReceiptItem>? items,
+    ReceiptDiscountType? discountType,
     double? discountPercent,
+    double? discountFixedAmount,
     double? taxPercent,
     DateTime? date,
   }) {
@@ -112,7 +126,9 @@ class Receipt {
       receiptNumber: receiptNumber ?? this.receiptNumber,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       items: items ?? this.items,
+      discountType: discountType ?? this.discountType,
       discountPercent: discountPercent ?? this.discountPercent,
+      discountFixedAmount: discountFixedAmount ?? this.discountFixedAmount,
       taxPercent: taxPercent ?? this.taxPercent,
       date: date ?? this.date,
     );

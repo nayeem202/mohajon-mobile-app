@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/app/app_providers.dart';
@@ -8,6 +9,26 @@ import '../../../core/models/syncable.dart';
 final productsProvider = StreamProvider<List<Product>>((ref) {
   final shopId = ref.watch(shopIdProvider);
   return ref.watch(localDatabaseProvider).products.watchForShop(shopId);
+});
+
+final productSearchQueryProvider = StateProvider.autoDispose<String>(
+  (ref) => '',
+);
+
+final filteredProductsProvider = Provider<List<Product>>((ref) {
+  final products = ref.watch(productsProvider).value ?? const <Product>[];
+  final query = ref.watch(productSearchQueryProvider).trim().toLowerCase();
+  if (query.isEmpty) return products;
+
+  return products.where((product) {
+    final searchFields = [
+      product.nameEn,
+      product.nameBn,
+      product.barcode,
+      product.category,
+    ];
+    return searchFields.any((field) => field.toLowerCase().contains(query));
+  }).toList();
 });
 
 final productServiceProvider = Provider<ProductService>((ref) {

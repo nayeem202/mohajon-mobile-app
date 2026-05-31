@@ -22,7 +22,14 @@ final shopProfileProvider = StreamProvider<ShopProfile?>((ref) {
   return shopDoc.snapshots().map((snapshot) {
     final data = snapshot.data();
     if (data == null) return null;
-    return ShopProfile.fromJson(data);
+    final profile = ShopProfile.fromJson(data);
+    if (profile.shopId.isNotEmpty && profile.shopId != shopId) {
+      return null;
+    }
+    if (profile.ownerUserId.isNotEmpty && profile.ownerUserId != authUser.uid) {
+      return null;
+    }
+    return profile;
   });
 });
 

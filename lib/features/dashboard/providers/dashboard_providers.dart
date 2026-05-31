@@ -106,7 +106,7 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     netProfit: netProfit,
     profitLossRatio: profitLossRatio,
     topSelling: topSelling
-        .take(5)
+        .take(3)
         .map(
           (entry) => TopSellingProduct(
             name: entry.key,

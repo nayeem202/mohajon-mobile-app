@@ -37,6 +37,11 @@ class AuthService {
       final googleSignIn = GoogleSignIn.instance;
       _googleSignInInit ??= googleSignIn.initialize();
       await _googleSignInInit;
+      try {
+        await googleSignIn.disconnect();
+      } catch (_) {
+        // Ignore when there is no active Google session to disconnect.
+      }
 
       final googleUser = await googleSignIn.authenticate();
       final googleAuth = googleUser.authentication;
@@ -85,6 +90,11 @@ class AuthService {
       await GoogleSignIn.instance.signOut();
     } catch (_) {
       // Google Sign-In may not have been initialized in this app session.
+    }
+    try {
+      await GoogleSignIn.instance.disconnect();
+    } catch (_) {
+      // Ignore if there is no Google session to revoke.
     }
     _ref.read(currentUserProvider.notifier).state = null;
   }

@@ -83,5 +83,7 @@ class LocalDatabase {
         .where((key) => key.toString().startsWith('firebaseLastPulledAt.'))
         .toList();
     await settings.deleteAll(keys);
+    await settings.delete('activeUserId');
+    await settings.delete('activeShopId');
   }
 }

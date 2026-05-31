@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app/app_providers.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -18,6 +19,7 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
   final List<_OwnerInput> _ownerInputs = [];
   bool _seeded = false;
   int _seedVersion = -1;
+  String? _seedShopId;
 
   @override
   void dispose() {
@@ -29,8 +31,9 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final shopId = ref.watch(shopIdProvider);
     final overview = ref.watch(investmentOverviewProvider);
-    _seedOwners(overview.owners);
+    _seedOwners(shopId, overview.owners);
 
     final draftOwners = _draftOwners();
     final totalDraftInvestment = draftOwners.fold<double>(
@@ -105,13 +108,14 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
     );
   }
 
-  void _seedOwners(List<ShopOwner> owners) {
-    final version = owners.length * 1000000 +
-        owners.fold<int>(
-          0,
-          (sum, owner) => sum + owner.name.hashCode + owner.investmentAmount.round(),
-        );
-    if (_seeded && _seedVersion == version) return;
+  void _seedOwners(String shopId, List<ShopOwner> owners) {
+    final version = Object.hashAll([
+      shopId,
+      owners.length,
+      for (final owner in owners)
+        Object.hash(owner.ownerId, owner.name, owner.investmentAmount),
+    ]);
+    if (_seeded && _seedShopId == shopId && _seedVersion == version) return;
 
     for (final input in _ownerInputs) {
       input.dispose();
@@ -120,6 +124,7 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
       ..clear()
       ..addAll(owners.map(_OwnerInput.fromOwner));
     _seeded = true;
+    _seedShopId = shopId;
     _seedVersion = version;
   }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app/app_providers.dart';
+import '../../../core/models/shop_profile.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/shop_profile_providers.dart';
 
@@ -16,7 +18,8 @@ class _ShopProfileScreenState extends ConsumerState<ShopProfileScreen>
   final _shopNameController = TextEditingController();
   final _locationController = TextEditingController();
   final _phoneController = TextEditingController();
-  bool _profileInitialized = false;
+  String? _seedShopId;
+  int _seedVersion = -1;
 
   @override
   void dispose() {
@@ -28,16 +31,11 @@ class _ShopProfileScreenState extends ConsumerState<ShopProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final shopId = ref.watch(shopIdProvider);
     final shopProfile = ref.watch(shopProfileProvider);
     final profile = shopProfile.value;
 
-    if (profile != null &&
-        (!_profileInitialized || _shopNameController.text.isEmpty)) {
-      _shopNameController.text = profile.shopName;
-      _locationController.text = profile.location;
-      _phoneController.text = profile.phoneNumber;
-      _profileInitialized = true;
-    }
+    _seedProfile(shopId, profile);
 
     return withLoadingOverlay(
       Scaffold(
@@ -124,6 +122,22 @@ class _ShopProfileScreenState extends ConsumerState<ShopProfileScreen>
       ),
       label: 'Processing...',
     );
+  }
+
+  void _seedProfile(String shopId, ShopProfile? profile) {
+    final version = Object.hash(
+      shopId,
+      profile?.shopName ?? '',
+      profile?.location ?? '',
+      profile?.phoneNumber ?? '',
+    );
+    if (_seedShopId == shopId && _seedVersion == version) return;
+
+    _shopNameController.text = profile?.shopName ?? '';
+    _locationController.text = profile?.location ?? '';
+    _phoneController.text = profile?.phoneNumber ?? '';
+    _seedShopId = shopId;
+    _seedVersion = version;
   }
 
   Future<void> _saveProfile() async {

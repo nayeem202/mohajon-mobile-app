@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/app/app_providers.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/shop_profile.dart';
@@ -33,7 +34,8 @@ class _ReceiptGeneratorScreenState
   final _shopNameController = TextEditingController();
   final _locationController = TextEditingController();
   final _phoneController = TextEditingController();
-  bool _profileInitialized = false;
+  String? _profileSeedShopId;
+  int _profileSeedVersion = -1;
 
   @override
   void dispose() {
@@ -47,18 +49,14 @@ class _ReceiptGeneratorScreenState
   Widget build(BuildContext context) {
     final receipt = ref.watch(receiptViewModelProvider);
     final viewModel = ref.read(receiptViewModelProvider.notifier);
+    final shopId = ref.watch(shopIdProvider);
     final products = ref.watch(productsProvider).value ?? const <Product>[];
     final customers = ref.watch(customersProvider).value ?? const <Customer>[];
     final profile = ref.watch(shopProfileProvider).value;
     final dateText = DateFormat('MMM dd, yyyy').format(receipt.date);
     final profileComplete = _hasCompleteShopProfile(profile);
 
-    if (!_profileInitialized && profile != null) {
-      _shopNameController.text = profile.shopName;
-      _locationController.text = profile.location;
-      _phoneController.text = profile.phoneNumber;
-      _profileInitialized = true;
-    }
+    _seedProfile(shopId, profile);
 
     if (profileComplete &&
         receipt.companyName.isEmpty &&
@@ -215,6 +213,14 @@ class _ReceiptGeneratorScreenState
                     label: 'Discount Percentage',
                     value: receipt.discountPercent,
                     onChanged: viewModel.updateDiscountPercent,
+                    enabled:
+                        receipt.discountType == ReceiptDiscountType.percentage,
+                  ),
+                  const SizedBox(height: 12),
+                  _DiscountModeCard(
+                    receipt: receipt,
+                    onDiscountTypeChanged: viewModel.updateDiscountType,
+                    onFixedAmountChanged: viewModel.updateDiscountFixedAmount,
                   ),
                   const SizedBox(height: 12),
                   _PercentControl(
@@ -254,6 +260,22 @@ class _ReceiptGeneratorScreenState
         profile.shopName.trim().isNotEmpty &&
         profile.location.trim().isNotEmpty &&
         profile.phoneNumber.trim().isNotEmpty;
+  }
+
+  void _seedProfile(String shopId, ShopProfile? profile) {
+    final version = Object.hash(
+      shopId,
+      profile?.shopName ?? '',
+      profile?.location ?? '',
+      profile?.phoneNumber ?? '',
+    );
+    if (_profileSeedShopId == shopId && _profileSeedVersion == version) return;
+
+    _shopNameController.text = profile?.shopName ?? '';
+    _locationController.text = profile?.location ?? '';
+    _phoneController.text = profile?.phoneNumber ?? '';
+    _profileSeedShopId = shopId;
+    _profileSeedVersion = version;
   }
 
   bool _validateReceipt(Receipt receipt, List<Product> products) {
@@ -537,11 +559,13 @@ class _PercentControl extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String label;
   final double value;
   final ValueChanged<double> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -555,9 +579,102 @@ class _PercentControl extends StatelessWidget {
           max: 100,
           divisions: 100,
           label: value.toStringAsFixed(0),
-          onChanged: onChanged,
+          onChanged: enabled ? onChanged : null,
         ),
       ],
+    );
+  }
+}
+
+class _DiscountModeCard extends StatefulWidget {
+  const _DiscountModeCard({
+    required this.receipt,
+    required this.onDiscountTypeChanged,
+    required this.onFixedAmountChanged,
+  });
+
+  final Receipt receipt;
+  final ValueChanged<ReceiptDiscountType> onDiscountTypeChanged;
+  final ValueChanged<double> onFixedAmountChanged;
+
+  @override
+  State<_DiscountModeCard> createState() => _DiscountModeCardState();
+}
+
+class _DiscountModeCardState extends State<_DiscountModeCard> {
+  late final TextEditingController _fixedAmountController;
+
+  @override
+  void initState() {
+    super.initState();
+    _fixedAmountController = TextEditingController();
+    _syncController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DiscountModeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.receipt.discountFixedAmount !=
+            widget.receipt.discountFixedAmount ||
+        oldWidget.receipt.discountType != widget.receipt.discountType) {
+      _syncController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _fixedAmountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final discountType = widget.receipt.discountType;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Discount Type'),
+        const SizedBox(height: 10),
+        SegmentedButton<ReceiptDiscountType>(
+          segments: const [
+            ButtonSegment<ReceiptDiscountType>(
+              value: ReceiptDiscountType.percentage,
+              label: Text('Percentage'),
+            ),
+            ButtonSegment<ReceiptDiscountType>(
+              value: ReceiptDiscountType.fixedAmount,
+              label: Text('Fixed Amount'),
+            ),
+          ],
+          selected: {discountType},
+          onSelectionChanged: (value) {
+            widget.onDiscountTypeChanged(value.first);
+          },
+        ),
+        if (discountType == ReceiptDiscountType.fixedAmount) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _fixedAmountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Discount Amount',
+              hintText: 'Enter fixed discount amount',
+              helperText:
+                  'Applied as a fixed market discount before tax calculation.',
+            ),
+            onChanged: (value) {
+              widget.onFixedAmountChanged(double.tryParse(value) ?? 0);
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _syncController() {
+    final value = widget.receipt.discountFixedAmount;
+    _fixedAmountController.text = value == 0 ? '' : value.toStringAsFixed(
+      value == value.roundToDouble() ? 0 : 2,
     );
   }
 }
@@ -579,7 +696,7 @@ class _TotalsPanel extends StatelessWidget {
       child: Column(
         children: [
           _totalRow('Subtotal', receiptMoney(receipt.subtotal)),
-          _totalRow('Discount', '-${receiptMoney(receipt.discountAmount)}'),
+          _totalRow(_discountLabel(receipt), '-${receiptMoney(receipt.discountAmount)}'),
           _totalRow('Tax', receiptMoney(receipt.taxAmount)),
           const Divider(height: 20),
           _totalRow(
@@ -590,6 +707,14 @@ class _TotalsPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _discountLabel(Receipt receipt) {
+    return switch (receipt.discountType) {
+      ReceiptDiscountType.percentage =>
+        'Discount (${receipt.discountPercent.toStringAsFixed(0)}%)',
+      ReceiptDiscountType.fixedAmount => 'Discount (Fixed Amount)',
+    };
   }
 
   Widget _totalRow(String label, String value, {bool emphasize = false}) {

@@ -27,7 +27,7 @@ service cloud.firestore {
     }
 
     match /shops/{shopId} {
-      allow read: if signedIn();
+      allow read: if ownsShop(shopId);
       allow write: if ownsShop(shopId)
         && request.resource.data.shopId == shopId;
       allow delete: if false;
@@ -35,7 +35,7 @@ service cloud.firestore {
 
     match /shops/{shopId}/{collectionId}/{documentId} {
       allow create: if validShopWrite(shopId);
-      allow read: if signedIn();
+      allow read: if ownsShop(shopId);
       allow update, delete: if validShopWrite(shopId)
         && resource.data.shopId == shopId
         && request.resource.data.shopId == shopId;

@@ -6,7 +6,9 @@ import '../../../core/models/ledger_entry.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../payments/presentation/add_payment_screen.dart';
+import 'customer_form_screen.dart';
 import '../providers/customer_providers.dart';
+import '../services/customer_ledger_excel_service.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
   const CustomerDetailScreen({super.key, required this.customer});
@@ -20,6 +22,8 @@ class CustomerDetailScreen extends ConsumerStatefulWidget {
 
 class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
     with AsyncActionState<CustomerDetailScreen> {
+  final _ledgerExcelService = CustomerLedgerExcelService();
+
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
@@ -36,7 +40,20 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
 
     return withLoadingOverlay(
       Scaffold(
-        appBar: AppBar(title: Text(customer.name)),
+        appBar: AppBar(
+          title: Text(customer.name),
+          actions: [
+            IconButton(
+              tooltip: 'Edit customer',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CustomerFormScreen(customer: customer),
+                ),
+              ),
+              icon: const Icon(Icons.edit_rounded),
+            ),
+          ],
+        ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: isBusy
               ? null
@@ -176,11 +193,24 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Ledger',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Ledger',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
+              ),
+              TextButton.icon(
+                onPressed: isBusy
+                    ? null
+                    : () => _exportLedger(customer, ledger),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Export Ledger'),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           if (ledger.isEmpty)
@@ -251,6 +281,25 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
       ),
       label: 'Saving entry...',
     );
+  }
+
+  Future<void> _exportLedger(Customer customer, List<LedgerEntry> ledger) async {
+    try {
+      await runBusyAction(() async {
+        final file = await _ledgerExcelService.saveToDownloads(customer, ledger);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ledger exported to ${file.path}'),
+          ),
+        );
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 
   Future<void> _showLedgerEntrySheet(

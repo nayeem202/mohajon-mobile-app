@@ -15,9 +15,12 @@ final investmentServiceProvider = Provider<InvestmentService>(
 );
 
 final investmentOverviewProvider = Provider<InvestmentOverview>((ref) {
+  final shopId = ref.watch(shopIdProvider);
   final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
   final profile = ref.watch(shopProfileProvider).value;
-  final owners = profile?.effectiveOwners ??
+  final activeProfile =
+      profile != null && profile.shopId == shopId ? profile : null;
+  final owners = activeProfile?.effectiveOwners ??
       const <ShopOwner>[
         ShopOwner(ownerId: 'local-owner', name: 'Owner', investmentAmount: 0),
       ];
@@ -108,7 +111,7 @@ class InvestmentService {
     final shopDoc = FirestorePaths(FirebaseFirestore.instance, shopId).shopDoc;
     await shopDoc.set({
       'shopId': shopId,
-      'ownerUserId': normalizedOwners.first.ownerId,
+      'ownerUserId': authUser.uid,
       'owners': normalizedOwners.map((owner) => owner.toJson()).toList(),
       'ownerCount': normalizedOwners.length,
       'totalInvestment': normalizedOwners.fold<double>(

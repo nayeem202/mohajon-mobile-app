@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/app/app_providers.dart';
@@ -12,6 +13,21 @@ import '../../../core/models/syncable.dart';
 final customersProvider = StreamProvider<List<Customer>>((ref) {
   final shopId = ref.watch(shopIdProvider);
   return ref.watch(localDatabaseProvider).customers.watchForShop(shopId);
+});
+
+final customerSearchQueryProvider = StateProvider.autoDispose<String>(
+  (ref) => '',
+);
+
+final filteredCustomersProvider = Provider<List<Customer>>((ref) {
+  final customers = ref.watch(customersProvider).value ?? const <Customer>[];
+  final query = ref.watch(customerSearchQueryProvider).trim().toLowerCase();
+  if (query.isEmpty) return customers;
+
+  return customers.where((customer) {
+    return customer.name.toLowerCase().contains(query) ||
+        customer.phone.toLowerCase().contains(query);
+  }).toList();
 });
 
 final salesStreamProvider = StreamProvider<List<Sale>>((ref) {
