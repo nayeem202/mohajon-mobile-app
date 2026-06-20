@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(cmd.exe //c \"where flutter\")",
+      "Bash(/c/Windows/System32/where.exe flutter *)",
+      "Bash(/c/Windows/System32/cmd.exe /c \"where flutter\")",
+      "Bash(/c/Windows/System32/cmd.exe /c \"where dart\")",
+      "Bash(/c/Windows/System32/cmd.exe /c \"echo %PATH%\")",
+      "Bash(/c/Windows/System32/where.exe /R \"/c/Users/PC\" dart.bat flutter.bat)",
+      "Bash(/c/Windows/System32/where.exe /R \"C:\\\\\\\\\" flutter.bat)",
+      "Bash(/c/Windows/System32/where.exe /R \"C:\\\\\\\\\" dart.exe)"
+    ]
+  }
+}

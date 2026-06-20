@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_shell.dart';
@@ -21,18 +23,30 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with AsyncActionState<LoginScreen> {
+    with AsyncActionState<LoginScreen>, TickerProviderStateMixin {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _phone = TextEditingController(text: '+880');
   final _otp = TextEditingController();
+  final _otpFocus = FocusNode();
   bool _obscurePassword = true;
+  bool _rememberMe = true;
   String? _verificationId;
   String? _message;
   bool _messageIsError = true;
   _LoginMode _mode = _LoginMode.email;
   Timer? _otpTimer;
   int _otpSecondsRemaining = 0;
+  late final AnimationController _ambientController;
+
+  @override
+  void initState() {
+    super.initState();
+    _ambientController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    )..repeat();
+  }
 
   @override
   void dispose() {
@@ -40,7 +54,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _password.dispose();
     _phone.dispose();
     _otp.dispose();
+    _otpFocus.dispose();
     _otpTimer?.cancel();
+    _ambientController.dispose();
     super.dispose();
   }
 
@@ -48,68 +64,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget build(BuildContext context) {
     return withLoadingOverlay(
       Scaffold(
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFEFFAF5), Color(0xFFFFFFFF), Color(0xFFFFF7ED)],
-            ),
-          ),
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 900;
-                return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isWide ? 32 : 16,
-                    vertical: isWide ? 28 : 16,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
+        body: Stack(
+          children: [
+            const _GradientBackdrop(),
+            _AmbientBlobs(animation: _ambientController),
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 900;
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWide ? 32 : 18,
+                      vertical: isWide ? 28 : 18,
                     ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1040),
-                        child: Flex(
-                          direction: isWide ? Axis.horizontal : Axis.vertical,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (isWide) const Expanded(child: _BrandPanel()),
-                            if (isWide) const SizedBox(width: 24),
-                            SizedBox(
-                              width: isWide ? 440 : double.infinity,
-                              child: _LoginPanel(
-                                mode: _mode,
-                                message: _message,
-                                messageIsError: _messageIsError,
-                                onModeChanged: (mode) {
-                                  setState(() {
-                                    _mode = mode;
-                                    _message = null;
-                                  });
-                                },
-                                emailForm: _buildEmailForm(context),
-                                phoneForm: _buildPhoneForm(context),
-                                onGoogleSignIn: isBusy
-                                    ? null
-                                    : _signInWithGoogle,
-                                onSignup: isBusy ? null : _openSignup,
-                                onForgotPassword: isBusy
-                                    ? null
-                                    : _openForgotPassword,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1080),
+                          child: Flex(
+                            direction: isWide ? Axis.horizontal : Axis.vertical,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (isWide) const Expanded(child: _BrandPanel()),
+                              if (isWide) const SizedBox(width: 28),
+                              SizedBox(
+                                width: isWide ? 460 : double.infinity,
+                                child: _LoginPanel(
+                                  mode: _mode,
+                                  message: _message,
+                                  messageIsError: _messageIsError,
+                                  onModeChanged: (mode) {
+                                    setState(() {
+                                      _mode = mode;
+                                      _message = null;
+                                    });
+                                  },
+                                  emailForm: _buildEmailForm(context),
+                                  phoneForm: _buildPhoneForm(context),
+                                  onGoogleSignIn: isBusy
+                                      ? null
+                                      : _signInWithGoogle,
+                                  onSignup: isBusy ? null : _openSignup,
+                                  onForgotPassword: isBusy
+                                      ? null
+                                      : _openForgotPassword,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
+          ],
         ),
       ),
       label: 'Signing in...',
@@ -117,6 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildEmailForm(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -156,11 +170,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        FilledButton.icon(
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: isBusy
+                    ? null
+                    : () => setState(() => _rememberMe = !_rememberMe),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: Checkbox(
+                          value: _rememberMe,
+                          onChanged: isBusy
+                              ? null
+                              : (value) => setState(
+                                  () => _rememberMe = value ?? false,
+                                ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Remember me',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _PrimaryActionButton(
           onPressed: isBusy ? null : _signInWithEmail,
-          icon: const Icon(Icons.arrow_forward_rounded),
-          label: const Text('Sign in securely'),
+          icon: Icons.arrow_forward_rounded,
+          label: 'Sign in securely',
         ),
       ],
     );
@@ -182,37 +239,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
         ),
         const SizedBox(height: 12),
-        if (_verificationId != null)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _otp,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => isBusy ? null : _submit(),
-                decoration: const InputDecoration(
-                  labelText: 'OTP code',
-                  hintText: 'Enter 6 digit code',
-                  prefixIcon: Icon(Icons.password_rounded),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.timer_outlined, size: 16, color: colors.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'OTP expires in ${_otpCountdownText()}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w700,
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: _verificationId != null
+              ? Column(
+                  key: const ValueKey('otp'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _OtpSlotsField(
+                      controller: _otp,
+                      focusNode: _otpFocus,
+                      onCompleted: (_) {
+                        if (!isBusy) _submit();
+                      },
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 16,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Expires in ${_otpCountdownText()}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: colors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        TextButton.icon(
+                          onPressed: isBusy ? null : _resendOtp,
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          label: const Text('Resend'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(key: ValueKey('no-otp')),
+        ),
         if (_verificationId == null &&
             _otpSecondsRemaining == 0 &&
             _otp.text.isNotEmpty) ...[
@@ -226,14 +305,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
         ],
         const SizedBox(height: 16),
-        FilledButton.icon(
+        _PrimaryActionButton(
           onPressed: isBusy ? null : _submit,
-          icon: Icon(
-            _verificationId == null
-                ? Icons.sms_outlined
-                : Icons.verified_user_outlined,
-          ),
-          label: Text(_verificationId == null ? 'Send OTP' : 'Verify OTP'),
+          icon: _verificationId == null
+              ? Icons.sms_outlined
+              : Icons.verified_user_outlined,
+          label: _verificationId == null ? 'Send OTP' : 'Verify OTP',
         ),
       ],
     );
@@ -302,6 +379,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     _messageIsError = false;
                   });
                   _startOtpTimer();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _otpFocus.requestFocus();
+                  });
                 },
                 onError: (message) => _setMessage(message),
               );
@@ -328,6 +408,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         _setMessage(authErrorMessage(error));
       }
     });
+  }
+
+  Future<void> _resendOtp() async {
+    setState(() {
+      _verificationId = null;
+      _otp.clear();
+      _otpSecondsRemaining = 0;
+      _message = null;
+    });
+    _otpTimer?.cancel();
+    await _submit();
   }
 
   Future<void> _signInWithEmail() async {
@@ -416,6 +507,109 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
+class _GradientBackdrop extends StatelessWidget {
+  const _GradientBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFEAF7F1),
+            Color(0xFFF6FBF9),
+            Color(0xFFFFF6EC),
+          ],
+          stops: [0.0, 0.55, 1.0],
+        ),
+      ),
+      child: SizedBox.expand(),
+    );
+  }
+}
+
+class _AmbientBlobs extends StatelessWidget {
+  const _AmbientBlobs({required this.animation});
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, _) {
+          final t = animation.value;
+          return Stack(
+            children: [
+              Positioned(
+                left: -120 + 30 * _wave(t, 0),
+                top: -80 + 20 * _wave(t, 0.25),
+                child: _Blob(
+                  size: 320,
+                  color: const Color(0xFF34D399).withValues(alpha: 0.28),
+                ),
+              ),
+              Positioned(
+                right: -100 + 24 * _wave(t, 0.5),
+                top: 80 + 16 * _wave(t, 0.75),
+                child: _Blob(
+                  size: 260,
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.22),
+                ),
+              ),
+              Positioned(
+                right: -60 + 18 * _wave(t, 0.1),
+                bottom: -100 + 22 * _wave(t, 0.6),
+                child: _Blob(
+                  size: 300,
+                  color: const Color(0xFF60A5FA).withValues(alpha: 0.18),
+                ),
+              ),
+              Positioned(
+                left: -40 + 16 * _wave(t, 0.85),
+                bottom: -40 + 18 * _wave(t, 0.35),
+                child: _Blob(
+                  size: 220,
+                  color: const Color(0xFF6EE7B7).withValues(alpha: 0.20),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  double _wave(double t, double phase) {
+    return math.sin((t + phase) * 2 * math.pi);
+  }
+}
+
+class _Blob extends StatelessWidget {
+  const _Blob({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0.0)],
+          stops: const [0.0, 1.0],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoginPanel extends StatelessWidget {
   const _LoginPanel({
     required this.mode,
@@ -442,22 +636,76 @@ class _LoginPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 12,
-      shadowColor: colors.shadow.withValues(alpha: 0.12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2EDE8)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0B1F17).withValues(alpha: 0.08),
+            blurRadius: 36,
+            spreadRadius: -6,
+            offset: const Offset(0, 18),
+          ),
+          BoxShadow(
+            color: const Color(0xFF34D399).withValues(alpha: 0.06),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
             const _MobileBrandHeader(),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.shield_moon_outlined,
+                        size: 14,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Secure login',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
             Text(
               'Welcome back',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.2,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -466,7 +714,7 @@ class _LoginPanel extends StatelessWidget {
                 context,
               ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             SegmentedButton<_LoginMode>(
               segments: const [
                 ButtonSegment(
@@ -483,65 +731,123 @@ class _LoginPanel extends StatelessWidget {
               selected: {mode},
               showSelectedIcon: false,
               onSelectionChanged: (selection) => onModeChanged(selection.first),
-            ),
-            const SizedBox(height: 18),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: KeyedSubtree(
-                key: ValueKey(mode),
-                child: mode == _LoginMode.email ? emailForm : phoneForm,
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: colors.primary.withValues(alpha: 0.10),
+                selectedForegroundColor: colors.primary,
+                foregroundColor: colors.onSurfaceVariant,
+                side: BorderSide(
+                  color: colors.outlineVariant.withValues(alpha: 0.9),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey(mode),
+                  child: mode == _LoginMode.email ? emailForm : phoneForm,
+                ),
+              ),
+            ),
+            if (mode == _LoginMode.email) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: onForgotPassword,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text('Forgot password?'),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(child: Divider(color: colors.outlineVariant)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    'or',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    'or continue with',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: colors.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
                 Expanded(child: Divider(color: colors.outlineVariant)),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: onGoogleSignIn,
               icon: const _GoogleIcon(),
-              label: const Text('Continue with Gmail'),
+              label: const Text('Continue with Google'),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 50),
+                minimumSize: const Size(0, 52),
                 foregroundColor: colors.onSurface,
                 side: BorderSide(color: colors.outline),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 textStyle: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
-            if (message != null) ...[
-              const SizedBox(height: 16),
-              _MessageBanner(message: message!, isError: messageIsError),
-            ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: message == null
+                  ? const SizedBox(height: 0)
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: _MessageBanner(
+                        message: message!,
+                        isError: messageIsError,
+                      ),
+                    ),
+            ),
             const SizedBox(height: 18),
-            Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 4,
-              runSpacing: 4,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(
+                  "Don't have an account?",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
                 TextButton(
                   onPressed: onSignup,
-                  child: const Text('Create account'),
-                ),
-                Text('|', style: TextStyle(color: colors.outline)),
-                TextButton(
-                  onPressed: onForgotPassword,
-                  child: const Text('Forgot password?'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text(
+                    'Create one',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ],
             ),
@@ -552,80 +858,412 @@ class _LoginPanel extends StatelessWidget {
   }
 }
 
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final disabled = onPressed == null;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: disabled
+                ? [
+                    colors.primary.withValues(alpha: 0.4),
+                    colors.primary.withValues(alpha: 0.4),
+                  ]
+                : const [Color(0xFF059669), Color(0xFF0F766E)],
+          ),
+          boxShadow: disabled
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF047857).withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: SizedBox(
+            height: 52,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(icon, color: Colors.white, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OtpSlotsField extends StatefulWidget {
+  const _OtpSlotsField({
+    required this.controller,
+    required this.focusNode,
+    required this.onCompleted,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onCompleted;
+
+  @override
+  State<_OtpSlotsField> createState() => _OtpSlotsFieldState();
+}
+
+class _OtpSlotsFieldState extends State<_OtpSlotsField> {
+  static const _length = 6;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChange);
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChange);
+    widget.focusNode.removeListener(_onFocusChange);
+    super.dispose();
+  }
+
+  void _onChange() {
+    if (widget.controller.text.length == _length) {
+      widget.onCompleted(widget.controller.text);
+    }
+    setState(() {});
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final value = widget.controller.text;
+    final hasFocus = widget.focusNode.hasFocus;
+    return Stack(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(_length, (i) {
+            final char = i < value.length ? value[i] : '';
+            final isActive = hasFocus && i == value.length;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: i == _length - 1 ? 0 : 8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isActive
+                          ? colors.primary
+                          : colors.outlineVariant.withValues(alpha: 0.9),
+                      width: isActive ? 1.6 : 1.0,
+                    ),
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: colors.primary.withValues(alpha: 0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    char,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+        Positioned.fill(
+          child: TextField(
+            controller: widget.controller,
+            focusNode: widget.focusNode,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            maxLength: _length,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: const TextStyle(
+              color: Colors.transparent,
+              height: 1,
+            ),
+            cursorColor: Colors.transparent,
+            decoration: const InputDecoration(
+              counterText: '',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _BrandPanel extends StatelessWidget {
   const _BrandPanel();
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F3D2E),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: colors.shadow.withValues(alpha: 0.14),
-            blurRadius: 28,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Stack(
         children: [
-          Row(
-            children: [
-              const _AppMark(size: 54),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  AppConstants.appName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                  ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF064E3B),
+                    Color(0xFF065F46),
+                    Color(0xFF0F766E),
+                  ],
                 ),
               ),
-            ],
+            ),
+          ),
+          Positioned(
+            right: -80,
+            top: -80,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.10),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -60,
+            bottom: -60,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFBBF24).withValues(alpha: 0.18),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 44),
+            padding: const EdgeInsets.all(36),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Your shop dashboard starts here.',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    height: 1.05,
+                Row(
+                  children: [
+                    const _AppMark(size: 56),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppConstants.appName,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.2,
+                                ),
+                          ),
+                          Text(
+                            AppConstants.appTagline,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your shop\ndashboard\nstarts here.',
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              height: 1.05,
+                              letterSpacing: -0.5,
+                            ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Track sales, stock, receipts, customers, payments and owner investments — online or offline.',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.82),
+                              height: 1.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Secure access for sales, stock, receipts, customers, payments, and owner investments.',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.78),
-                    height: 1.45,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: const [
+                        _FeaturePill(
+                          icon: Icons.inventory_2_outlined,
+                          label: 'Stock',
+                        ),
+                        _FeaturePill(
+                          icon: Icons.point_of_sale_rounded,
+                          label: 'POS',
+                        ),
+                        _FeaturePill(
+                          icon: Icons.receipt_long_outlined,
+                          label: 'Receipts',
+                        ),
+                        _FeaturePill(
+                          icon: Icons.groups_2_outlined,
+                          label: 'Customers',
+                        ),
+                        _FeaturePill(
+                          icon: Icons.payments_outlined,
+                          label: 'Payments',
+                        ),
+                        _FeaturePill(
+                          icon: Icons.cloud_off_rounded,
+                          label: 'Offline-first',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.14),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFFBBF24,
+                              ).withValues(alpha: 0.20),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.workspace_premium_rounded,
+                              color: Color(0xFFFBBF24),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Made for Bangladeshi shops',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  'Bangla-friendly UI, Taka (৳) ready, works offline.',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(
+                                      alpha: 0.78,
+                                    ),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: const [
-              _FeaturePill(icon: Icons.inventory_2_outlined, label: 'Stock'),
-              _FeaturePill(icon: Icons.point_of_sale_rounded, label: 'POS'),
-              _FeaturePill(
-                icon: Icons.receipt_long_outlined,
-                label: 'Receipts',
-              ),
-              _FeaturePill(icon: Icons.groups_2_outlined, label: 'Customers'),
-            ],
           ),
         ],
       ),
@@ -638,11 +1276,32 @@ class _MobileBrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 420) return const SizedBox.shrink();
-        return const Column(
-          children: [_AppMark(size: 58), SizedBox(height: 14)],
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            children: [
+              const _AppMark(size: 58),
+              const SizedBox(height: 12),
+              Text(
+                AppConstants.appName,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              Text(
+                AppConstants.appTagline,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -660,23 +1319,28 @@ class _AppMark extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(size * 0.28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFBBF24), Color(0xFFF97316)],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: const Color(0xFFF97316).withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           'HB',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w900,
-            fontSize: 20,
+            fontSize: size * 0.38,
+            letterSpacing: -0.5,
           ),
         ),
       ),
@@ -696,19 +1360,20 @@ class _FeaturePill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.11),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 18),
+          Icon(icon, color: Colors.white, size: 16),
           const SizedBox(width: 7),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
             ),
           ),
         ],
@@ -730,25 +1395,33 @@ class _MessageBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(8),
+        color: tone.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: tone.withValues(alpha: 0.28)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            isError ? Icons.error_outline_rounded : Icons.check_circle_outline,
-            color: tone,
-            size: 20,
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: tone.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isError ? Icons.error_outline_rounded : Icons.check_circle_outline,
+              color: tone,
+              size: 18,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: tone,
                 fontWeight: FontWeight.w700,
+                height: 1.35,
               ),
             ),
           ),
