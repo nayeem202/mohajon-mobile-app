@@ -9,6 +9,8 @@ import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../providers/shop_profile_providers.dart';
+import 'account_security_screen.dart';
+import 'privacy_settings_screen.dart';
 import 'shop_profile_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -39,11 +41,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             Card(
               child: ListTile(
                 leading: const Icon(Icons.account_circle_outlined),
-                title: Text(user?.displayName?.isNotEmpty == true
-                    ? user!.displayName!
-                    : 'Signed in account'),
+                title: Text(
+                  user?.displayName?.isNotEmpty == true
+                      ? user!.displayName!
+                      : 'Signed in account',
+                ),
                 subtitle: Text(user?.email ?? 'No email available'),
               ),
+            ),
+            const SizedBox(height: 12),
+            _SettingsActionCard(
+              icon: Icons.privacy_tip_outlined,
+              title: 'Privacy',
+              subtitle: 'Current login location and phone model details',
+              onTap: isBusy
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PrivacySettingsScreen(),
+                        ),
+                      );
+                    },
+            ),
+            const SizedBox(height: 12),
+            _SettingsActionCard(
+              icon: Icons.lock_outline,
+              title: 'Account security',
+              subtitle: 'Set or change your account password',
+              onTap: isBusy
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AccountSecurityScreen(),
+                        ),
+                      );
+                    },
             ),
             const SizedBox(height: 12),
             Card(
@@ -130,7 +164,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           children: [
                             Text(
                               l10n.t('syncNow'),
-                              style: const TextStyle(fontWeight: FontWeight.w900),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -177,7 +213,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           children: [
                             Text(
                               l10n.t('language'),
-                              style: const TextStyle(fontWeight: FontWeight.w900),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             SegmentedButton<String>(
@@ -328,5 +366,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         );
       }
     });
+  }
+}
+
+class _SettingsActionCard extends StatelessWidget {
+  const _SettingsActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

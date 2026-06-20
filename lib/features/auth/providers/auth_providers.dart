@@ -7,6 +7,7 @@ import '../../../core/app/app_bootstrap.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/models/syncable.dart';
+import '../../../core/services/device_session_service.dart';
 import '../../../core/services/sync_service.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
@@ -24,12 +25,139 @@ class AuthService {
   AuthService(this._ref);
 
   final Ref _ref;
+  final _deviceSessionService = DeviceSessionService();
   Future<void>? _googleSignInInit;
+
+  Future<void> signUpWithEmail({
+    required String shopName,
+    required String email,
+    required String mobile,
+    required String password,
+  }) async {
+    if (!AppBootstrap.firebaseReady) {
+      throw const AuthMessageException(
+        'Account creation is temporarily unavailable. Please contact support.',
+      );
+    }
+
+    final normalizedEmail = email.trim().toLowerCase();
+    final credential = await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(
+          email: normalizedEmail,
+          password: password,
+        );
+    final user = credential.user;
+    if (user == null) {
+      throw const AuthMessageException(
+        'We could not create your account. Please try again.',
+      );
+    }
+
+    await user.updateDisplayName(shopName.trim());
+    await user.sendEmailVerification();
+    await FirebaseFirestore.instance
+        .collection('pending_registrations')
+        .doc(user.uid)
+        .set({
+          'userId': user.uid,
+          'shopName': shopName.trim(),
+          'email': normalizedEmail,
+          'phoneNumber': mobile.trim(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+    await FirebaseAuth.instance.signOut();
+  }
+
+  Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    if (!AppBootstrap.firebaseReady) {
+      throw const AuthMessageException(
+        'Login is temporarily unavailable. Please contact support.',
+      );
+    }
+
+    final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: email.trim().toLowerCase(),
+      password: password,
+    );
+    final user = credential.user;
+    await user?.reload();
+    final refreshed = FirebaseAuth.instance.currentUser;
+    if (refreshed == null) {
+      throw const AuthMessageException(
+        'We could not sign you in. Please try again.',
+      );
+    }
+    if (!refreshed.emailVerified) {
+      await refreshed.sendEmailVerification();
+      await FirebaseAuth.instance.signOut();
+      throw const AuthMessageException(
+        'Please verify your email first. We sent a fresh verification email.',
+      );
+    }
+    await _upsertFirebaseUser();
+    await _recordLoginSession();
+    return credential;
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (!AppBootstrap.firebaseReady) {
+      throw const AuthMessageException(
+        'Password reset is temporarily unavailable. Please contact support.',
+      );
+    }
+    await FirebaseAuth.instance.sendPasswordResetEmail(
+      email: email.trim().toLowerCase(),
+    );
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email?.trim().toLowerCase();
+    if (user == null || email == null || email.isEmpty) {
+      throw const AuthMessageException('No email account is signed in.');
+    }
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword);
+  }
+
+  Future<void> setPasswordForGoogleAccount(String newPassword) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email?.trim().toLowerCase();
+    if (user == null || email == null || email.isEmpty) {
+      throw const AuthMessageException('No email account is signed in.');
+    }
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: newPassword,
+    );
+    try {
+      await user.linkWithCredential(credential);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'provider-already-linked' ||
+          error.code == 'credential-already-in-use') {
+        throw const AuthMessageException(
+          'Password login is already enabled for this email.',
+        );
+      }
+      rethrow;
+    }
+  }
 
   Future<UserCredential> signInWithGoogle() async {
     if (!AppBootstrap.firebaseReady) {
       throw const AuthMessageException(
-        'Google sign-in is not available right now. Please try again later.',
+        'Gmail sign-in is not available right now. Please try again later.',
       );
     }
 
@@ -48,7 +176,7 @@ class AuthService {
       final idToken = googleAuth.idToken;
       if (idToken == null) {
         throw const AuthMessageException(
-          'Google sign-in failed. Please try again.',
+          'Gmail sign-in could not start. Please try again.',
         );
       }
 
@@ -59,16 +187,18 @@ class AuthService {
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
         throw const AuthMessageException(
-          'Google sign-in failed. Please try again.',
+          'Gmail sign-in could not be completed. Please try again.',
         );
       }
-      if ((firebaseUser.email ?? '').trim().isEmpty || !firebaseUser.emailVerified) {
+      if ((firebaseUser.email ?? '').trim().isEmpty ||
+          !firebaseUser.emailVerified) {
         await signOut();
         throw const AuthMessageException(
-          'Please verify your Google account email before signing in.',
+          'Please verify your Gmail account email before signing in.',
         );
       }
       await _upsertFirebaseUser();
+      await _recordLoginSession();
       return userCredential;
     } on GoogleSignInException catch (error) {
       throw AuthMessageException(_googleSignInErrorMessage(error));
@@ -78,7 +208,7 @@ class AuthService {
       rethrow;
     } catch (_) {
       throw const AuthMessageException(
-        'Google sign-in failed. Please try again.',
+        'Gmail sign-in could not be completed. Please try again.',
       );
     }
   }
@@ -105,14 +235,18 @@ class AuthService {
     required void Function(String message) onError,
   }) async {
     if (!AppBootstrap.firebaseReady) {
-      onError('Firebase is not configured. Add Firebase options to enable OTP.');
+      onError(
+        'Phone OTP login is temporarily unavailable. Please contact support.',
+      );
       return;
     }
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: phone,
+      timeout: const Duration(minutes: 2),
       verificationCompleted: (credential) async {
         await FirebaseAuth.instance.signInWithCredential(credential);
         await _upsertFirebaseUser(phone: phone);
+        await _recordLoginSession();
       },
       verificationFailed: (error) => onError(authErrorMessage(error)),
       codeSent: (verificationId, _) => onCodeSent(verificationId),
@@ -125,9 +259,13 @@ class AuthService {
     required String smsCode,
     required String phone,
   }) async {
-    final credential = PhoneAuthProvider.credential(verificationId: verificationId, smsCode: smsCode);
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
     await FirebaseAuth.instance.signInWithCredential(credential);
     await _upsertFirebaseUser(phone: phone);
+    await _recordLoginSession();
   }
 
   Future<void> _upsertFirebaseUser({String phone = ''}) async {
@@ -156,11 +294,18 @@ class AuthService {
   Future<String> _ensureRegistration(User firebaseUser) async {
     final shopId = 'shop_${firebaseUser.uid}';
     final firestore = FirebaseFirestore.instance;
-    final registrationRef = firestore.collection('registrations').doc(
-          firebaseUser.uid,
-        );
+    final registrationRef = firestore
+        .collection('registrations')
+        .doc(firebaseUser.uid);
     final shopRef = firestore.collection('shops').doc(shopId);
     final phoneNumber = firebaseUser.phoneNumber ?? '';
+    final pending = await firestore
+        .collection('pending_registrations')
+        .doc(firebaseUser.uid)
+        .get();
+    final pendingData = pending.data() ?? const <String, dynamic>{};
+    final pendingShopName = (pendingData['shopName'] ?? '').toString().trim();
+    final pendingPhone = (pendingData['phoneNumber'] ?? '').toString().trim();
 
     final now = FieldValue.serverTimestamp();
     await registrationRef.set({
@@ -168,7 +313,7 @@ class AuthService {
       'shopId': shopId,
       'email': firebaseUser.email ?? '',
       'name': firebaseUser.displayName ?? '',
-      'phoneNumber': phoneNumber,
+      'phoneNumber': phoneNumber.isNotEmpty ? phoneNumber : pendingPhone,
       'photoUrl': firebaseUser.photoURL ?? '',
       'createdAt': now,
       'updatedAt': now,
@@ -178,10 +323,9 @@ class AuthService {
     final existingData = existingShop.data() ?? const <String, dynamic>{};
     final existingName = (existingData['name'] ?? '').toString().trim();
     final existingLocation = (existingData['location'] ?? '').toString().trim();
-    final existingPhone = (existingData['phoneNumber'] ?? '')
-        .toString()
-        .trim();
-    final hasOwners = existingData['owners'] is List &&
+    final existingPhone = (existingData['phoneNumber'] ?? '').toString().trim();
+    final hasOwners =
+        existingData['owners'] is List &&
         (existingData['owners'] as List).isNotEmpty;
 
     final payload = <String, dynamic>{
@@ -190,13 +334,17 @@ class AuthService {
       'ownerEmail': firebaseUser.email ?? '',
       'name': existingName.isNotEmpty
           ? existingName
+          : pendingShopName.isNotEmpty
+          ? pendingShopName
           : firebaseUser.displayName?.isNotEmpty == true
-              ? firebaseUser.displayName
-              : 'My Shop',
+          ? firebaseUser.displayName
+          : 'My Shop',
       'location': existingLocation,
       'phoneNumber': existingPhone.isNotEmpty
           ? existingPhone
-          : phoneNumber,
+          : phoneNumber.isNotEmpty
+          ? phoneNumber
+          : pendingPhone,
       'createdAt': now,
       'updatedAt': now,
     };
@@ -220,6 +368,24 @@ class AuthService {
     await shopRef.set(payload, SetOptions(merge: true));
     return shopId;
   }
+
+  Future<void> _recordLoginSession() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+    final session = await _deviceSessionService.currentSession();
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .collection('login_sessions')
+        .doc(session.sessionId)
+        .set({
+          ...session.toMap(),
+          'userId': firebaseUser.uid,
+          'email': firebaseUser.email ?? '',
+          'updatedAt': FieldValue.serverTimestamp(),
+          'lastLoginAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+  }
 }
 
 String authErrorMessage(Object error) {
@@ -229,54 +395,73 @@ String authErrorMessage(Object error) {
   if (error is FirebaseAuthException) {
     switch (error.code) {
       case 'invalid-verification-code':
-        return 'The OTP code is invalid. Please try again.';
+        return 'That OTP code is not correct. Check the code and try again.';
       case 'invalid-verification-id':
         return 'This OTP session has expired. Please request a new code.';
       case 'session-expired':
         return 'This OTP session has expired. Please request a new code.';
       case 'too-many-requests':
-        return 'Too many attempts. Please wait a moment and try again.';
+        return 'Too many attempts. Please wait a few minutes and try again.';
       case 'network-request-failed':
-        return 'Network error. Please check your internet connection.';
+        return 'No internet connection. Check your connection and try again.';
       case 'user-disabled':
         return 'This account has been disabled. Please contact support.';
       case 'account-exists-with-different-credential':
-        return 'This email is already linked to another sign-in method.';
+        return 'This email already uses another sign-in method. Try Gmail or password login.';
       case 'invalid-credential':
-        return 'The sign-in credentials are invalid. Please try again.';
+        return 'The email or password is incorrect. Please check and try again.';
       case 'operation-not-allowed':
-        return 'This sign-in method is not enabled for the app.';
+        return 'This sign-in method is not available right now. Please contact support.';
+      case 'email-already-in-use':
+        return 'This email already has an account. Please sign in instead.';
+      case 'invalid-email':
+        return 'Enter a valid email address.';
+      case 'weak-password':
+        return 'Use a stronger password with at least 6 characters.';
+      case 'wrong-password':
+        return 'The password is incorrect. Please try again.';
+      case 'user-not-found':
+        return 'No account was found for this email. Create an account first.';
+      case 'requires-recent-login':
+        return 'Please sign in again, then update your password.';
+      case 'invalid-phone-number':
+        return 'Enter a valid phone number with country code, like +8801XXXXXXXXX.';
+      case 'missing-phone-number':
+        return 'Enter your phone number to receive an OTP.';
+      case 'quota-exceeded':
+        return 'OTP limit reached for now. Please try again later.';
+      case 'popup-closed-by-user':
+      case 'web-context-cancelled':
+        return 'Sign-in was cancelled before it finished.';
+      case 'web-network-request-failed':
+        return 'No internet connection. Check your connection and try again.';
       default:
-        return error.message?.trim().isNotEmpty == true
-            ? error.message!.trim()
-            : 'Authentication failed. Please try again.';
+        return 'We could not complete sign-in. Please try again.';
     }
   }
   if (error is GoogleSignInException) {
     return _googleSignInErrorMessage(error);
   }
   if (error is StateError) {
-    return error.toString().replaceFirst('Bad state: ', '').trim();
+    return 'Sign-in is not ready yet. Please close the screen and try again.';
   }
-  return 'Authentication failed. Please try again.';
+  return 'We could not complete sign-in. Please try again.';
 }
 
 String _googleSignInErrorMessage(GoogleSignInException error) {
   switch (error.code) {
     case GoogleSignInExceptionCode.canceled:
-      return 'Google sign-in was canceled.';
+      return 'Gmail sign-in was cancelled.';
     case GoogleSignInExceptionCode.interrupted:
-      return 'Google sign-in was interrupted. Please try again.';
+      return 'Gmail sign-in was interrupted. Please try again.';
     case GoogleSignInExceptionCode.clientConfigurationError:
     case GoogleSignInExceptionCode.providerConfigurationError:
-      return 'Google sign-in is not configured correctly for this app.';
+      return 'Gmail sign-in is not available right now. Please contact support.';
     case GoogleSignInExceptionCode.uiUnavailable:
-      return 'Google sign-in cannot open right now. Please try again.';
+      return 'Gmail sign-in cannot open right now. Please try again.';
     case GoogleSignInExceptionCode.userMismatch:
-      return 'Please complete sign-in with the same Google account.';
+      return 'Please complete sign-in with the same Gmail account.';
     case GoogleSignInExceptionCode.unknownError:
-      return error.description?.trim().isNotEmpty == true
-          ? error.description!.trim()
-          : 'Google sign-in failed. Please try again.';
+      return 'Gmail sign-in could not be completed. Please try again.';
   }
 }

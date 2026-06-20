@@ -26,6 +26,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /pending_registrations/{userId} {
+      allow read, write: if signedIn()
+        && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/login_sessions/{sessionId} {
+      allow read, write: if signedIn()
+        && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
     match /shops/{shopId} {
       allow read: if ownsShop(shopId);
       allow write: if ownsShop(shopId)

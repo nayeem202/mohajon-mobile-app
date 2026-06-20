@@ -1,22 +1,34 @@
 package com.example.inventory_1;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
+import io.flutter.plugin.common.MethodChannel.Result;
 
 public class MainActivity extends FlutterActivity {
     private static final String DOWNLOAD_CHANNEL = "com.example.inventory_1/downloads";
+    private static final String DEVICE_SESSION_CHANNEL = "com.example.inventory_1/device_session";
+    private static final int LOCATION_PERMISSION_REQUEST = 4201;
+    private Result pendingDeviceSessionResult;
 
     @Override
     public void configureFlutterEngine(FlutterEngine flutterEngine) {
@@ -47,6 +59,41 @@ public class MainActivity extends FlutterActivity {
                 result.error("save_failed", exception.getMessage(), null);
             }
         });
+
+        new MethodChannel(
+                flutterEngine.getDartExecutor().getBinaryMessenger(),
+                DEVICE_SESSION_CHANNEL
+        ).setMethodCallHandler((call, result) -> {
+            if (!"getCurrentSession".equals(call.method)) {
+                result.notImplemented();
+                return;
+            }
+            if (!hasLocationPermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                pendingDeviceSessionResult = result;
+                requestPermissions(
+                        new String[]{
+                                android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                                android.Manifest.permission.ACCESS_FINE_LOCATION
+                        },
+                        LOCATION_PERMISSION_REQUEST
+                );
+                return;
+            }
+            result.success(currentDeviceSession());
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST && pendingDeviceSessionResult != null) {
+            pendingDeviceSessionResult.success(currentDeviceSession());
+            pendingDeviceSessionResult = null;
+        }
     }
 
     private String saveFileToDownloads(String fileName, String mimeType, byte[] bytes)
@@ -99,5 +146,78 @@ public class MainActivity extends FlutterActivity {
                 null
         );
         return file.getAbsolutePath();
+    }
+
+    private Map<String, Object> currentDeviceSession() {
+        Map<String, Object> payload = new HashMap<>();
+        String androidId = Settings.Secure.getString(
+                getContentResolver(),
+                Settings.Secure.ANDROID_ID
+        );
+        String manufacturer = Build.MANUFACTURER == null ? "" : Build.MANUFACTURER;
+        String model = Build.MODEL == null ? "" : Build.MODEL;
+        payload.put("sessionId", androidId == null ? "android-device" : androidId);
+        payload.put("platform", "Android");
+        payload.put("deviceName", displayName(manufacturer, model));
+        payload.put("manufacturer", manufacturer);
+        payload.put("model", model);
+        payload.put("osVersion", "Android " + Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")");
+
+        Location location = lastKnownLocation();
+        if (location == null) {
+            payload.put("locationLabel", "Location permission not allowed");
+        } else {
+            payload.put("latitude", location.getLatitude());
+            payload.put("longitude", location.getLongitude());
+            payload.put(
+                    "locationLabel",
+                    String.format(
+                            Locale.US,
+                            "%.5f, %.5f",
+                            location.getLatitude(),
+                            location.getLongitude()
+                    )
+            );
+        }
+        return payload;
+    }
+
+    private String displayName(String manufacturer, String model) {
+        if (manufacturer.isEmpty()) return model.isEmpty() ? "Android device" : model;
+        if (model.toLowerCase(Locale.US).startsWith(manufacturer.toLowerCase(Locale.US))) {
+            return model;
+        }
+        return manufacturer + " " + model;
+    }
+
+    private Location lastKnownLocation() {
+        if (!hasLocationPermission()) {
+            return null;
+        }
+
+        LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (manager == null) return null;
+        Location best = null;
+        for (String provider : manager.getProviders(true)) {
+            Location candidate;
+            try {
+                candidate = manager.getLastKnownLocation(provider);
+            } catch (SecurityException exception) {
+                return null;
+            }
+            if (candidate != null
+                    && (best == null || candidate.getTime() > best.getTime())) {
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
+    private boolean hasLocationPermission() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                || checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     }
 }
