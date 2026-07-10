@@ -7,6 +7,7 @@ import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/pos/presentation/sales_history_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/purchases/presentation/purchase_screen.dart';
+import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
@@ -90,7 +91,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           onReports: () => _openFromSheet(
             context: context,
             sheetContext: sheetContext,
-            screen: const DashboardScreen(),
+            screen: const ReportsScreen(),
           ),
           onSettings: () => _openFromSheet(
             context: context,
