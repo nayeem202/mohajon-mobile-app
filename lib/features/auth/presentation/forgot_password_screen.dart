@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/async_action_state.dart';
+import 'auth_brand.dart';
 import '../providers/auth_providers.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -40,15 +41,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
           children: [
             const DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFEAF7F1),
-                    Color(0xFFF6FBF9),
-                    Color(0xFFFFF6EC),
-                  ],
-                ),
+                color: AuthBrand.backgroundColor,
               ),
               child: SizedBox.expand(),
             ),
@@ -62,6 +55,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                     elevation: 0,
                     leading: IconButton(
                       icon: const Icon(Icons.arrow_back_rounded),
+                      color: AuthBrand.secondary,
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
                   ),
@@ -97,18 +91,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             height: 78,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _sent
-                    ? const [Color(0xFF059669), Color(0xFF0F766E)]
-                    : const [Color(0xFFFBBF24), Color(0xFFF97316)],
-              ),
+              color: _sent ? AuthBrand.secondary : AuthBrand.primary,
               boxShadow: [
                 BoxShadow(
-                  color: (_sent
-                          ? const Color(0xFF047857)
-                          : const Color(0xFFF97316))
+                  color: (_sent ? AuthBrand.secondary : AuthBrand.primary)
                       .withValues(alpha: 0.32),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
@@ -148,12 +134,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AuthBrand.panelBackground,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2EDE8)),
+            border: Border.all(color: AuthBrand.panelBorder),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B1F17).withValues(alpha: 0.06),
+                color: AuthBrand.shadow.withValues(alpha: 0.06),
                 blurRadius: 28,
                 spreadRadius: -8,
                 offset: const Offset(0, 14),
@@ -168,10 +154,27 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                 keyboardType: TextInputType.emailAddress,
                 autofillHints: const [AutofillHints.email],
                 enabled: !_sent,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
                   hintText: 'you@example.com',
-                  prefixIcon: Icon(Icons.alternate_email_rounded),
+                  prefixIcon: const Icon(Icons.alternate_email_rounded),
+                  filled: true,
+                  fillColor: AuthBrand.panelBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AuthBrand.panelBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AuthBrand.panelBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AuthBrand.secondary,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
               AnimatedSize(
@@ -204,6 +207,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: const Icon(Icons.login_rounded, size: 18),
                     label: const Text('Back to sign in'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AuthBrand.secondary,
+                    ),
                   ),
                 ),
               ],
@@ -255,18 +261,12 @@ class _PrimaryActionButton extends StatelessWidget {
       child: Ink(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: disabled
-                ? const [Color(0xFF94CDB7), Color(0xFF94CDB7)]
-                : const [Color(0xFF059669), Color(0xFF0F766E)],
-          ),
+          color: disabled ? AuthBrand.buttonDisabled : AuthBrand.primary,
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: const Color(0xFF047857).withValues(alpha: 0.35),
+                    color: AuthBrand.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -309,7 +309,7 @@ class _MessageBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final tone = isError ? colors.error : colors.primary;
+    final tone = isError ? colors.error : AuthBrand.secondary;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

@@ -8,6 +8,8 @@ class Product with Syncable {
     required this.nameBn,
     required this.barcode,
     required this.category,
+    this.unit = 'pcs',
+    this.imagePath,
     required this.purchasePrice,
     required this.sellingPrice,
     required this.stockQty,
@@ -23,6 +25,8 @@ class Product with Syncable {
   final String nameBn;
   final String barcode;
   final String category;
+  final String unit;
+  final String? imagePath;
   final double purchasePrice;
   final double sellingPrice;
   final double stockQty;
@@ -49,6 +53,8 @@ class Product with Syncable {
     String? nameBn,
     String? barcode,
     String? category,
+    String? unit,
+    String? imagePath,
     double? purchasePrice,
     double? sellingPrice,
     double? stockQty,
@@ -64,6 +70,8 @@ class Product with Syncable {
       nameBn: nameBn ?? this.nameBn,
       barcode: barcode ?? this.barcode,
       category: category ?? this.category,
+      unit: unit ?? this.unit,
+      imagePath: imagePath ?? this.imagePath,
       purchasePrice: purchasePrice ?? this.purchasePrice,
       sellingPrice: sellingPrice ?? this.sellingPrice,
       stockQty: stockQty ?? this.stockQty,
@@ -82,6 +90,8 @@ class Product with Syncable {
     'nameBn': nameBn,
     'barcode': barcode,
     'category': category,
+    'unit': unit,
+    'imagePath': imagePath,
     'purchasePrice': purchasePrice,
     'sellingPrice': sellingPrice,
     'stockQty': stockQty,
@@ -98,6 +108,8 @@ class Product with Syncable {
     nameBn: (json['nameBn'] ?? '') as String,
     barcode: (json['barcode'] ?? '') as String,
     category: (json['category'] ?? '') as String,
+    unit: (json['unit'] ?? 'pcs') as String,
+    imagePath: json['imagePath'] as String?,
     purchasePrice: (json['purchasePrice'] as num? ?? 0).toDouble(),
     sellingPrice: (json['sellingPrice'] as num? ?? 0).toDouble(),
     stockQty: (json['stockQty'] as num? ?? 0).toDouble(),

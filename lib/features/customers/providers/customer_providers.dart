@@ -42,26 +42,33 @@ final paymentsStreamProvider = StreamProvider<List<Payment>>((ref) {
 
 final customerLedgerEntriesStreamProvider =
     StreamProvider<List<CustomerLedgerEntry>>((ref) {
-  final shopId = ref.watch(shopIdProvider);
-  return ref.watch(localDatabaseProvider).customerLedgerEntries.watchForShop(
-    shopId,
-  );
-});
+      final shopId = ref.watch(shopIdProvider);
+      return ref
+          .watch(localDatabaseProvider)
+          .customerLedgerEntries
+          .watchForShop(shopId);
+    });
 
 final customerServiceProvider = Provider<CustomerService>((ref) {
   return CustomerService(ref, const Uuid());
 });
 
 final customerDueProvider = Provider.family<double, String>((ref, customerId) {
-  final sales = (ref.watch(salesStreamProvider).value ?? const <Sale>[])
-      .where((sale) => sale.customerId == customerId);
-  final payments = (ref.watch(paymentsStreamProvider).value ?? const <Payment>[])
-      .where((payment) => payment.customerId == customerId);
+  final sales = (ref.watch(salesStreamProvider).value ?? const <Sale>[]).where(
+    (sale) => sale.customerId == customerId,
+  );
+  final payments =
+      (ref.watch(paymentsStreamProvider).value ?? const <Payment>[]).where(
+        (payment) => payment.customerId == customerId,
+      );
   final ledgerEntries =
       (ref.watch(customerLedgerEntriesStreamProvider).value ??
               const <CustomerLedgerEntry>[])
           .where((entry) => entry.customerId == customerId);
-  final totalSalesDue = sales.fold<double>(0, (sum, sale) => sum + sale.dueAmount);
+  final totalSalesDue = sales.fold<double>(
+    0,
+    (sum, sale) => sum + sale.dueAmount,
+  );
   final totalUnlinkedPayments = payments
       .where((payment) => payment.saleId == null)
       .fold<double>(0, (sum, payment) => sum + payment.amount);
@@ -72,30 +79,35 @@ final customerDueProvider = Provider.family<double, String>((ref, customerId) {
   return totalSalesDue - totalUnlinkedPayments + totalAdjustments;
 });
 
-final customerLedgerProvider = Provider.family<List<LedgerEntry>, String>((ref, customerId) {
+final customerLedgerProvider = Provider.family<List<LedgerEntry>, String>((
+  ref,
+  customerId,
+) {
   final sales = (ref.watch(salesStreamProvider).value ?? const <Sale>[])
       .where((sale) => sale.customerId == customerId)
       .toList();
-  final payments = (ref.watch(paymentsStreamProvider).value ?? const <Payment>[])
-      .where((payment) => payment.customerId == customerId)
-      .toList();
+  final payments =
+      (ref.watch(paymentsStreamProvider).value ?? const <Payment>[])
+          .where((payment) => payment.customerId == customerId)
+          .toList();
   final paymentSaleIds = payments
       .where((payment) => payment.saleId != null)
       .map((payment) => payment.saleId)
       .toSet();
   final entries = <LedgerEntry>[
     ...sales.map(
-          (sale) => LedgerEntry(
-            id: sale.saleId,
-            type: LedgerEntryType.sale,
-            amount: sale.totalAmount,
-            createdAt: sale.createdAt,
-            description: 'Sale',
-          ),
-        ),
+      (sale) => LedgerEntry(
+        id: sale.saleId,
+        type: LedgerEntryType.sale,
+        amount: sale.totalAmount,
+        createdAt: sale.createdAt,
+        description: 'Sale',
+      ),
+    ),
     ...sales
         .where(
-          (sale) => sale.paidAmount > 0 && !paymentSaleIds.contains(sale.saleId),
+          (sale) =>
+              sale.paidAmount > 0 && !paymentSaleIds.contains(sale.saleId),
         )
         .map(
           (sale) => LedgerEntry(
@@ -107,14 +119,14 @@ final customerLedgerProvider = Provider.family<List<LedgerEntry>, String>((ref, 
           ),
         ),
     ...payments.map(
-          (payment) => LedgerEntry(
-            id: payment.paymentId,
-            type: LedgerEntryType.payment,
-            amount: payment.amount,
-            createdAt: payment.createdAt,
-            description: payment.paymentMethod.value,
-          ),
-        ),
+      (payment) => LedgerEntry(
+        id: payment.paymentId,
+        type: LedgerEntryType.payment,
+        amount: payment.amount,
+        createdAt: payment.createdAt,
+        description: payment.paymentMethod.value,
+      ),
+    ),
     ...(ref.watch(customerLedgerEntriesStreamProvider).value ??
             const <CustomerLedgerEntry>[])
         .where((entry) => entry.customerId == customerId)
@@ -151,11 +163,17 @@ class CustomerService {
     String? customerId,
     required String name,
     required String phone,
+    String email = '',
+    String address = '',
+    String notes = '',
   }) async {
     final customer = Customer(
       customerId: customerId ?? _uuid.v4(),
       name: name,
       phone: phone,
+      email: email,
+      address: address,
+      notes: notes,
       shopId: _ref.read(shopIdProvider),
       updatedAt: DateTime.now(),
       syncStatus: SyncStatus.pending,

@@ -14,10 +14,12 @@ class PosInventoryApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: AppConstants.appName,
       theme: AppTheme.light(),
+      themeMode: themeMode,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

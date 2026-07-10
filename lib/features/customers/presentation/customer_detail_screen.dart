@@ -103,6 +103,13 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                             ),
                             const SizedBox(height: 3),
                             Text(customer.phone),
+                            if (customer.email.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                customer.email,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
                           ],
                         ),
                       ),

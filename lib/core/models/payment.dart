@@ -1,7 +1,7 @@
 import '../utils/date_time_json.dart';
 import 'syncable.dart';
 
-enum PaymentMethod { cash, bkash, nagad }
+enum PaymentMethod { cash, bkash, nagad, credit, bank, other }
 
 extension PaymentMethodX on PaymentMethod {
   String get value => name.toUpperCase();

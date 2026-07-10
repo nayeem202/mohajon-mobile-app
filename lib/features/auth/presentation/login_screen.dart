@@ -9,6 +9,7 @@ import '../../../core/app/app_shell.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/async_action_state.dart';
+import 'auth_brand.dart';
 import '../providers/auth_providers.dart';
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
@@ -62,67 +63,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authTheme = AuthBrand.theme(Theme.of(context));
     return withLoadingOverlay(
-      Scaffold(
-        body: Stack(
-          children: [
-            const _GradientBackdrop(),
-            _AmbientBlobs(animation: _ambientController),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= 900;
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWide ? 32 : 18,
-                      vertical: isWide ? 28 : 18,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
+      Theme(
+        data: authTheme,
+        child: Scaffold(
+          body: Stack(
+            children: [
+              const _AuthBackdrop(),
+              _AmbientBlobs(animation: _ambientController),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= 900;
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWide ? 32 : 18,
+                        vertical: isWide ? 28 : 18,
                       ),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1080),
-                          child: Flex(
-                            direction: isWide ? Axis.horizontal : Axis.vertical,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (isWide) const Expanded(child: _BrandPanel()),
-                              if (isWide) const SizedBox(width: 28),
-                              SizedBox(
-                                width: isWide ? 460 : double.infinity,
-                                child: _LoginPanel(
-                                  mode: _mode,
-                                  message: _message,
-                                  messageIsError: _messageIsError,
-                                  onModeChanged: (mode) {
-                                    setState(() {
-                                      _mode = mode;
-                                      _message = null;
-                                    });
-                                  },
-                                  emailForm: _buildEmailForm(context),
-                                  phoneForm: _buildPhoneForm(context),
-                                  onGoogleSignIn: isBusy
-                                      ? null
-                                      : _signInWithGoogle,
-                                  onSignup: isBusy ? null : _openSignup,
-                                  onForgotPassword: isBusy
-                                      ? null
-                                      : _openForgotPassword,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1080),
+                            child: Flex(
+                              direction:
+                                  isWide ? Axis.horizontal : Axis.vertical,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (isWide) const Expanded(child: _BrandPanel()),
+                                if (isWide) const SizedBox(width: 28),
+                                SizedBox(
+                                  width: isWide ? 460 : double.infinity,
+                                  child: _LoginPanel(
+                                    mode: _mode,
+                                    message: _message,
+                                    messageIsError: _messageIsError,
+                                    onModeChanged: (mode) {
+                                      setState(() {
+                                        _mode = mode;
+                                        _message = null;
+                                      });
+                                    },
+                                    emailForm: _buildEmailForm(context),
+                                    phoneForm: _buildPhoneForm(context),
+                                    onGoogleSignIn: isBusy
+                                        ? null
+                                        : _signInWithGoogle,
+                                    onSignup: isBusy ? null : _openSignup,
+                                    onForgotPassword: isBusy
+                                        ? null
+                                        : _openForgotPassword,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       label: 'Signing in...',
@@ -264,14 +270,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             Icon(
                               Icons.timer_outlined,
                               size: 16,
-                              color: colors.primary,
+                              color: AuthBrand.secondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               'Expires in ${_otpCountdownText()}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
-                                    color: colors.primary,
+                                    color: AuthBrand.secondary,
                                     fontWeight: FontWeight.w800,
                                   ),
                             ),
@@ -507,24 +513,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-class _GradientBackdrop extends StatelessWidget {
-  const _GradientBackdrop();
+class _AuthBackdrop extends StatelessWidget {
+  const _AuthBackdrop();
 
   @override
   Widget build(BuildContext context) {
     return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEAF7F1),
-            Color(0xFFF6FBF9),
-            Color(0xFFFFF6EC),
-          ],
-          stops: [0.0, 0.55, 1.0],
-        ),
-      ),
+      decoration: BoxDecoration(color: AuthBrand.backgroundColor),
       child: SizedBox.expand(),
     );
   }
@@ -549,7 +544,7 @@ class _AmbientBlobs extends StatelessWidget {
                 top: -80 + 20 * _wave(t, 0.25),
                 child: _Blob(
                   size: 320,
-                  color: const Color(0xFF34D399).withValues(alpha: 0.28),
+                  color: AuthBrand.secondary.withValues(alpha: 0.18),
                 ),
               ),
               Positioned(
@@ -557,7 +552,7 @@ class _AmbientBlobs extends StatelessWidget {
                 top: 80 + 16 * _wave(t, 0.75),
                 child: _Blob(
                   size: 260,
-                  color: const Color(0xFFFBBF24).withValues(alpha: 0.22),
+                  color: AuthBrand.primary.withValues(alpha: 0.18),
                 ),
               ),
               Positioned(
@@ -565,7 +560,7 @@ class _AmbientBlobs extends StatelessWidget {
                 bottom: -100 + 22 * _wave(t, 0.6),
                 child: _Blob(
                   size: 300,
-                  color: const Color(0xFF60A5FA).withValues(alpha: 0.18),
+                  color: AuthBrand.accent.withValues(alpha: 0.24),
                 ),
               ),
               Positioned(
@@ -573,7 +568,7 @@ class _AmbientBlobs extends StatelessWidget {
                 bottom: -40 + 18 * _wave(t, 0.35),
                 child: _Blob(
                   size: 220,
-                  color: const Color(0xFF6EE7B7).withValues(alpha: 0.20),
+                  color: AuthBrand.secondarySoft.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -601,10 +596,7 @@ class _Blob extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, color.withValues(alpha: 0.0)],
-          stops: const [0.0, 1.0],
-        ),
+        color: color,
       ),
     );
   }
@@ -638,18 +630,18 @@ class _LoginPanel extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AuthBrand.panelBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2EDE8)),
+        border: Border.all(color: AuthBrand.panelBorder),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0B1F17).withValues(alpha: 0.08),
+            color: AuthBrand.shadow.withValues(alpha: 0.08),
             blurRadius: 36,
             spreadRadius: -6,
             offset: const Offset(0, 18),
           ),
           BoxShadow(
-            color: const Color(0xFF34D399).withValues(alpha: 0.06),
+            color: AuthBrand.primary.withValues(alpha: 0.06),
             blurRadius: 24,
             spreadRadius: -8,
             offset: const Offset(0, 8),
@@ -671,10 +663,10 @@ class _LoginPanel extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.10),
+                    color: AuthBrand.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.18),
+                      color: AuthBrand.primary.withValues(alpha: 0.16),
                     ),
                   ),
                   child: Row(
@@ -683,13 +675,13 @@ class _LoginPanel extends StatelessWidget {
                       Icon(
                         Icons.shield_moon_outlined,
                         size: 14,
-                        color: colors.primary,
+                        color: AuthBrand.primary,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Secure login',
                         style: TextStyle(
-                          color: colors.primary,
+                          color: AuthBrand.primary,
                           fontWeight: FontWeight.w800,
                           fontSize: 12,
                         ),
@@ -732,11 +724,13 @@ class _LoginPanel extends StatelessWidget {
               showSelectedIcon: false,
               onSelectionChanged: (selection) => onModeChanged(selection.first),
               style: SegmentedButton.styleFrom(
-                selectedBackgroundColor: colors.primary.withValues(alpha: 0.10),
-                selectedForegroundColor: colors.primary,
+                selectedBackgroundColor: AuthBrand.primary.withValues(
+                  alpha: 0.10,
+                ),
+                selectedForegroundColor: AuthBrand.primary,
                 foregroundColor: colors.onSurfaceVariant,
                 side: BorderSide(
-                  color: colors.outlineVariant.withValues(alpha: 0.9),
+                  color: AuthBrand.panelBorder.withValues(alpha: 0.9),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -786,7 +780,7 @@ class _LoginPanel extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: Divider(color: colors.outlineVariant)),
+                Expanded(child: Divider(color: AuthBrand.panelBorder)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
@@ -797,7 +791,7 @@ class _LoginPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                Expanded(child: Divider(color: colors.outlineVariant)),
+                Expanded(child: Divider(color: AuthBrand.panelBorder)),
               ],
             ),
             const SizedBox(height: 14),
@@ -871,29 +865,20 @@ class _PrimaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final disabled = onPressed == null;
+    final fillColor = disabled ? AuthBrand.buttonDisabled : AuthBrand.primary;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: Ink(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: disabled
-                ? [
-                    colors.primary.withValues(alpha: 0.4),
-                    colors.primary.withValues(alpha: 0.4),
-                  ]
-                : const [Color(0xFF059669), Color(0xFF0F766E)],
-          ),
+          color: fillColor,
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: const Color(0xFF047857).withValues(alpha: 0.35),
+                    color: AuthBrand.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -993,14 +978,14 @@ class _OtpSlotsFieldState extends State<_OtpSlotsField> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isActive
-                          ? colors.primary
-                          : colors.outlineVariant.withValues(alpha: 0.9),
+                          ? AuthBrand.secondary
+                          : AuthBrand.panelBorder.withValues(alpha: 0.9),
                       width: isActive ? 1.6 : 1.0,
                     ),
                     boxShadow: isActive
                         ? [
                             BoxShadow(
-                              color: colors.primary.withValues(alpha: 0.12),
+                              color: AuthBrand.secondary.withValues(alpha: 0.12),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -1030,10 +1015,7 @@ class _OtpSlotsFieldState extends State<_OtpSlotsField> {
             textInputAction: TextInputAction.done,
             maxLength: _length,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(
-              color: Colors.transparent,
-              height: 1,
-            ),
+            style: const TextStyle(color: Colors.transparent, height: 1),
             cursorColor: Colors.transparent,
             decoration: const InputDecoration(
               counterText: '',
@@ -1062,15 +1044,7 @@ class _BrandPanel extends StatelessWidget {
           Positioned.fill(
             child: DecoratedBox(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF064E3B),
-                    Color(0xFF065F46),
-                    Color(0xFF0F766E),
-                  ],
-                ),
+                color: AuthBrand.primary,
               ),
             ),
           ),
@@ -1082,12 +1056,7 @@ class _BrandPanel extends StatelessWidget {
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.10),
-                    Colors.white.withValues(alpha: 0.0),
-                  ],
-                ),
+                color: Colors.white.withValues(alpha: 0.10),
               ),
             ),
           ),
@@ -1099,12 +1068,7 @@ class _BrandPanel extends StatelessWidget {
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFBBF24).withValues(alpha: 0.18),
-                    Colors.white.withValues(alpha: 0.0),
-                  ],
-                ),
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -1209,10 +1173,10 @@ class _BrandPanel extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: Colors.white.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.14),
+                          color: Colors.white.withValues(alpha: 0.16),
                         ),
                       ),
                       child: Row(
@@ -1220,14 +1184,12 @@ class _BrandPanel extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFFBBF24,
-                              ).withValues(alpha: 0.20),
+                              color: Colors.white.withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
                               Icons.workspace_premium_rounded,
-                              color: Color(0xFFFBBF24),
+                              color: Colors.white,
                               size: 22,
                             ),
                           ),
@@ -1247,9 +1209,7 @@ class _BrandPanel extends StatelessWidget {
                                 Text(
                                   'Bangla-friendly UI, Taka (৳) ready, works offline.',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(
-                                      alpha: 0.78,
-                                    ),
+                                    color: Colors.white.withValues(alpha: 0.78),
                                     fontWeight: FontWeight.w500,
                                     fontSize: 12,
                                   ),
@@ -1320,28 +1280,37 @@ class _AppMark extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFBBF24), Color(0xFFF97316)],
-        ),
+        color: AuthBrand.primary,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF97316).withValues(alpha: 0.35),
+            color: AuthBrand.primary.withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Center(
-        child: Text(
-          'HB',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: size * 0.38,
-            letterSpacing: -0.5,
-          ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              Icons.receipt_long_rounded,
+              color: Colors.white,
+              size: size * 0.46,
+            ),
+            Positioned(
+              right: size * 0.17,
+              top: size * 0.17,
+              child: Container(
+                width: size * 0.12,
+                height: size * 0.12,
+                decoration: const BoxDecoration(
+                  color: AuthBrand.secondary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1359,9 +1328,9 @@ class _FeaturePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.11),
+        color: Colors.white.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1391,7 +1360,7 @@ class _MessageBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final tone = isError ? colors.error : colors.primary;
+    final tone = isError ? colors.error : AuthBrand.secondary;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1409,7 +1378,9 @@ class _MessageBanner extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isError ? Icons.error_outline_rounded : Icons.check_circle_outline,
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline,
               color: tone,
               size: 18,
             ),

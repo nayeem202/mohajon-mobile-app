@@ -51,6 +51,8 @@ class ProductService {
     required double sellingPrice,
     required double stockQty,
     required double lowStockAlert,
+    String unit = 'pcs',
+    String? imagePath,
   }) async {
     final db = _ref.read(localDatabaseProvider);
     final id = productId ?? _uuid.v4();
@@ -61,6 +63,8 @@ class ProductService {
         nameBn: nameBn,
         barcode: barcode,
         category: category,
+        unit: unit,
+        imagePath: imagePath,
         purchasePrice: purchasePrice,
         sellingPrice: sellingPrice,
         stockQty: stockQty,
@@ -100,7 +104,11 @@ class ProductService {
     final product = db.products.getForShop(shopId, productId);
     if (product == null) return;
     await db.products.put(
-      product.copyWith(isDeleted: true, updatedAt: DateTime.now(), syncStatus: SyncStatus.pending),
+      product.copyWith(
+        isDeleted: true,
+        updatedAt: DateTime.now(),
+        syncStatus: SyncStatus.pending,
+      ),
     );
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
   }

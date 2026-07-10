@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -18,37 +21,50 @@ class ProductFormScreen extends ConsumerStatefulWidget {
 class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     with AsyncActionState<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameEn;
-  late final TextEditingController _nameBn;
-  late final TextEditingController _barcode;
-  late final TextEditingController _category;
-  late final TextEditingController _purchasePrice;
-  late final TextEditingController _sellingPrice;
-  late final TextEditingController _stockQty;
-  late final TextEditingController _lowStock;
+  final _name = TextEditingController();
+  final _barcode = TextEditingController();
+  final _price = TextEditingController();
+  final _stockQty = TextEditingController();
+  final _lowStock = TextEditingController();
+  String _selectedCategory = 'Grocery';
+  String _selectedUnit = 'pcs';
+  String? _imagePath;
+  final _picker = ImagePicker();
+
+  static const _categories = [
+    'Grocery',
+    'Beverages',
+    'Personal Care',
+    'Rice',
+    'Dairy',
+    'Meat',
+    'Vegetables',
+    'Health',
+  ];
+
+  static const _units = ['pcs', 'kg', 'g', 'L', 'ml', 'dozen', 'box', 'pack'];
 
   @override
   void initState() {
     super.initState();
     final product = widget.product;
-    _nameEn = TextEditingController(text: product?.nameEn ?? '');
-    _nameBn = TextEditingController(text: product?.nameBn ?? '');
-    _barcode = TextEditingController(text: product?.barcode ?? '');
-    _category = TextEditingController(text: product?.category ?? '');
-    _purchasePrice = TextEditingController(text: product?.purchasePrice.toString() ?? '');
-    _sellingPrice = TextEditingController(text: product?.sellingPrice.toString() ?? '');
-    _stockQty = TextEditingController(text: product?.stockQty.toString() ?? '');
-    _lowStock = TextEditingController(text: product?.lowStockAlert.toString() ?? '5');
+    _name.text = product?.nameEn ?? '';
+    _barcode.text = product?.barcode ?? '';
+    _price.text = (product?.sellingPrice ?? 0).toString();
+    _stockQty.text = (product?.stockQty ?? 0).toString();
+    _lowStock.text = (product?.lowStockAlert ?? 10).toString();
+    _selectedCategory = product?.category.isNotEmpty == true
+        ? product!.category
+        : 'Grocery';
+    _selectedUnit = product?.unit.isNotEmpty == true ? product!.unit : 'pcs';
+    _imagePath = product?.imagePath;
   }
 
   @override
   void dispose() {
-    _nameEn.dispose();
-    _nameBn.dispose();
+    _name.dispose();
     _barcode.dispose();
-    _category.dispose();
-    _purchasePrice.dispose();
-    _sellingPrice.dispose();
+    _price.dispose();
     _stockQty.dispose();
     _lowStock.dispose();
     super.dispose();
@@ -56,94 +72,315 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.product != null;
+    final categories = _categoryOptions();
     return withLoadingOverlay(
       Scaffold(
         appBar: AppBar(
-          title: Text(widget.product == null ? 'Add product' : 'Edit product'),
+          title: Text(isEditing ? 'Edit Product' : 'Add Product'),
+          actions: [
+            IconButton(
+              tooltip: 'Notifications',
+              onPressed: () {},
+              icon: const Icon(Icons.notifications_none_rounded),
+            ),
+            const SizedBox(width: 6),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD6F2EA),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'KA',
+                  style: TextStyle(
+                    color: Color(0xFF0F766E),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              _field(_nameEn, 'Name (EN)'),
-              _field(_nameBn, 'Name (BN)'),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TextFormField(
-                  controller: _barcode,
-                  decoration: InputDecoration(
-                    labelText: 'Barcode',
-                    suffixIcon: IconButton(
-                      tooltip: 'Scan',
-                      icon: const Icon(Icons.qr_code_scanner),
-                      onPressed: isBusy
-                          ? null
-                          : () async {
-                              final code = await Navigator.of(context)
-                                  .push<String>(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const BarcodeScanScreen(),
-                                    ),
-                                  );
-                              if (code != null) _barcode.text = code;
-                            },
-                    ),
+              const _FieldLabel(label: 'Product Image'),
+              const SizedBox(height: 8),
+              _ImagePlaceholder(
+                imagePath: _imagePath,
+                onTap: isBusy ? null : _pickImage,
+              ),
+              const SizedBox(height: 14),
+              const _FieldLabel(label: 'Product Name', required: true),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _name,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. Pran Tomato Sauce 200g',
+                ),
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 14),
+              const _FieldLabel(label: 'Barcode'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _barcode,
+                decoration: InputDecoration(
+                  hintText: 'Scan or type barcode',
+                  suffixIcon: IconButton(
+                    tooltip: 'Scan',
+                    icon: const Icon(Icons.qr_code_scanner_rounded),
+                    onPressed: isBusy ? null : _scanBarcode,
                   ),
-                  validator: (value) =>
-                      value == null || value.trim().isEmpty ? 'Required' : null,
                 ),
               ),
-              _field(_category, 'Category'),
-              _field(_purchasePrice, 'Purchase price', number: true),
-              _field(_sellingPrice, 'Selling price', number: true),
-              _field(_stockQty, 'Stock quantity', number: true),
-              _field(_lowStock, 'Low stock alert', number: true),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: isBusy ? null : _save,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Save'),
+              const SizedBox(height: 14),
+              const _FieldLabel(label: 'Category', required: true),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final category in categories)
+                    _ChoiceChip(
+                      label: category,
+                      selected: _selectedCategory == category,
+                      onTap: () => setState(() => _selectedCategory = category),
+                    ),
+                ],
               ),
-              if (widget.product != null)
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _FieldLabel(label: 'Price (৳)', required: true),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _price,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(hintText: '0.00'),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Required'
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _FieldLabel(label: 'Unit'),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final unit in _units)
+                              _ChoiceChip(
+                                label: unit,
+                                selected: _selectedUnit == unit,
+                                onTap: () =>
+                                    setState(() => _selectedUnit = unit),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _FieldLabel(label: 'Stock Qty', required: true),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _stockQty,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(hintText: '0'),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Required'
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _FieldLabel(label: 'Min Alert', required: true),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _lowStock,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(hintText: '10'),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Required'
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4E5),
+                  border: Border.all(color: const Color(0xFFFFD29C)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: Color(0xFFF97316),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'When stock falls below the minimum alert level, you will receive a low-stock notification on the Home dashboard.',
+                        style: TextStyle(color: Color(0xFFB45309)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: isBusy ? null : _save,
+                  icon: const Icon(Icons.save_outlined),
+                  label: Text(isEditing ? 'Update Product' : 'Save Product'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 46,
+                child: OutlinedButton(
+                  onPressed: isBusy ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              if (isEditing) ...[
+                const SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: isBusy ? null : _deleteProduct,
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('Delete'),
                 ),
+              ],
             ],
           ),
         ),
       ),
-      label:
-          widget.product == null ? 'Saving product...' : 'Updating product...',
+      label: widget.product == null
+          ? 'Saving product...'
+          : 'Updating product...',
     );
   }
 
-  Widget _field(TextEditingController controller, String label, {bool number = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: number ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-        decoration: InputDecoration(labelText: label),
-        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+  List<String> _categoryOptions() {
+    final categories = <String>[
+      ..._categories,
+      if (!_categories.contains(_selectedCategory) &&
+          _selectedCategory.isNotEmpty)
+        _selectedCategory,
+    ];
+    return categories;
+  }
+
+  Future<void> _scanBarcode() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScanScreen()),
+    );
+    if (code != null && code.isNotEmpty) {
+      setState(() => _barcode.text = code);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
       ),
     );
+    if (source == null) return;
+
+    final picked = await _picker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      setState(() => _imagePath = picked.path);
+    }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     await runBusyAction(() async {
-      await ref.read(productServiceProvider).save(
+      await ref
+          .read(productServiceProvider)
+          .save(
             productId: widget.product?.productId,
-            nameEn: _nameEn.text.trim(),
-            nameBn: _nameBn.text.trim(),
+            nameEn: _name.text.trim(),
+            nameBn: _name.text.trim(),
             barcode: _barcode.text.trim(),
-            category: _category.text.trim(),
-            purchasePrice: double.tryParse(_purchasePrice.text) ?? 0,
-            sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
+            category: _selectedCategory,
+            unit: _selectedUnit,
+            imagePath: _imagePath,
+            purchasePrice: double.tryParse(_price.text) ?? 0,
+            sellingPrice: double.tryParse(_price.text) ?? 0,
             stockQty: double.tryParse(_stockQty.text) ?? 0,
             lowStockAlert: double.tryParse(_lowStock.text) ?? 0,
           );
@@ -156,5 +393,156 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
       await ref.read(productServiceProvider).delete(widget.product!.productId);
       if (mounted) Navigator.of(context).pop();
     });
+  }
+}
+
+class _ChoiceChip extends StatelessWidget {
+  const _ChoiceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFE98300) : const Color(0xFFF7F5F0),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFFE98300) : const Color(0xFFE8DECF),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFF475467),
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label, this.required = false});
+
+  final String label;
+  final bool required;
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: const Color(0xFF101828),
+          fontWeight: FontWeight.w700,
+        ),
+        children: [
+          TextSpan(text: label),
+          if (required)
+            const TextSpan(
+              text: ' *',
+              style: TextStyle(color: Color(0xFFEF4444)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  const _ImagePlaceholder({required this.onTap, this.imagePath});
+
+  final VoidCallback? onTap;
+  final String? imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        height: 78,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFCFBF8),
+          border: Border.all(color: const Color(0xFFE8DECF)),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: imagePath != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(
+                      File(imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _placeholder(),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.edit_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE4BF),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Icon(
+              Icons.photo_camera_rounded,
+              color: Color(0xFFE98300),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tap to upload image',
+            style: TextStyle(
+              color: Color(0xFF98A2B3),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

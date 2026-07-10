@@ -1,0 +1,562 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/providers/auth_providers.dart';
+import '../../features/customers/presentation/customer_form_screen.dart';
+import '../../features/customers/presentation/customer_list_screen.dart';
+import '../../features/investments/presentation/investment_screen.dart';
+import '../../features/pos/presentation/pos_screen.dart';
+import '../../features/products/presentation/barcode_scan_screen.dart';
+import '../../features/products/presentation/product_form_screen.dart';
+import '../../features/products/presentation/product_list_screen.dart';
+import '../../features/purchases/presentation/purchase_screen.dart';
+import '../../features/receipts/presentation/receipt_generator_screen.dart';
+import '../../features/settings/presentation/account_security_screen.dart';
+import '../../features/settings/presentation/privacy_settings_screen.dart';
+import '../../features/settings/presentation/shop_profile_screen.dart';
+import '../../features/settings/providers/shop_profile_providers.dart';
+import '../localization/app_localizations.dart';
+import '../models/shop_profile.dart';
+import '../services/sync_service.dart';
+import '../widgets/async_action_state.dart';
+import 'app_providers.dart';
+
+class FeatureHubScreen extends ConsumerStatefulWidget {
+  const FeatureHubScreen({super.key});
+
+  @override
+  ConsumerState<FeatureHubScreen> createState() => _FeatureHubScreenState();
+}
+
+class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
+    with AsyncActionState<FeatureHubScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final locale = ref.watch(localeProvider);
+    final sync = ref.watch(syncStateProvider);
+    final user = ref.watch(authStateProvider).value;
+    final themeMode = ref.watch(themeModeProvider);
+    final shopProfileAsync = ref.watch(shopProfileProvider);
+    final profile = shopProfileAsync.value;
+
+    return withLoadingOverlay(
+      Scaffold(
+        appBar: AppBar(title: Text(l10n.t('more'))),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: [
+            _AccountHeader(
+              name: user?.displayName?.isNotEmpty == true
+                  ? user!.displayName!
+                  : 'Signed in account',
+              email: user?.email ?? 'No email available',
+              sync: sync,
+            ),
+            const SizedBox(height: 16),
+            _FeatureSection(
+              title: l10n.t('sectionOperations'),
+              children: [
+                _FeatureItem(
+                  icon: Icons.inventory_2_rounded,
+                  title: l10n.t('products'),
+                  subtitle: l10n.t('productsDesc'),
+                  color: colors.primary,
+                  onTap: () => _open(const ProductListScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.add_box_rounded,
+                  title: l10n.t('addProduct'),
+                  subtitle: 'Create or restock item',
+                  color: colors.secondary,
+                  onTap: () => _open(const ProductFormScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.people_alt_rounded,
+                  title: l10n.t('customers'),
+                  subtitle: l10n.t('customersDesc'),
+                  color: colors.tertiary,
+                  onTap: () => _open(const CustomerListScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.person_add_alt_1_rounded,
+                  title: l10n.t('addCustomer'),
+                  subtitle: 'New customer profile',
+                  color: colors.tertiary,
+                  onTap: () => _open(const CustomerFormScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.local_shipping_rounded,
+                  title: l10n.t('vendors'),
+                  subtitle: l10n.t('vendorsDesc'),
+                  color: colors.secondary,
+                  onTap: () => _open(const PurchaseScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.qr_code_scanner_rounded,
+                  title: 'Barcode scan',
+                  subtitle: 'Find code from camera',
+                  color: colors.primary,
+                  onTap: () => _open(const BarcodeScanScreen()),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FeatureSection(
+              title: l10n.t('sectionFinance'),
+              children: [
+                _FeatureItem(
+                  icon: Icons.shopping_cart_checkout_rounded,
+                  title: l10n.t('sales'),
+                  subtitle: 'POS cart and invoice',
+                  color: colors.primary,
+                  onTap: () => _open(const PosScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.receipt_long_rounded,
+                  title: l10n.t('generateReceipt'),
+                  subtitle: l10n.t('receiptsDesc'),
+                  color: colors.secondary,
+                  onTap: () => _open(const ReceiptGeneratorScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: l10n.t('due'),
+                  subtitle: l10n.t('duesDesc'),
+                  color: colors.tertiary,
+                  onTap: () => _open(const CustomerListScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.pie_chart_rounded,
+                  title: l10n.t('investments'),
+                  subtitle: l10n.t('investmentsDesc'),
+                  color: colors.primary,
+                  onTap: () => _open(const InvestmentScreen()),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FeatureSection(
+              title: l10n.t('sectionApp'),
+              children: [
+                _FeatureItem(
+                  icon: Icons.store_rounded,
+                  title: l10n.t('shopProfile'),
+                  subtitle: _shopProfileSummary(
+                    shopProfileAsync,
+                    profile,
+                    l10n,
+                  ),
+                  color: colors.primary,
+                  onTap: () => _open(const ShopProfileScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.cloud_sync_rounded,
+                  title: l10n.t('syncNow'),
+                  subtitle: _syncText(sync),
+                  color: _syncColor(context, sync.phase),
+                  onTap: _syncNow,
+                ),
+                _FeatureItem(
+                  icon: Icons.dark_mode_rounded,
+                  title: 'Theme',
+                  subtitle: _themeLabel(themeMode),
+                  color: colors.primary,
+                  trailing: SegmentedButton<ThemeMode>(
+                    style: _segmentStyle(),
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode_outlined, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: Icon(Icons.settings_suggest_outlined, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode_outlined, size: 16),
+                      ),
+                    ],
+                    selected: {themeMode},
+                    onSelectionChanged: (value) {
+                      final mode = value.first;
+                      ref.read(themeModeProvider.notifier).state = mode;
+                      ref
+                          .read(localDatabaseProvider)
+                          .settings
+                          .put('themeMode', mode.name);
+                    },
+                  ),
+                ),
+                _FeatureItem(
+                  icon: Icons.translate_rounded,
+                  title: l10n.t('language'),
+                  subtitle: locale.languageCode == 'bn' ? 'Bangla' : 'English',
+                  color: colors.tertiary,
+                  trailing: SegmentedButton<String>(
+                    style: _segmentStyle(),
+                    segments: [
+                      ButtonSegment(
+                        value: 'en',
+                        label: Text(l10n.t('english')),
+                      ),
+                      ButtonSegment(value: 'bn', label: Text(l10n.t('bangla'))),
+                    ],
+                    selected: {locale.languageCode},
+                    onSelectionChanged: (value) {
+                      final code = value.first;
+                      ref
+                          .read(localDatabaseProvider)
+                          .settings
+                          .put('languageCode', code);
+                      ref.read(localeProvider.notifier).state = Locale(code);
+                    },
+                  ),
+                ),
+                _FeatureItem(
+                  icon: Icons.lock_outline_rounded,
+                  title: l10n.t('accountSecurity'),
+                  subtitle: l10n.t('accountSecurityDesc'),
+                  color: colors.primary,
+                  onTap: () => _open(const AccountSecurityScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.privacy_tip_outlined,
+                  title: l10n.t('privacy'),
+                  subtitle: l10n.t('privacyDesc'),
+                  color: colors.tertiary,
+                  onTap: () => _open(const PrivacySettingsScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.logout_rounded,
+                  title: l10n.t('signOut'),
+                  subtitle: l10n.t('signOutDesc'),
+                  color: colors.error,
+                  onTap: _signOut,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      label: 'Processing...',
+    );
+  }
+
+  ButtonStyle _segmentStyle() {
+    return SegmentedButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+
+  void _open(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Color _syncColor(BuildContext context, SyncPhase phase) {
+    final colors = Theme.of(context).colorScheme;
+    return switch (phase) {
+      SyncPhase.failed => colors.error,
+      SyncPhase.firebaseNotConfigured => colors.tertiary,
+      SyncPhase.offline => colors.onSurfaceVariant,
+      SyncPhase.syncing => colors.primary,
+      SyncPhase.idle => colors.secondary,
+    };
+  }
+
+  String _syncText(SyncState sync) {
+    if (sync.phase == SyncPhase.firebaseNotConfigured) {
+      return 'Firebase pending';
+    }
+    if (sync.phase == SyncPhase.offline) {
+      return 'Offline • ${sync.pendingCount} pending';
+    }
+    if (sync.phase == SyncPhase.failed) {
+      return sync.message.isEmpty ? 'Sync failed' : sync.message;
+    }
+    if (sync.phase == SyncPhase.syncing) return 'Syncing...';
+    return sync.message.isEmpty ? '${sync.pendingCount} pending' : sync.message;
+  }
+
+  String _themeLabel(ThemeMode mode) {
+    return switch (mode) {
+      ThemeMode.light => 'Light mode',
+      ThemeMode.dark => 'Dark mode',
+      ThemeMode.system => 'System theme',
+    };
+  }
+
+  String _shopProfileSummary(
+    AsyncValue<ShopProfile?> shopProfile,
+    ShopProfile? profile,
+    AppLocalizations l10n,
+  ) {
+    if (shopProfile.isLoading) return 'Loading...';
+    if (shopProfile.hasError) return 'Could not load shop details';
+    if (profile == null) return l10n.t('shopProfileDesc');
+    final name = profile.shopName.trim();
+    final location = profile.location.trim();
+    if (name.isEmpty && location.isEmpty) return l10n.t('shopProfileDesc');
+    if (location.isEmpty) return name;
+    if (name.isEmpty) return location;
+    return '$name • $location';
+  }
+
+  Future<void> _syncNow() async {
+    await runBusyAction(() async {
+      await ref.read(syncStateProvider.notifier).syncNow();
+    });
+  }
+
+  Future<void> _signOut() async {
+    final navigator = Navigator.of(context);
+    await runBusyAction(() async {
+      await ref.read(authServiceProvider).signOut();
+      if (!mounted) return;
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (_) => false,
+      );
+    });
+  }
+}
+
+class _FeatureSection extends StatelessWidget {
+  const _FeatureSection({required this.title, required this.children});
+
+  final String title;
+  final List<_FeatureItem> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(label: title),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth >= 840
+                ? 4
+                : constraints.maxWidth >= 560
+                ? 3
+                : 2;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: children.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: crossAxisCount >= 3 ? 1.25 : 1.05,
+              ),
+              itemBuilder: (context, index) {
+                return _FeatureCard(item: children[index]);
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _FeatureItem {
+  const _FeatureItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+}
+
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({required this.item});
+
+  final _FeatureItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final hasAction = item.onTap != null;
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: item.onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: item.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(item.icon, color: item.color, size: 20),
+                  ),
+                  const Spacer(),
+                  if (hasAction)
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: colors.onSurfaceVariant,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+              if (item.trailing == null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  item.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ] else ...[
+                const Spacer(),
+                item.trailing!,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          letterSpacing: 0,
+          fontWeight: FontWeight.w900,
+          color: colors.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountHeader extends StatelessWidget {
+  const _AccountHeader({
+    required this.name,
+    required this.email,
+    required this.sync,
+  });
+
+  final String name;
+  final String email;
+  final SyncState sync;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final statusColor = switch (sync.phase) {
+      SyncPhase.failed => colors.error,
+      SyncPhase.firebaseNotConfigured => colors.secondary,
+      SyncPhase.offline => colors.onSurfaceVariant,
+      SyncPhase.syncing => colors.tertiary,
+      SyncPhase.idle => colors.primary,
+    };
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.account_circle_rounded, color: colors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Icon(Icons.cloud_done_rounded, size: 16, color: statusColor),
+          ),
+        ],
+      ),
+    );
+  }
+}

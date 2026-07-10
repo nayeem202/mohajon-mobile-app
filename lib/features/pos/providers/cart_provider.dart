@@ -19,15 +19,20 @@ class CartState {
     this.discount = 0,
     this.customerId = '',
     this.paidAmount = 0,
+    this.vatPercent = 5,
+    this.paymentMethod = PaymentMethod.cash,
   });
 
   final List<SaleItem> items;
   final double discount;
   final String customerId;
   final double paidAmount;
+  final double vatPercent;
+  final PaymentMethod paymentMethod;
 
   double get subtotal => items.fold<double>(0, (sum, item) => sum + item.lineTotal);
-  double get total => (subtotal - discount).clamp(0, double.infinity);
+  double get vatAmount => subtotal * (vatPercent / 100);
+  double get total => (subtotal + vatAmount - discount).clamp(0, double.infinity);
   double get due => (total - paidAmount).clamp(0, double.infinity);
 
   CartState copyWith({
@@ -35,12 +40,16 @@ class CartState {
     double? discount,
     String? customerId,
     double? paidAmount,
+    double? vatPercent,
+    PaymentMethod? paymentMethod,
   }) {
     return CartState(
       items: items ?? this.items,
       discount: discount ?? this.discount,
       customerId: customerId ?? this.customerId,
       paidAmount: paidAmount ?? this.paidAmount,
+      vatPercent: vatPercent ?? this.vatPercent,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
     );
   }
 }
@@ -105,6 +114,8 @@ class CartController extends StateNotifier<CartState> {
   void setDiscount(double discount) => state = state.copyWith(discount: discount);
   void setCustomer(String customerId) => state = state.copyWith(customerId: customerId);
   void setPaidAmount(double amount) => state = state.copyWith(paidAmount: amount);
+  void setVatPercent(double vatPercent) => state = state.copyWith(vatPercent: vatPercent);
+  void setPaymentMethod(PaymentMethod method) => state = state.copyWith(paymentMethod: method);
   void clear() => state = const CartState();
 
   Future<Sale> checkout() async {
@@ -150,7 +161,7 @@ class CartController extends StateNotifier<CartState> {
           customerId: state.customerId,
           saleId: sale.saleId,
           amount: state.paidAmount,
-          paymentMethod: PaymentMethod.cash,
+          paymentMethod: state.paymentMethod,
           shopId: sale.shopId,
           createdAt: now,
           updatedAt: now,

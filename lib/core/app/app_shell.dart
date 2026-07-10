@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/investments/presentation/investment_screen.dart';
+import '../../features/pos/presentation/pos_screen.dart';
+import '../../features/pos/presentation/sales_history_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/purchases/presentation/purchase_screen.dart';
-import '../../features/receipts/presentation/receipt_generator_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
+import 'feature_hub_screen.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -27,27 +28,17 @@ class _AppShellState extends ConsumerState<AppShell> {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final screens = [
       const DashboardScreen(),
+      const PosScreen(),
       const ProductListScreen(),
       const CustomerListScreen(),
-      const PurchaseScreen(),
-      const ReceiptGeneratorScreen(),
-      const InvestmentScreen(),
-      const SettingsScreen(),
+      const FeatureHubScreen(),
     ];
     final destinations = [
-      _Destination(icon: Icons.dashboard_rounded, label: l10n.t('dashboard')),
-      _Destination(icon: Icons.inventory_2_rounded, label: l10n.t('products')),
-      _Destination(icon: Icons.people_alt_rounded, label: l10n.t('customers')),
-      _Destination(
-        icon: Icons.local_shipping_rounded,
-        label: l10n.t('purchase'),
-      ),
-      const _Destination(icon: Icons.shopping_bag_rounded, label: 'Checkout'),
-      _Destination(
-        icon: Icons.pie_chart_rounded,
-        label: l10n.t('investments'),
-      ),
-      _Destination(icon: Icons.settings_rounded, label: l10n.t('settings')),
+      _Destination(icon: Icons.home_rounded, label: l10n.t('home')),
+      _Destination(icon: Icons.shopping_cart_rounded, label: l10n.t('pos')),
+      _Destination(icon: Icons.inventory_2_rounded, label: l10n.t('stock')),
+      _Destination(icon: Icons.people_alt_rounded, label: l10n.t('clients')),
+      _Destination(icon: Icons.more_horiz_rounded, label: l10n.t('more')),
     ];
 
     return ColoredBox(
@@ -61,26 +52,63 @@ class _AppShellState extends ConsumerState<AppShell> {
                 selectedIndex: _index,
                 destinations: destinations,
                 onSelected: (value) => setState(() => _index = value),
+                onMoreTap: () => _showMoreOptions(context),
               ),
             Expanded(child: screens[_index]),
           ],
         ),
         bottomNavigationBar: wide
             ? null
-            : NavigationBar(
+            : _MobileBottomNav(
                 selectedIndex: _index,
-                onDestinationSelected: (value) =>
-                    setState(() => _index = value),
-                destinations: [
-                  for (final item in destinations)
-                    NavigationDestination(
-                      icon: Icon(item.icon),
-                      label: item.label,
-                    ),
-                ],
+                destinations: destinations,
+                onSelected: (value) => setState(() => _index = value),
+                onMoreTap: () => _showMoreOptions(context),
               ),
       ),
     );
+  }
+
+  void _showMoreOptions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _MoreOptionsSheet(
+          onSalesHistory: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const SalesHistoryScreen(),
+          ),
+          onPurchases: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const PurchaseScreen(),
+          ),
+          onReports: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const DashboardScreen(),
+          ),
+          onSettings: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const SettingsScreen(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openFromSheet({
+    required BuildContext context,
+    required BuildContext sheetContext,
+    required Widget screen,
+  }) {
+    Navigator.of(sheetContext).pop();
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 }
 
@@ -96,11 +124,13 @@ class _SideNav extends StatelessWidget {
     required this.selectedIndex,
     required this.destinations,
     required this.onSelected,
+    required this.onMoreTap,
   });
 
   final int selectedIndex;
   final List<_Destination> destinations;
   final ValueChanged<int> onSelected;
+  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -132,18 +162,31 @@ class _SideNav extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: colors.primary,
+                    color: const Color(0xFFE98300),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'HB',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
+                  child: Stack(
+                    children: [
+                      const Center(
+                        child: Icon(
+                          Icons.receipt_long_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        right: 7,
+                        top: 7,
+                        child: Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF0F766E),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -176,7 +219,9 @@ class _SideNav extends StatelessWidget {
             _SideNavItem(
               destination: destinations[index],
               selected: selectedIndex == index,
-              onTap: () => onSelected(index),
+              onTap: index == destinations.length - 1
+                  ? onMoreTap
+                  : () => onSelected(index),
             ),
           const Spacer(),
           Container(
@@ -251,6 +296,256 @@ class _SideNavItem extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileBottomNav extends StatelessWidget {
+  const _MobileBottomNav({
+    required this.selectedIndex,
+    required this.destinations,
+    required this.onSelected,
+    required this.onMoreTap,
+  });
+
+  final int selectedIndex;
+  final List<_Destination> destinations;
+  final ValueChanged<int> onSelected;
+  final VoidCallback onMoreTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: colors.outlineVariant)),
+        ),
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+        child: Row(
+          children: [
+            for (var index = 0; index < destinations.length; index++)
+              Expanded(
+                child: _BottomNavItem(
+                  destination: destinations[index],
+                  selected: selectedIndex == index,
+                  onTap: index == destinations.length - 1
+                      ? onMoreTap
+                      : () => onSelected(index),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreOptionsSheet extends StatelessWidget {
+  const _MoreOptionsSheet({
+    required this.onSalesHistory,
+    required this.onPurchases,
+    required this.onReports,
+    required this.onSettings,
+  });
+
+  final VoidCallback onSalesHistory;
+  final VoidCallback onPurchases;
+  final VoidCallback onReports;
+  final VoidCallback onSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'MORE OPTIONS',
+                    style: TextStyle(
+                      color: Color(0xFF667085),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 1.62,
+                  children: [
+                    _MoreOptionTile(
+                      label: 'Sales History',
+                      icon: Icons.history_rounded,
+                      color: const Color(0xFF0F766E),
+                      onTap: onSalesHistory,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Purchases',
+                      icon: Icons.local_shipping_outlined,
+                      color: const Color(0xFF8B6F47),
+                      onTap: onPurchases,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Reports',
+                      icon: Icons.pie_chart_outline_rounded,
+                      color: const Color(0xFFF97316),
+                      onTap: onReports,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Settings',
+                      icon: Icons.settings_outlined,
+                      color: const Color(0xFF98A2B3),
+                      onTap: onSettings,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreOptionTile extends StatelessWidget {
+  const _MoreOptionTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFFCFBF8),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFECE7DF)),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF101828),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem extends StatelessWidget {
+  const _BottomNavItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _Destination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = const Color(0xFFF97316);
+    final inactive = const Color(0xFF98A2B3);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: selected
+                    ? active.withValues(alpha: 0.18)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                destination.icon,
+                color: selected ? active : inactive,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              destination.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? active : inactive,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/async_action_state.dart';
+import 'auth_brand.dart';
 import '../providers/auth_providers.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -44,54 +45,51 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authTheme = AuthBrand.theme(Theme.of(context));
     return withLoadingOverlay(
-      Scaffold(
-        body: Stack(
-          children: [
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFEAF7F1),
-                    Color(0xFFF6FBF9),
-                    Color(0xFFFFF6EC),
-                  ],
+      Theme(
+        data: authTheme,
+        child: Scaffold(
+          body: Stack(
+            children: [
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AuthBrand.backgroundColor,
                 ),
+                child: SizedBox.expand(),
               ),
-              child: SizedBox.expand(),
-            ),
-            SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    pinned: false,
-                    floating: true,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
+              SafeArea(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      pinned: false,
+                      floating: true,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
                     leading: IconButton(
                       icon: const Icon(Icons.arrow_back_rounded),
+                      color: AuthBrand.secondary,
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          child: _submitted
-                              ? _VerificationNotice(email: _email.text.trim())
-                              : _buildForm(context),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 520),
+                            child: _submitted
+                                ? _VerificationNotice(email: _email.text.trim())
+                                : _buildForm(context),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       label: 'Creating account...',
@@ -112,12 +110,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         const SizedBox(height: 18),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AuthBrand.panelBackground,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2EDE8)),
+            border: Border.all(color: AuthBrand.panelBorder),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B1F17).withValues(alpha: 0.06),
+                color: AuthBrand.shadow.withValues(alpha: 0.06),
                 blurRadius: 28,
                 spreadRadius: -8,
                 offset: const Offset(0, 14),
@@ -345,14 +343,10 @@ class _AuthHero extends StatelessWidget {
             height: 78,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF059669), Color(0xFF0F766E)],
-              ),
+              color: AuthBrand.primary,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF047857).withValues(alpha: 0.35),
+                  color: AuthBrand.primary.withValues(alpha: 0.35),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
                 ),
@@ -366,16 +360,16 @@ class _AuthHero extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF047857).withValues(alpha: 0.10),
+              color: AuthBrand.secondary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color: const Color(0xFF047857).withValues(alpha: 0.18),
+                color: AuthBrand.secondary.withValues(alpha: 0.18),
               ),
             ),
             child: Text(
               badge,
               style: const TextStyle(
-                color: Color(0xFF047857),
+                color: AuthBrand.secondary,
                 fontWeight: FontWeight.w800,
                 fontSize: 12,
               ),
@@ -415,11 +409,11 @@ class _PasswordStrengthIndicator extends StatelessWidget {
     final score = _score(password);
     final labels = ['Too weak', 'Weak', 'Okay', 'Strong', 'Excellent'];
     final colors = [
-      const Color(0xFFDC2626),
-      const Color(0xFFF97316),
-      const Color(0xFFFBBF24),
-      const Color(0xFF059669),
-      const Color(0xFF047857),
+      AuthBrand.danger,
+      AuthBrand.primaryDeep,
+      AuthBrand.primary,
+      AuthBrand.secondary,
+      AuthBrand.secondary,
     ];
     final color = colors[score];
     final label = labels[score];
@@ -438,7 +432,7 @@ class _PasswordStrengthIndicator extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: active
                         ? color
-                        : Theme.of(context).colorScheme.outlineVariant,
+                        : AuthBrand.panelBorder,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -502,18 +496,12 @@ class _PrimaryActionButton extends StatelessWidget {
       child: Ink(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: disabled
-                ? const [Color(0xFF94CDB7), Color(0xFF94CDB7)]
-                : const [Color(0xFF059669), Color(0xFF0F766E)],
-          ),
+          color: disabled ? AuthBrand.buttonDisabled : AuthBrand.primary,
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: const Color(0xFF047857).withValues(alpha: 0.35),
+                    color: AuthBrand.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -556,7 +544,7 @@ class _MessageBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final tone = isError ? colors.error : colors.primary;
+    final tone = isError ? colors.error : AuthBrand.secondary;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -599,12 +587,12 @@ class _VerificationNotice extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AuthBrand.panelBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2EDE8)),
+        border: Border.all(color: AuthBrand.panelBorder),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0B1F17).withValues(alpha: 0.06),
+            color: AuthBrand.shadow.withValues(alpha: 0.06),
             blurRadius: 28,
             spreadRadius: -8,
             offset: const Offset(0, 14),
@@ -621,14 +609,10 @@ class _VerificationNotice extends StatelessWidget {
               height: 78,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFBBF24), Color(0xFFF97316)],
-                ),
+                color: AuthBrand.primary,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFF97316).withValues(alpha: 0.32),
+                    color: AuthBrand.primary.withValues(alpha: 0.32),
                     blurRadius: 18,
                     offset: const Offset(0, 10),
                   ),
@@ -675,17 +659,17 @@ class _VerificationNotice extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.06),
+              color: AuthBrand.secondary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colors.primary.withValues(alpha: 0.18),
+                color: AuthBrand.secondary.withValues(alpha: 0.18),
               ),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.tips_and_updates_outlined,
-                  color: colors.primary,
+                  color: AuthBrand.secondary,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -693,7 +677,7 @@ class _VerificationNotice extends StatelessWidget {
                   child: Text(
                     'Tip: check your spam folder if you don\'t see the email.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.primary,
+                      color: AuthBrand.secondary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

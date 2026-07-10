@@ -42,17 +42,42 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: const Color(0xFFF97316),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.storefront, size: 72, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(l10n.t('appName'), style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(l10n.t('offlineReady')),
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(),
+            Image.asset(
+              'assets/brand/haalkhata_icon_1024.png',
+              width: 88,
+              height: 88,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              l10n.t('appName'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.t('offlineReady'),
+              style: const TextStyle(
+                color: Color(0xFFFFD6A5),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 32),
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
           ],
         ),
       ),
