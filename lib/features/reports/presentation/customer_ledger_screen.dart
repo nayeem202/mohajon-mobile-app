@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/money.dart';
-import '../data/sample_data.dart';
 import '../models/customer_ledger.dart';
+import '../providers/report_providers.dart';
+import '../services/ledger_excel_service.dart';
+import '../services/ledger_pdf_service.dart';
 import 'customer_ledger_detail_screen.dart';
 
-class CustomerLedgerScreen extends StatefulWidget {
+class CustomerLedgerScreen extends ConsumerStatefulWidget {
   const CustomerLedgerScreen({super.key});
 
   @override
-  State<CustomerLedgerScreen> createState() => _CustomerLedgerScreenState();
+  ConsumerState<CustomerLedgerScreen> createState() =>
+      _CustomerLedgerScreenState();
 }
 
-class _CustomerLedgerScreenState extends State<CustomerLedgerScreen> {
+class _CustomerLedgerScreenState
+    extends ConsumerState<CustomerLedgerScreen> {
   final _searchController = TextEditingController();
   String _query = '';
 
@@ -22,9 +27,33 @@ class _CustomerLedgerScreenState extends State<CustomerLedgerScreen> {
     super.dispose();
   }
 
+  Future<void> _exportXlsx() async {
+    final all = ref.read(customerLedgerListProvider);
+    if (all.isEmpty) return;
+    final service = LedgerExcelService();
+    await service.saveAllCustomers(all);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('XLSX exported successfully')),
+      );
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    final all = ref.read(customerLedgerListProvider);
+    if (all.isEmpty) return;
+    final service = LedgerPdfService();
+    await service.saveAllCustomers(all);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF exported successfully')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final all = customerLedgersWithMax();
+    final all = ref.watch(customerLedgerListProvider);
     final customers = _query.isEmpty
         ? all
         : all
@@ -126,19 +155,19 @@ class _CustomerLedgerScreenState extends State<CustomerLedgerScreen> {
               _ExportPill(
                 label: 'XLSX',
                 color: const Color(0xFF059669),
-                onTap: () => debugPrint('Export Customer Ledger XLSX'),
+                onTap: _exportXlsx,
               ),
               const SizedBox(width: 6),
               _ExportPill(
                 label: 'PDF',
                 color: const Color(0xFFF97316),
-                onTap: () => debugPrint('Export Customer Ledger PDF'),
+                onTap: _exportPdf,
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'July 1 – July 10, 2026 · ${customers.length} of ${all.length} customers',
+            '${customers.length} of ${all.length} customers',
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF98A2B3),
@@ -146,18 +175,34 @@ class _CustomerLedgerScreenState extends State<CustomerLedgerScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ...customers.map((customer) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _CustomerCard(
-                  customer: customer,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          CustomerLedgerDetailScreen(customer: customer),
-                    ),
+          if (all.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 48),
+              child: Center(
+                child: Text(
+                  'No customer data yet.\nStart by adding customers and recording sales.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF98A2B3),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              )),
+              ),
+            )
+          else
+            ...customers.map((customer) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _CustomerCard(
+                    customer: customer,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CustomerLedgerDetailScreen(customer: customer),
+                      ),
+                    ),
+                  ),
+                )),
         ],
       ),
     );
@@ -371,7 +416,8 @@ class _CustomerCard extends StatelessWidget {
                             value: customer.debitFraction.clamp(0, 1),
                             minHeight: 6,
                             backgroundColor: const Color(0xFFFFE4BF),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
+                            valueColor:
+                                const AlwaysStoppedAnimation<Color>(
                               Color(0xFFF97316),
                             ),
                           ),
@@ -408,7 +454,8 @@ class _CustomerCard extends StatelessWidget {
                             value: customer.creditFraction.clamp(0, 1),
                             minHeight: 6,
                             backgroundColor: const Color(0xFFD1FAE5),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
+                            valueColor:
+                                const AlwaysStoppedAnimation<Color>(
                               Color(0xFF059669),
                             ),
                           ),

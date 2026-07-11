@@ -9,6 +9,7 @@ class Customer with Syncable {
     this.email = '',
     this.address = '',
     this.notes = '',
+    this.imagePath,
     required this.shopId,
     required this.updatedAt,
     this.isDeleted = false,
@@ -21,6 +22,7 @@ class Customer with Syncable {
   final String email;
   final String address;
   final String notes;
+  final String? imagePath;
   @override
   final String shopId;
   @override
@@ -39,6 +41,7 @@ class Customer with Syncable {
     String? email,
     String? address,
     String? notes,
+    String? imagePath,
     String? shopId,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -51,6 +54,7 @@ class Customer with Syncable {
       email: email ?? this.email,
       address: address ?? this.address,
       notes: notes ?? this.notes,
+      imagePath: imagePath ?? this.imagePath,
       shopId: shopId ?? this.shopId,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -66,6 +70,7 @@ class Customer with Syncable {
     'email': email,
     'address': address,
     'notes': notes,
+    if (imagePath != null) 'imagePath': imagePath,
     'shopId': shopId,
     'updatedAt': dateToJson(updatedAt),
     'isDeleted': isDeleted,
@@ -79,6 +84,7 @@ class Customer with Syncable {
     email: (json['email'] ?? '') as String,
     address: (json['address'] ?? '') as String,
     notes: (json['notes'] ?? '') as String,
+    imagePath: json['imagePath'] as String?,
     shopId: (json['shopId'] ?? '') as String,
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,

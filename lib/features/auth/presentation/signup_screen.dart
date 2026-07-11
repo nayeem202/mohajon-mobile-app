@@ -17,6 +17,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     with AsyncActionState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _shopName = TextEditingController();
+  final _ownerName = TextEditingController();
   final _email = TextEditingController();
   final _mobile = TextEditingController(text: '+880');
   final _password = TextEditingController();
@@ -36,6 +37,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   @override
   void dispose() {
     _shopName.dispose();
+    _ownerName.dispose();
     _email.dispose();
     _mobile.dispose();
     _password.dispose();
@@ -135,6 +137,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                     labelText: 'Shop name',
                     hintText: 'e.g. Bondhu Stores',
                     prefixIcon: Icon(Icons.store_outlined),
+                  ),
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _ownerName,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Owner name',
+                    hintText: 'e.g. Ranbir Kapoor',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
                   ),
                   validator: _required,
                 ),
@@ -300,12 +313,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       try {
         await ref
             .read(authServiceProvider)
-            .signUpWithEmail(
-              shopName: _shopName.text,
-              email: _email.text,
-              mobile: _mobile.text,
-              password: _password.text,
-            );
+                .signUpWithEmail(
+                  shopName: _shopName.text,
+                  ownerName: _ownerName.text,
+                  email: _email.text,
+                  mobile: _mobile.text,
+                  password: _password.text,
+                );
         if (mounted) setState(() => _submitted = true);
       } catch (error) {
         if (mounted) {

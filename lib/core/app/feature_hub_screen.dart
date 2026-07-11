@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../../features/profile/presentation/profile_overview_screen.dart';
 import '../../features/customers/presentation/customer_form_screen.dart';
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/investments/presentation/investment_screen.dart';
@@ -14,10 +15,7 @@ import '../../features/purchases/presentation/purchase_screen.dart';
 import '../../features/receipts/presentation/receipt_generator_screen.dart';
 import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
-import '../../features/settings/presentation/shop_profile_screen.dart';
-import '../../features/settings/providers/shop_profile_providers.dart';
 import '../localization/app_localizations.dart';
-import '../models/shop_profile.dart';
 import '../services/sync_service.dart';
 import '../widgets/async_action_state.dart';
 import 'app_providers.dart';
@@ -39,8 +37,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
     final themeMode = ref.watch(themeModeProvider);
-    final shopProfileAsync = ref.watch(shopProfileProvider);
-    final profile = shopProfileAsync.value;
 
     return withLoadingOverlay(
       Scaffold(
@@ -142,15 +138,11 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
               title: l10n.t('sectionApp'),
               children: [
                 _FeatureItem(
-                  icon: Icons.store_rounded,
-                  title: l10n.t('shopProfile'),
-                  subtitle: _shopProfileSummary(
-                    shopProfileAsync,
-                    profile,
-                    l10n,
-                  ),
+                  icon: Icons.person_rounded,
+                  title: 'My Profile',
+                  subtitle: 'View and edit your profile',
                   color: colors.primary,
-                  onTap: () => _open(const ShopProfileScreen()),
+                  onTap: () => _open(const ProfileOverviewScreen()),
                 ),
                 _FeatureItem(
                   icon: Icons.cloud_sync_rounded,
@@ -289,22 +281,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
       ThemeMode.dark => 'Dark mode',
       ThemeMode.system => 'System theme',
     };
-  }
-
-  String _shopProfileSummary(
-    AsyncValue<ShopProfile?> shopProfile,
-    ShopProfile? profile,
-    AppLocalizations l10n,
-  ) {
-    if (shopProfile.isLoading) return 'Loading...';
-    if (shopProfile.hasError) return 'Could not load shop details';
-    if (profile == null) return l10n.t('shopProfileDesc');
-    final name = profile.shopName.trim();
-    final location = profile.location.trim();
-    if (name.isEmpty && location.isEmpty) return l10n.t('shopProfileDesc');
-    if (location.isEmpty) return name;
-    if (name.isEmpty) return location;
-    return '$name • $location';
   }
 
   Future<void> _syncNow() async {

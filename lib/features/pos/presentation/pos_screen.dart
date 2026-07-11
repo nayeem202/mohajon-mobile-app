@@ -93,7 +93,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
                         16,
                         14,
                         16,
-                        hasCart ? 112 : 20,
+                        hasCart ? 90 : 20,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +125,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
                       Positioned(
                         left: 16,
                         right: 16,
-                        bottom: 12,
+                        bottom: 8,
                         child: SafeArea(
                           top: false,
                           child: _CheckoutBar(
@@ -437,11 +437,11 @@ class _ProductGrid extends StatelessWidget {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 220,
-                childAspectRatio: 0.84,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 0.62,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
               ),
               itemCount: products.length,
               itemBuilder: (context, index) {
@@ -474,7 +474,7 @@ class _ProductCard extends StatelessWidget {
     alignment: Alignment.center,
     child: Icon(
       _iconForCategory(product.category),
-      size: 42,
+      size: 32,
       color: accent,
     ),
   );
@@ -490,24 +490,24 @@ class _ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: enabled ? onTap : null,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 98,
+                height: 60,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7F1E7),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
                   children: [
                     if (product.imagePath != null)
-                      Image.file(
+                        Image.file(
                         File(product.imagePath!),
                         width: double.infinity,
-                        height: 98,
+                        height: 60,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _categoryIcon(accent),
                       )
@@ -518,7 +518,7 @@ class _ProductCard extends StatelessWidget {
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.62),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Center(
                             child: Text(
@@ -534,7 +534,7 @@ class _ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               Text(
                 product.nameEn,
                 maxLines: 2,
@@ -542,17 +542,18 @@ class _ProductCard extends StatelessWidget {
                 style: const TextStyle(
                   color: Color(0xFF7A2E00),
                   fontWeight: FontWeight.w800,
+                  fontSize: 11,
                   height: 1.15,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 product.category.isNotEmpty ? product.category : 'General',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Color(0xFFB48258),
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
               const Spacer(),
@@ -565,19 +566,19 @@ class _ProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF101828),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   InkWell(
                     borderRadius: BorderRadius.circular(999),
                     onTap: enabled ? onTap : null,
                     child: Container(
-                      width: 32,
-                      height: 32,
+                      width: 26,
+                      height: 26,
                       decoration: const BoxDecoration(
                         color: Color(0xFFFF8A00),
                         shape: BoxShape.circle,
@@ -585,7 +586,7 @@ class _ProductCard extends StatelessWidget {
                       child: const Icon(
                         Icons.add_rounded,
                         color: Colors.white,
-                        size: 18,
+                        size: 16,
                       ),
                     ),
                   ),
@@ -615,37 +616,37 @@ class _CheckoutBar extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
             color: const Color(0xFFFF8A00),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFFF8A00).withValues(alpha: 0.28),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.shopping_cart_outlined,
                   color: Colors.white,
-                  size: 22,
+                  size: 18,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -654,7 +655,7 @@ class _CheckoutBar extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
-                      fontSize: 14,
+                      fontSize: 13,
                     ),
                   ),
                   Text(
@@ -662,7 +663,7 @@ class _CheckoutBar extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.92),
                       fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -673,11 +674,11 @@ class _CheckoutBar extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: 15,
+                  fontSize: 13,
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 4),
+              const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 16),
             ],
           ),
         ),
@@ -1101,7 +1102,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                             foregroundColor: const Color(0xFF9A5A1B),
                             side: const BorderSide(color: Color(0xFFE5D9C9)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                         ),

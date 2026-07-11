@@ -5,6 +5,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../payments/presentation/add_payment_screen.dart';
+import 'customer_profile_screen.dart';
 import '../providers/customer_providers.dart';
 import 'customer_form_screen.dart';
 import '../../pos/presentation/sales_history_screen.dart';
@@ -225,11 +226,11 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
               SnackBar(content: Text('Call ${customer.phone}')),
             );
           },
-          onEdit: () {
+          onViewProfile: () {
             Navigator.of(sheetContext).pop();
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => CustomerFormScreen(customer: customer),
+                builder: (_) => CustomerProfileScreen(customer: customer),
               ),
             );
           },
@@ -953,18 +954,18 @@ class _CustomerDetailSheet extends StatelessWidget {
     required this.due,
     required this.stats,
     required this.onCall,
+    required this.onViewProfile,
     required this.onViewInvoices,
     required this.onRecordPayment,
-    required this.onEdit,
   });
 
   final Customer customer;
   final double due;
   final _CustomerSummary stats;
   final VoidCallback onCall;
+  final VoidCallback onViewProfile;
   final VoidCallback onViewInvoices;
   final VoidCallback onRecordPayment;
-  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1150,9 +1151,9 @@ class _CustomerDetailSheet extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Edit'),
+                        onPressed: onViewProfile,
+                        icon: const Icon(Icons.person_outlined),
+                        label: const Text('Profile'),
                       ),
                     ),
                     const SizedBox(width: 10),

@@ -3,15 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../core/models/shop_profile.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
-import '../providers/shop_profile_providers.dart';
 import 'account_security_screen.dart';
 import 'privacy_settings_screen.dart';
-import 'shop_profile_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -29,8 +26,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final locale = ref.watch(localeProvider);
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
-    final shopProfile = ref.watch(shopProfileProvider);
-    final profile = shopProfile.value;
 
     return withLoadingOverlay(
       Scaffold(
@@ -78,60 +73,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         ),
                       );
                     },
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: isBusy
-                    ? null
-                    : () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ShopProfileScreen(),
-                          ),
-                        );
-                      },
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          Icons.store_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Shop profile',
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _shopProfileSummary(shopProfile, profile),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
-                ),
-              ),
             ),
             const SizedBox(height: 12),
             Card(
@@ -325,29 +266,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return sync.message.isEmpty
         ? '${sync.pendingCount} pending records'
         : sync.message;
-  }
-
-  String _shopProfileSummary(
-    AsyncValue<ShopProfile?> shopProfile,
-    ShopProfile? profile,
-  ) {
-    if (shopProfile.isLoading) {
-      return 'Loading current shop details...';
-    }
-    if (shopProfile.hasError) {
-      return 'Could not load shop details.';
-    }
-    if (profile == null) {
-      return 'Tap to add shop name, location, and phone number.';
-    }
-    final name = (profile.shopName as String).trim();
-    final location = (profile.location as String).trim();
-    if (name.isEmpty && location.isEmpty) {
-      return 'Tap to complete your shop details.';
-    }
-    if (location.isEmpty) return name;
-    if (name.isEmpty) return location;
-    return '$name • $location';
   }
 
   Future<void> _syncNow() async {

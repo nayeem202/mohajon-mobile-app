@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 class CustomerLedger {
   const CustomerLedger({
+    required this.customerId,
     required this.name,
     required this.phone,
     required this.debit,
@@ -9,6 +10,7 @@ class CustomerLedger {
     this.maxAmount,
   });
 
+  final String customerId;
   final String name;
   final String phone;
   final double debit;

@@ -166,6 +166,7 @@ class CustomerService {
     String email = '',
     String address = '',
     String notes = '',
+    String? imagePath,
   }) async {
     final customer = Customer(
       customerId: customerId ?? _uuid.v4(),
@@ -174,6 +175,7 @@ class CustomerService {
       email: email,
       address: address,
       notes: notes,
+      imagePath: imagePath,
       shopId: _ref.read(shopIdProvider),
       updatedAt: DateTime.now(),
       syncStatus: SyncStatus.pending,

@@ -1,19 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/utils/money.dart';
-import '../data/sample_data.dart';
 import '../models/customer_ledger.dart';
 import '../models/ledger_entry.dart';
+import '../providers/report_providers.dart';
+import '../services/ledger_excel_service.dart';
+import '../services/ledger_pdf_service.dart';
 
-class CustomerLedgerDetailScreen extends StatelessWidget {
+class CustomerLedgerDetailScreen extends ConsumerWidget {
   const CustomerLedgerDetailScreen({super.key, required this.customer});
 
   final CustomerLedger customer;
 
+  Future<void> _exportXlsx(BuildContext context, WidgetRef ref) async {
+    final entries =
+        ref.read(customerLedgerDetailProvider(customer.customerId));
+    if (entries.isEmpty) return;
+    final service = LedgerExcelService();
+    await service.saveCustomerDetail(customer, entries);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('XLSX exported successfully')),
+      );
+    }
+  }
+
+  Future<void> _exportPdf(BuildContext context, WidgetRef ref) async {
+    final entries =
+        ref.read(customerLedgerDetailProvider(customer.customerId));
+    if (entries.isEmpty) return;
+    final service = LedgerPdfService();
+    await service.saveCustomerDetail(customer, entries);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF exported successfully')),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final entries = rahimLedgerEntries;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries =
+        ref.watch(customerLedgerDetailProvider(customer.customerId));
     final totalDebit =
         entries.fold<double>(0, (s, e) => s + e.debit);
     final totalCredit =
@@ -98,7 +128,7 @@ class CustomerLedgerDetailScreen extends StatelessWidget {
                   label: 'Download XLSX',
                   icon: Icons.table_chart_outlined,
                   color: const Color(0xFF059669),
-                  onTap: () => debugPrint('Downloading XLSX...'),
+                  onTap: () => _exportXlsx(context, ref),
                 ),
               ),
               const SizedBox(width: 8),
@@ -107,7 +137,7 @@ class CustomerLedgerDetailScreen extends StatelessWidget {
                   label: 'Download PDF',
                   icon: Icons.picture_as_pdf_rounded,
                   color: const Color(0xFFF97316),
-                  onTap: () => debugPrint('Downloading PDF...'),
+                  onTap: () => _exportPdf(context, ref),
                 ),
               ),
             ],
@@ -122,25 +152,40 @@ class CustomerLedgerDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE8DDD2)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _headerRow(),
-                  ...entries.map((e) => _entryRow(e)).toList(),
-                  _totalRow(totalDebit, totalCredit, lastBalance),
-                ],
+          if (entries.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 32),
+              child: Center(
+                child: Text(
+                  'No ledger entries found for this customer.',
+                  style: TextStyle(
+                    color: Color(0xFF98A2B3),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE8DDD2)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _headerRow(),
+                    ...entries.map((e) => _entryRow(e)).toList(),
+                    _totalRow(totalDebit, totalCredit, lastBalance),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

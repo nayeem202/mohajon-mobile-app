@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -12,7 +14,9 @@ import '../../customers/presentation/customer_form_screen.dart';
 import '../../customers/presentation/customer_list_screen.dart';
 import '../../pos/presentation/pos_screen.dart';
 import '../../products/presentation/product_form_screen.dart';
-import '../../settings/presentation/shop_profile_overview_screen.dart';
+import '../../profile/models/profile.dart';
+import '../../profile/presentation/profile_overview_screen.dart';
+import '../../profile/providers/profile_providers.dart';
 import '../providers/dashboard_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -22,6 +26,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardProvider);
     final sync = ref.watch(syncStateProvider);
+    final profile = ref.watch(profileProvider);
     return LoadingOverlay(
       loading: sync.phase == SyncPhase.syncing,
       label: 'Syncing data...',
@@ -33,9 +38,10 @@ class DashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
               children: [
                 _HomeTopBar(
+                  profile: profile,
                   onAvatarTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const ShopProfileOverviewScreen(),
+                      builder: (_) => const ProfileOverviewScreen(),
                     ),
                   ),
                 ),
@@ -61,13 +67,18 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 class _HomeTopBar extends StatelessWidget {
-  const _HomeTopBar({required this.onAvatarTap});
+  const _HomeTopBar({required this.onAvatarTap, this.profile});
 
   final VoidCallback onAvatarTap;
+  final Profile? profile;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final name = profile?.ownerName ?? '';
+    final imagePath = profile?.imagePath;
+    final initials = _initials(name);
+
     return Row(
       children: [
         Container(
@@ -119,23 +130,59 @@ class _HomeTopBar extends StatelessWidget {
         InkWell(
           borderRadius: BorderRadius.circular(999),
           onTap: onAvatarTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6F2EA),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: imagePath != null && imagePath.isNotEmpty
+                ? Image.file(
+                    File(imagePath),
+                    width: 34,
+                    height: 34,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _InitialsBadge(initials: initials),
+                  )
+                : _InitialsBadge(initials: initials),
           ),
         ),
       ],
+    );
+  }
+
+  String _initials(String name) {
+    if (name.trim().isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    final single = parts.first;
+    if (single.length >= 2) return single.substring(0, 2).toUpperCase();
+    return single.toUpperCase();
+  }
+}
+
+class _InitialsBadge extends StatelessWidget {
+  const _InitialsBadge({required this.initials});
+
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: const Color(0xFFD6F2EA),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Color(0xFF0F766E),
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+          ),
+        ),
+      ),
     );
   }
 }

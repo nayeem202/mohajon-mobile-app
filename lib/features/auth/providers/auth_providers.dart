@@ -30,6 +30,7 @@ class AuthService {
 
   Future<void> signUpWithEmail({
     required String shopName,
+    required String ownerName,
     required String email,
     required String mobile,
     required String password,
@@ -61,6 +62,7 @@ class AuthService {
         .set({
           'userId': user.uid,
           'shopName': shopName.trim(),
+          'ownerName': ownerName.trim(),
           'email': normalizedEmail,
           'phoneNumber': mobile.trim(),
           'createdAt': FieldValue.serverTimestamp(),

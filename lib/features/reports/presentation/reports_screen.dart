@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/report_item.dart';
 import 'customer_ledger_screen.dart';
+import 'inventory_report_screen.dart';
 import 'sales_summary_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
@@ -134,6 +135,12 @@ class ReportsScreen extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const CustomerLedgerScreen(),
+                      ),
+                    );
+                  case 2:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const InventoryReportScreen(),
                       ),
                     );
                 }
