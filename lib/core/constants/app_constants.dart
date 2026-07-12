@@ -5,7 +5,6 @@ class AppConstants {
   static const appTagline = 'Sales, stock, and due tracker';
   static const demoShopId = 'demo-shop';
   static const defaultCurrency = '৳';
-  static const supportCountryCode = '+880';
 }
 
 class HiveBoxes {
@@ -20,5 +19,8 @@ class HiveBoxes {
   static const suppliers = 'suppliers';
   static const users = 'users';
   static const settings = 'settings';
-  static const syncQueue = 'sync_queue';
+  static const vendors = 'vendors';
+  static const vendorPurchases = 'vendor_purchases';
+  static const vendorPayments = 'vendor_payments';
+  static const investments = 'investments';
 }

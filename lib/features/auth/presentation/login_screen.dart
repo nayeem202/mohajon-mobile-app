@@ -1280,7 +1280,6 @@ class _AppMark extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.28),
-        color: AuthBrand.primary,
         boxShadow: [
           BoxShadow(
             color: AuthBrand.primary.withValues(alpha: 0.35),
@@ -1289,28 +1288,13 @@ class _AppMark extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(
-              Icons.receipt_long_rounded,
-              color: Colors.white,
-              size: size * 0.46,
-            ),
-            Positioned(
-              right: size * 0.17,
-              top: size * 0.17,
-              child: Container(
-                width: size * 0.12,
-                height: size * 0.12,
-                decoration: const BoxDecoration(
-                  color: AuthBrand.secondary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.28),
+        child: Image.asset(
+          'assets/brand/haalkhata_icon_1024.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
         ),
       ),
     );

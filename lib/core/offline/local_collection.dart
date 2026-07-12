@@ -10,8 +10,6 @@ class LocalCollection<T extends Syncable> {
   final Box<Map> _box;
   final FromJson<T> _fromJson;
 
-  List<T> watchableValues() => values();
-
   Stream<List<T>> watch() async* {
     yield values();
     yield* _box.watch().map((_) => values());
@@ -37,11 +35,6 @@ class LocalCollection<T extends Syncable> {
   }
 
   String _keyFor(T item) => '${item.shopId}:${item.id}';
-
-  T? get(String id) {
-    final value = _box.get(id);
-    return value == null ? null : _fromJson(value);
-  }
 
   T? getForShop(String shopId, String id) {
     final value = _box.get('$shopId:$id');

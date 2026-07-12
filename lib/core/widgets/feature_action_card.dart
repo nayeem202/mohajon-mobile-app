@@ -75,27 +75,3 @@ class FeatureActionCard extends StatelessWidget {
     );
   }
 }
-
-class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.label, this.padding});
-
-  final String label;
-  final EdgeInsetsGeometry? padding;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: padding ?? const EdgeInsets.fromLTRB(4, 8, 4, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          letterSpacing: 0.9,
-          fontWeight: FontWeight.w800,
-          color: colors.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}

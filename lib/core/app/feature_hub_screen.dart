@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../../features/investments/presentation/investment_list_screen.dart';
+import '../../features/investments/presentation/investment_screen.dart';
 import '../../features/profile/presentation/profile_overview_screen.dart';
 import '../../features/customers/presentation/customer_form_screen.dart';
 import '../../features/customers/presentation/customer_list_screen.dart';
-import '../../features/investments/presentation/investment_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/barcode_scan_screen.dart';
 import '../../features/products/presentation/product_form_screen.dart';
@@ -15,6 +16,7 @@ import '../../features/purchases/presentation/purchase_screen.dart';
 import '../../features/receipts/presentation/receipt_generator_screen.dart';
 import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
+import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
 import '../widgets/async_action_state.dart';
@@ -84,8 +86,15 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                   onTap: () => _open(const CustomerFormScreen()),
                 ),
                 _FeatureItem(
+                  icon: Icons.store_rounded,
+                  title: 'Vendors',
+                  subtitle: 'Manage suppliers and purchases',
+                  color: const Color(0xFF7C3AED),
+                  onTap: () => _open(const VendorListScreen()),
+                ),
+                _FeatureItem(
                   icon: Icons.local_shipping_rounded,
-                  title: l10n.t('vendors'),
+                  title: 'Purchases',
                   subtitle: l10n.t('vendorsDesc'),
                   color: colors.secondary,
                   onTap: () => _open(const PurchaseScreen()),
@@ -123,6 +132,13 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                   subtitle: l10n.t('duesDesc'),
                   color: colors.tertiary,
                   onTap: () => _open(const CustomerListScreen()),
+                ),
+                _FeatureItem(
+                  icon: Icons.account_balance_rounded,
+                  title: 'Investment Records',
+                  subtitle: 'Track investment items and ROI',
+                  color: const Color(0xFF0F766E),
+                  onTap: () => _open(const InvestmentListScreen()),
                 ),
                 _FeatureItem(
                   icon: Icons.pie_chart_rounded,

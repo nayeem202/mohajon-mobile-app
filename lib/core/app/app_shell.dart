@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/investments/presentation/investment_list_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/pos/presentation/sales_history_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/purchases/presentation/purchase_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
 import 'feature_hub_screen.dart';
@@ -87,6 +89,16 @@ class _AppShellState extends ConsumerState<AppShell> {
             context: context,
             sheetContext: sheetContext,
             screen: const PurchaseScreen(),
+          ),
+          onVendors: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const VendorListScreen(),
+          ),
+          onInvestments: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const InvestmentListScreen(),
           ),
           onReports: () => _openFromSheet(
             context: context,
@@ -350,12 +362,16 @@ class _MoreOptionsSheet extends StatelessWidget {
   const _MoreOptionsSheet({
     required this.onSalesHistory,
     required this.onPurchases,
+    required this.onVendors,
+    required this.onInvestments,
     required this.onReports,
     required this.onSettings,
   });
 
   final VoidCallback onSalesHistory;
   final VoidCallback onPurchases;
+  final VoidCallback onVendors;
+  final VoidCallback onInvestments;
   final VoidCallback onReports;
   final VoidCallback onSettings;
 
@@ -417,6 +433,18 @@ class _MoreOptionsSheet extends StatelessWidget {
                       icon: Icons.local_shipping_outlined,
                       color: const Color(0xFF8B6F47),
                       onTap: onPurchases,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Vendors',
+                      icon: Icons.store_rounded,
+                      color: const Color(0xFF7C3AED),
+                      onTap: onVendors,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Investments',
+                      icon: Icons.account_balance_rounded,
+                      color: const Color(0xFF0F766E),
+                      onTap: onInvestments,
                     ),
                     _MoreOptionTile(
                       label: 'Reports',

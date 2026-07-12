@@ -56,8 +56,6 @@ class ShopProfile {
     ];
   }
 
-  bool get isSingleOwner => effectiveOwners.length == 1;
-
   double get totalInvestment => effectiveOwners.fold<double>(
     0,
     (sum, owner) => sum + owner.investmentAmount,

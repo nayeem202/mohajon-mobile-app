@@ -20,8 +20,11 @@ class AppBootstrap {
       Hive.openBox<Map>(HiveBoxes.customerLedgerEntries),
       Hive.openBox<Map>(HiveBoxes.purchases),
       Hive.openBox<Map>(HiveBoxes.suppliers),
+      Hive.openBox<Map>(HiveBoxes.vendors),
+      Hive.openBox<Map>(HiveBoxes.vendorPurchases),
+      Hive.openBox<Map>(HiveBoxes.vendorPayments),
+      Hive.openBox<Map>(HiveBoxes.investments),
       Hive.openBox<Map>(HiveBoxes.users),
-      Hive.openBox<Map>(HiveBoxes.syncQueue),
       Hive.openBox<dynamic>(HiveBoxes.settings),
     ]);
 

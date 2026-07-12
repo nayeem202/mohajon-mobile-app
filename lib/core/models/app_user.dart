@@ -40,8 +40,6 @@ class AppUser with Syncable {
   @override
   String get id => userId;
 
-  bool get isOwner => role == UserRole.owner;
-
   @override
   Map<String, dynamic> toJson() => {
     'userId': userId,

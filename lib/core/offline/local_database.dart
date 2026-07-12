@@ -1,5 +1,9 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../features/investments/models/investment_item.dart';
+import '../../features/vendors/models/vendor.dart';
+import '../../features/vendors/models/vendor_payment.dart';
+import '../../features/vendors/models/vendor_purchase.dart';
 import '../constants/app_constants.dart';
 import '../models/app_user.dart';
 import '../models/customer.dart';
@@ -40,6 +44,22 @@ class LocalDatabase {
           Hive.box<Map>(HiveBoxes.suppliers),
           Supplier.fromJson,
         ),
+        vendors = LocalCollection<Vendor>(
+          Hive.box<Map>(HiveBoxes.vendors),
+          Vendor.fromJson,
+        ),
+        vendorPurchases = LocalCollection<VendorPurchase>(
+          Hive.box<Map>(HiveBoxes.vendorPurchases),
+          VendorPurchase.fromJson,
+        ),
+        vendorPayments = LocalCollection<VendorPayment>(
+          Hive.box<Map>(HiveBoxes.vendorPayments),
+          VendorPayment.fromJson,
+        ),
+        investments = LocalCollection<InvestmentItem>(
+          Hive.box<Map>(HiveBoxes.investments),
+          InvestmentItem.fromJson,
+        ),
         users = LocalCollection<AppUser>(
           Hive.box<Map>(HiveBoxes.users),
           AppUser.fromJson,
@@ -53,6 +73,10 @@ class LocalDatabase {
   final LocalCollection<Payment> payments;
   final LocalCollection<Purchase> purchases;
   final LocalCollection<Supplier> suppliers;
+  final LocalCollection<Vendor> vendors;
+  final LocalCollection<VendorPurchase> vendorPurchases;
+  final LocalCollection<VendorPayment> vendorPayments;
+  final LocalCollection<InvestmentItem> investments;
   final LocalCollection<AppUser> users;
   final Box<dynamic> settings;
 
@@ -77,6 +101,10 @@ class LocalDatabase {
       payments.clear(),
       purchases.clear(),
       suppliers.clear(),
+      vendors.clear(),
+      vendorPurchases.clear(),
+      vendorPayments.clear(),
+      investments.clear(),
       users.clear(),
     ]);
     final keys = settings.keys
