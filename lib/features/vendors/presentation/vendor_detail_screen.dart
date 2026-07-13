@@ -341,14 +341,13 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPurchaseSheet(Vendor vendor) async {
-    final amountCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
+        final amountCtrl = TextEditingController();
+        final noteCtrl = TextEditingController();
         var saving = false;
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
@@ -359,201 +358,199 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                 top: 12,
                 bottom: MediaQuery.viewInsetsOf(sheetContext).bottom + 16,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.shopping_cart_rounded, color: Color(0xFFDC2626)),
                         ),
-                        child: const Icon(Icons.shopping_cart_rounded, color: Color(0xFFDC2626)),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Record Purchase',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w900),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: amountCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Amount *',
-                      prefixText: '৳ ',
+                        const SizedBox(width: 12),
+                        Text(
+                          'Record Purchase',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteCtrl,
-                    decoration: const InputDecoration(labelText: 'Notes'),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: saving ? null : () async {
-                        final amount = double.tryParse(amountCtrl.text) ?? 0;
-                        if (amount <= 0) return;
-                        setSheetState(() => saving = true);
-                        try {
-                          await ref.read(vendorServiceProvider).recordPurchase(
-                            vendorId: vendor.vendorId,
-                            amount: amount,
-                            notes: noteCtrl.text.trim(),
-                          );
-                          if (sheetContext.mounted) {
-                            Navigator.of(sheetContext).pop();
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Amount *',
+                        prefixText: '৳ ',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: noteCtrl,
+                      decoration: const InputDecoration(labelText: 'Notes'),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: saving ? null : () async {
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          if (amount <= 0) return;
+                          setSheetState(() => saving = true);
+                          try {
+                            await ref.read(vendorServiceProvider).recordPurchase(
+                              vendorId: vendor.vendorId,
+                              amount: amount,
+                              notes: noteCtrl.text.trim(),
+                            );
+                            if (sheetContext.mounted) {
+                              Navigator.of(sheetContext).pop();
+                            }
+                          } finally {
+                            if (sheetContext.mounted) setSheetState(() => saving = false);
                           }
-                        } finally {
-                          if (sheetContext.mounted) setSheetState(() => saving = false);
-                        }
-                      },
-                      child: saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Save Purchase'),
+                        },
+                        child: saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Save Purchase'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
         );
       },
     );
-    amountCtrl.dispose();
-    noteCtrl.dispose();
   }
 
   Future<void> _showRecordPaymentSheet(Vendor vendor) async {
-    final amountCtrl = TextEditingController();
-    final refCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
-    String method = 'cash';
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
+        final amountCtrl = TextEditingController();
+        final refCtrl = TextEditingController();
+        final noteCtrl = TextEditingController();
+        String method = 'cash';
         var saving = false;
         return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 12,
-                bottom: MediaQuery.viewInsetsOf(sheetContext).bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
+            builder: (ctx, setSheetState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: MediaQuery.viewInsetsOf(sheetContext).bottom + 16,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                      Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.payments_outlined, color: Color(0xFF0F766E)),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Record Payment',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: amountCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Amount *',
+                          prefixText: '৳ ',
                         ),
-                        child: const Icon(Icons.payments_outlined, color: Color(0xFF0F766E)),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Record Payment',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w900),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: method,
+                        decoration: const InputDecoration(labelText: 'Payment Method'),
+                        items: const [
+                          DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                          DropdownMenuItem(value: 'bkash', child: Text('bKash')),
+                          DropdownMenuItem(value: 'nagad', child: Text('Nagad')),
+                          DropdownMenuItem(value: 'bank', child: Text('Bank')),
+                          DropdownMenuItem(value: 'check', child: Text('Check')),
+                          DropdownMenuItem(value: 'other', child: Text('Other')),
+                        ],
+                        onChanged: (v) => setSheetState(() => method = v ?? 'cash'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: refCtrl,
+                        decoration: const InputDecoration(labelText: 'Reference'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: noteCtrl,
+                        decoration: const InputDecoration(labelText: 'Notes'),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: saving ? null : () async {
+                            final amount = double.tryParse(amountCtrl.text) ?? 0;
+                            if (amount <= 0) return;
+                            setSheetState(() => saving = true);
+                            try {
+                              await ref.read(vendorServiceProvider).recordPayment(
+                                vendorId: vendor.vendorId,
+                                amount: amount,
+                                method: method,
+                                reference: refCtrl.text.trim(),
+                                notes: noteCtrl.text.trim(),
+                              );
+                              if (sheetContext.mounted) {
+                                Navigator.of(sheetContext).pop();
+                              }
+                            } finally {
+                              if (sheetContext.mounted) setSheetState(() => saving = false);
+                            }
+                          },
+                          child: saving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('Save Payment'),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: amountCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Amount *',
-                      prefixText: '৳ ',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: method,
-                    decoration: const InputDecoration(labelText: 'Payment Method'),
-                    items: const [
-                      DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                      DropdownMenuItem(value: 'bkash', child: Text('bKash')),
-                      DropdownMenuItem(value: 'nagad', child: Text('Nagad')),
-                      DropdownMenuItem(value: 'bank', child: Text('Bank')),
-                      DropdownMenuItem(value: 'check', child: Text('Check')),
-                      DropdownMenuItem(value: 'other', child: Text('Other')),
-                    ],
-                    onChanged: (v) => setSheetState(() => method = v ?? 'cash'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: refCtrl,
-                    decoration: const InputDecoration(labelText: 'Reference'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteCtrl,
-                    decoration: const InputDecoration(labelText: 'Notes'),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: saving ? null : () async {
-                        final amount = double.tryParse(amountCtrl.text) ?? 0;
-                        if (amount <= 0) return;
-                        setSheetState(() => saving = true);
-                        try {
-                          await ref.read(vendorServiceProvider).recordPayment(
-                            vendorId: vendor.vendorId,
-                            amount: amount,
-                            method: method,
-                            reference: refCtrl.text.trim(),
-                            notes: noteCtrl.text.trim(),
-                          );
-                          if (sheetContext.mounted) {
-                            Navigator.of(sheetContext).pop();
-                          }
-                        } finally {
-                          if (sheetContext.mounted) setSheetState(() => saving = false);
-                        }
-                      },
-                      child: saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Save Payment'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+                ),
+              );
+            },
+          );
       },
     );
-    amountCtrl.dispose();
-    refCtrl.dispose();
-    noteCtrl.dispose();
   }
 }
 
