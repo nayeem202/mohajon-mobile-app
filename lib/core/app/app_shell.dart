@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/investments/presentation/investment_list_screen.dart';
+import '../../features/investments/presentation/investment_dashboard_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/pos/presentation/sales_history_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
-import '../../features/purchases/presentation/purchase_screen.dart';
+import '../../features/investors/presentation/investor_list_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
@@ -85,10 +85,10 @@ class _AppShellState extends ConsumerState<AppShell> {
             sheetContext: sheetContext,
             screen: const SalesHistoryScreen(),
           ),
-          onPurchases: () => _openFromSheet(
+          onInvestors: () => _openFromSheet(
             context: context,
             sheetContext: sheetContext,
-            screen: const PurchaseScreen(),
+            screen: const InvestorListScreen(),
           ),
           onVendors: () => _openFromSheet(
             context: context,
@@ -98,7 +98,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           onInvestments: () => _openFromSheet(
             context: context,
             sheetContext: sheetContext,
-            screen: const InvestmentListScreen(),
+            screen: const InvestmentDashboardScreen(),
           ),
           onReports: () => _openFromSheet(
             context: context,
@@ -361,7 +361,7 @@ class _MobileBottomNav extends StatelessWidget {
 class _MoreOptionsSheet extends StatelessWidget {
   const _MoreOptionsSheet({
     required this.onSalesHistory,
-    required this.onPurchases,
+    required this.onInvestors,
     required this.onVendors,
     required this.onInvestments,
     required this.onReports,
@@ -369,7 +369,7 @@ class _MoreOptionsSheet extends StatelessWidget {
   });
 
   final VoidCallback onSalesHistory;
-  final VoidCallback onPurchases;
+  final VoidCallback onInvestors;
   final VoidCallback onVendors;
   final VoidCallback onInvestments;
   final VoidCallback onReports;
@@ -429,10 +429,10 @@ class _MoreOptionsSheet extends StatelessWidget {
                       onTap: onSalesHistory,
                     ),
                     _MoreOptionTile(
-                      label: 'Purchases',
-                      icon: Icons.local_shipping_outlined,
-                      color: const Color(0xFF8B6F47),
-                      onTap: onPurchases,
+                      label: 'Investors',
+                      icon: Icons.people_alt_rounded,
+                      color: const Color(0xFF047857),
+                      onTap: onInvestors,
                     ),
                     _MoreOptionTile(
                       label: 'Vendors',

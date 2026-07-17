@@ -15,6 +15,7 @@ import '../../customers/presentation/customer_list_screen.dart';
 import '../../pos/presentation/pos_screen.dart';
 import '../../products/presentation/product_form_screen.dart';
 import '../../profile/models/profile.dart';
+import '../../investors/presentation/investor_list_screen.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
 import '../../profile/providers/profile_providers.dart';
 import '../providers/dashboard_providers.dart';
@@ -46,7 +47,10 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                _GreetingPanel(summary: summary),
+                _GreetingPanel(
+                  summary: summary,
+                  name: profile?.ownerName ?? '',
+                ),
                 const SizedBox(height: 20),
                 const _QuickActions(),
                 const SizedBox(height: 20),
@@ -188,9 +192,10 @@ class _InitialsBadge extends StatelessWidget {
 }
 
 class _GreetingPanel extends StatelessWidget {
-  const _GreetingPanel({required this.summary});
+  const _GreetingPanel({required this.summary, required this.name});
 
   final DashboardSummary summary;
+  final String name;
 
   @override
   Widget build(BuildContext context) {
@@ -231,8 +236,8 @@ class _GreetingPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Good day, Karim!',
+          Text(
+            'Good day, $name!',
             style: TextStyle(
               color: Colors.white,
               fontSize: 21,
@@ -358,10 +363,10 @@ class _QuickActions extends StatelessWidget {
         onTap: () => _open(context, const CustomerFormScreen()),
       ),
       _ActionSpec(
-        icon: Icons.pie_chart_outline_rounded,
-        label: 'Reports',
-        color: const Color(0xFF475467),
-        onTap: () => _open(context, const CustomerListScreen()),
+        icon: Icons.people_alt_rounded,
+        label: 'Investors',
+        color: const Color(0xFF047857),
+        onTap: () => _open(context, const InvestorListScreen()),
       ),
     ];
 

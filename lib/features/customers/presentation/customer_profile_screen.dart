@@ -21,6 +21,7 @@ class CustomerProfileScreen extends ConsumerStatefulWidget {
 class _CustomerProfileScreenState
     extends ConsumerState<CustomerProfileScreen>
     with AsyncActionState<CustomerProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -86,137 +87,120 @@ class _CustomerProfileScreenState
               ),
           ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            _ProfileHeader(
-              customer: _customer,
-              imagePath: _imagePath,
-              isEditing: _isEditing,
-              onTapImage: _isEditing ? _pickImage : null,
-            ),
-            const SizedBox(height: 6),
-            _InfoRow(
-              icon: Icons.phone_outlined,
-              label: 'Phone',
-              value: _customer.phone,
-              visible: !_isEditing,
-            ),
-            if (_isEditing) ...[
-              const SizedBox(height: 16),
-              _SectionLabel(label: 'CONTACT INFORMATION'),
-              const SizedBox(height: 10),
-              _buildTextField(
-                controller: _nameController,
-                label: 'Full Name',
-                icon: Icons.person_outline,
-                required: true,
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              _ProfileHeader(
+                customer: _customer,
+                imagePath: _imagePath,
+                isEditing: _isEditing,
+                onTapImage: _isEditing ? _pickImage : null,
               ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _phoneController,
-                label: 'Phone',
+              const SizedBox(height: 6),
+              _InfoRow(
                 icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                required: true,
+                label: 'Phone',
+                value: _customer.phone,
+                visible: !_isEditing,
               ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _emailController,
-                label: 'Email',
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _addressController,
-                label: 'Address',
-                icon: Icons.location_on_outlined,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _notesController,
-                label: 'Notes',
-                icon: Icons.notes_rounded,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: isBusy ? null : _saveCustomer,
-                  icon: isBusy
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save_rounded),
-                  label: Text(
-                    isBusy ? 'Saving...' : 'Save Changes',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+              if (_isEditing) ...[
+                const SizedBox(height: 16),
+                _FieldLabel(label: 'Full Name', required: true),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.person_outline),
+                    hintText: 'e.g. Rahim Uddin',
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.primary,
-                    foregroundColor: colors.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 14),
+                _FieldLabel(label: 'Phone', required: true),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.phone_outlined),
+                    hintText: 'e.g. +880 1711-234567',
+                  ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 14),
+                _FieldLabel(label: 'Email'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.email_outlined),
+                    hintText: 'e.g. rahim@example.com',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return null;
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value.trim())) {
+                      return 'Invalid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                _FieldLabel(label: 'Address'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _addressController,
+                  maxLines: 1,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                    hintText: 'e.g. 12/A Mirpur Road, Dhaka',
                   ),
                 ),
-              ),
+                const SizedBox(height: 14),
+                _FieldLabel(label: 'Notes'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _notesController,
+                  maxLines: 5,
+                  maxLength: 300,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(bottom: 80),
+                      child: Icon(Icons.notes_outlined),
+                    ),
+                    hintText: 'Any special notes about this client...',
+                    counterText: '',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${_notesController.text.length}/300',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: isBusy ? null : _saveCustomer,
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text('Update Client'),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
       label: 'Saving...',
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-    bool required = false,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: colors.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Text(
-              required ? '$label *' : label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: 'Enter $label',
-          ),
-        ),
-      ],
     );
   }
 
@@ -286,18 +270,11 @@ class _CustomerProfileScreenState
   }
 
   Future<void> _saveCustomer() async {
-    final name = _nameController.text.trim();
-    final phone = _phoneController.text.trim();
-    if (name.isEmpty) {
-      _showError('Name is required');
-      return;
-    }
-    if (phone.isEmpty) {
-      _showError('Phone is required');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     await runBusyAction(() async {
+      final name = _nameController.text.trim();
+      final phone = _phoneController.text.trim();
       await ref.read(customerServiceProvider).save(
         customerId: _customer.customerId,
         name: name,
@@ -516,6 +493,33 @@ class _InfoRow extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label, this.required = false});
+
+  final String label;
+  final bool required;
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+        ),
+        children: [
+          TextSpan(text: label),
+          if (required)
+            TextSpan(
+              text: ' *',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
         ],
       ),
     );

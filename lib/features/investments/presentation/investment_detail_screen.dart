@@ -255,17 +255,21 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: Theme.of(ctx).colorScheme.error,
             ),
-            onPressed: () => Navigator.of(ctx).pop(true),
+            onPressed: () async {
+              await ref.read(investmentItemServiceProvider).delete(investment.investmentId);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ctx.mounted) Navigator.of(ctx).pop(true);
+              });
+            },
             child: const Text('Delete'),
           ),
         ],
       ),
     );
     if (confirmed == true && mounted) {
-      await ref.read(investmentItemServiceProvider).delete(investment.investmentId);
-      if (mounted) Navigator.of(context).pop();
+      Navigator.of(context).pop();
     }
   }
 

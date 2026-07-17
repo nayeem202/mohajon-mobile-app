@@ -58,6 +58,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     final sales = ref.watch(salesStreamProvider).value ?? const <dynamic>[];
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddClient,
+        child: const Icon(Icons.add_rounded, size: 28),
+      ),
       body: SafeArea(
         child: customers.when(
           data: (items) {
@@ -105,16 +109,15 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
             );
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
               children: [
-                _ClientsTopBar(onAddClient: _openAddClient),
+                _ClientsTopBar(),
                 const SizedBox(height: 18),
                 _ClientStats(
                   totalClients: items.length,
                   dueClients: dueCount,
                   totalReceivable: totalDue,
                   totalSpent: totalSpent,
-                  onAddClient: _openAddClient,
                 ),
                 const SizedBox(height: 18),
                 _SearchAndFilters(
@@ -257,9 +260,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
 }
 
 class _ClientsTopBar extends StatelessWidget {
-  const _ClientsTopBar({required this.onAddClient});
-
-  final VoidCallback onAddClient;
+  const _ClientsTopBar();
 
   @override
   Widget build(BuildContext context) {
@@ -338,14 +339,12 @@ class _ClientStats extends StatelessWidget {
     required this.dueClients,
     required this.totalReceivable,
     required this.totalSpent,
-    required this.onAddClient,
   });
 
   final int totalClients;
   final int dueClients;
   final double totalReceivable;
   final double totalSpent;
-  final VoidCallback onAddClient;
 
   @override
   Widget build(BuildContext context) {
@@ -367,20 +366,11 @@ class _ClientStats extends StatelessWidget {
         value: money(totalReceivable),
         subtext: 'Across\n$dueClients clients',
       ),
-      _ClientStatSpec(
-        label: 'Add\nClient',
-        value: '',
-        subtext: '',
-      ),
     ];
     return Row(
       children: [
         for (var index = 0; index < cards.length; index++) ...[
-          Expanded(
-            child: index == cards.length - 1
-                ? _AddClientCard(onTap: onAddClient)
-                : _ClientStatCard(spec: cards[index]),
-          ),
+          Expanded(child: _ClientStatCard(spec: cards[index])),
           if (index != cards.length - 1) const SizedBox(width: 10),
         ],
       ],
@@ -410,12 +400,12 @@ class _ClientStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 138,
-      padding: const EdgeInsets.fromLTRB(10, 11, 10, 10),
+      height: 135,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,88 +420,35 @@ class _ClientStatCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            spec.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF101828),
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            spec.subtext,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: spec.subtextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddClientCard extends StatelessWidget {
-  const _AddClientCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          height: 138,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFECE7DF)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE98300),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person_add_alt_1_rounded,
-                  color: Colors.white,
-                  size: 21,
-                ),
+            const SizedBox(height: 8),
+            Text(
+              spec.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF101828),
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
               ),
-              const SizedBox(height: 10),
-              const Text(
-                'Add Client',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Color(0xFFE98300),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                ),
+            ),
+            const Spacer(),
+            Text(
+              spec.subtext,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: spec.subtextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
     );
   }
 }
+
+
 
 class _SearchAndFilters extends StatelessWidget {
   const _SearchAndFilters({
@@ -1094,9 +1031,9 @@ class _CustomerDetailSheet extends StatelessWidget {
                     : customer.phone),
                 _InfoLine(
                   icon: Icons.email_outlined,
-                  text: customer.notes.isEmpty
+                  text: customer.email.isEmpty
                       ? '${customer.name.toLowerCase().replaceAll(' ', '.')}@gmail.com'
-                      : customer.notes,
+                      : customer.email,
                 ),
                 _InfoLine(
                   icon: Icons.location_on_outlined,
@@ -1151,8 +1088,15 @@ class _CustomerDetailSheet extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: onViewProfile,
-                        icon: const Icon(Icons.person_outlined),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CustomerFormScreen(customer: customer),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined),
                         label: const Text('Profile'),
                       ),
                     ),

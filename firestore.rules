@@ -16,6 +16,10 @@ service cloud.firestore {
         && request.resource.data.shopId == shopId;
     }
 
+    function validSubcollectionWrite(shopId) {
+      return ownsShop(shopId);
+    }
+
     match /registrations/{userId} {
       allow read: if signedIn()
         && request.auth.uid == userId;
@@ -46,11 +50,16 @@ service cloud.firestore {
     }
 
     match /shops/{shopId}/{collectionId}/{documentId} {
-      allow create: if validShopWrite(shopId);
+      allow create: if collectionId in ['investments', 'investors', 'investment_members', 'investment_categories', 'payouts']
+        ? validSubcollectionWrite(shopId)
+        : validShopWrite(shopId);
       allow read: if ownsShop(shopId);
-      allow update, delete: if validShopWrite(shopId)
-        && resource.data.shopId == shopId
-        && request.resource.data.shopId == shopId;
+      allow update: if collectionId in ['investments', 'investors', 'investment_members', 'investment_categories', 'payouts']
+        ? validSubcollectionWrite(shopId)
+        : validShopWrite(shopId)
+          && resource.data.shopId == shopId
+          && request.resource.data.shopId == shopId;
+      allow delete: if ownsShop(shopId);
     }
   }
 }

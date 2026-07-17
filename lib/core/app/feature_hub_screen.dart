@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
-import '../../features/investments/presentation/investment_list_screen.dart';
-import '../../features/investments/presentation/investment_screen.dart';
+import '../../features/investments/presentation/investment_dashboard_screen.dart';
 import '../../features/profile/presentation/profile_overview_screen.dart';
 import '../../features/customers/presentation/customer_form_screen.dart';
 import '../../features/customers/presentation/customer_list_screen.dart';
@@ -12,7 +11,7 @@ import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/barcode_scan_screen.dart';
 import '../../features/products/presentation/product_form_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
-import '../../features/purchases/presentation/purchase_screen.dart';
+import '../../features/investors/presentation/investor_list_screen.dart';
 import '../../features/receipts/presentation/receipt_generator_screen.dart';
 import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
@@ -93,11 +92,11 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                   onTap: () => _open(const VendorListScreen()),
                 ),
                 _FeatureItem(
-                  icon: Icons.local_shipping_rounded,
-                  title: 'Purchases',
-                  subtitle: l10n.t('vendorsDesc'),
-                  color: colors.secondary,
-                  onTap: () => _open(const PurchaseScreen()),
+                  icon: Icons.people_alt_rounded,
+                  title: 'Investors',
+                  subtitle: 'Track investors and payouts',
+                  color: const Color(0xFF047857),
+                  onTap: () => _open(const InvestorListScreen()),
                 ),
                 _FeatureItem(
                   icon: Icons.qr_code_scanner_rounded,
@@ -135,17 +134,10 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                 ),
                 _FeatureItem(
                   icon: Icons.account_balance_rounded,
-                  title: 'Investment Records',
-                  subtitle: 'Track investment items and ROI',
+                  title: 'Investments',
+                  subtitle: 'Manage investments and ROI',
                   color: const Color(0xFF0F766E),
-                  onTap: () => _open(const InvestmentListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.pie_chart_rounded,
-                  title: l10n.t('investments'),
-                  subtitle: l10n.t('investmentsDesc'),
-                  color: colors.primary,
-                  onTap: () => _open(const InvestmentScreen()),
+                  onTap: () => _open(const InvestmentDashboardScreen()),
                 ),
               ],
             ),

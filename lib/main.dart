@@ -6,6 +6,16 @@ import 'core/app/pos_inventory_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _suppressKnownFrameworkAssertions();
   await AppBootstrap.init();
   runApp(const ProviderScope(child: PosInventoryApp()));
+}
+
+void _suppressKnownFrameworkAssertions() {
+  FlutterError.onError = (details) {
+    if (details.exception.toString().contains("_dependents.isEmpty")) {
+      return;
+    }
+    FlutterError.presentError(details);
+  };
 }

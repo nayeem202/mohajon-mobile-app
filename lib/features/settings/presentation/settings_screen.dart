@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/admin_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
 import 'account_security_screen.dart';
 import 'privacy_settings_screen.dart';
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -232,6 +234,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _SettingsActionCard(
+              icon: Icons.delete_sweep_rounded,
+              title: 'Clear All Data',
+              subtitle: 'Delete all shop data from Firebase',
+              onTap: isBusy ? null : _clearData,
+            ),
           ],
         ),
       ),
@@ -272,6 +283,119 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     await runBusyAction(() async {
       await ref.read(syncStateProvider.notifier).syncNow();
     });
+  }
+
+  Future<void> _clearData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear All Data?'),
+        content: const Text(
+          'This will permanently delete all products, customers, sales, '
+          'vendors, investments, investors, and all other data from Firebase. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Delete Everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final deleteCtrl = TextEditingController();
+    final secondConfirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) {
+          final typed = deleteCtrl.text.trim();
+          return AlertDialog(
+            title: const Text('Final Confirmation'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Type DELETE below to confirm you want to remove all shop data. This cannot be undone.',
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: deleteCtrl,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Type DELETE',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (_) => setDlgState(() {}),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: typed == 'DELETE'
+                    ? () => Navigator.of(ctx).pop(true)
+                    : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                ),
+                child: const Text('Delete Everything'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (secondConfirm != true) return;
+
+    try {
+      final result = await runBusyAction(() async {
+        return ref.read(adminServiceProvider).clearAllShopData();
+      });
+      if (mounted && result != null) {
+        final deleted = result['deleted'] as int;
+        final failed = result['failed'] as int;
+        final errors = result['errors'] as List<String>;
+        final msg = failed > 0
+            ? 'Deleted $deleted records ($failed failed)'
+            : 'Deleted $deleted records successfully';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: failed > 0
+                ? const Color(0xFFDC2626)
+                : const Color(0xFF047857),
+          ),
+        );
+        if (errors.isNotEmpty && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errors.first),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $error')),
+        );
+      }
+    }
   }
 
   Future<void> _signOut() async {

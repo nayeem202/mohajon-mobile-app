@@ -210,6 +210,7 @@ class _ProfileOverviewScreenState
   }
 
   void _confirmLogout() {
+    final errorColor = Theme.of(context).colorScheme.error;
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -232,7 +233,7 @@ class _ProfileOverviewScreenState
                 _logout();
               },
               style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
+                backgroundColor: errorColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

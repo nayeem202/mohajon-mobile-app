@@ -326,17 +326,21 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: Theme.of(ctx).colorScheme.error,
             ),
-            onPressed: () => Navigator.of(ctx).pop(true),
+            onPressed: () async {
+              await ref.read(vendorServiceProvider).delete(vendor.vendorId);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ctx.mounted) Navigator.of(ctx).pop(true);
+              });
+            },
             child: const Text('Delete'),
           ),
         ],
       ),
     );
     if (confirmed == true && mounted) {
-      await ref.read(vendorServiceProvider).delete(vendor.vendorId);
-      if (mounted) Navigator.of(context).pop();
+      Navigator.of(context).pop();
     }
   }
 
