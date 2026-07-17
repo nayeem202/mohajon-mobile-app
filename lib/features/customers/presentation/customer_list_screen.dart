@@ -38,6 +38,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
   late final TextEditingController _searchController;
   _ClientFilter _filter = _ClientFilter.all;
   _ClientSort _sort = _ClientSort.lastVisit;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -58,9 +59,27 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     final sales = ref.watch(salesStreamProvider).value ?? const <dynamic>[];
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddClient,
-        child: const Icon(Icons.add_rounded, size: 28),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'search',
+            onPressed: () {
+              setState(() => _showSearch = !_showSearch);
+              if (!_showSearch) {
+                _searchController.clear();
+                ref.read(customerSearchQueryProvider.notifier).state = '';
+              }
+            },
+            child: Icon(_showSearch ? Icons.close : Icons.search_rounded),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: _openAddClient,
+            child: const Icon(Icons.add_rounded, size: 28),
+          ),
+        ],
       ),
       body: SafeArea(
         child: customers.when(
@@ -119,22 +138,24 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   totalReceivable: totalDue,
                   totalSpent: totalSpent,
                 ),
-                const SizedBox(height: 18),
-                _SearchAndFilters(
-                  controller: _searchController,
-                  searchQuery: searchQuery,
-                  selectedFilter: _filter,
-                  selectedSort: _sort,
-                  onSearchChanged: (value) =>
-                      ref.read(customerSearchQueryProvider.notifier).state =
-                          value,
-                  onClearSearch: () {
-                    _searchController.clear();
-                    ref.read(customerSearchQueryProvider.notifier).state = '';
-                  },
-                  onFilterChanged: (filter) => setState(() => _filter = filter),
-                  onSortChanged: (sort) => setState(() => _sort = sort),
-                ),
+                if (_showSearch) ...[
+                  const SizedBox(height: 18),
+                  _SearchAndFilters(
+                    controller: _searchController,
+                    searchQuery: searchQuery,
+                    selectedFilter: _filter,
+                    selectedSort: _sort,
+                    onSearchChanged: (value) =>
+                        ref.read(customerSearchQueryProvider.notifier).state =
+                            value,
+                    onClearSearch: () {
+                      _searchController.clear();
+                      ref.read(customerSearchQueryProvider.notifier).state = '';
+                    },
+                    onFilterChanged: (filter) => setState(() => _filter = filter),
+                    onSortChanged: (sort) => setState(() => _sort = sort),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 if (items.isEmpty)
                   const EmptyState(

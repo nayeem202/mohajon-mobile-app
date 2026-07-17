@@ -21,6 +21,7 @@ class ProductListScreen extends ConsumerStatefulWidget {
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   late final TextEditingController _searchController;
   _StockFilter _filter = _StockFilter.all;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -69,20 +70,22 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   lowStockCount: lowStockCount,
                   outStockCount: outStockCount,
                 ),
-                const SizedBox(height: 16),
-                _SearchAndFilters(
-                  controller: _searchController,
-                  searchQuery: searchQuery,
-                  selectedFilter: _filter,
-                  onSearchChanged: (value) =>
-                      ref.read(productSearchQueryProvider.notifier).state =
-                          value,
-                  onClearSearch: () {
-                    _searchController.clear();
-                    ref.read(productSearchQueryProvider.notifier).state = '';
-                  },
-                  onFilterChanged: (filter) => setState(() => _filter = filter),
-                ),
+                if (_showSearch) ...[
+                  const SizedBox(height: 16),
+                  _SearchAndFilters(
+                    controller: _searchController,
+                    searchQuery: searchQuery,
+                    selectedFilter: _filter,
+                    onSearchChanged: (value) =>
+                        ref.read(productSearchQueryProvider.notifier).state =
+                            value,
+                    onClearSearch: () {
+                      _searchController.clear();
+                      ref.read(productSearchQueryProvider.notifier).state = '';
+                    },
+                    onFilterChanged: (filter) => setState(() => _filter = filter),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -116,13 +119,33 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ProductFormScreen())),
-        backgroundColor: const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add_rounded, size: 28),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'search',
+            onPressed: () {
+              setState(() => _showSearch = !_showSearch);
+              if (!_showSearch) {
+                _searchController.clear();
+                ref.read(productSearchQueryProvider.notifier).state = '';
+              }
+            },
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            child: Icon(_showSearch ? Icons.close : Icons.search_rounded),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ProductFormScreen())),
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            child: const Icon(Icons.add_rounded, size: 28),
+          ),
+        ],
       ),
     );
   }
