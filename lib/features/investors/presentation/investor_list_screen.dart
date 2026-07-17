@@ -20,6 +20,8 @@ class InvestorListScreen extends ConsumerStatefulWidget {
 
 class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
   final _searchController = TextEditingController();
+  bool _pnlExpanded = false;
+  bool _showSearch = false;
 
   @override
   void dispose() {
@@ -74,9 +76,10 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
           const SizedBox(width: 12),
         ],
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: [
+        child: Column(
+          children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -192,138 +195,174 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Profit / Loss Sharing Methods',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                        color: Color(0xFF101828))),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF7ED),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: const Color(0xFFF97316)
-                                  .withValues(alpha: 0.2)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Proportional',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF9A3412),
-                                    fontSize: 13)),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Profit automatically calculated according to contribution.',
-                              style: TextStyle(
-                                  color: const Color(0xFF9A3412)
-                                      .withValues(alpha: 0.7),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
+                GestureDetector(
+                  onTap: () => setState(() => _pnlExpanded = !_pnlExpanded),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Profit / Loss Sharing Methods',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                color: Color(0xFF101828))),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFF0ECE4)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Fixed Rate',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF101828),
-                                    fontSize: 13)),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Manual percentage regardless of contribution.',
-                              style: TextStyle(
-                                  color: const Color(0xFF667085)
-                                      .withValues(alpha: 0.7),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
+                      AnimatedRotation(
+                        turns: _pnlExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(Icons.keyboard_arrow_up_rounded,
+                            color: Color(0xFF667085)),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 14),
-                const Text('How Paid Out Is Calculated',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                        color: Color(0xFF101828))),
-                const SizedBox(height: 10),
-                _StepRow(
-                    number: '1',
-                    label: 'Total Due',
-                    desc: 'Investment + Profit'),
-                _StepRow(
-                    number: '2',
-                    label: 'Paid Out',
-                    desc: 'Sum of payouts'),
-                _StepRow(
-                    number: '3',
-                    label: 'Outstanding',
-                    desc: 'Total Due – Paid',
-                    showDivider: false),
+                ClipRect(
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    alignment: Alignment.topCenter,
+                    heightFactor: _pnlExpanded ? 1 : 0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF7ED),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: const Color(0xFFF97316)
+                                            .withValues(alpha: 0.2)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Proportional',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF9A3412),
+                                              fontSize: 13)),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Profit automatically calculated according to contribution.',
+                                        style: TextStyle(
+                                            color: const Color(0xFF9A3412)
+                                                .withValues(alpha: 0.7),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF9FAFB),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: const Color(0xFFF0ECE4)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Fixed Rate',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF101828),
+                                              fontSize: 13)),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Manual percentage regardless of contribution.',
+                                        style: TextStyle(
+                                            color: const Color(0xFF667085)
+                                                .withValues(alpha: 0.7),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text('How Paid Out Is Calculated',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: Color(0xFF101828))),
+                        const SizedBox(height: 10),
+                        _StepRow(
+                            number: '1',
+                            label: 'Total Due',
+                            desc: 'Investment + Profit'),
+                        _StepRow(
+                            number: '2',
+                            label: 'Paid Out',
+                            desc: 'Sum of payouts'),
+                        _StepRow(
+                            number: '3',
+                            label: 'Outstanding',
+                            desc: 'Total Due – Paid',
+                            showDivider: false),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 46,
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) =>
-                  ref.read(investorSearchQueryProvider.notifier).update(v),
-              decoration: InputDecoration(
-                hintText: 'Search by name or phone...',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                suffixIcon: query.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          ref
-                              .read(investorSearchQueryProvider.notifier)
-                              .update('');
-                        },
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide:
-                      const BorderSide(color: Color(0xFFECE7DF)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide:
-                      const BorderSide(color: Color(0xFFECE7DF)),
+          if (_showSearch) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 46,
+              child: TextField(
+                controller: _searchController,
+                onChanged: (v) =>
+                    ref.read(investorSearchQueryProvider.notifier).update(v),
+                decoration: InputDecoration(
+                  hintText: 'Search by name or phone...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: query.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            ref
+                                .read(investorSearchQueryProvider.notifier)
+                                .update('');
+                          },
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFECE7DF)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFECE7DF)),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
           const SizedBox(height: 14),
           if (filtered.isEmpty)
             const EmptyState(
@@ -340,16 +379,37 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                 ),
               ),
             ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddDialog(context),
-        backgroundColor: const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          ],
         ),
-        child: const Icon(Icons.person_add_rounded, size: 28),
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'search',
+            onPressed: () {
+              setState(() => _showSearch = !_showSearch);
+              if (!_showSearch) {
+                _searchController.clear();
+                ref.read(investorSearchQueryProvider.notifier).update('');
+              }
+            },
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            child: Icon(_showSearch ? Icons.close : Icons.search_rounded),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: () => _showAddDialog(context),
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.person_add_rounded, size: 28),
+          ),
+        ],
       ),
     );
   }

@@ -83,63 +83,56 @@ class _PosScreenState extends ConsumerState<PosScreen>
         child: Scaffold(
           backgroundColor: const Color(0xFFF8F5EF),
           body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final hasCart = cart.items.isNotEmpty;
-                return Stack(
-                  children: [
-                    SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        14,
-                        16,
-                        hasCart ? 90 : 20,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TopBar(onAvatarTap: () {}),
+                      const SizedBox(height: 14),
+                      _SearchBar(
+                        controller: _searchController,
+                        onChanged: (value) => setState(() => _query = value),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _TopBar(onAvatarTap: () {}),
-                          const SizedBox(height: 14),
-                          _SearchBar(
-                            controller: _searchController,
-                            onChanged: (value) => setState(() => _query = value),
-                          ),
-                          const SizedBox(height: 12),
-                          _CategoryStrip(
-                            categories: categories,
-                            selected: _selectedCategory,
-                            onSelected: (value) =>
-                                setState(() => _selectedCategory = value),
-                          ),
-                          const SizedBox(height: 14),
-                          _ProductGrid(
-                            products: visibleProducts,
-                            totalProducts: products.length,
-                            enabled: !isBusy,
-                            onProductTap: cartController.addProduct,
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                      _CategoryStrip(
+                        categories: categories,
+                        selected: _selectedCategory,
+                        onSelected: (value) =>
+                            setState(() => _selectedCategory = value),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _ProductGrid(
+                      products: visibleProducts,
+                      totalProducts: products.length,
+                      enabled: !isBusy,
+                      onProductTap: cartController.addProduct,
+                    ),
+                  ),
+                ),
+                if (cart.items.isNotEmpty)
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: _CheckoutBar(
+                        itemCount: cart.items.length,
+                        total: cart.total,
+                        onTap: isBusy
+                            ? null
+                            : () => _openCheckoutSheet(customers),
                       ),
                     ),
-                    if (hasCart)
-                      Positioned(
-                        left: 16,
-                        right: 16,
-                        bottom: 8,
-                        child: SafeArea(
-                          top: false,
-                          child: _CheckoutBar(
-                            itemCount: cart.items.length,
-                            total: cart.total,
-                            onTap: isBusy
-                                ? null
-                                : () => _openCheckoutSheet(customers),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
+                  ),
+              ],
             ),
           ),
         ),
@@ -432,26 +425,26 @@ class _ProductGrid extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (products.isEmpty)
-            const _CatalogEmptyState()
+            const Expanded(child: _CatalogEmptyState())
           else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.62,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.66,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return _ProductCard(
+                    product: product,
+                    enabled: enabled && product.stockQty > 0,
+                    onTap: () => onProductTap(product),
+                  );
+                },
               ),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return _ProductCard(
-                  product: product,
-                  enabled: enabled && product.stockQty > 0,
-                  onTap: () => onProductTap(product),
-                );
-              },
             ),
         ],
       ),
@@ -495,7 +488,7 @@ class _ProductCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 60,
+                height: 80,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7F1E7),
                   borderRadius: BorderRadius.circular(10),
@@ -504,10 +497,10 @@ class _ProductCard extends StatelessWidget {
                 child: Stack(
                   children: [
                     if (product.imagePath != null)
-                        Image.file(
+                      Image.file(
                         File(product.imagePath!),
                         width: double.infinity,
-                        height: 60,
+                        height: 80,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _categoryIcon(accent),
                       )
@@ -534,7 +527,7 @@ class _ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 product.nameEn,
                 maxLines: 2,
@@ -546,7 +539,7 @@ class _ProductCard extends StatelessWidget {
                   height: 1.15,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 product.category.isNotEmpty ? product.category : 'General',
                 maxLines: 1,
@@ -556,7 +549,7 @@ class _ProductCard extends StatelessWidget {
                   fontSize: 10,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 4),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

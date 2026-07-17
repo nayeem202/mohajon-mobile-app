@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -76,21 +78,19 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withValues(alpha: 0.12),
+                      if (customer.imagePath != null)
+                        ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.account_balance_wallet_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                          child: Image.file(
+                            File(customer.imagePath!),
+                            width: 42,
+                            height: 42,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, stk) => _iconAvatar(context),
+                          ),
+                        )
+                      else
+                        _iconAvatar(context),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -471,4 +471,22 @@ class _MiniStat extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _iconAvatar(BuildContext context) {
+  return Container(
+    width: 42,
+    height: 42,
+    decoration: BoxDecoration(
+      color: Theme.of(context)
+          .colorScheme
+          .primary
+          .withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Icon(
+      Icons.account_balance_wallet_rounded,
+      color: Theme.of(context).colorScheme.primary,
+    ),
+  );
 }

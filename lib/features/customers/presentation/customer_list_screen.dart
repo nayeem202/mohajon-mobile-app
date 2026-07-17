@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -700,27 +702,22 @@ class _ClientRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: hasDue
-                      ? const Color(0xFFFFF1F2)
-                      : const Color(0xFFF6E7D1),
+              if (customer.imagePath != null)
+                ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: hasDue
-                          ? const Color(0xFFE11D48)
-                          : const Color(0xFFE98300),
-                      fontWeight: FontWeight.w900,
+                  child: GestureDetector(
+                    onTap: onTap,
+                    child: Image.file(
+                      File(customer.imagePath!),
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stk) => _ClientAvatar(initials: initials, hasDue: hasDue),
                     ),
                   ),
-                ),
-              ),
+                )
+              else
+                _ClientAvatar(initials: initials, hasDue: hasDue),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -884,6 +881,38 @@ String _initials(String name) {
   return value.length == 1 ? '${value}U' : value;
 }
 
+class _ClientAvatar extends StatelessWidget {
+  const _ClientAvatar({required this.initials, required this.hasDue});
+
+  final String initials;
+  final bool hasDue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: hasDue
+            ? const Color(0xFFFFF1F2)
+            : const Color(0xFFF6E7D1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            color: hasDue
+                ? const Color(0xFFE11D48)
+                : const Color(0xFFE98300),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 int _visitCount(Customer customer) {
   return 12 + customer.customerId.hashCode.abs() % 88;
 }
@@ -959,24 +988,20 @@ class _CustomerDetailSheet extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF6E7D1),
+                    if (customer.imagePath != null)
+                      ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: Text(
-                          initials,
-                          style: const TextStyle(
-                            color: Color(0xFFE98300),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        child: Image.file(
+                          File(customer.imagePath!),
+                          width: 58,
+                          height: 58,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stk) =>
+                              _DetailAvatar(initials: initials),
                         ),
-                      ),
-                    ),
+                      )
+                    else
+                      _DetailAvatar(initials: initials),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -1163,6 +1188,34 @@ class _CustomerDetailSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _DetailAvatar extends StatelessWidget {
+  const _DetailAvatar({required this.initials});
+
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6E7D1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Color(0xFFE98300),
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
     );
   }
 }
