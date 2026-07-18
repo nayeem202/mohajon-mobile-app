@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/customer.dart';
+import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -157,14 +158,14 @@ class _ReceiptGeneratorScreenState
                 title: 'Checkout Details',
                 icon: Icons.receipt_long_rounded,
                 children: [
-                  DropdownButtonFormField<String>(
+                  DropdownButtonFormField<PaymentMethod>(
                     initialValue: receipt.paymentMethod,
                     decoration: const InputDecoration(
                       labelText: 'Payment Method',
                     ),
                     items: [
                       for (final method in receiptPaymentMethods)
-                        DropdownMenuItem(value: method, child: Text(method)),
+                        DropdownMenuItem(value: method, child: Text(method.displayName)),
                     ],
                     onChanged: (value) {
                       if (value != null) viewModel.updatePaymentMethod(value);

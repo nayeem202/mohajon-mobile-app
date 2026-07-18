@@ -7,6 +7,8 @@ import '../models/vendor.dart';
 import '../providers/vendor_providers.dart';
 import 'vendor_detail_screen.dart';
 import 'vendor_form_sheet.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class VendorListScreen extends ConsumerStatefulWidget {
   const VendorListScreen({super.key});
@@ -49,7 +51,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-                _VendorsTopBar(onAddVendor: _openAddVendor),
+                 _VendorsTopBar(onAddVendor: _openAddVendor),
                 const SizedBox(height: 18),
                 _VendorStats(
                   totalVendors: items.length,
@@ -159,41 +161,9 @@ class _VendorsTopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: const Color(0xFF6B7280)),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F766E),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD6F2EA),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: const Text(
-            'VN',
-            style: TextStyle(
-              color: Color(0xFF0F766E),
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-            ),
-          ),
-        ),
+        const ShopAvatar(),
       ],
     );
   }

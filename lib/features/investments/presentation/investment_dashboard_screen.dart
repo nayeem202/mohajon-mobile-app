@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 import '../providers/investment_providers.dart';
 import '../providers/investment_service.dart';
 import 'add_investment_sheet.dart';
@@ -67,40 +69,10 @@ class _InvestmentDashboardScreenState
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
         ),
         actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none_rounded),
-                onPressed: () {},
-              ),
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFDC2626),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          const NotificationBell(),
           const SizedBox(width: 4),
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: const Color(0xFFF97316),
-            child: const Text(
-              'O',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14),
-            ),
-          ),
-          const SizedBox(width: 12),
+          const ShopAvatar(radius: 16, backgroundColor: Color(0xFFF97316), textColor: Colors.white),
+          const SizedBox(width: 8),
         ],
       ),
       body: FadeTransition(

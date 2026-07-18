@@ -11,6 +11,8 @@ import 'customer_profile_screen.dart';
 import '../providers/customer_providers.dart';
 import 'customer_form_screen.dart';
 import '../../pos/presentation/sales_history_screen.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 enum _ClientFilter { all, dues, vip, recent }
 enum _ClientSort { lastVisit, name, totalSpent, dues }
@@ -132,7 +134,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
               children: [
-                _ClientsTopBar(),
+                 const _ClientsTopBar(),
                 const SizedBox(height: 18),
                 _ClientStats(
                   totalClients: items.length,
@@ -316,41 +318,9 @@ class _ClientsTopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: colors.onSurface),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F766E),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD6F2EA),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: const Text(
-            'KA',
-            style: TextStyle(
-              color: Color(0xFF0F766E),
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-            ),
-          ),
-        ),
+        const ShopAvatar(),
       ],
     );
   }
@@ -738,27 +708,38 @@ class _ClientRow extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: hasDue
-                                ? const Color(0xFFFFF1F2)
-                                : const Color(0xFFF3F0EA),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            stats.totalSpent >= 50000 ? 'VIP' : hasDue ? 'Has Dues' : 'Regular',
-                            style: TextStyle(
-                              color: hasDue
-                                  ? const Color(0xFFEF4444)
-                                  : const Color(0xFF8B6F47),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final tag = ref.watch(customerTagProvider(customer.customerId));
+                            final displayTag = tag.isNotEmpty ? tag : (hasDue ? 'Has Dues' : '');
+                            if (displayTag.isEmpty) return const SizedBox.shrink();
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: displayTag == 'VIP'
+                                    ? const Color(0xFFFFF7ED)
+                                    : displayTag == 'Has Dues'
+                                        ? const Color(0xFFFFF1F2)
+                                        : const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                displayTag,
+                                style: TextStyle(
+                                  color: displayTag == 'VIP'
+                                      ? const Color(0xFFE98300)
+                                      : displayTag == 'Has Dues'
+                                          ? const Color(0xFFEF4444)
+                                          : const Color(0xFF047857),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -935,7 +916,7 @@ String _formatRelativeDay(DateTime time) {
   return '${diff.inDays} days ago';
 }
 
-class _CustomerDetailSheet extends StatelessWidget {
+class _CustomerDetailSheet extends ConsumerWidget {
   const _CustomerDetailSheet({
     required this.customer,
     required this.due,
@@ -955,9 +936,9 @@ class _CustomerDetailSheet extends StatelessWidget {
   final VoidCallback onRecordPayment;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final initials = _initials(customer.name);
-    final isVIP = stats.totalSpent >= 50000;
+    final tag = ref.watch(customerTagProvider(customer.customerId));
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       minChildSize: 0.72,
@@ -1016,28 +997,29 @@ class _CustomerDetailSheet extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isVIP
-                                  ? const Color(0xFFFFF7ED)
-                                  : const Color(0xFFF6F4EF),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              isVIP ? 'VIP' : 'Regular',
-                              style: TextStyle(
-                                color: isVIP
-                                    ? const Color(0xFFE98300)
-                                    : const Color(0xFF8B6F47),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                          if (tag.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: tag == 'VIP'
+                                    ? const Color(0xFFFFF7ED)
+                                    : const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                tag,
+                                style: TextStyle(
+                                  color: tag == 'VIP'
+                                      ? const Color(0xFFE98300)
+                                      : const Color(0xFF047857),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),

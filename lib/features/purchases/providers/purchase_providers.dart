@@ -44,7 +44,7 @@ class PurchaseService {
     for (final item in items) {
       await _ref.read(productServiceProvider).adjustStock(
             item.productId,
-            item.qty,
+            item.qty.round(),
             syncAfterSave: false,
           );
     }

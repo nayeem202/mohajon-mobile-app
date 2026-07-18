@@ -4,10 +4,13 @@ import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/customer.dart';
+import '../../../core/models/payment.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 import '../../customers/presentation/customer_form_screen.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../payments/presentation/add_payment_screen.dart';
@@ -29,20 +32,30 @@ class SalesHistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
-  late final TextEditingController _searchController;
+  static const _pageSize = 20;
+  final _scrollController = ScrollController();
   _SalesTimeFilter _timeFilter = _SalesTimeFilter.allTime;
   _InvoiceStatusFilter _statusFilter = _InvoiceStatusFilter.all;
+  int _loadedCount = _pageSize;
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      setState(() => _loadedCount += _pageSize);
+    }
   }
 
   @override
@@ -57,14 +70,17 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
     final scopedSales = widget.customer == null
         ? sales
         : sales.where((sale) => sale.customerId == widget.customer!.customerId).toList();
-    final filteredSales = _applyFilters(scopedSales, customerById);
     final stats = _summary(scopedSales);
     final activeCustomer = widget.customer;
+
+    final filteredSales = _applyFilters(scopedSales, customerById);
+    final displaySales = filteredSales.take(_loadedCount).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
       body: SafeArea(
         child: ListView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
             _TopBar(
@@ -141,21 +157,6 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
               ),
               child: Column(
                 children: [
-                  SizedBox(
-                    height: 46,
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        hintText: 'Search invoice ID or customer name...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -233,7 +234,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            if (filteredSales.isEmpty)
+            if (displaySales.isEmpty)
               const EmptyState(
                 message: 'No sales have been recorded yet.',
                 icon: Icons.receipt_long_rounded,
@@ -241,27 +242,35 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
             else
               Column(
                 children: [
-                  for (var index = 0; index < filteredSales.length; index++) ...[
+                  for (var index = 0; index < displaySales.length; index++) ...[
                     if (index != 0) const SizedBox(height: 10),
                     _InvoiceCard(
-                      sale: filteredSales[index],
-                      customer: customerById[filteredSales[index].customerId],
+                      sale: displaySales[index],
+                      customer: customerById[displaySales[index].customerId],
                       onTap: () => _openInvoiceSheet(
                         context,
-                        sale: filteredSales[index],
-                        customer: customerById[filteredSales[index].customerId],
+                        sale: displaySales[index],
+                        customer: customerById[displaySales[index].customerId],
                         profile: shopProfile,
                       ),
                     ),
                   ],
                   const SizedBox(height: 10),
-                  Text(
-                    'Showing ${filteredSales.length} invoices',
-                    style: const TextStyle(
-                      color: Color(0xFF667085),
-                      fontWeight: FontWeight.w600,
+                  if (displaySales.length < filteredSales.length)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    Text(
+                      'Showing all ${filteredSales.length} invoices',
+                      style: const TextStyle(
+                        color: Color(0xFF667085),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
                 ],
               ),
           ],
@@ -271,17 +280,12 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
   }
 
   List<Sale> _applyFilters(List<Sale> sales, Map<String, Customer> customerById) {
-    final query = _searchController.text.trim().toLowerCase();
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     final startOfWeek = startOfToday.subtract(Duration(days: now.weekday - 1));
     final startOfMonth = DateTime(now.year, now.month, 1);
 
     return sales.where((sale) {
-      final customer = customerById[sale.customerId];
-      final matchesQuery = query.isEmpty ||
-          sale.saleId.toLowerCase().contains(query) ||
-          (customer?.name.toLowerCase().contains(query) ?? false);
       final matchesTime = switch (_timeFilter) {
         _SalesTimeFilter.allTime => true,
         _SalesTimeFilter.today =>
@@ -298,7 +302,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
         _InvoiceStatusFilter.partial =>
           sale.paymentStatus == PaymentStatus.partial,
       };
-      return matchesQuery && matchesTime && matchesStatus;
+      return matchesTime && matchesStatus;
     }).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
@@ -386,7 +390,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
           : 'Walk-in customer',
       customerPhone: customer?.phone.isNotEmpty == true ? customer!.phone : '',
       receiptNumber: sale.saleId,
-      paymentMethod: sale.paymentStatus.name,
+      paymentMethod: PaymentMethod.cash,
       items: [
         for (final item in sale.items)
           ReceiptItem(
@@ -475,41 +479,9 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: colors.onSurface),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F766E),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD6F2EA),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: const Text(
-            'KA',
-            style: TextStyle(
-              color: Color(0xFF0F766E),
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-            ),
-          ),
-        ),
+        const ShopAvatar(radius: 16),
       ],
     );
   }

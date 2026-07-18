@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/utils/money.dart';
 import '../models/daily_sales.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class SalesSummaryScreen extends StatelessWidget {
   const SalesSummaryScreen({super.key});
@@ -77,26 +79,9 @@ class SalesSummaryScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Sales Summary'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
-          ),
+          const NotificationBell(),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6F2EA),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          const ShopAvatar(),
         ],
       ),
       body: ListView(

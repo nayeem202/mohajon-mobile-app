@@ -80,11 +80,11 @@ class LowStockProductsScreen extends StatelessWidget {
                                     ),
                                     _ProductChip(
                                       label:
-                                          'Stock ${product.stockQty.toStringAsFixed(0)}',
+                                          'Stock ${product.stockQty}',
                                     ),
                                     _ProductChip(
                                       label:
-                                          'Alert ${product.lowStockAlert.toStringAsFixed(0)}',
+                                          'Alert ${product.lowStockAlert}',
                                     ),
                                   ],
                                 ),

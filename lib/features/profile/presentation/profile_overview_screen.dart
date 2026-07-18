@@ -9,6 +9,7 @@ import '../providers/profile_providers.dart';
 import 'store_info_screen.dart';
 import 'widgets/animated_section.dart';
 import 'widgets/profile_avatar.dart';
+import '../../../core/widgets/notification_bell.dart';
 
 class ProfileOverviewScreen extends ConsumerStatefulWidget {
   const ProfileOverviewScreen({super.key});
@@ -37,10 +38,7 @@ class _ProfileOverviewScreenState
         leading: const BackButton(),
         title: const Text('Profile'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
+          const NotificationBell(),
         ],
       ),
       body: ListView(

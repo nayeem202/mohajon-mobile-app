@@ -7,6 +7,8 @@ import '../models/investment_item.dart';
 import '../providers/investment_item_providers.dart';
 import 'investment_detail_screen.dart';
 import 'investment_form_sheet.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class InvestmentListScreen extends ConsumerStatefulWidget {
   const InvestmentListScreen({super.key});
@@ -169,41 +171,9 @@ class _InvestmentsTopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: const Color(0xFF6B7280)),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0F2FE),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: const Text(
-            'IN',
-            style: TextStyle(
-              color: Color(0xFF2563EB),
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-            ),
-          ),
-        ),
+        const ShopAvatar(radius: 17, backgroundColor: Color(0xFFE0F2FE), textColor: Color(0xFF2563EB)),
       ],
     );
   }

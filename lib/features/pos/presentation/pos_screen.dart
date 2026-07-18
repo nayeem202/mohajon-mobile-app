@@ -13,7 +13,10 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../products/providers/product_providers.dart';
+import '../../profile/presentation/profile_overview_screen.dart';
 import '../providers/cart_provider.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -90,7 +93,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _TopBar(onAvatarTap: () {}),
+                      _TopBar(onAvatarTap: _openProfile),
                       const SizedBox(height: 14),
                       _SearchBar(
                         controller: _searchController,
@@ -165,6 +168,12 @@ class _PosScreenState extends ConsumerState<PosScreen>
     return ['All Products', ...sorted];
   }
 
+  void _openProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileOverviewScreen()),
+    );
+  }
+
   void _openCheckoutSheet(List<Customer> customers) {
     showModalBottomSheet<void>(
       context: context,
@@ -216,47 +225,9 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: colors.onSurface),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: colors.error,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: onAvatarTap,
-          child: Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF6E0C8),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFFB45309),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ),
+        ShopAvatar(radius: 18, backgroundColor: const Color(0xFFF6E0C8), textColor: const Color(0xFFB45309), onTap: onAvatarTap),
       ],
     );
   }
@@ -814,6 +785,9 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                         _customerMode = mode;
                         if (mode == _CustomerMode.walkIn) {
                           controller.setCustomer('');
+                          if (_paymentMethod == PaymentMethod.credit) {
+                            _paymentMethod = PaymentMethod.cash;
+                          }
                         }
                       });
                     },
@@ -1162,6 +1136,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                         label: 'Credit',
                         icon: Icons.credit_card_rounded,
                         selected: _paymentMethod == PaymentMethod.credit,
+                        enabled: _customerMode == _CustomerMode.existing,
                         onTap: () => setState(
                           () => _paymentMethod = PaymentMethod.credit,
                         ),
@@ -1213,14 +1188,14 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: cart.items.isEmpty
+                      onPressed: cart.items.isEmpty || (_customerMode == _CustomerMode.existing && cart.customerId.isEmpty)
                           ? null
                           : () async {
                               final controller = ref.read(cartProvider.notifier);
                               controller.setVatPercent(_vatPercent);
                               controller.setDiscount(discountAmount);
                               controller.setPaymentMethod(_paymentMethod);
-                              controller.setPaidAmount(total.toDouble());
+                              controller.setPaidAmount(_paymentMethod == PaymentMethod.credit ? 0 : total.toDouble());
                               if (_customerMode == _CustomerMode.walkIn) {
                                 controller.setCustomer('');
                               }
@@ -1427,23 +1402,26 @@ class _PaymentTile extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.enabled = true,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = this.enabled || selected;
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: Container(
         width: 150,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFF8A00) : const Color(0xFFF5EEE5),
+          color: selected ? const Color(0xFFFF8A00) : (enabled ? const Color(0xFFF5EEE5) : const Color(0xFFEDE5D8)),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? const Color(0xFFFF8A00) : const Color(0xFFE5D9C9),
@@ -1455,13 +1433,13 @@ class _PaymentTile extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: selected ? Colors.white : const Color(0xFF9A5A1B),
+              color: selected ? Colors.white : (enabled ? const Color(0xFF9A5A1B) : const Color(0xFFC0B09A)),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : const Color(0xFF9A5A1B),
+                color: selected ? Colors.white : (enabled ? const Color(0xFF9A5A1B) : const Color(0xFFC0B09A)),
                 fontWeight: FontWeight.w800,
               ),
             ),

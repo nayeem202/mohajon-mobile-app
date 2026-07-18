@@ -8,6 +8,8 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../providers/product_providers.dart';
 import 'product_form_screen.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 enum _StockFilter { all, low, out }
 
@@ -47,11 +49,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           data: (items) {
             final filteredBySearch = ref.watch(filteredProductsProvider);
             final visibleProducts = _applyFilter(filteredBySearch);
-            final totalValue = items.fold<double>(
-              0,
-              (sum, product) =>
-                  sum + (product.stockQty * product.purchasePrice),
-            );
+    final totalValue = items.fold<double>(
+      0,
+      (sum, product) =>
+          sum + (product.stockQty * product.purchasePrice),
+    );
             final lowStockCount = items
                 .where((product) => product.isLowStock)
                 .length;
@@ -62,7 +64,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
               children: [
-                const _StockTopBar(),
+                 const _StockTopBar(),
                 const SizedBox(height: 16),
                 _StockStats(
                   totalProducts: items.length,
@@ -194,47 +196,9 @@ class _StockTopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF6B7280),
-              size: 24,
-            ),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.2),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        Container(
-          width: 34,
-          height: 34,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFCE7C8),
-            shape: BoxShape.circle,
-          ),
-          child: const Text(
-            'KA',
-            style: TextStyle(
-              color: Color(0xFF8A5A11),
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-            ),
-          ),
-        ),
+        const ShopAvatar(radius: 17, backgroundColor: Color(0xFFFCE7C8), textColor: Color(0xFF8A5A11)),
       ],
     );
   }
@@ -712,8 +676,6 @@ class _InventoryRow extends StatelessWidget {
   );
 }
 
-String _quantity(double value) {
-  return value == value.roundToDouble()
-      ? value.toStringAsFixed(0)
-      : value.toStringAsFixed(1);
+String _quantity(int value) {
+  return value.toString();
 }

@@ -8,6 +8,8 @@ import '../models/ledger_entry.dart';
 import '../providers/report_providers.dart';
 import '../services/ledger_excel_service.dart';
 import '../services/ledger_pdf_service.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class CustomerLedgerDetailScreen extends ConsumerWidget {
   const CustomerLedgerDetailScreen({super.key, required this.customer});
@@ -55,26 +57,9 @@ class CustomerLedgerDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(customer.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
-          ),
+          const NotificationBell(),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6F2EA),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          const ShopAvatar(),
         ],
       ),
       body: ListView(

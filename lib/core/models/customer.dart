@@ -10,6 +10,8 @@ class Customer with Syncable {
     this.address = '',
     this.notes = '',
     this.imagePath,
+    this.totalSpent = 0.0,
+    this.tag = '',
     required this.shopId,
     required this.updatedAt,
     this.isDeleted = false,
@@ -23,6 +25,8 @@ class Customer with Syncable {
   final String address;
   final String notes;
   final String? imagePath;
+  final double totalSpent;
+  final String tag;
   @override
   final String shopId;
   @override
@@ -42,6 +46,8 @@ class Customer with Syncable {
     String? address,
     String? notes,
     String? imagePath,
+    double? totalSpent,
+    String? tag,
     String? shopId,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -55,6 +61,8 @@ class Customer with Syncable {
       address: address ?? this.address,
       notes: notes ?? this.notes,
       imagePath: imagePath ?? this.imagePath,
+      totalSpent: totalSpent ?? this.totalSpent,
+      tag: tag ?? this.tag,
       shopId: shopId ?? this.shopId,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -71,6 +79,8 @@ class Customer with Syncable {
     'address': address,
     'notes': notes,
     if (imagePath != null) 'imagePath': imagePath,
+    'totalSpent': totalSpent,
+    'tag': tag,
     'shopId': shopId,
     'updatedAt': dateToJson(updatedAt),
     'isDeleted': isDeleted,
@@ -85,6 +95,8 @@ class Customer with Syncable {
     address: (json['address'] ?? '') as String,
     notes: (json['notes'] ?? '') as String,
     imagePath: json['imagePath'] as String?,
+    totalSpent: (json['totalSpent'] as num? ?? 0).toDouble(),
+    tag: (json['tag'] ?? '') as String,
     shopId: (json['shopId'] ?? '') as String,
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,

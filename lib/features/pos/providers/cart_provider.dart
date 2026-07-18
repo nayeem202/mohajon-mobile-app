@@ -150,7 +150,7 @@ class CartController extends StateNotifier<CartState> {
     for (final item in state.items) {
       await _ref.read(productServiceProvider).adjustStock(
             item.productId,
-            -item.qty,
+            -item.qty.round(),
             syncAfterSave: false,
           );
     }

@@ -220,47 +220,53 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.payments_rounded,
-                    color: const Color(0xFFF97316), size: 20),
-                const SizedBox(width: 8),
-                const Text('Total Paid Out',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF9A3412),
-                        fontSize: 13)),
-                const Spacer(),
-                Text(money(totalPaid),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF9A3412),
-                        fontSize: 15)),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}% Cleared',
-                    style: const TextStyle(
-                        color: Color(0xFFF97316),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-          ),
+                child: Row(
+                  children: [
+                    Icon(Icons.payments_rounded,
+                        color: const Color(0xFFF97316), size: 20),
+                    const SizedBox(width: 8),
+                    const Text('Total Paid Out',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF9A3412),
+                            fontSize: 13)),
+                    const Spacer(),
+                    Tooltip(
+                      message: 'Outstanding Capital = Total Investment + Profit - Total Paid Out',
+                      child: Text(money(totalPaid),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF9A3412),
+                              fontSize: 15)),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Tooltip(
+                        message: 'Percentage of total due (investment + profit) that has been paid out',
+                        child: Text(
+                          '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}% Cleared',
+                          style: const TextStyle(
+                              color: Color(0xFFF97316),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -498,11 +504,13 @@ class _MemberCard extends ConsumerWidget {
                   color: const Color(0xFF047857)),
               const SizedBox(width: 6),
               _MiniStat(
-                  label: 'Net Due',
-                  value: money(netDue),
-                  color: netDue > 0
-                      ? colors.error
-                      : const Color(0xFF047857)),
+                label: 'Net Due',
+                value: money(netDue),
+                color: netDue > 0
+                    ? colors.error
+                    : const Color(0xFF047857),
+                tooltip: 'Net Due = Investment Amount + Profit - Paid Amount. Payouts reduce this balance.',
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -545,32 +553,43 @@ class _MiniStat extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.tooltip,
   });
 
   final String label;
   final String value;
   final Color color;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        children: [
-          Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                  color: color)),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: color.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w600)),
-        ],
-      ),
+      child: tooltip != null
+          ? Tooltip(
+              message: tooltip!,
+              child: _miniStatContent(),
+            )
+          : _miniStatContent(),
+    );
+  }
+
+  Widget _miniStatContent() {
+    return Column(
+      children: [
+        Text(value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                color: color)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: TextStyle(
+                fontSize: 10,
+                color: color.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }

@@ -7,6 +7,8 @@ import '../providers/report_providers.dart';
 import '../services/ledger_excel_service.dart';
 import '../services/ledger_pdf_service.dart';
 import 'customer_ledger_detail_screen.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class CustomerLedgerScreen extends ConsumerStatefulWidget {
   const CustomerLedgerScreen({super.key});
@@ -70,26 +72,9 @@ class _CustomerLedgerScreenState
       appBar: AppBar(
         title: const Text('Customer Ledger'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
-          ),
+          const NotificationBell(),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6F2EA),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          const ShopAvatar(),
         ],
       ),
       body: ListView(

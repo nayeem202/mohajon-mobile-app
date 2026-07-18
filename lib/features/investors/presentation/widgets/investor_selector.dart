@@ -11,11 +11,14 @@ class InvestorSelector extends ConsumerStatefulWidget {
     required this.selectedInvestors,
     required this.onChanged,
     this.showSharePercentage = false,
+    this.autoCalculatePercentage = false,
+
   });
 
   final List<SelectedInvestor> selectedInvestors;
   final ValueChanged<List<SelectedInvestor>> onChanged;
   final bool showSharePercentage;
+  final bool autoCalculatePercentage;
 
   @override
   ConsumerState<InvestorSelector> createState() => _InvestorSelectorState();
@@ -131,33 +134,53 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                         },
                       ),
                     ),
-                    if (widget.showSharePercentage) ...[
+                    if (widget.showSharePercentage || widget.autoCalculatePercentage) ...[
                       const SizedBox(width: 8),
                       Expanded(
-                        child: TextFormField(
-                          initialValue: si.sharePercentage == 0
-                              ? ''
-                              : si.sharePercentage.toString(),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: const InputDecoration(
-                            labelText: 'Share %',
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
-                            suffixText: '%',
-                          ),
-                          onChanged: (v) {
-                            final list = [...widget.selectedInvestors];
-                            list[index] = SelectedInvestor(
-                              investorId: si.investorId,
-                              investmentAmount: si.investmentAmount,
-                              sharePercentage:
-                                  double.tryParse(v.trim()) ?? 0,
-                            );
-                            widget.onChanged(list);
-                          },
-                        ),
+                        child: widget.autoCalculatePercentage
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF7F5F0),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  si.sharePercentage > 0
+                                      ? '${si.sharePercentage.toStringAsFixed(1)}%'
+                                      : 'N/A',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF667085),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              )
+                            : TextFormField(
+                                initialValue: si.sharePercentage == 0
+                                    ? ''
+                                    : si.sharePercentage.toString(),
+                                keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true),
+                                decoration: const InputDecoration(
+                                  labelText: 'Share %',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  suffixText: '%',
+                                ),
+                                onChanged: (v) {
+                                  final list = [...widget.selectedInvestors];
+                                  list[index] = SelectedInvestor(
+                                    investorId: si.investorId,
+                                    investmentAmount: si.investmentAmount,
+                                    sharePercentage:
+                                        double.tryParse(v.trim()) ?? 0,
+                                  );
+                                  widget.onChanged(list);
+                                },
+                              ),
                       ),
                     ],
                   ],

@@ -31,7 +31,7 @@ class ReceiptViewModel extends StateNotifier<Receipt> {
       customerName: '',
       customerPhone: '',
       receiptNumber: 'RCP-${now.millisecondsSinceEpoch}',
-      paymentMethod: receiptPaymentMethods.first,
+      paymentMethod: receiptPaymentMethods.first, // Cash
       items: [
         ReceiptItem(
           id: const Uuid().v4(),
@@ -111,7 +111,7 @@ class ReceiptViewModel extends StateNotifier<Receipt> {
     state = state.copyWith(receiptNumber: value);
   }
 
-  void updatePaymentMethod(String value) {
+  void updatePaymentMethod(PaymentMethod value) {
     state = state.copyWith(paymentMethod: value);
   }
 
@@ -240,7 +240,7 @@ class ReceiptCheckoutService {
     for (final item in saleItems) {
       await _ref.read(productServiceProvider).adjustStock(
             item.productId,
-            -item.qty,
+            -item.qty.round(),
             syncAfterSave: false,
           );
     }
@@ -251,7 +251,7 @@ class ReceiptCheckoutService {
           customerId: receipt.customerId,
           saleId: sale.saleId,
           amount: receipt.total,
-          paymentMethod: _paymentMethodFromLabel(receipt.paymentMethod),
+          paymentMethod: receipt.paymentMethod,
           shopId: sale.shopId,
           createdAt: now,
           updatedAt: now,
@@ -263,14 +263,4 @@ class ReceiptCheckoutService {
     return sale;
   }
 
-  PaymentMethod _paymentMethodFromLabel(String label) {
-    switch (label) {
-      case 'bKash':
-        return PaymentMethod.bkash;
-      case 'Nagad':
-        return PaymentMethod.nagad;
-      default:
-        return PaymentMethod.cash;
-    }
-  }
 }

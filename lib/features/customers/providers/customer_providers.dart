@@ -53,6 +53,24 @@ final customerServiceProvider = Provider<CustomerService>((ref) {
   return CustomerService(ref, const Uuid());
 });
 
+final customerTagProvider = Provider.family<String, String>((ref, customerId) {
+  final customer = (ref.watch(customersProvider).value ?? [])
+      .where((c) => c.customerId == customerId)
+      .firstOrNull;
+  if (customer == null) return '';
+  final settings = ref.read(localDatabaseProvider).settings;
+  final vipThreshold = (settings.get('customerVipThreshold') as num? ?? 10000).toDouble();
+  final regularThreshold = (settings.get('customerRegularThreshold') as num? ?? 1000).toDouble();
+
+  final sales = (ref.watch(salesStreamProvider).value ?? [])
+      .where((s) => s.customerId == customerId);
+  final totalSpent = sales.fold<double>(0, (s, sale) => s + sale.totalAmount);
+
+  if (totalSpent >= vipThreshold) return 'VIP';
+  if (totalSpent >= regularThreshold) return 'Regular';
+  return '';
+});
+
 final customerDueProvider = Provider.family<double, String>((ref, customerId) {
   final sales = (ref.watch(salesStreamProvider).value ?? const <Sale>[]).where(
     (sale) => sale.customerId == customerId,

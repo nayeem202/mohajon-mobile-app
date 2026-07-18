@@ -9,6 +9,7 @@ import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
 import 'account_security_screen.dart';
+import 'customer_rules_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 
 
@@ -72,6 +73,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const AccountSecurityScreen(),
+                        ),
+                      );
+                    },
+            ),
+            const SizedBox(height: 12),
+            _SettingsActionCard(
+              icon: Icons.local_offer_rounded,
+              title: 'Customer Rules',
+              subtitle: 'Set spend thresholds to auto-tag clients as Regular or VIP',
+              onTap: isBusy
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CustomerRulesSettingsScreen(),
                         ),
                       );
                     },

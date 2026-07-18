@@ -88,6 +88,62 @@ final vendorOutstandingProvider = Provider.family<double, String>((ref, vendorId
   return totalPurchase - totalPaid;
 });
 
+class VendorLedgerEntry {
+  final String id;
+  final String type; // 'purchase' or 'payment'
+  final double amount;
+  final DateTime date;
+  final String description;
+  final String? reference;
+  final String? itemsSupplied;
+
+  const VendorLedgerEntry({
+    required this.id,
+    required this.type,
+    required this.amount,
+    required this.date,
+    required this.description,
+    this.reference,
+    this.itemsSupplied,
+  });
+}
+
+final vendorLedgerProvider = Provider.family<List<VendorLedgerEntry>, String>((ref, vendorId) {
+  final purchases = ref.watch(vendorPurchasesForVendorProvider(vendorId));
+  final payments = ref.watch(vendorPaymentsForVendorProvider(vendorId));
+
+  final entries = <VendorLedgerEntry>[
+    for (final p in purchases)
+      VendorLedgerEntry(
+        id: p.purchaseId,
+        type: 'purchase',
+        amount: p.amount,
+        date: p.date,
+        description: p.status.toUpperCase(),
+        reference: p.notes.isNotEmpty ? p.notes : null,
+        itemsSupplied: p.itemsSupplied.isNotEmpty ? p.itemsSupplied : null,
+      ),
+    for (final p in payments)
+      VendorLedgerEntry(
+        id: p.paymentId,
+        type: 'payment',
+        amount: p.amount,
+        date: p.date,
+        description: p.method.toUpperCase(),
+        reference: p.reference.isNotEmpty ? p.reference : null,
+        itemsSupplied: null,
+      ),
+  ];
+
+  entries.sort((a, b) => a.date.compareTo(b.date));
+  return entries;
+});
+
+final vendorTotalExpenseProvider = Provider<double>((ref) {
+  final allPurchases = ref.watch(vendorPurchasesProvider).value ?? [];
+  return allPurchases.fold<double>(0, (s, p) => s + p.amount);
+});
+
 final vendorServiceProvider = Provider<VendorService>((ref) {
   return VendorService(ref, const Uuid());
 });
@@ -151,6 +207,7 @@ class VendorService {
     DateTime? date,
     String status = 'pending',
     String notes = '',
+    String itemsSupplied = '',
   }) async {
     final now = DateTime.now();
     final purchase = VendorPurchase(
@@ -160,6 +217,7 @@ class VendorService {
       date: date ?? now,
       status: status,
       notes: notes,
+      itemsSupplied: itemsSupplied,
       shopId: _ref.read(shopIdProvider),
       updatedAt: now,
       syncStatus: SyncStatus.pending,
@@ -169,11 +227,15 @@ class VendorService {
 
     final vendor = db.vendors.getForShop(_ref.read(shopIdProvider), vendorId);
     if (vendor != null) {
+      final updatedProducts = itemsSupplied.isNotEmpty && !vendor.products.contains(itemsSupplied)
+          ? (vendor.products.isEmpty ? itemsSupplied : '${vendor.products}, $itemsSupplied')
+          : vendor.products;
       await db.vendors.put(vendor.copyWith(
         totalOrders: vendor.totalOrders + 1,
         totalSpent: vendor.totalSpent + amount,
         pendingAmount: vendor.pendingAmount + amount,
         lastPurchaseDate: date ?? now,
+        products: updatedProducts,
         updatedAt: now,
         syncStatus: SyncStatus.pending,
       ));

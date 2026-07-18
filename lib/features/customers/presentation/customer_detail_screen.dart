@@ -31,7 +31,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
     final ref = this.ref;
     final customer = widget.customer;
     final due = ref.watch(customerDueProvider(customer.customerId));
+    final tag = ref.watch(customerTagProvider(customer.customerId));
     final ledger = ref.watch(customerLedgerProvider(customer.customerId));
+    final sales = (ref.watch(salesStreamProvider).value ?? [])
+        .where((s) => s.customerId == customer.customerId);
+    final totalSpent = sales.fold<double>(0, (s, sale) => s + sale.totalAmount);
     final debitTotal = ledger
         .where((entry) => entry.signedAmount > 0)
         .fold<double>(0, (sum, entry) => sum + entry.amount);
@@ -96,10 +100,40 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              customer.name,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w900),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    customer.name,
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w900),
+                                  ),
+                                ),
+                                if (tag.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: tag == 'VIP'
+                                          ? const Color(0xFFFFF7ED)
+                                          : const Color(0xFFF0FDF4),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      tag,
+                                      style: TextStyle(
+                                        color: tag == 'VIP'
+                                            ? const Color(0xFFE98300)
+                                            : const Color(0xFF047857),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 3),
                             Text(customer.phone),
@@ -132,6 +166,13 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                   const SizedBox(height: 16),
                   Row(
                     children: [
+                      _MiniStat(
+                        label: 'Total Spent',
+                        value: money(totalSpent),
+                        icon: Icons.payments_rounded,
+                        color: const Color(0xFF0F766E),
+                      ),
+                      const SizedBox(width: 10),
                       _MiniStat(
                         label: 'Debit',
                         value: money(debitTotal),

@@ -9,6 +9,7 @@ class VendorPurchase with Syncable {
     required this.date,
     this.status = 'pending',
     this.notes = '',
+    this.itemsSupplied = '',
     required this.shopId,
     required this.updatedAt,
     this.isDeleted = false,
@@ -21,6 +22,7 @@ class VendorPurchase with Syncable {
   final DateTime date;
   final String status;
   final String notes;
+  final String itemsSupplied;
   @override
   final String shopId;
   @override
@@ -39,6 +41,7 @@ class VendorPurchase with Syncable {
     DateTime? date,
     String? status,
     String? notes,
+    String? itemsSupplied,
     String? shopId,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -51,6 +54,7 @@ class VendorPurchase with Syncable {
       date: date ?? this.date,
       status: status ?? this.status,
       notes: notes ?? this.notes,
+      itemsSupplied: itemsSupplied ?? this.itemsSupplied,
       shopId: shopId ?? this.shopId,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -66,6 +70,7 @@ class VendorPurchase with Syncable {
     'date': dateToJson(date),
     'status': status,
     'notes': notes,
+    'itemsSupplied': itemsSupplied,
     'shopId': shopId,
     'updatedAt': dateToJson(updatedAt),
     'isDeleted': isDeleted,
@@ -79,6 +84,7 @@ class VendorPurchase with Syncable {
     date: dateFromJson(json['date']),
     status: (json['status'] ?? 'pending') as String,
     notes: (json['notes'] ?? '') as String,
+    itemsSupplied: (json['itemsSupplied'] ?? '') as String,
     shopId: (json['shopId'] ?? '') as String,
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,

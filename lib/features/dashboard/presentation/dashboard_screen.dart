@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,15 +7,19 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/product.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/loading_overlay.dart';
+import '../../../core/widgets/notification_bell.dart';
 import '../../customers/presentation/customer_form_screen.dart';
 import '../../customers/presentation/customer_list_screen.dart';
 import '../../pos/presentation/pos_screen.dart';
 import '../../products/presentation/product_form_screen.dart';
 import '../../profile/models/profile.dart';
 import '../../investors/presentation/investor_list_screen.dart';
+import '../../pos/presentation/sales_history_screen.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
 import '../../profile/providers/profile_providers.dart';
+import '../presentation/low_stock_products_screen.dart';
 import '../providers/dashboard_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -78,10 +80,8 @@ class _HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final name = profile?.ownerName ?? '';
     final imagePath = profile?.imagePath;
-    final initials = _initials(name);
 
     return Row(
       children: [
@@ -111,82 +111,10 @@ class _HomeTopBar extends StatelessWidget {
             ),
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: colors.onSurface),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F766E),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const NotificationBell(),
         const SizedBox(width: 14),
-        InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: onAvatarTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: imagePath != null && imagePath.isNotEmpty
-                ? Image.file(
-                    File(imagePath),
-                    width: 34,
-                    height: 34,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _InitialsBadge(initials: initials),
-                  )
-                : _InitialsBadge(initials: initials),
-          ),
-        ),
+        AppAvatar(name: name, imagePath: imagePath, onTap: onAvatarTap, radius: 17),
       ],
-    );
-  }
-
-  String _initials(String name) {
-    if (name.trim().isEmpty) return '?';
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    }
-    final single = parts.first;
-    if (single.length >= 2) return single.substring(0, 2).toUpperCase();
-    return single.toUpperCase();
-  }
-}
-
-class _InitialsBadge extends StatelessWidget {
-  const _InitialsBadge({required this.initials});
-
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: const Color(0xFFD6F2EA),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: const TextStyle(
-            color: Color(0xFF0F766E),
-            fontWeight: FontWeight.w900,
-            fontSize: 12,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -682,7 +610,7 @@ class _RecentSalesCard extends StatelessWidget {
             title: 'Recent Sales',
             action: 'See all',
             onAction: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CustomerListScreen()),
+              MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
             ),
           ),
           const SizedBox(height: 14),
@@ -793,8 +721,17 @@ class _LowStockAlert extends StatelessWidget {
     final visible = products.take(4).toList();
     return _SectionCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(title: 'Low Stock Alert', action: 'View all'),
+          _SectionHeader(
+            title: 'Low Stock Alert',
+            action: 'View all',
+            onAction: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LowStockProductsScreen(products: products),
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
           if (visible.isEmpty)
             const _InlineEmpty(message: 'No low stock products right now')
@@ -802,6 +739,7 @@ class _LowStockAlert extends StatelessWidget {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   for (var index = 0; index < visible.length; index++) ...[
                     if (index != 0) const SizedBox(width: 10),
@@ -846,7 +784,7 @@ class _LowStockProductCard extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Text(
-                '${_formatQuantity(product.stockQty)} left',
+                '${product.stockQty} left',
                 style: const TextStyle(
                   color: Color(0xFFEF4444),
                   fontSize: 12,
@@ -868,7 +806,7 @@ class _LowStockProductCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'min ${_formatQuantity(product.lowStockAlert)}',
+            'min ${product.lowStockAlert}',
             style: const TextStyle(
               color: Color(0xFF667085),
               fontWeight: FontWeight.w600,
@@ -968,10 +906,8 @@ class _InlineEmpty extends StatelessWidget {
   }
 }
 
-String _formatQuantity(double value) {
-  return value == value.roundToDouble()
-      ? value.toStringAsFixed(0)
-      : value.toStringAsFixed(1);
+String _formatQuantity(num value) {
+  return (value is double ? value.toInt() : value).toString();
 }
 
 String _relativeTime(DateTime value) {

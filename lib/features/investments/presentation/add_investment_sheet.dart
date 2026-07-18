@@ -179,37 +179,32 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Profit is shared automatically based on investor contribution.',
+                  _profitMethod == 'proportional'
+                      ? 'Profit is shared proportionally based on investment amount. Share % is auto-calculated.'
+                      : 'Profit is shared based on fixed percentage assigned to each investor.',
                   style: TextStyle(
                       color: const Color(0xFF98A2B3),
                       fontSize: 12,
                       fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const _FieldLabel(label: 'Investors'),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: () {
-                        final list = [..._selectedInvestors];
-                        list.add(SelectedInvestor(
-                            investorId: '', investmentAmount: 0));
-                        setState(() => _selectedInvestors = list);
-                      },
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('Add Investor',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 13)),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 12),
+                const _FieldLabel(label: 'Investors'),
                 const SizedBox(height: 6),
                 InvestorSelector(
                   selectedInvestors: _selectedInvestors,
-                  onChanged: (list) =>
-                      setState(() => _selectedInvestors = list),
-                  showSharePercentage: _profitMethod == 'fixed',
+                  onChanged: (list) {
+                    final totalAmount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
+                    if (_profitMethod == 'proportional' && totalAmount > 0) {
+                      list = list.map((si) => SelectedInvestor(
+                        investorId: si.investorId,
+                        investmentAmount: si.investmentAmount,
+                        sharePercentage: (si.investmentAmount / totalAmount) * 100,
+                      )).toList();
+                    }
+                    setState(() => _selectedInvestors = list);
+                  },
+                  showSharePercentage: true,
+                  autoCalculatePercentage: _profitMethod == 'proportional',
                 ),
                 const SizedBox(height: 20),
                 const _FieldLabel(label: 'Notes'),

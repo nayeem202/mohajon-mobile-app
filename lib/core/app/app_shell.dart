@@ -13,6 +13,7 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
+import '../../features/settings/providers/shop_profile_providers.dart';
 import 'feature_hub_screen.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final shopName = ref.watch(shopProfileProvider).value?.shopName ?? '';
     final l10n = AppLocalizations.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final screens = [

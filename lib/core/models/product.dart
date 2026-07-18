@@ -10,6 +10,7 @@ class Product with Syncable {
     required this.category,
     this.unit = 'pcs',
     this.imagePath,
+    this.buyingPrice = 0,
     required this.purchasePrice,
     required this.sellingPrice,
     required this.stockQty,
@@ -27,10 +28,11 @@ class Product with Syncable {
   final String category;
   final String unit;
   final String? imagePath;
+  final double buyingPrice;
   final double purchasePrice;
   final double sellingPrice;
-  final double stockQty;
-  final double lowStockAlert;
+  final int stockQty;
+  final int lowStockAlert;
   @override
   final String shopId;
   @override
@@ -55,10 +57,11 @@ class Product with Syncable {
     String? category,
     String? unit,
     String? imagePath,
+    double? buyingPrice,
     double? purchasePrice,
     double? sellingPrice,
-    double? stockQty,
-    double? lowStockAlert,
+    int? stockQty,
+    int? lowStockAlert,
     String? shopId,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -72,6 +75,7 @@ class Product with Syncable {
       category: category ?? this.category,
       unit: unit ?? this.unit,
       imagePath: imagePath ?? this.imagePath,
+      buyingPrice: buyingPrice ?? this.buyingPrice,
       purchasePrice: purchasePrice ?? this.purchasePrice,
       sellingPrice: sellingPrice ?? this.sellingPrice,
       stockQty: stockQty ?? this.stockQty,
@@ -92,6 +96,7 @@ class Product with Syncable {
     'category': category,
     'unit': unit,
     'imagePath': imagePath,
+    'buyingPrice': buyingPrice,
     'purchasePrice': purchasePrice,
     'sellingPrice': sellingPrice,
     'stockQty': stockQty,
@@ -110,10 +115,11 @@ class Product with Syncable {
     category: (json['category'] ?? '') as String,
     unit: (json['unit'] ?? 'pcs') as String,
     imagePath: json['imagePath'] as String?,
+    buyingPrice: (json['buyingPrice'] as num? ?? 0).toDouble(),
     purchasePrice: (json['purchasePrice'] as num? ?? 0).toDouble(),
     sellingPrice: (json['sellingPrice'] as num? ?? 0).toDouble(),
-    stockQty: (json['stockQty'] as num? ?? 0).toDouble(),
-    lowStockAlert: (json['lowStockAlert'] as num? ?? 0).toDouble(),
+    stockQty: (json['stockQty'] as num? ?? 0).toInt(),
+    lowStockAlert: (json['lowStockAlert'] as num? ?? 0).toInt(),
     shopId: (json['shopId'] ?? '') as String,
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,

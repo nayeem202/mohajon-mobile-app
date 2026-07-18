@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 
-const receiptPaymentMethods = ['Cash', 'bKash', 'Nagad'];
+import '../../../core/models/payment.dart';
+
+const receiptPaymentMethods = PaymentMethod.values;
 
 final _receiptCurrency = NumberFormat.currency(locale: 'en_US', symbol: r'$');
 
@@ -70,7 +72,7 @@ class Receipt {
   final String customerName;
   final String customerPhone;
   final String receiptNumber;
-  final String paymentMethod;
+  final PaymentMethod paymentMethod;
   final List<ReceiptItem> items;
   final ReceiptDiscountType discountType;
   final double discountPercent;
@@ -78,7 +80,7 @@ class Receipt {
   final double taxPercent;
   final DateTime date;
 
-  String get displayPaymentMethod => paymentMethod;
+  String get displayPaymentMethod => paymentMethod.displayName;
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
 
@@ -108,7 +110,7 @@ class Receipt {
     String? customerName,
     String? customerPhone,
     String? receiptNumber,
-    String? paymentMethod,
+    PaymentMethod? paymentMethod,
     List<ReceiptItem>? items,
     ReceiptDiscountType? discountType,
     double? discountPercent,

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 import '../models/investor.dart';
 import '../providers/investor_providers.dart';
 import '../providers/investor_service.dart';
@@ -45,35 +47,10 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
         title: const Text('Investors',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
         actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                  icon: const Icon(Icons.notifications_none_rounded),
-                  onPressed: () {}),
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                      color: Color(0xFFDC2626), shape: BoxShape.circle),
-                ),
-              ),
-            ],
-          ),
+          const NotificationBell(),
           const SizedBox(width: 4),
-          const CircleAvatar(
-            radius: 16,
-            backgroundColor: Color(0xFFF97316),
-            child: Text('O',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14)),
-          ),
-          const SizedBox(width: 12),
+          const ShopAvatar(radius: 16, backgroundColor: Color(0xFFF97316), textColor: Colors.white),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(

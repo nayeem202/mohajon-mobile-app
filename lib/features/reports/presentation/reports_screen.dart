@@ -4,6 +4,8 @@ import '../models/report_item.dart';
 import 'customer_ledger_screen.dart';
 import 'inventory_report_screen.dart';
 import 'sales_summary_screen.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -77,26 +79,9 @@ class ReportsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Reports'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
-          ),
+          const NotificationBell(),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6F2EA),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          const ShopAvatar(),
         ],
       ),
       body: ListView(

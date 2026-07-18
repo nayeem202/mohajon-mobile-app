@@ -180,7 +180,43 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   hintText: 'e.g. Monthly payout',
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.info_outline_rounded,
+                            size: 16, color: Color(0xFF2563EB)),
+                        const SizedBox(width: 6),
+                        const Text('How Payouts Work',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E40AF),
+                                fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      '• Reduces Outstanding Capital: The payout amount is subtracted from the investment outstanding balance.\n'
+                      '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.\n'
+                      '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
+                      style: TextStyle(
+                          color: Color(0xFF1E40AF),
+                          fontSize: 11,
+                          height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 height: 50,

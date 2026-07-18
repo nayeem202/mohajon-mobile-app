@@ -23,6 +23,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
     final outstanding = ref.watch(vendorOutstandingProvider(vendor.vendorId));
     final purchases = ref.watch(vendorPurchasesForVendorProvider(vendor.vendorId));
     final payments = ref.watch(vendorPaymentsForVendorProvider(vendor.vendorId));
+    final ledger = ref.watch(vendorLedgerProvider(vendor.vendorId));
     final totalPaid = payments.fold<double>(0, (s, p) => s + p.amount);
     final totalPurchased = purchases.fold<double>(0, (s, p) => s + p.amount);
     final colors = Theme.of(context).colorScheme;
@@ -138,49 +139,24 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
             ),
             const SizedBox(height: 16),
             _SectionCard(
-              title: 'Purchase History',
-              trailing: TextButton.icon(
-                onPressed: () => _showRecordPurchaseSheet(vendor),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Add'),
+              title: 'Vendor Ledger',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => _showRecordPurchaseSheet(vendor),
+                    icon: const Icon(Icons.shopping_cart_rounded, size: 16),
+                    label: const Text('Purchase'),
+                  ),
+                  const SizedBox(width: 4),
+                  TextButton.icon(
+                    onPressed: () => _showRecordPaymentSheet(vendor),
+                    icon: const Icon(Icons.payments_rounded, size: 16),
+                    label: const Text('Payment'),
+                  ),
+                ],
               ),
-              children: purchases.isEmpty
-                  ? [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('No purchases recorded yet.'),
-                      ),
-                    ]
-                  : purchases.map((p) => _HistoryRow(
-                      title: p.status.toUpperCase(),
-                      subtitle: p.notes.isNotEmpty ? p.notes : 'Purchase',
-                      amount: p.amount,
-                      date: p.date,
-                      amountColor: colors.error,
-                    )).toList(),
-            ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              title: 'Payment History',
-              trailing: TextButton.icon(
-                onPressed: () => _showRecordPaymentSheet(vendor),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Add'),
-              ),
-              children: payments.isEmpty
-                  ? [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('No payments recorded yet.'),
-                      ),
-                    ]
-                  : payments.map((p) => _HistoryRow(
-                      title: p.method.toUpperCase(),
-                      subtitle: p.reference.isNotEmpty ? p.reference : 'Payment',
-                      amount: p.amount,
-                      date: p.date,
-                      amountColor: colors.primary,
-                    )).toList(),
+              children: _buildLedger(ledger, colors),
             ),
             const SizedBox(height: 16),
             _SectionCard(
@@ -344,7 +320,34 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
     }
   }
 
+  List<Widget> _buildLedger(List<VendorLedgerEntry> ledger, ColorScheme colors) {
+    if (ledger.isEmpty) {
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text('No transactions recorded yet.'),
+        ),
+      ];
+    }
+    var runningBalance = 0.0;
+    return ledger.map((entry) {
+      runningBalance += entry.type == 'purchase' ? entry.amount : -entry.amount;
+      return _LedgerRow(
+        type: entry.type,
+        amount: entry.amount,
+        description: entry.description,
+        reference: entry.reference,
+        itemsSupplied: entry.itemsSupplied,
+        date: entry.date,
+        balance: runningBalance,
+        purchaseColor: colors.error,
+        paymentColor: colors.primary,
+      );
+    }).toList();
+  }
+
   Future<void> _showRecordPurchaseSheet(Vendor vendor) async {
+    final itemsCtrl = TextEditingController();
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -396,6 +399,14 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                     ),
                     const SizedBox(height: 12),
                     TextField(
+                      controller: itemsCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Items Supplied',
+                        hintText: 'e.g. Rice 50kg, Oil 10L',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
                       controller: noteCtrl,
                       decoration: const InputDecoration(labelText: 'Notes'),
                     ),
@@ -412,6 +423,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                               vendorId: vendor.vendorId,
                               amount: amount,
                               notes: noteCtrl.text.trim(),
+                              itemsSupplied: itemsCtrl.text.trim(),
                             );
                             if (sheetContext.mounted) {
                               Navigator.of(sheetContext).pop();
@@ -696,67 +708,117 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({
-    required this.title,
-    required this.subtitle,
+class _LedgerRow extends StatelessWidget {
+  const _LedgerRow({
+    required this.type,
     required this.amount,
+    required this.description,
+    this.reference,
+    this.itemsSupplied,
     required this.date,
-    required this.amountColor,
+    required this.balance,
+    required this.purchaseColor,
+    required this.paymentColor,
   });
 
-  final String title;
-  final String subtitle;
+  final String type;
   final double amount;
+  final String description;
+  final String? reference;
+  final String? itemsSupplied;
   final DateTime date;
-  final Color amountColor;
+  final double balance;
+  final Color purchaseColor;
+  final Color paymentColor;
 
   @override
   Widget build(BuildContext context) {
+    final isPurchase = type == 'purchase';
+    final color = isPurchase ? purchaseColor : paymentColor;
+    final icon = isPurchase ? Icons.shopping_cart_rounded : Icons.payments_rounded;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(width: 10),
           Expanded(
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  description,
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     color: Color(0xFF101828),
                   ),
                 ),
+                if (itemsSupplied != null)
+                  Text(
+                    itemsSupplied!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF667085),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (reference != null && itemsSupplied == null)
+                  Text(
+                    reference!,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF667085),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  subtitle,
+                  money(amount),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  '${date.day}/${date.month}/${date.year}',
                   style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF667085),
+                    fontSize: 10,
+                    color: Color(0xFF98A2B3),
                   ),
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                money(amount),
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  color: amountColor,
-                ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 80,
+            child: Text(
+              money(balance),
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                color: balance > 0 ? purchaseColor : const Color(0xFF047857),
               ),
-              Text(
-                '${date.day}/${date.month}/${date.year}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF98A2B3),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

@@ -159,9 +159,9 @@ class InventoryExcelService {
     return '<c r="$ref"$s t="inlineStr"><is><t>${_e(value)}</t></is></c>';
   }
 
-  String _numberCell(String ref, double value, {int? styleId}) {
+  String _numberCell(String ref, num value, {int? styleId}) {
     final s = styleId == null ? '' : ' s="$styleId"';
-    final v = value.toStringAsFixed(value % 1 == 0 ? 0 : 2);
+    final v = value is double ? value.toStringAsFixed(value % 1 == 0 ? 0 : 2) : value.toString();
     return '<c r="$ref"$s><v>$v</v></c>';
   }
 

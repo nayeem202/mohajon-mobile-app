@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
 import '../../../core/widgets/async_action_state.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 import '../providers/product_providers.dart';
 import 'barcode_scan_screen.dart';
 
@@ -23,7 +25,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _barcode = TextEditingController();
-  final _price = TextEditingController();
+  final _buyingPrice = TextEditingController();
+  final _sellingPrice = TextEditingController();
   final _stockQty = TextEditingController();
   final _lowStock = TextEditingController();
   String _selectedCategory = 'Grocery';
@@ -50,7 +53,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     final product = widget.product;
     _name.text = product?.nameEn ?? '';
     _barcode.text = product?.barcode ?? '';
-    _price.text = (product?.sellingPrice ?? 0).toString();
+    _buyingPrice.text = (product?.buyingPrice ?? 0).toString();
+    _sellingPrice.text = (product?.sellingPrice ?? 0).toString();
     _stockQty.text = (product?.stockQty ?? 0).toString();
     _lowStock.text = (product?.lowStockAlert ?? 10).toString();
     _selectedCategory = product?.category.isNotEmpty == true
@@ -64,7 +68,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   void dispose() {
     _name.dispose();
     _barcode.dispose();
-    _price.dispose();
+    _buyingPrice.dispose();
+    _sellingPrice.dispose();
     _stockQty.dispose();
     _lowStock.dispose();
     super.dispose();
@@ -79,30 +84,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
         appBar: AppBar(
           title: Text(isEditing ? 'Edit Product' : 'Add Product'),
           actions: [
-            IconButton(
-              tooltip: 'Notifications',
-              onPressed: () {},
-              icon: const Icon(Icons.notifications_none_rounded),
-            ),
+            const NotificationBell(),
             const SizedBox(width: 6),
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6F2EA),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  'KA',
-                  style: TextStyle(
-                    color: Color(0xFF0F766E),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
+            const ShopAvatar(),
+            const SizedBox(width: 12),
           ],
         ),
         body: Form(
@@ -158,17 +143,15 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
               ),
               const SizedBox(height: 16),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _FieldLabel(label: 'Price (৳)', required: true),
+                        const _FieldLabel(label: 'Buying Price (৳)', required: true),
                         const SizedBox(height: 8),
                         TextFormField(
-                          controller: _price,
+                          controller: _buyingPrice,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
@@ -183,28 +166,41 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                   ),
                   const SizedBox(width: 14),
                   Expanded(
-                    flex: 2,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _FieldLabel(label: 'Unit'),
+                        const _FieldLabel(label: 'Selling Price (৳)', required: true),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final unit in _units)
-                              _ChoiceChip(
-                                label: unit,
-                                selected: _selectedUnit == unit,
-                                onTap: () =>
-                                    setState(() => _selectedUnit = unit),
-                              ),
-                          ],
+                        TextFormField(
+                          controller: _sellingPrice,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(hintText: '0.00'),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Required'
+                              : null,
                         ),
                       ],
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const _FieldLabel(label: 'Unit'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final unit in _units)
+                    _ChoiceChip(
+                      label: unit,
+                      selected: _selectedUnit == unit,
+                      onTap: () =>
+                          setState(() => _selectedUnit = unit),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -218,14 +214,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _stockQty,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType: TextInputType.number,
                           decoration: const InputDecoration(hintText: '0'),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Required'
-                              : null,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) return 'Required';
+                            final parsed = int.tryParse(value.trim());
+                            if (parsed == null || parsed < 0) return 'Enter a valid whole number';
+                            return null;
+                          },
                         ),
                       ],
                     ),
@@ -239,14 +235,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _lowStock,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType: TextInputType.number,
                           decoration: const InputDecoration(hintText: '10'),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Required'
-                              : null,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) return 'Required';
+                            final parsed = int.tryParse(value.trim());
+                            if (parsed == null || parsed < 0) return 'Enter a valid whole number';
+                            return null;
+                          },
                         ),
                       ],
                     ),
@@ -379,10 +375,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
             category: _selectedCategory,
             unit: _selectedUnit,
             imagePath: _imagePath,
-            purchasePrice: double.tryParse(_price.text) ?? 0,
-            sellingPrice: double.tryParse(_price.text) ?? 0,
-            stockQty: double.tryParse(_stockQty.text) ?? 0,
-            lowStockAlert: double.tryParse(_lowStock.text) ?? 0,
+            buyingPrice: double.tryParse(_buyingPrice.text) ?? 0,
+            purchasePrice: double.tryParse(_buyingPrice.text) ?? 0,
+            sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
+            stockQty: int.tryParse(_stockQty.text) ?? 0,
+            lowStockAlert: int.tryParse(_lowStock.text) ?? 0,
           );
       if (mounted) Navigator.of(context).pop();
     });
@@ -473,7 +470,7 @@ class _ImagePlaceholder extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
-        height: 78,
+        height: 160,
         width: double.infinity,
         decoration: BoxDecoration(
           color: const Color(0xFFFCFBF8),

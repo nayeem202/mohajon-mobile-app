@@ -5,6 +5,8 @@ import '../../../core/utils/money.dart';
 import '../providers/report_providers.dart';
 import '../services/inventory_excel_service.dart';
 import '../services/inventory_pdf_service.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 
 class InventoryReportScreen extends ConsumerStatefulWidget {
   const InventoryReportScreen({super.key});
@@ -92,26 +94,9 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
             ),
             onPressed: _toggleSearch,
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
-          ),
+          const NotificationBell(),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD6F2EA),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'KA',
-              style: TextStyle(
-                color: Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          const ShopAvatar(),
         ],
       ),
       body: RefreshIndicator(
@@ -502,9 +487,18 @@ class _InventoryItemCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          product.category.isEmpty ? 'Uncategorized' : product.category,
+                          'Stock Value: ${money(product.purchasePrice * product.stockQty)}',
                           style: const TextStyle(
                             fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F766E),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          product.category.isEmpty ? 'Uncategorized' : product.category,
+                          style: const TextStyle(
+                            fontSize: 12,
                             color: Color(0xFF98A2B3),
                           ),
                         ),
@@ -518,18 +512,17 @@ class _InventoryItemCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${product.stockQty.toInt()} / ${product.lowStockAlert.toInt()}',
+                          'Stock: ${product.stockQty}',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: qtyColor,
                           ),
                         ),
-                        const SizedBox(height: 4),
                         Text(
-                          money(product.purchasePrice * product.stockQty),
+                          'Alert: ${product.lowStockAlert}',
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             color: Color(0xFF98A2B3),
                           ),
                         ),

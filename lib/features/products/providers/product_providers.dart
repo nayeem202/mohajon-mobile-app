@@ -47,10 +47,11 @@ class ProductService {
     required String nameBn,
     required String barcode,
     required String category,
+    double buyingPrice = 0,
     required double purchasePrice,
     required double sellingPrice,
-    required double stockQty,
-    required double lowStockAlert,
+    required int stockQty,
+    required int lowStockAlert,
     String unit = 'pcs',
     String? imagePath,
   }) async {
@@ -65,6 +66,7 @@ class ProductService {
         category: category,
         unit: unit,
         imagePath: imagePath,
+        buyingPrice: buyingPrice,
         purchasePrice: purchasePrice,
         sellingPrice: sellingPrice,
         stockQty: stockQty,
@@ -79,7 +81,7 @@ class ProductService {
 
   Future<void> adjustStock(
     String productId,
-    double delta, {
+    int delta, {
     bool syncAfterSave = true,
   }) async {
     final db = _ref.read(localDatabaseProvider);
