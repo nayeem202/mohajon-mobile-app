@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/sale.dart';
+import '../../../core/models/shop_profile.dart';
+import '../../customers/providers/customer_providers.dart';
 import '../../investors/models/investor.dart';
 import '../../investors/providers/investor_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../models/investment.dart';
 import '../models/investment_category.dart';
 import '../models/investment_member.dart';
@@ -173,4 +177,50 @@ class InvestmentDashboardData {
   final int totalInvestments;
   final Map<String, double> categoryTotals;
   final Map<String, String> categoryNames;
+}
+
+final investmentOverviewProvider = Provider<InvestmentOverview>((ref) {
+  final shopProfile = ref.watch(shopProfileProvider).value;
+  final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
+
+  final owners = shopProfile?.effectiveOwners ?? [];
+  final totalInvestment = shopProfile?.totalInvestment ?? 0;
+
+  final totalSales = sales.length;
+  final grossProfit = sales.fold<double>(
+    0,
+    (sum, sale) => sum + (sale.profit > 0 ? sale.profit : 0),
+  );
+  final grossLoss = sales.fold<double>(
+    0,
+    (sum, sale) => sum + (sale.profit < 0 ? sale.profit.abs() : 0),
+  );
+  final netProfit = grossProfit - grossLoss;
+
+  return InvestmentOverview(
+    owners: owners,
+    totalInvestment: totalInvestment,
+    grossProfit: grossProfit,
+    grossLoss: grossLoss,
+    netProfit: netProfit,
+    totalSales: totalSales,
+  );
+});
+
+class InvestmentOverview {
+  const InvestmentOverview({
+    required this.owners,
+    required this.totalInvestment,
+    required this.grossProfit,
+    required this.grossLoss,
+    required this.netProfit,
+    required this.totalSales,
+  });
+
+  final List<ShopOwner> owners;
+  final double totalInvestment;
+  final double grossProfit;
+  final double grossLoss;
+  final double netProfit;
+  final int totalSales;
 }

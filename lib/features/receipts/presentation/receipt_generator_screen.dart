@@ -225,7 +225,7 @@ class _ReceiptGeneratorScreenState
                   ),
                   const SizedBox(height: 12),
                   _PercentControl(
-                    label: 'Tax Rate',
+                    label: 'VAT Rate',
                     value: receipt.taxPercent,
                     onChanged: viewModel.updateTaxPercent,
                   ),
@@ -698,7 +698,7 @@ class _TotalsPanel extends StatelessWidget {
         children: [
           _totalRow('Subtotal', receiptMoney(receipt.subtotal)),
           _totalRow(_discountLabel(receipt), '-${receiptMoney(receipt.discountAmount)}'),
-          _totalRow('Tax', receiptMoney(receipt.taxAmount)),
+          _totalRow('VAT', receiptMoney(receipt.taxAmount)),
           const Divider(height: 20),
           _totalRow(
             'Total',

@@ -29,6 +29,23 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
       )
       .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
 
+  final todayTransactionCount = sales
+      .where(
+        (sale) =>
+            !sale.createdAt.isBefore(todayStart) &&
+            sale.createdAt.isBefore(todayEnd),
+      )
+      .length;
+
+  final yesterdayStart = todayStart.subtract(const Duration(days: 1));
+  final yesterdaySales = sales
+      .where(
+        (sale) =>
+            !sale.createdAt.isBefore(yesterdayStart) &&
+            sale.createdAt.isBefore(todayStart),
+      )
+      .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+
   final unlinkedPayments = payments.where((payment) => payment.saleId == null);
   final totalDue =
       sales.fold<double>(0, (sum, sale) => sum + sale.dueAmount) -
@@ -118,6 +135,8 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
 
   return DashboardSummary(
     todaySales: todaySales,
+    todayTransactionCount: todayTransactionCount,
+    yesterdaySales: yesterdaySales,
     totalDue: totalDue,
     customerDueCount: customerDueCount,
     totalStock: products.fold<int>(
@@ -161,6 +180,8 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
 class DashboardSummary {
   const DashboardSummary({
     required this.todaySales,
+    required this.todayTransactionCount,
+    required this.yesterdaySales,
     required this.totalDue,
     required this.customerDueCount,
     required this.totalStock,
@@ -177,6 +198,8 @@ class DashboardSummary {
   });
 
   final double todaySales;
+  final int todayTransactionCount;
+  final double yesterdaySales;
   final double totalDue;
   final int customerDueCount;
   final double totalStock;

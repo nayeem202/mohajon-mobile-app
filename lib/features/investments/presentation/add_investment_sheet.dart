@@ -96,6 +96,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                 const _FieldLabel(label: 'Amount & Category'),
                 const SizedBox(height: 6),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: TextFormField(

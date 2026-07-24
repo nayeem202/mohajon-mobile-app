@@ -229,7 +229,7 @@ class LedgerPdfService {
                   pw.Text(
                     'Smart POS & Inventory Management',
                     style: pw.TextStyle(
-                      fontSize: 9,
+fontSize: 8,
                       color: PdfColors.grey600,
                     ),
                   ),
@@ -584,7 +584,9 @@ class LedgerPdfService {
     final fg = settled
         ? const PdfColor.fromInt(0xFF16A34A)
         : const PdfColor.fromInt(0xFFDC2626);
-    return pw.Center(
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+      alignment: pw.Alignment.center,
       child: pw.Container(
         padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: pw.BoxDecoration(
@@ -594,7 +596,7 @@ class LedgerPdfService {
         child: pw.Text(
           settled ? 'Settled' : 'Due',
           style: pw.TextStyle(
-            fontSize: 8,
+            fontSize: 9,
             fontWeight: pw.FontWeight.bold,
             color: fg,
           ),

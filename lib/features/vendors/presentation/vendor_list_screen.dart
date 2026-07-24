@@ -133,13 +133,14 @@ class _VendorsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
+            color: colors.primary,
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
@@ -149,7 +150,7 @@ class _VendorsTopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
             'Vendors',
             maxLines: 1,
@@ -157,7 +158,7 @@ class _VendorsTopBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              color: colors.onSurface,
             ),
           ),
         ),
@@ -232,12 +233,13 @@ class _VendorStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       height: 138,
       padding: const EdgeInsets.fromLTRB(10, 11, 10, 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
+        border: Border.all(color: colors.outlineVariant),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -247,8 +249,8 @@ class _VendorStatCard extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF667085),
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -259,7 +261,7 @@ class _VendorStatCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: valueColor ?? const Color(0xFF101828),
+              color: valueColor ?? colors.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -269,8 +271,8 @@ class _VendorStatCard extends StatelessWidget {
             subtext,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF667085),
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -304,11 +306,12 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
+        border: Border.all(color: colors.outlineVariant),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -407,19 +410,20 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFE98300) : const Color(0xFFF7F5F0),
+          color: selected ? colors.primary : const Color(0xFFF7F5F0),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF101828),
+            color: selected ? Colors.white : colors.onSurface,
             fontSize: 12,
             fontWeight: FontWeight.w800,
           ),
@@ -473,6 +477,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final vendor = widget.vendor;
     final initials = _initials(vendor.companyName);
     final hasDue = vendor.pendingAmount > 0;
@@ -488,7 +493,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFECE7DF)),
+                border: Border.all(color: colors.outlineVariant),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -503,8 +508,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                     child: Center(
                       child: Text(
                         initials,
-                        style: const TextStyle(
-                          color: Color(0xFFE98300),
+                        style: TextStyle(
+                          color: colors.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -522,8 +527,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                                 vendor.companyName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF101828),
+                                style: TextStyle(
+                                  color: colors.onSurface,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 15,
                                 ),
@@ -556,8 +561,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                           vendor.contactPerson,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF667085),
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -588,8 +593,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                         money(vendor.totalSpent),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF101828),
+                        style: TextStyle(
+                          color: colors.onSurface,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -598,7 +603,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                         hasDue ? 'Due ${money(vendor.pendingAmount)}' : 'Cleared',
                         style: TextStyle(
                           color: hasDue
-                              ? const Color(0xFFE98300)
+                              ? colors.primary
                               : const Color(0xFF047857),
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -609,8 +614,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                         vendor.lastPurchaseDate != null
                             ? _formatDate(vendor.lastPurchaseDate!)
                             : 'No purchases',
-                        style: const TextStyle(
-                          color: Color(0xFF98A2B3),
+                        style: TextStyle(
+                          color: colors.outline,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -623,9 +628,9 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                     child: AnimatedRotation(
                       turns: _expanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
-                      child: const Icon(
+                      child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF98A2B3),
+                        color: colors.outline,
                       ),
                     ),
                   ),
@@ -670,9 +675,9 @@ class _VendorExpandedDetails extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
       decoration: BoxDecoration(
         border: Border(
-          left: BorderSide(color: const Color(0xFFECE7DF)),
-          right: BorderSide(color: const Color(0xFFECE7DF)),
-          bottom: BorderSide(color: const Color(0xFFECE7DF)),
+          left: BorderSide(color: colors.outlineVariant),
+          right: BorderSide(color: colors.outlineVariant),
+          bottom: BorderSide(color: colors.outlineVariant),
         ),
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(14),
@@ -721,7 +726,7 @@ class _VendorExpandedDetails extends ConsumerWidget {
                   height: 36,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F766E),
+                      foregroundColor: colors.secondary,
                     ),
                     onPressed: () {
                       _launchPhone(context, vendor.phone);
@@ -825,17 +830,18 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF667085)),
+          Icon(icon, size: 16, color: colors.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: Color(0xFF475467),
+              style: TextStyle(
+                color: colors.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -853,6 +859,7 @@ class _RatingStars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final fullStars = rating.floor();
     final hasHalf = rating - fullStars >= 0.5;
     return Row(
@@ -863,7 +870,7 @@ class _RatingStars extends StatelessWidget {
         } else if (index == fullStars && hasHalf) {
           return const Icon(Icons.star_half_rounded, size: 14, color: Color(0xFFF59E0B));
         }
-        return const Icon(Icons.star_outline_rounded, size: 14, color: Color(0xFFD4C5B5));
+        return Icon(Icons.star_outline_rounded, size: 14, color: colors.outline);
       }),
     );
   }

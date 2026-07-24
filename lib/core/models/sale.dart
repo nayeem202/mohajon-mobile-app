@@ -63,6 +63,8 @@ class Sale with Syncable {
     required this.createdAt,
     required this.updatedAt,
     this.discount = 0,
+    this.vatPercent = 0,
+    this.charge = 0,
     this.isDeleted = false,
     this.syncStatus = SyncStatus.pending,
   });
@@ -71,6 +73,8 @@ class Sale with Syncable {
   final String customerId;
   final List<SaleItem> items;
   final double discount;
+  final double vatPercent;
+  final double charge;
   final double totalAmount;
   final double paidAmount;
   final double dueAmount;
@@ -96,6 +100,8 @@ class Sale with Syncable {
     'customerId': customerId,
     'items': items.map((item) => item.toJson()).toList(),
     'discount': discount,
+    'vatPercent': vatPercent,
+    'charge': charge,
     'totalAmount': totalAmount,
     'paidAmount': paidAmount,
     'dueAmount': dueAmount,
@@ -116,6 +122,8 @@ class Sale with Syncable {
         )
         .toList(),
     discount: (json['discount'] as num? ?? 0).toDouble(),
+    vatPercent: (json['vatPercent'] as num? ?? 0).toDouble(),
+    charge: (json['charge'] as num? ?? 0).toDouble(),
     totalAmount: (json['totalAmount'] as num? ?? 0).toDouble(),
     paidAmount: (json['paidAmount'] as num? ?? 0).toDouble(),
     dueAmount: (json['dueAmount'] as num? ?? 0).toDouble(),

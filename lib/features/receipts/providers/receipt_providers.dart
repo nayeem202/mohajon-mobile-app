@@ -225,6 +225,8 @@ class ReceiptCheckoutService {
       customerId: receipt.customerId,
       items: saleItems,
       discount: receipt.discountAmount,
+      vatPercent: receipt.taxPercent,
+      charge: 0,
       totalAmount: receipt.total,
       paidAmount: receipt.total,
       dueAmount: 0,

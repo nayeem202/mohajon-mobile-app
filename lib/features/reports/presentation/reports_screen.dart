@@ -61,8 +61,8 @@ class ReportsScreen extends StatelessWidget {
     ),
     ReportItem(
       icon: Icons.calculate_rounded,
-      title: 'VAT & Tax Report',
-      description: 'VAT collected and tax summaries',
+      title: 'VAT Report',
+      description: 'VAT collected summaries',
       color: Color(0xFF0891B2),
     ),
     ReportItem(

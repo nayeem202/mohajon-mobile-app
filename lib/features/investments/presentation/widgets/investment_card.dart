@@ -30,7 +30,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
     final payoutsAsync = ref.watch(payoutsStreamProvider(inv.id));
     final payouts = payoutsAsync.value ?? [];
     final colors = Theme.of(context).colorScheme;
-    final catColor = _categoryColor(inv.categoryName);
+    final catColor = _categoryColor(inv.categoryName, colors);
     final progress = inv.totalInvestment > 0
         ? (inv.totalPaid / inv.totalInvestment).clamp(0.0, 1.0)
         : 0.0;
@@ -76,8 +76,8 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                             Text(inv.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    color: Color(0xFF101828),
+                                style: TextStyle(
+                                    color: colors.onSurface,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 16)),
                             const SizedBox(height: 6),
@@ -114,7 +114,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                                     style: TextStyle(
                                       color: inv.profitShareMethod == 'fixed'
                                           ? const Color(0xFFD97706)
-                                          : const Color(0xFF2563EB),
+                                          : colors.tertiary,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -130,8 +130,8 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(money(inv.totalInvestment),
-                              style: const TextStyle(
-                                  color: Color(0xFF101828),
+                              style: TextStyle(
+                                  color: colors.onSurface,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16)),
                           const SizedBox(height: 4),
@@ -145,9 +145,9 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                         child: AnimatedRotation(
                           turns: _expanded ? 0.5 : 0,
                           duration: const Duration(milliseconds: 200),
-                          child: const Icon(
+                          child: Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: Color(0xFF98A2B3)),
+                              color: colors.outline),
                         ),
                       ),
                     ],
@@ -223,44 +223,44 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
+                  color: colors.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.payments_rounded,
-                        color: const Color(0xFFF97316), size: 20),
+                        color: colors.primary, size: 20),
                     const SizedBox(width: 8),
-                    const Text('Total Paid Out',
+                    Text('Total Paid Out',
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF9A3412),
+                            color: colors.primary,
                             fontSize: 13)),
                     const Spacer(),
                     Tooltip(
                       message: 'Outstanding Capital = Total Investment + Profit - Total Paid Out',
-                      child: Text(money(totalPaid),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF9A3412),
-                              fontSize: 15)),
+child: Text(money(totalPaid),
+                            style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: colors.primary,
+                                fontSize: 15)),
                     ),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                        color: colors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Tooltip(
                         message: 'Percentage of total due (investment + profit) that has been paid out',
                         child: Text(
                           '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}% Cleared',
-                          style: const TextStyle(
-                              color: Color(0xFFF97316),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700),
+style: TextStyle(
+                                color: colors.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -270,12 +270,12 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
           const SizedBox(height: 14),
           Row(
             children: [
-              const Text('INVESTOR BREAKDOWN',
-                  style: TextStyle(
-                      color: Color(0xFF667085),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5)),
+Text('INVESTOR BREAKDOWN',
+                    style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5)),
               const Spacer(),
               GestureDetector(
                 onTap: () =>
@@ -286,8 +286,8 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                         _showHistory
                             ? 'Hide History'
                             : 'View Payout History',
-                        style: const TextStyle(
-                            color: Color(0xFFF97316),
+                        style: TextStyle(
+                            color: colors.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700)),
                     Icon(
@@ -295,7 +295,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                           ? Icons.expand_less_rounded
                           : Icons.expand_more_rounded,
                       size: 16,
-                      color: const Color(0xFFF97316),
+color: colors.primary,
                     ),
                   ],
                 ),
@@ -310,11 +310,11 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
           if (_showHistory) ...[
             const SizedBox(height: 8),
             if (payouts.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text('No payouts recorded yet.',
                     style: TextStyle(
-                        color: Color(0xFF98A2B3), fontSize: 13)),
+                        color: colors.outline, fontSize: 13)),
               )
             else
               ...payouts.take(5).map(
@@ -333,22 +333,22 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
     );
   }
 
-  Color _categoryColor(String cat) {
+  Color _categoryColor(String cat, ColorScheme colors) {
     switch (cat) {
       case 'Setup':
-        return const Color(0xFFF97316);
+        return colors.primary;
       case 'Equipment':
-        return const Color(0xFF0F766E);
+        return colors.secondary;
       case 'Technology':
-        return const Color(0xFF2563EB);
+        return colors.tertiary;
       case 'Inventory':
         return const Color(0xFF7C3AED);
       case 'Vehicle':
-        return const Color(0xFFDC2626);
+        return colors.error;
       case 'Marketing':
         return const Color(0xFFF59E0B);
       default:
-        return const Color(0xFF98A2B3);
+        return colors.outline;
     }
   }
 
@@ -461,9 +461,9 @@ class _MemberCard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(investor?.name ?? 'Unknown',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF101828),
+                        color: colors.onSurface,
                         fontSize: 14)),
               ),
               InkWell(
@@ -472,7 +472,7 @@ class _MemberCard extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF97316),
+                    color: colors.primary,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text('Record Payout',
@@ -496,7 +496,7 @@ class _MemberCard extends ConsumerWidget {
                   label: 'Share',
                   value:
                       '${member.sharePercentage.toStringAsFixed(1)}%',
-                  color: const Color(0xFF667085)),
+                  color: colors.onSurfaceVariant),
               const SizedBox(width: 6),
               _MiniStat(
                   label: 'Profit',
@@ -530,10 +530,10 @@ class _MemberCard extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text('Total Due ${money(totalDue)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF667085))),
+                      color: colors.onSurfaceVariant)),
               const SizedBox(width: 4),
               Text('Paid ${money(member.paidAmount)}',
                   style: TextStyle(
@@ -600,6 +600,7 @@ class _PayoutHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -617,15 +618,15 @@ class _PayoutHistoryItem extends StatelessWidget {
             ),
           ),
           Text(money(payout.amount),
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF101828),
+                  color: colors.onSurface,
                   fontSize: 13)),
           const SizedBox(width: 8),
           Text(
             '${payout.createdAt.day}/${payout.createdAt.month}',
-            style: const TextStyle(
-                color: Color(0xFF98A2B3),
+            style: TextStyle(
+                color: colors.outline,
                 fontSize: 11,
                 fontWeight: FontWeight.w500),
           ),

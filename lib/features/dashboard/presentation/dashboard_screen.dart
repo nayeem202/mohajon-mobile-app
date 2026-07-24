@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -80,6 +81,7 @@ class _HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final name = profile?.ownerName ?? '';
     final imagePath = profile?.imagePath;
 
@@ -89,7 +91,7 @@ class _HomeTopBar extends StatelessWidget {
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
+            color: colors.primary,
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
@@ -99,7 +101,7 @@ class _HomeTopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
             AppConstants.appName,
             maxLines: 1,
@@ -107,7 +109,7 @@ class _HomeTopBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              color: colors.onSurface,
             ),
           ),
         ),
@@ -127,11 +129,12 @@ class _GreetingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final date = DateFormat('EEEE, MMMM d, y').format(DateTime.now());
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFE98300),
+        color: colors.primary,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -193,13 +196,13 @@ class _GreetingPanel extends StatelessWidget {
                   child: _HeroMetric(
                     label: "Today's Sales",
                     value: money(summary.todaySales),
-                    footnote: '↗ 12.5% vs yesterday',
+                    footnote: _salesChangeFootnote(summary),
                   ),
                 ),
                 const SizedBox(width: 16),
                 _HeroMetric(
                   label: 'Transactions',
-                  value: '${summary.recentSales.length}',
+                  value: '${summary.todayTransactionCount}',
                   alignEnd: true,
                 ),
               ],
@@ -208,6 +211,16 @@ class _GreetingPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _salesChangeFootnote(DashboardSummary summary) {
+    final yesterday = summary.yesterdaySales;
+    final today = summary.todaySales;
+    if (yesterday == 0 && today == 0) return '0% vs yesterday';
+    if (yesterday == 0) return '↗ 100% vs yesterday';
+    final pct = ((today - yesterday) / yesterday) * 100;
+    final arrow = pct >= 0 ? '↗' : '↘';
+    return '$arrow ${pct.abs().toStringAsFixed(1)}% vs yesterday';
   }
 }
 
@@ -271,17 +284,18 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final actions = [
       _ActionSpec(
         icon: Icons.add_circle_outline_rounded,
         label: 'New Sale',
-        color: const Color(0xFFE98300),
+        color: colors.primary,
         onTap: () => _open(context, const PosScreen()),
       ),
       _ActionSpec(
         icon: Icons.add_box_outlined,
         label: 'Add Product',
-        color: const Color(0xFF0F766E),
+        color: colors.secondary,
         onTap: () => _open(context, const ProductFormScreen()),
       ),
       _ActionSpec(
@@ -338,6 +352,7 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
@@ -368,10 +383,10 @@ class _ActionTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF101828),
+                  color: colors.onSurface,
                 ),
               ),
             ],
@@ -389,6 +404,7 @@ class _OverviewStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final stats = [
       _StatSpec(
         icon: Icons.layers_rounded,
@@ -396,7 +412,7 @@ class _OverviewStats extends StatelessWidget {
         value: _formatQuantity(summary.totalStock),
         subtext: '${summary.lowStock.length} low',
         subtextColor: const Color(0xFFEF4444),
-        color: const Color(0xFF0F766E),
+        color: colors.secondary,
       ),
       _StatSpec(
         icon: Icons.people_outline_rounded,
@@ -449,6 +465,7 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       height: 118,
       padding: const EdgeInsets.all(14),
@@ -477,9 +494,9 @@ class _StatCard extends StatelessWidget {
                   spec.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF475467),
+                    color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -491,9 +508,9 @@ class _StatCard extends StatelessWidget {
             spec.value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 19,
-              color: Color(0xFF101828),
+              color: colors.onSurface,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -504,7 +521,7 @@ class _StatCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              color: spec.subtextColor ?? const Color(0xFF475467),
+              color: spec.subtextColor ?? colors.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -521,77 +538,115 @@ class _WeekOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final maxSales = summary.dayWiseSales.fold<double>(
       0,
       (max, day) => day.sales > max ? day.sales : max,
     );
+    final effectiveMax = maxSales > 0 ? maxSales * 1.2 : 100.0;
+
     return _SectionCard(
       child: Column(
         children: [
           const _SectionHeader(title: 'This Week', action: 'Sales overview'),
           const SizedBox(height: 20),
           SizedBox(
-            height: 126,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (final day in summary.dayWiseSales)
-                  Expanded(
-                    child: _DayBar(day: day, maxSales: maxSales),
+            height: 150,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceEvenly,
+                maxY: effectiveMax,
+                minY: 0,
+                barGroups: List.generate(summary.dayWiseSales.length, (i) {
+                  final day = summary.dayWiseSales[i];
+                  return BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: maxSales <= 0 ? effectiveMax * 0.04 : day.sales,
+                        color: day.isToday
+                            ? colors.primary
+                            : const Color(0xFFECE7DF),
+                        width: 18,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(999),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+                titlesData: FlTitlesData(
+                  show: true,
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
-              ],
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx < 0 ||
+                            idx >= summary.dayWiseSales.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final day = summary.dayWiseSales[idx];
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            day.label,
+                            style: TextStyle(
+                              color: day.isToday
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                              fontWeight: day.isToday
+                                  ? FontWeight.w900
+                                  : FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: const FlGridData(show: false),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => colors.onSurface,
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tooltipMargin: 8,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final day =
+                          summary.dayWiseSales[group.x.toInt()];
+                      return BarTooltipItem(
+                        '${day.label}\n৳ ${day.sales.toStringAsFixed(2)}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOutCubic,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DayBar extends StatelessWidget {
-  const _DayBar({required this.day, required this.maxSales});
-
-  final DaySalesSummary day;
-  final double maxSales;
-
-  @override
-  Widget build(BuildContext context) {
-    final fraction = maxSales <= 0
-        ? 0.04
-        : (day.sales / maxSales).clamp(0.04, 1.0);
-    final color = day.isToday
-        ? const Color(0xFFE98300)
-        : const Color(0xFFECE7DF);
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: FractionallySizedBox(
-              heightFactor: fraction.toDouble(),
-              child: Container(
-                width: 18,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          day.label,
-          style: TextStyle(
-            color: day.isToday
-                ? const Color(0xFFE98300)
-                : const Color(0xFF475467),
-            fontWeight: day.isToday ? FontWeight.w900 : FontWeight.w600,
-            fontSize: 12,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -635,6 +690,7 @@ class _RecentSaleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final paid = sale.isPaid;
     final statusColor = paid
         ? const Color(0xFF047857)
@@ -663,9 +719,9 @@ class _RecentSaleRow extends StatelessWidget {
                 sale.customerName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF101828),
+                  color: colors.onSurface,
                 ),
               ),
               const SizedBox(height: 3),
@@ -673,8 +729,8 @@ class _RecentSaleRow extends StatelessWidget {
                 '${sale.invoiceNo} • ${sale.itemCount} items • ${_relativeTime(sale.createdAt)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF667085),
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -690,8 +746,8 @@ class _RecentSaleRow extends StatelessWidget {
               money(sale.amount),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF101828),
+              style: TextStyle(
+                color: colors.onSurface,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -761,6 +817,7 @@ class _LowStockProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: 148,
       padding: const EdgeInsets.all(13),
@@ -798,8 +855,8 @@ class _LowStockProductCard extends StatelessWidget {
             product.nameEn,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF101828),
+            style: TextStyle(
+              color: colors.onSurface,
               fontWeight: FontWeight.w900,
               fontSize: 13,
             ),
@@ -807,8 +864,8 @@ class _LowStockProductCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'min ${product.lowStockAlert}',
-            style: const TextStyle(
-              color: Color(0xFF667085),
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -847,13 +904,14 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF101828),
+            style: TextStyle(
+              color: colors.onSurface,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
@@ -867,8 +925,8 @@ class _SectionHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
               child: Text(
                 action!,
-                style: const TextStyle(
-                  color: Color(0xFFE98300),
+                style: TextStyle(
+                  color: colors.primary,
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
                 ),
@@ -887,6 +945,7 @@ class _InlineEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -897,8 +956,8 @@ class _InlineEmpty extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Color(0xFF667085),
+        style: TextStyle(
+          color: colors.onSurfaceVariant,
           fontWeight: FontWeight.w700,
         ),
       ),

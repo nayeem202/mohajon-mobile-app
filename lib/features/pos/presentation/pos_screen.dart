@@ -89,7 +89,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -115,7 +115,6 @@ class _PosScreenState extends ConsumerState<PosScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _ProductGrid(
                       products: visibleProducts,
-                      totalProducts: products.length,
                       enabled: !isBusy,
                       onProductTap: cartController.addProduct,
                     ),
@@ -202,24 +201,24 @@ class _TopBar extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
             color: const Color(0xFFE98300),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
             Icons.storefront_rounded,
             color: Colors.white,
-            size: 22,
+            size: 17,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         const Expanded(
           child: Text(
             'New Sale',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
               color: Color(0xFF101828),
             ),
@@ -227,7 +226,7 @@ class _TopBar extends StatelessWidget {
         ),
         const NotificationBell(),
         const SizedBox(width: 14),
-        ShopAvatar(radius: 18, backgroundColor: const Color(0xFFF6E0C8), textColor: const Color(0xFFB45309), onTap: onAvatarTap),
+        ShopAvatar(radius: 17, backgroundColor: const Color(0xFFF6E0C8), textColor: const Color(0xFFB45309), onTap: onAvatarTap),
       ],
     );
   }
@@ -327,13 +326,11 @@ class _CategoryChip extends StatelessWidget {
 class _ProductGrid extends StatelessWidget {
   const _ProductGrid({
     required this.products,
-    required this.totalProducts,
     required this.enabled,
     required this.onProductTap,
   });
 
   final List<Product> products;
-  final int totalProducts;
   final bool enabled;
   final ValueChanged<Product> onProductTap;
 
@@ -357,44 +354,6 @@ class _ProductGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: colors.secondary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.inventory_2_rounded,
-                  color: colors.secondary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Products',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                    ),
-                    Text(
-                      '$totalProducts products available',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF667085),
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
           if (products.isEmpty)
             const Expanded(child: _CatalogEmptyState())
           else
@@ -665,13 +624,13 @@ enum _DiscountMode { flat, percent }
 
 class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
   final _discountController = TextEditingController(text: '0');
-  final _vatCustomController = TextEditingController(text: '5');
+  final _vatCustomController = TextEditingController(text: '0');
   final _customerSearchController = TextEditingController();
 
   _CustomerMode _customerMode = _CustomerMode.walkIn;
   _DiscountMode _discountMode = _DiscountMode.flat;
   PaymentMethod _paymentMethod = PaymentMethod.cash;
-  double _vatPercent = 5;
+  double _vatPercent = 0;
   String _customerQuery = '';
 
   @override
@@ -696,6 +655,11 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
     final cart = ref.watch(cartProvider);
     final controller = ref.read(cartProvider.notifier);
     final colors = Theme.of(context).colorScheme;
+    final allProducts = ref.watch(productsProvider).value ?? const <Product>[];
+    final productImageMap = <String, String>{};
+    for (final p in allProducts) {
+      if (p.imagePath != null) productImageMap[p.productId] = p.imagePath!;
+    }
     Customer? selectedCustomer;
     for (final customer in widget.customers) {
       if (customer.customerId == cart.customerId) {
@@ -869,16 +833,18 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                               ),
-                              leading: CircleAvatar(
-                                backgroundColor: const Color(0xFFFCE2C8),
-                                child: Text(
-                                  _initials(customer.name),
-                                  style: const TextStyle(
-                                    color: Color(0xFFB45309),
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
+                              leading: customer.imagePath != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Image.file(
+                                        File(customer.imagePath!),
+                                        width: 40,
+                                        height: 40,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => _CustomerInitials(name: customer.name),
+                                      ),
+                                    )
+                                  : _CustomerInitials(name: customer.name),
                               title: Text(
                                 customer.name,
                                 style: TextStyle(
@@ -918,6 +884,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                           if (index != 0) const SizedBox(height: 10),
                           _CheckoutItemRow(
                             item: cart.items[index],
+                            imagePath: productImageMap[cart.items[index].productId],
                             onMinus: () => controller.setQty(
                               cart.items[index].productId,
                               cart.items[index].qty - 1,
@@ -935,7 +902,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                       ],
                     ),
                   const SizedBox(height: 18),
-                  _SectionTitle(title: 'VAT / TAX'),
+                  _SectionTitle(title: 'VAT'),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -951,6 +918,14 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
+                            _RateChip(
+                              label: '0%',
+                              selected: _vatPercent == 0,
+                              onTap: () => setState(() {
+                                _vatPercent = 0;
+                                _vatCustomController.text = '0';
+                              }),
+                            ),
                             _RateChip(
                               label: '5%',
                               selected: _vatPercent == 5,
@@ -983,32 +958,50 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                                 _vatCustomController.text = '15';
                               }),
                             ),
-                            SizedBox(
-                              width: 64,
-                              child: TextField(
-                                controller: _vatCustomController,
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                textAlign: TextAlign.center,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9.]'),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: const Color(0xFFE5D9C9)),
+                              ),
+                              child: SizedBox(
+                                width: 36,
+                                child: TextField(
+                                  controller: _vatCustomController,
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
                                   ),
-                                ],
-                                decoration: const InputDecoration(
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 10,
+                                  textAlign: TextAlign.center,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9.]'),
+                                    ),
+                                  ],
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    suffixText: '%',
+                                    suffixStyle: TextStyle(
+                                      color: Color(0xFF9A5A1B),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                  suffixText: '%',
+                                  style: const TextStyle(
+                                    color: Color(0xFF9A5A1B),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                  onChanged: (value) {
+                                    final parsed = double.tryParse(value);
+                                    if (parsed == null) return;
+                                    setState(() => _vatPercent = parsed);
+                                  },
                                 ),
-                                onChanged: (value) {
-                                  final parsed = double.tryParse(value);
-                                  if (parsed == null) return;
-                                  setState(() => _vatPercent = parsed);
-                                },
                               ),
                             ),
                           ],
@@ -1206,6 +1199,8 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                                   final bytes =
                                       await InvoiceService().buildSaleInvoice(
                                     sale,
+                                    customerName: selectedCustomer?.name ?? '',
+                                    customerPhone: selectedCustomer?.phone ?? '',
                                   );
                                   await Printing.sharePdf(
                                     bytes: bytes,
@@ -1285,30 +1280,31 @@ class _CheckoutItemRow extends StatelessWidget {
     required this.onMinus,
     required this.onPlus,
     required this.onDelete,
+    this.imagePath,
   });
 
   final SaleItem item;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
   final VoidCallback onDelete;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6E0C8),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.shopping_bag_rounded,
-            color: Color(0xFFB45309),
-            size: 20,
-          ),
-        ),
+        imagePath != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(imagePath!),
+                  width: 42,
+                  height: 42,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _defaultIcon(),
+                ),
+              )
+            : _defaultIcon(),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -1354,6 +1350,40 @@ class _CheckoutItemRow extends StatelessWidget {
           icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
         ),
       ],
+    );
+  }
+
+  Widget _defaultIcon() => Container(
+    width: 42,
+    height: 42,
+    decoration: BoxDecoration(
+      color: const Color(0xFFF6E0C8),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: const Icon(
+      Icons.shopping_bag_rounded,
+      color: Color(0xFFB45309),
+      size: 20,
+    ),
+  );
+}
+
+class _CustomerInitials extends StatelessWidget {
+  const _CustomerInitials({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      backgroundColor: const Color(0xFFFCE2C8),
+      child: Text(
+        _initials(name),
+        style: const TextStyle(
+          color: Color(0xFFB45309),
+          fontWeight: FontWeight.w900,
+        ),
+      ),
     );
   }
 }

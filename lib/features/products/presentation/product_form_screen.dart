@@ -143,6 +143,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
               ),
               const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -205,6 +206,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
               ),
               const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(

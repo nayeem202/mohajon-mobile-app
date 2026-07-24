@@ -59,6 +59,7 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
@@ -103,6 +104,7 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                 ),
                 const SizedBox(height: 8),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: TextFormField(

@@ -75,13 +75,17 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 ref.read(customerSearchQueryProvider.notifier).state = '';
               }
             },
-            child: Icon(_showSearch ? Icons.close : Icons.search_rounded),
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shape: const CircleBorder(),
+            child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
             heroTag: 'add',
             onPressed: _openAddClient,
-            child: const Icon(Icons.add_rounded, size: 28),
+            child: const Icon(Icons.add_rounded, size: 24),
           ),
         ],
       ),
@@ -132,7 +136,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
             );
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 80),
               children: [
                  const _ClientsTopBar(),
                 const SizedBox(height: 18),
@@ -490,7 +494,7 @@ class _SearchAndFilters extends StatelessWidget {
                           ? null
                           : IconButton(
                               onPressed: onClearSearch,
-                              icon: const Icon(Icons.close_rounded),
+                              icon: const Icon(Icons.clear_rounded),
                             ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,

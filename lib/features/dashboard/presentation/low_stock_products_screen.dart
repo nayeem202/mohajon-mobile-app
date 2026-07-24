@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/models/product.dart';
@@ -9,6 +11,19 @@ class LowStockProductsScreen extends StatelessWidget {
   const LowStockProductsScreen({super.key, required this.products});
 
   final List<Product> products;
+
+  Widget _productIcon(BuildContext context) => Container(
+    width: 52,
+    height: 52,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Icon(
+      Icons.inventory_2_rounded,
+      color: Theme.of(context).colorScheme.error,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -40,20 +55,19 @@ class LowStockProductsScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(14),
                       child: Row(
                         children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.error.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              Icons.inventory_2_rounded,
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
+                          product.imagePath != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.file(
+                                    File(product.imagePath!),
+                                    width: 52,
+                                    height: 52,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _productIcon(context),
+                                  ),
+                                )
+                              : _productIcon(context),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Column(

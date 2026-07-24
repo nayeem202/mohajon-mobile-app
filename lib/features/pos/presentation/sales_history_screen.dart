@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/payment.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/models/sale.dart';
+import '../../../core/services/invoice_service.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
@@ -14,8 +16,6 @@ import '../../../core/widgets/shop_avatar.dart';
 import '../../customers/presentation/customer_form_screen.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../payments/presentation/add_payment_screen.dart';
-import '../../receipts/models/receipt.dart';
-import '../../receipts/presentation/receipt_preview_screen.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 
 enum _SalesTimeFilter { allTime, today, thisWeek, thisMonth }
@@ -345,13 +345,16 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
           sale: sale,
           customer: customer,
           profile: profile,
-          onPrint: () {
+          onPrint: () async {
             Navigator.of(sheetContext).pop();
-            final receipt = _buildReceipt(sale, customer, profile);
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ReceiptPreviewScreen(receipt: receipt),
-              ),
+            final bytes = await InvoiceService().buildSaleInvoice(
+              sale,
+              customerName: customer?.name ?? '',
+              customerPhone: customer?.phone ?? '',
+            );
+            await Printing.sharePdf(
+              bytes: bytes,
+              filename: 'invoice-${sale.saleId}.pdf',
             );
           },
           onRecordPayment: customer == null
@@ -366,47 +369,6 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
                 },
         );
       },
-    );
-  }
-
-  Receipt _buildReceipt(Sale sale, Customer? customer, ShopProfile? profile) {
-    final shopName = profile?.shopName.trim().isNotEmpty == true
-        ? profile!.shopName.trim()
-        : 'Haalkhata';
-    final address = profile?.location.trim().isNotEmpty == true
-        ? profile!.location.trim()
-        : 'Dhaka, Bangladesh';
-    final phone = profile?.phoneNumber.trim().isNotEmpty == true
-        ? profile!.phoneNumber.trim()
-        : '+880 1712-345678';
-
-    return Receipt(
-      companyName: shopName,
-      companyAddress: address,
-      companyPhone: phone,
-      customerId: customer?.customerId ?? sale.customerId,
-      customerName: customer?.name.isNotEmpty == true
-          ? customer!.name
-          : 'Walk-in customer',
-      customerPhone: customer?.phone.isNotEmpty == true ? customer!.phone : '',
-      receiptNumber: sale.saleId,
-      paymentMethod: PaymentMethod.cash,
-      items: [
-        for (final item in sale.items)
-          ReceiptItem(
-            id: item.productId.isEmpty ? item.name : item.productId,
-            productId: item.productId,
-            description: item.name,
-            quantity: item.qty,
-            price: item.unitPrice,
-            purchasePrice: item.purchasePrice,
-          ),
-      ],
-      discountType: ReceiptDiscountType.fixedAmount,
-      discountPercent: 0,
-      discountFixedAmount: sale.discount,
-      taxPercent: 0,
-      date: sale.createdAt,
     );
   }
 

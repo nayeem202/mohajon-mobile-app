@@ -62,7 +62,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 .length;
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
               children: [
                  const _StockTopBar(),
                 const SizedBox(height: 16),
@@ -135,7 +135,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             },
             backgroundColor: const Color(0xFFF97316),
             foregroundColor: Colors.white,
-            child: Icon(_showSearch ? Icons.close : Icons.search_rounded),
+            elevation: 4,
+            shape: const CircleBorder(),
+            child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
@@ -145,7 +147,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             ).push(MaterialPageRoute(builder: (_) => const ProductFormScreen())),
             backgroundColor: const Color(0xFFF97316),
             foregroundColor: Colors.white,
-            child: const Icon(Icons.add_rounded, size: 28),
+            child: const Icon(Icons.add_rounded, size: 24),
           ),
         ],
       ),
@@ -171,16 +173,16 @@ class _StockTopBar extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
-            color: const Color(0xFFF97316),
+            color: const Color(0xFFE98300),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
             Icons.storefront_rounded,
             color: Colors.white,
-            size: 19,
+            size: 17,
           ),
         ),
         const SizedBox(width: 10),
@@ -192,7 +194,7 @@ class _StockTopBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF111827),
+              color: Color(0xFF101828),
             ),
           ),
         ),
@@ -428,7 +430,7 @@ class _SearchAndFilters extends StatelessWidget {
                     ? null
                     : IconButton(
                         onPressed: onClearSearch,
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(Icons.clear_rounded),
                       ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
               ),

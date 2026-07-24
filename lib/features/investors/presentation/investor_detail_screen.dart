@@ -26,7 +26,6 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
     final payouts = payoutsAsync.value ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
       body: investorsAsync.when(
         data: (investors) {
           final investor =
@@ -67,7 +66,7 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                 children: [
                   CircleAvatar(
                     radius: 32,
-                    backgroundColor: Colors.white.withValues(alpha: 0.3),
+                    backgroundColor: colors.surface.withValues(alpha: 0.3),
                     backgroundImage: investor.photoUrl.isNotEmpty
                         ? NetworkImage(investor.photoUrl)
                         : null,
@@ -76,8 +75,8 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                             investor.name.isNotEmpty
                                 ? investor.name[0].toUpperCase()
                                 : '?',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.onPrimary,
                               fontWeight: FontWeight.w900,
                               fontSize: 24,
                             ),
@@ -87,8 +86,8 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                   const SizedBox(height: 6),
                   Text(
                     investor.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colors.onPrimary,
                       fontWeight: FontWeight.w900,
                       fontSize: 18,
                     ),
@@ -99,7 +98,7 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                       child: Text(
                         investor.phone,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: colors.onPrimary.withValues(alpha: 0.8),
                           fontSize: 13,
                         ),
                       ),
@@ -124,16 +123,16 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFFECE7DF)),
+                      color: colors.surface,
+                      border: Border.all(color: colors.outlineVariant),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Contact Info',
+                        Text('Contact Info',
                           style: TextStyle(fontWeight: FontWeight.w900,
-                              color: Color(0xFF101828))),
+                              color: colors.onSurface)),
                         const SizedBox(height: 8),
                         if (investor.email.isNotEmpty)
                           _InfoRow(label: 'Email', value: investor.email),
@@ -148,27 +147,27 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFFECE7DF)),
+                      color: colors.surface,
+                      border: Border.all(color: colors.outlineVariant),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Notes',
+                        Text('Notes',
                           style: TextStyle(fontWeight: FontWeight.w900,
-                              color: Color(0xFF101828))),
+                              color: colors.onSurface)),
                         const SizedBox(height: 8),
                         Text(investor.notes,
-                          style: const TextStyle(color: Color(0xFF667085))),
+                          style: TextStyle(color: colors.onSurfaceVariant)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
                 ],
-                const Text('RECENT PAYOUTS',
+                Text('RECENT PAYOUTS',
                   style: TextStyle(
-                    color: Color(0xFF667085),
+                    color: colors.onSurfaceVariant,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
@@ -176,11 +175,11 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 if (payouts.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Center(
                       child: Text('No payouts yet.',
-                          style: TextStyle(color: Color(0xFF98A2B3))),
+                          style: TextStyle(color: colors.outline)),
                     ),
                   )
                 else
@@ -188,34 +187,34 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFFECE7DF)),
+                          color: colors.surface,
+                          border: Border.all(color: colors.outlineVariant),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle_rounded,
-                                size: 18, color: Color(0xFF047857)),
+                            Icon(Icons.check_circle_rounded,
+                                size: 18, color: const Color(0xFF047857)),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 p.note.isNotEmpty ? p.note : 'Payout',
                                 style:
-                                    const TextStyle(fontWeight: FontWeight.w600),
+                                    TextStyle(fontWeight: FontWeight.w600, color: colors.onSurface),
                               ),
                             ),
                             Text(
                               money(p.amount),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF101828),
+                                color: colors.onSurface,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '${p.createdAt.day}/${p.createdAt.month}/${p.createdAt.year}',
-                              style: const TextStyle(
-                                color: Color(0xFF98A2B3),
+                              style: TextStyle(
+                                color: colors.outline,
                                 fontSize: 11,
                               ),
                             ),
@@ -239,11 +238,11 @@ class _FinancialSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return Container(
+return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
+        color: colors.surface,
+        border: Border.all(color: colors.outlineVariant),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -259,7 +258,7 @@ class _FinancialSummary extends StatelessWidget {
               _SummaryBox(
                 label: 'Total Profit',
                 value: money(investor.totalProfit),
-                color: const Color(0xFF047857),
+                color: colors.secondary,
               ),
             ],
           ),
@@ -277,7 +276,7 @@ class _FinancialSummary extends StatelessWidget {
                 value: money(investor.outstanding),
                 color: investor.outstanding > 0
                     ? colors.error
-                    : const Color(0xFF047857),
+                    : colors.secondary,
               ),
             ],
           ),
@@ -337,8 +336,9 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  @override
+@override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -347,8 +347,8 @@ class _InfoRow extends StatelessWidget {
           SizedBox(
             width: 70,
             child: Text(label,
-              style: const TextStyle(
-                color: Color(0xFF667085),
+              style: TextStyle(
+                color: colors.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -356,9 +356,9 @@ class _InfoRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF101828),
+                color: colors.onSurface,
               ),
             ),
           ),

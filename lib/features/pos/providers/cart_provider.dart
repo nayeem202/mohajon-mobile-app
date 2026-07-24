@@ -131,6 +131,8 @@ class CartController extends StateNotifier<CartState> {
       customerId: state.customerId,
       items: state.items,
       discount: state.discount,
+      vatPercent: state.vatPercent,
+      charge: 0,
       totalAmount: state.total,
       paidAmount: state.paidAmount,
       dueAmount: state.due,

@@ -242,7 +242,7 @@ class ReceiptPdfService {
                 valueColor: PdfColors.green,
               ),
             _summaryRow(
-              'Tax (${receipt.taxPercent.toStringAsFixed(2)}%)',
+              'VAT (${receipt.taxPercent.toStringAsFixed(2)}%)',
               receiptMoney(receipt.taxAmount),
             ),
             pw.Divider(thickness: 1),
