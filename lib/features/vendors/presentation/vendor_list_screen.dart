@@ -40,7 +40,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
     final selectedCategory = ref.watch(vendorCategoryFilterProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: vendorsAsync.when(
           data: (items) {
@@ -156,7 +156,7 @@ class _VendorsTopBar extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: FontWeight.w900,
               color: colors.onSurface,
             ),
@@ -185,6 +185,7 @@ class _VendorStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Expanded(
@@ -208,9 +209,7 @@ class _VendorStats extends StatelessWidget {
             label: 'Pending\nPayment',
             value: money(totalPending),
             subtext: 'Outstanding dues',
-            valueColor: totalPending > 0
-                ? const Color(0xFFEF4444)
-                : const Color(0xFF047857),
+            valueColor: totalPending > 0 ? colors.error : colors.secondary,
           ),
         ),
       ],
@@ -251,7 +250,7 @@ class _VendorStatCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: colors.onSurfaceVariant,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -344,9 +343,9 @@ class _SearchAndFilters extends StatelessWidget {
                   height: 46,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFCFBF8),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE8E4DB)),
+                    border: Border.all(color: colors.outlineVariant),
                   ),
                   child: DropdownButton<VendorSort>(
                     value: selectedSort,
@@ -417,7 +416,8 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? colors.primary : const Color(0xFFF7F5F0),
+          color: selected ? colors.primary : Colors.white,
+          border: Border.all(color: selected ? colors.primary : colors.outlineVariant),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
@@ -502,7 +502,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF6E7D1),
+                      color: colors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(
@@ -530,7 +530,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                                 style: TextStyle(
                                   color: colors.onSurface,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 15,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
@@ -542,14 +542,14 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF1F2),
+                                  color: colors.error.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: const Text(
                                   'Due',
                                   style: TextStyle(
-                                    color: Color(0xFFEF4444),
-                                    fontSize: 11,
+                                    color: Color(0xFFDC2626),
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
@@ -563,7 +563,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: colors.onSurfaceVariant,
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -576,7 +576,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                               '${vendor.rating.toStringAsFixed(1)}',
                               style: const TextStyle(
                                 color: Color(0xFFF59E0B),
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -605,7 +605,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                           color: hasDue
                               ? colors.primary
                               : const Color(0xFF047857),
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -616,7 +616,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                             : 'No purchases',
                         style: TextStyle(
                           color: colors.outline,
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -686,7 +686,7 @@ class _VendorExpandedDetails extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(height: 1, color: Color(0xFFF0ECE4)),
+          Divider(height: 1, color: colors.outlineVariant),
           const SizedBox(height: 12),
           if (vendor.phone.isNotEmpty)
             _InfoRow(icon: Icons.phone_outlined, text: vendor.phone),

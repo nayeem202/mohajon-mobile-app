@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/report_item.dart';
 import 'customer_ledger_screen.dart';
+import 'expense_report_screen.dart';
 import 'inventory_report_screen.dart';
 import 'sales_summary_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
@@ -27,6 +28,12 @@ class ReportsScreen extends StatelessWidget {
       icon: Icons.inventory_2_rounded,
       title: 'Inventory Report',
       description: 'Stock levels, low stock & valuation',
+      color: Color(0xFFF97316),
+    ),
+    ReportItem(
+      icon: Icons.payments_rounded,
+      title: 'Expense Report',
+      description: 'Date range expenses with PDF & XLSX export',
       color: Color(0xFFF97316),
     ),
     ReportItem(
@@ -116,18 +123,28 @@ class ReportsScreen extends StatelessWidget {
                         builder: (_) => const SalesSummaryScreen(),
                       ),
                     );
+                    break;
                   case 1:
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const CustomerLedgerScreen(),
                       ),
                     );
+                    break;
                   case 2:
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const InventoryReportScreen(),
                       ),
                     );
+                    break;
+                  case 3:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ExpenseReportScreen(),
+                      ),
+                    );
+                    break;
                 }
               },
             ),

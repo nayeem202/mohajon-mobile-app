@@ -1341,9 +1341,18 @@ class _CheckoutItemRow extends StatelessWidget {
             color: Color(0xFF101828),
           ),
         ),
-        IconButton(
-          onPressed: onPlus,
-          icon: const Icon(Icons.add_rounded),
+        SizedBox(
+          width: 36,
+          height: 36,
+          child: Material(
+            color: const Color(0xFFF97316),
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: onPlus,
+              borderRadius: BorderRadius.circular(18),
+              child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+            ),
+          ),
         ),
         IconButton(
           onPressed: onDelete,

@@ -221,7 +221,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
         const SizedBox(height: 8),
         _PrimaryActionButton(
-          onPressed: isBusy ? null : _signInWithEmail,
+          onPressed: _signInWithEmail,
+          isBusy: isBusy,
           icon: Icons.arrow_forward_rounded,
           label: 'Sign in securely',
         ),
@@ -312,11 +313,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ],
         const SizedBox(height: 16),
         _PrimaryActionButton(
-          onPressed: isBusy ? null : _submit,
+          onPressed: _submit,
+          isBusy: isBusy,
           icon: _verificationId == null
               ? Icons.sms_outlined
               : Icons.verified_user_outlined,
           label: _verificationId == null ? 'Send OTP' : 'Verify OTP',
+          busyLabel: _verificationId == null ? 'Sending...' : 'Verifying...',
         ),
       ],
     );
@@ -857,15 +860,19 @@ class _PrimaryActionButton extends StatelessWidget {
     required this.onPressed,
     required this.icon,
     required this.label,
+    this.isBusy = false,
+    this.busyLabel,
   });
 
   final VoidCallback? onPressed;
   final IconData icon;
   final String label;
+  final bool isBusy;
+  final String? busyLabel;
 
   @override
   Widget build(BuildContext context) {
-    final disabled = onPressed == null;
+    final disabled = isBusy || onPressed == null;
     final fillColor = disabled ? AuthBrand.buttonDisabled : AuthBrand.primary;
     return Material(
       color: Colors.transparent,
@@ -886,14 +893,14 @@ class _PrimaryActionButton extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: onPressed,
+          onTap: disabled ? null : onPressed,
           child: SizedBox(
             height: 52,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  label,
+                  isBusy ? (busyLabel ?? 'Sending...') : label,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
@@ -902,7 +909,16 @@ class _PrimaryActionButton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Icon(icon, color: Colors.white, size: 20),
+                isBusy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(icon, color: Colors.white, size: 20),
               ],
             ),
           ),

@@ -23,4 +23,5 @@ class HiveBoxes {
   static const vendorPurchases = 'vendor_purchases';
   static const vendorPayments = 'vendor_payments';
   static const investments = 'investments';
+  static const expenses = 'expenses';
 }

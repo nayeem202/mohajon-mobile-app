@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +21,8 @@ import '../../profile/presentation/profile_overview_screen.dart';
 import '../../profile/providers/profile_providers.dart';
 import '../presentation/low_stock_products_screen.dart';
 import '../providers/dashboard_providers.dart';
+import 'models/weekly_sales.dart';
+import 'widgets/sales_chart_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -59,7 +60,13 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 _OverviewStats(summary: summary),
                 const SizedBox(height: 20),
-                _WeekOverview(summary: summary),
+                SalesChartCard(
+                  data: summary.dayWiseSales.map((d) => WeeklySalesData(
+                    dayLabel: d.label,
+                    fullDayName: DateFormat('EEEE').format(d.date),
+                    sales: d.sales,
+                  )).toList(),
+                ),
                 const SizedBox(height: 20),
                 _RecentSalesCard(sales: summary.recentSales),
                 const SizedBox(height: 20),
@@ -523,126 +530,6 @@ class _StatCard extends StatelessWidget {
               fontSize: 12,
               color: spec.subtextColor ?? colors.onSurfaceVariant,
               fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeekOverview extends StatelessWidget {
-  const _WeekOverview({required this.summary});
-
-  final DashboardSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final maxSales = summary.dayWiseSales.fold<double>(
-      0,
-      (max, day) => day.sales > max ? day.sales : max,
-    );
-    final effectiveMax = maxSales > 0 ? maxSales * 1.2 : 100.0;
-
-    return _SectionCard(
-      child: Column(
-        children: [
-          const _SectionHeader(title: 'This Week', action: 'Sales overview'),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 150,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceEvenly,
-                maxY: effectiveMax,
-                minY: 0,
-                barGroups: List.generate(summary.dayWiseSales.length, (i) {
-                  final day = summary.dayWiseSales[i];
-                  return BarChartGroupData(
-                    x: i,
-                    barRods: [
-                      BarChartRodData(
-                        toY: maxSales <= 0 ? effectiveMax * 0.04 : day.sales,
-                        color: day.isToday
-                            ? colors.primary
-                            : const Color(0xFFECE7DF),
-                        width: 18,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(999),
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-                titlesData: FlTitlesData(
-                  show: true,
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        final idx = value.toInt();
-                        if (idx < 0 ||
-                            idx >= summary.dayWiseSales.length) {
-                          return const SizedBox.shrink();
-                        }
-                        final day = summary.dayWiseSales[idx];
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            day.label,
-                            style: TextStyle(
-                              color: day.isToday
-                                  ? colors.primary
-                                  : colors.onSurfaceVariant,
-                              fontWeight: day.isToday
-                                  ? FontWeight.w900
-                                  : FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: const FlGridData(show: false),
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => colors.onSurface,
-                    tooltipPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    tooltipMargin: 8,
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final day =
-                          summary.dayWiseSales[group.x.toInt()];
-                      return BarTooltipItem(
-                        '${day.label}\n৳ ${day.sales.toStringAsFixed(2)}',
-                        const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOutCubic,
             ),
           ),
         ],

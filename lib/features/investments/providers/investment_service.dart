@@ -57,10 +57,14 @@ class InvestmentService {
   Stream<List<Payout>> watchPayouts(String investmentId) {
     return _payoutsCol
         .where('investmentId', isEqualTo: investmentId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((doc) => Payout.fromJson(doc.id, doc.data())).toList());
+        .map((snap) {
+      final payouts = snap.docs
+          .map((doc) => Payout.fromJson(doc.id, doc.data()))
+          .toList();
+      payouts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return payouts;
+    });
   }
 
   Stream<List<Payout>> watchPayoutsByInvestor(String investorId) {

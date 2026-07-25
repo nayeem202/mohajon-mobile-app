@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/customer.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/customer_providers.dart';
 
@@ -186,14 +187,12 @@ class _CustomerProfileScreenState
                   ),
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton.icon(
-                    onPressed: isBusy ? null : _saveCustomer,
-                    icon: const Icon(Icons.save_outlined),
-                    label: Text('Update Client'),
-                  ),
+                ActionButton(
+                  onPressed: _saveCustomer,
+                  isBusy: isBusy,
+                  icon: Icons.save_outlined,
+                  label: 'Update Client',
+                  busyLabel: 'Updating...',
                 ),
               ],
             ],

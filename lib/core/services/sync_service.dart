@@ -50,6 +50,7 @@ class SyncService {
           _db.payments.pending().length +
           _db.purchases.pending().length +
           _db.suppliers.pending().length +
+          _db.expenses.pending().length +
           _db.users.pending().length;
     }
     return _db.products.pendingForShop(shopId).length +
@@ -59,6 +60,7 @@ class SyncService {
         _db.payments.pendingForShop(shopId).length +
         _db.purchases.pendingForShop(shopId).length +
         _db.suppliers.pendingForShop(shopId).length +
+        _db.expenses.pendingForShop(shopId).length +
         _db.users.pendingForShop(shopId).length;
   }
 
@@ -115,6 +117,11 @@ class SyncService {
         _db.suppliers,
         paths.collection('suppliers'),
       );
+      await _pushCollection(
+        shopId,
+        _db.expenses,
+        paths.collection('expenses'),
+      );
       await _pushCollection(shopId, _db.users, paths.collection('users'));
 
       await _pullCollection(
@@ -153,6 +160,12 @@ class SyncService {
         shopId,
         _db.suppliers,
         paths.collection('suppliers'),
+      );
+      await _pullCollection(
+        'expenses',
+        shopId,
+        _db.expenses,
+        paths.collection('expenses'),
       );
       await _pullCollection('users', shopId, _db.users, paths.collection('users'));
 

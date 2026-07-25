@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/expenses/presentation/expenses_screen.dart';
 import '../../features/investments/presentation/investment_dashboard_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/pos/presentation/sales_history_screen.dart';
@@ -96,6 +97,11 @@ class _AppShellState extends ConsumerState<AppShell> {
             context: context,
             sheetContext: sheetContext,
             screen: const VendorListScreen(),
+          ),
+          onExpenses: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const ExpensesScreen(),
           ),
           onInvestments: () => _openFromSheet(
             context: context,
@@ -365,6 +371,7 @@ class _MoreOptionsSheet extends StatelessWidget {
     required this.onSalesHistory,
     required this.onInvestors,
     required this.onVendors,
+    required this.onExpenses,
     required this.onInvestments,
     required this.onReports,
     required this.onSettings,
@@ -373,6 +380,7 @@ class _MoreOptionsSheet extends StatelessWidget {
   final VoidCallback onSalesHistory;
   final VoidCallback onInvestors;
   final VoidCallback onVendors;
+  final VoidCallback onExpenses;
   final VoidCallback onInvestments;
   final VoidCallback onReports;
   final VoidCallback onSettings;
@@ -441,6 +449,12 @@ class _MoreOptionsSheet extends StatelessWidget {
                       icon: Icons.store_rounded,
                       color: const Color(0xFF7C3AED),
                       onTap: onVendors,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Expenses',
+                      icon: Icons.payments_rounded,
+                      color: const Color(0xFFF97316),
+                      onTap: onExpenses,
                     ),
                     _MoreOptionTile(
                       label: 'Investments',

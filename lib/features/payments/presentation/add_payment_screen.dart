@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/models/payment.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../receipts/services/receipt_pdf_service.dart';
 import '../../receipts/models/receipt.dart';
@@ -65,10 +66,12 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
               },
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: isBusy ? null : _savePayment,
-              icon: const Icon(Icons.check),
-              label: const Text('Save payment'),
+            ActionButton(
+              onPressed: _savePayment,
+              isBusy: isBusy,
+              icon: Icons.check,
+              label: 'Save payment',
+              busyLabel: 'Saving...',
             ),
           ],
         ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/investment_providers.dart';
 
@@ -92,10 +93,12 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
                       netProfit: overview.netProfit,
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: isBusy ? null : _saveOwners,
-                      icon: const Icon(Icons.save_rounded),
-                      label: const Text('Save Owners'),
+                    ActionButton(
+                      onPressed: _saveOwners,
+                      isBusy: isBusy,
+                      icon: Icons.save_rounded,
+                      label: 'Save Owners',
+                      busyLabel: 'Saving...',
                     ),
                   ],
                 ),

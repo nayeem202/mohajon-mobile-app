@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/vendor.dart';
 import '../providers/vendor_providers.dart';
@@ -205,13 +206,12 @@ class _VendorFormSheetState extends ConsumerState<VendorFormSheet>
                   }),
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  height: 52,
-                  child: FilledButton.icon(
-                    onPressed: isBusy ? null : _save,
-                    icon: const Icon(Icons.save_outlined),
-                    label: Text(isEditing ? 'Update Vendor' : 'Save Vendor'),
-                  ),
+                ActionButton(
+                  onPressed: _save,
+                  isBusy: isBusy,
+                  icon: Icons.save_outlined,
+                  label: isEditing ? 'Update Vendor' : 'Save Vendor',
+                  busyLabel: isEditing ? 'Updating...' : 'Saving...',
                 ),
               ],
             ),

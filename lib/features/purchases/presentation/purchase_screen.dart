@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/purchase.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../products/providers/product_providers.dart';
 import '../providers/purchase_providers.dart';
@@ -85,12 +86,14 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: _productId == null || isBusy
+                    ActionButton(
+                      onPressed: _productId == null
                           ? null
                           : () => _addPurchase(products),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add purchase'),
+                      isBusy: isBusy,
+                      icon: Icons.add_rounded,
+                      label: 'Add purchase',
+                      busyLabel: 'Adding...',
                     ),
                   ],
                 ),

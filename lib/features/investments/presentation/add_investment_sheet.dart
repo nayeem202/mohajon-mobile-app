@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../investors/presentation/widgets/investor_selector.dart';
 import '../models/investment_category.dart';
@@ -218,25 +219,16 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                   ),
                 ),
                 const SizedBox(height: 24),
-                SizedBox(
-                  height: 52,
-                  child: FilledButton.icon(
-                    onPressed: (isBusy ||
-                            hasInvalid ||
-                            hasZeroAmount ||
-                            _selectedInvestors.isEmpty)
-                        ? null
-                        : _save,
-                    icon: const Icon(Icons.save_rounded, size: 20),
-                    label: const Text('Save Investment',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 15)),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFF97316),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
+                ActionButton(
+                  onPressed: (hasInvalid ||
+                          hasZeroAmount ||
+                          _selectedInvestors.isEmpty)
+                      ? null
+                      : _save,
+                  isBusy: isBusy,
+                  icon: Icons.save_rounded,
+                  label: 'Save Investment',
+                  busyLabel: 'Saving...',
                 ),
               ],
             ),

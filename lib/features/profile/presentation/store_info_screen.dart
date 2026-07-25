@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/action_button.dart';
 import '../models/profile.dart';
 import '../providers/profile_providers.dart';
 import 'widgets/animated_section.dart';
@@ -177,37 +178,12 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
             const SizedBox(height: 24),
             AnimatedSection(
               delay: const Duration(milliseconds: 120),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: _isSaving ? null : _saveProfile,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save_rounded, size: 20),
-                  label: Text(
-                    _isSaving ? 'Saving...' : 'Save Changes',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF7A00),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
+              child: ActionButton(
+                onPressed: _saveProfile,
+                isBusy: _isSaving,
+                icon: Icons.save_rounded,
+                label: 'Save Changes',
+                busyLabel: 'Saving...',
               ),
             ),
           ],

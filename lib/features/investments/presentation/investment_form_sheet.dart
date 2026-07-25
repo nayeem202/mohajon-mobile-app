@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/investment_item.dart';
 import '../providers/investment_item_providers.dart';
@@ -197,13 +198,12 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet>
                   decoration: const InputDecoration(hintText: 'Additional notes...'),
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  height: 52,
-                  child: FilledButton.icon(
-                    onPressed: isBusy ? null : _save,
-                    icon: const Icon(Icons.save_outlined),
-                    label: Text(isEditing ? 'Update Investment' : 'Save Investment'),
-                  ),
+                ActionButton(
+                  onPressed: _save,
+                  isBusy: isBusy,
+                  icon: Icons.save_outlined,
+                  label: isEditing ? 'Update Investment' : 'Save Investment',
+                  busyLabel: isEditing ? 'Updating...' : 'Saving...',
                 ),
               ],
             ),

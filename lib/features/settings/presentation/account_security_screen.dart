@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/providers/auth_providers.dart';
 
@@ -111,16 +112,12 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                       ),
                     ],
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: isBusy
-                          ? null
-                          : () => hasPassword
-                                ? _changePassword()
-                                : _setPasswordForGoogle(),
-                      icon: const Icon(Icons.save_outlined),
-                      label: Text(
-                        hasPassword ? 'Update password' : 'Set password',
-                      ),
+                    ActionButton(
+                      onPressed: hasPassword ? _changePassword : _setPasswordForGoogle,
+                      isBusy: isBusy,
+                      icon: Icons.save_outlined,
+                      label: hasPassword ? 'Update password' : 'Set password',
+                      busyLabel: 'Saving...',
                     ),
                   ],
                 ),

@@ -251,7 +251,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                 ),
                 const SizedBox(height: 18),
                 _PrimaryActionButton(
-                  onPressed: isBusy ? null : _signup,
+                  onPressed: _signup,
+                  isBusy: isBusy,
                   icon: Icons.mark_email_read_outlined,
                   label: 'Send verification email',
                 ),
@@ -495,15 +496,19 @@ class _PrimaryActionButton extends StatelessWidget {
     required this.onPressed,
     required this.icon,
     required this.label,
+    this.isBusy = false,
+    this.busyLabel,
   });
 
   final VoidCallback? onPressed;
   final IconData icon;
   final String label;
+  final bool isBusy;
+  final String? busyLabel;
 
   @override
   Widget build(BuildContext context) {
-    final disabled = onPressed == null;
+    final disabled = isBusy || onPressed == null;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
@@ -523,14 +528,14 @@ class _PrimaryActionButton extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: onPressed,
+          onTap: disabled ? null : onPressed,
           child: SizedBox(
             height: 52,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  label,
+                  isBusy ? (busyLabel ?? 'Sending...') : label,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
@@ -539,7 +544,16 @@ class _PrimaryActionButton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Icon(icon, color: Colors.white, size: 20),
+                isBusy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(icon, color: Colors.white, size: 20),
               ],
             ),
           ),

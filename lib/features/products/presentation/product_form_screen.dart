@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -278,13 +279,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                 ),
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: isBusy ? null : _save,
-                  icon: const Icon(Icons.save_outlined),
-                  label: Text(isEditing ? 'Update Product' : 'Save Product'),
-                ),
+              ActionButton(
+                onPressed: _save,
+                isBusy: isBusy,
+                icon: Icons.save_outlined,
+                label: isEditing ? 'Update Product' : 'Save Product',
+                busyLabel: isEditing ? 'Updating...' : 'Saving...',
               ),
               const SizedBox(height: 10),
               SizedBox(

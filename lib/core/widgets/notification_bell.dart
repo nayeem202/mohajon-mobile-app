@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NotificationBell extends StatelessWidget {
+import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/notifications/providers/notification_providers.dart';
+
+class NotificationBell extends ConsumerWidget {
   const NotificationBell({
     super.key,
     this.onPressed,
-    this.hasUnread = true,
     this.size = 24,
   });
 
   final VoidCallback? onPressed;
-  final bool hasUnread;
   final double size;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(notificationsProvider).unreadCount;
+    final hasUnread = unreadCount > 0;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
         IconButton(
-          onPressed: onPressed,
+          onPressed: onPressed ??
+              () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  ),
           icon: Icon(
             Icons.notifications_none_rounded,
             size: size,

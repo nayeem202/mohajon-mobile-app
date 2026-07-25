@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../auth/presentation/login_screen.dart';
+import '../../settings/presentation/settings_screen.dart';
 import '../models/profile.dart';
 import '../providers/profile_providers.dart';
 import 'store_info_screen.dart';
@@ -72,7 +73,11 @@ class _ProfileOverviewScreenState
                     icon: Icons.settings_rounded,
                     title: 'Settings',
                     subtitle: 'App preferences & more',
-                    onTap: () {},
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
+                    ),
                   ),
                   Divider(height: 1, indent: 16, endIndent: 16, color: colors.outlineVariant),
                   _MenuTile(

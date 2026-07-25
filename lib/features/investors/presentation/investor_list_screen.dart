@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
@@ -33,19 +34,26 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final filtered = ref.watch(filteredInvestorsProvider);
     final query = ref.watch(investorSearchQueryProvider);
     final overview = ref.watch(investorsOverviewProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Investors',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        title: Text(
+          'Investors',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: colors.onSurface,
+          ),
+        ),
         actions: [
           const NotificationBell(),
           const SizedBox(width: 4),
@@ -115,11 +123,14 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text('Total Investors',
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  'Total Investors',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -441,14 +452,14 @@ class _SummaryBox extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  fontSize: 13,
+                  fontSize: 14,
                   color: color)),
           const SizedBox(height: 2),
           Text(label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   color: color.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w600)),
         ],
@@ -499,18 +510,18 @@ class _StepRow extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF101828),
-                        fontSize: 13)),
+                        fontSize: 14)),
               ),
               Text(desc,
                   style: const TextStyle(
-                      color: Color(0xFF667085),
+                      color: Color(0xFF525252),
                       fontSize: 12,
                       fontWeight: FontWeight.w500)),
             ],
           ),
         ),
         if (showDivider)
-          const Divider(height: 1, color: Color(0xFFF0ECE4)),
+          Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
       ],
     );
   }
@@ -593,9 +604,13 @@ class _AddInvestorDialogState extends ConsumerState<_AddInvestorDialog>
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: isBusy ? null : _save,
-          child: const Text('Save'),
+        ActionButton(
+          onPressed: _save,
+          isBusy: isBusy,
+          label: 'Save',
+          busyLabel: 'Saving...',
+          expanded: false,
+          height: 40,
         ),
       ],
     );

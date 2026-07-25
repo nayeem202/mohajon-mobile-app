@@ -8,6 +8,7 @@ import '../constants/app_constants.dart';
 import '../models/app_user.dart';
 import '../models/customer.dart';
 import '../models/customer_ledger_entry.dart';
+import '../../features/expenses/models/expense.dart';
 import '../models/payment.dart';
 import '../models/product.dart';
 import '../models/purchase.dart';
@@ -60,6 +61,10 @@ class LocalDatabase {
           Hive.box<Map>(HiveBoxes.investments),
           InvestmentItem.fromJson,
         ),
+        expenses = LocalCollection<Expense>(
+          Hive.box<Map>(HiveBoxes.expenses),
+          Expense.fromJson,
+        ),
         users = LocalCollection<AppUser>(
           Hive.box<Map>(HiveBoxes.users),
           AppUser.fromJson,
@@ -77,6 +82,7 @@ class LocalDatabase {
   final LocalCollection<VendorPurchase> vendorPurchases;
   final LocalCollection<VendorPayment> vendorPayments;
   final LocalCollection<InvestmentItem> investments;
+  final LocalCollection<Expense> expenses;
   final LocalCollection<AppUser> users;
   final Box<dynamic> settings;
 
@@ -105,6 +111,7 @@ class LocalDatabase {
       vendorPurchases.clear(),
       vendorPayments.clear(),
       investments.clear(),
+      expenses.clear(),
       users.clear(),
     ]);
     final keys = settings.keys

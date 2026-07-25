@@ -52,21 +52,26 @@ class _InvestmentDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final dashboard = ref.watch(investmentDashboardProvider);
     final filtered = ref.watch(filteredInvestmentsProvider);
     final query = ref.watch(investmentSearchQueryProvider);
     final selectedCat = ref.watch(investmentCategoryFilterProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Investments',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: colors.onSurface,
+          ),
         ),
         actions: [
           const NotificationBell(),
@@ -94,10 +99,11 @@ class _InvestmentDashboardScreenState
               const SizedBox(height: 12),
               Text(
                 'All Investments (${filtered.length})',
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF101828)),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: colors.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               if (filtered.isEmpty && query.isEmpty)

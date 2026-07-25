@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/money.dart';
+import '../../../../core/widgets/action_button.dart';
 import '../../../../core/widgets/async_action_state.dart';
 import '../../models/investment_member.dart';
 import '../../providers/investment_providers.dart';
@@ -217,21 +218,12 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: FilledButton.icon(
-                  onPressed: isBusy ? null : _submit,
-                  icon: const Icon(Icons.save_rounded, size: 20),
-                  label: const Text('Save Payout',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 15)),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFF97316),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
+              ActionButton(
+                onPressed: _submit,
+                isBusy: isBusy,
+                icon: Icons.save_rounded,
+                label: 'Save Payout',
+                busyLabel: 'Saving...',
               ),
             ],
           ),
