@@ -10,18 +10,14 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/loading_overlay.dart';
 import '../../../core/widgets/notification_bell.dart';
-import '../../customers/presentation/customer_form_screen.dart';
-import '../../customers/presentation/customer_list_screen.dart';
-import '../../pos/presentation/pos_screen.dart';
-import '../../products/presentation/product_form_screen.dart';
 import '../../profile/models/profile.dart';
-import '../../investors/presentation/investor_list_screen.dart';
-import '../../pos/presentation/sales_history_screen.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
+import '../../pos/presentation/sales_history_screen.dart';
 import '../../profile/providers/profile_providers.dart';
 import '../presentation/low_stock_products_screen.dart';
 import '../providers/dashboard_providers.dart';
 import 'models/weekly_sales.dart';
+import 'widgets/home_shortcut_section.dart';
 import 'widgets/sales_chart_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -56,7 +52,7 @@ class DashboardScreen extends ConsumerWidget {
                   name: profile?.ownerName ?? '',
                 ),
                 const SizedBox(height: 20),
-                const _QuickActions(),
+                const HomeShortcutSection(),
                 const SizedBox(height: 20),
                 _OverviewStats(summary: summary),
                 const SizedBox(height: 20),
@@ -282,124 +278,6 @@ class _HeroMetric extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final actions = [
-      _ActionSpec(
-        icon: Icons.add_circle_outline_rounded,
-        label: 'New Sale',
-        color: colors.primary,
-        onTap: () => _open(context, const PosScreen()),
-      ),
-      _ActionSpec(
-        icon: Icons.add_box_outlined,
-        label: 'Add Product',
-        color: colors.secondary,
-        onTap: () => _open(context, const ProductFormScreen()),
-      ),
-      _ActionSpec(
-        icon: Icons.person_add_alt_1_outlined,
-        label: 'Add Client',
-        color: const Color(0xFF8B6F47),
-        onTap: () => _open(context, const CustomerFormScreen()),
-      ),
-      _ActionSpec(
-        icon: Icons.people_alt_rounded,
-        label: 'Investors',
-        color: const Color(0xFF047857),
-        onTap: () => _open(context, const InvestorListScreen()),
-      ),
-    ];
-
-    return GridView.builder(
-      itemCount: actions.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.86,
-      ),
-      itemBuilder: (context, index) => _ActionTile(spec: actions[index]),
-    );
-  }
-
-  void _open(BuildContext context, Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
-  }
-}
-
-class _ActionSpec {
-  const _ActionSpec({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({required this.spec});
-
-  final _ActionSpec spec;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: spec.onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFECE7DF)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: spec.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(spec.icon, color: spec.color, size: 20),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                spec.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: colors.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

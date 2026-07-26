@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
@@ -14,7 +15,8 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
-import '../../features/settings/providers/shop_profile_providers.dart';
+import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
+import '../widgets/nav_bar/nav_destination.dart';
 import 'feature_hub_screen.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -25,11 +27,23 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  int _index = 0;
+  late int _index;
+
+  @override
+  void initState() {
+    super.initState();
+    final box = Hive.box(HiveBoxes.settings);
+    _index = box.get('selectedTab', defaultValue: 0) as int;
+  }
+
+  void _onTabSelected(int index) {
+    setState(() => _index = index);
+    final box = Hive.box(HiveBoxes.settings);
+    box.put('selectedTab', index);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final shopName = ref.watch(shopProfileProvider).value?.shopName ?? '';
     final l10n = AppLocalizations.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final screens = [
@@ -40,11 +54,11 @@ class _AppShellState extends ConsumerState<AppShell> {
       const FeatureHubScreen(),
     ];
     final destinations = [
-      _Destination(icon: Icons.home_rounded, label: l10n.t('home')),
-      _Destination(icon: Icons.shopping_cart_rounded, label: l10n.t('pos')),
-      _Destination(icon: Icons.inventory_2_rounded, label: l10n.t('stock')),
-      _Destination(icon: Icons.people_alt_rounded, label: l10n.t('clients')),
-      _Destination(icon: Icons.more_horiz_rounded, label: l10n.t('more')),
+      NavDestination(icon: Icons.home_rounded, label: l10n.t('home')),
+      NavDestination(icon: Icons.point_of_sale_rounded, label: l10n.t('pos')),
+      NavDestination(icon: Icons.inventory_2_rounded, label: l10n.t('stock')),
+      NavDestination(icon: Icons.groups_rounded, label: l10n.t('clients')),
+      NavDestination(icon: Icons.apps_rounded, label: l10n.t('more')),
     ];
 
     return ColoredBox(
@@ -57,18 +71,31 @@ class _AppShellState extends ConsumerState<AppShell> {
               _SideNav(
                 selectedIndex: _index,
                 destinations: destinations,
-                onSelected: (value) => setState(() => _index = value),
+                onSelected: _onTabSelected,
                 onMoreTap: () => _showMoreOptions(context),
               ),
-            Expanded(child: screens[_index]),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: KeyedSubtree(
+                  key: ValueKey(_index),
+                  child: screens[_index],
+                ),
+              ),
+            ),
           ],
         ),
         bottomNavigationBar: wide
             ? null
-            : _MobileBottomNav(
+            : AnimatedBottomNavBar(
                 selectedIndex: _index,
                 destinations: destinations,
-                onSelected: (value) => setState(() => _index = value),
+                onSelected: _onTabSelected,
                 onMoreTap: () => _showMoreOptions(context),
               ),
       ),
@@ -133,13 +160,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
-class _Destination {
-  const _Destination({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-}
-
 class _SideNav extends StatelessWidget {
   const _SideNav({
     required this.selectedIndex,
@@ -149,7 +169,7 @@ class _SideNav extends StatelessWidget {
   });
 
   final int selectedIndex;
-  final List<_Destination> destinations;
+  final List<NavDestination> destinations;
   final ValueChanged<int> onSelected;
   final VoidCallback onMoreTap;
 
@@ -277,7 +297,7 @@ class _SideNavItem extends StatelessWidget {
     required this.onTap,
   });
 
-  final _Destination destination;
+  final NavDestination destination;
   final bool selected;
   final VoidCallback onTap;
 
@@ -317,49 +337,6 @@ class _SideNavItem extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileBottomNav extends StatelessWidget {
-  const _MobileBottomNav({
-    required this.selectedIndex,
-    required this.destinations,
-    required this.onSelected,
-    required this.onMoreTap,
-  });
-
-  final int selectedIndex;
-  final List<_Destination> destinations;
-  final ValueChanged<int> onSelected;
-  final VoidCallback onMoreTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: colors.outlineVariant)),
-        ),
-        padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
-        child: Row(
-          children: [
-            for (var index = 0; index < destinations.length; index++)
-              Expanded(
-                child: _BottomNavItem(
-                  destination: destinations[index],
-                  selected: selectedIndex == index,
-                  onTap: index == destinations.length - 1
-                      ? onMoreTap
-                      : () => onSelected(index),
-                ),
-              ),
-          ],
         ),
       ),
     );
@@ -406,7 +383,7 @@ class _MoreOptionsSheet extends StatelessWidget {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: Color(0xFFE5E7EB),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -535,62 +512,6 @@ class _MoreOptionTile extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({
-    required this.destination,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _Destination destination;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = const Color(0xFFF97316);
-    final inactive = const Color(0xFF98A2B3);
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: selected
-                    ? active.withValues(alpha: 0.18)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                destination.icon,
-                color: selected ? active : inactive,
-                size: 22,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              destination.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? active : inactive,
-              ),
-            ),
-          ],
         ),
       ),
     );
