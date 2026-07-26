@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../models/profile.dart';
 import '../providers/profile_providers.dart';
@@ -218,15 +219,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
 
     final errors = _validate(storeName, ownerName, phone, email, address);
     if (errors.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errors.first),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      showAppSnackBar(context, errors.first, isError: true);
       return;
     }
 
@@ -247,24 +240,11 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
         _isSaving = false;
         _isEditing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Store information updated'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      showAppSnackBar(context, 'Store information updated');
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString()),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showAppSnackBar(context, error.toString(), isError: true);
     }
   }
 

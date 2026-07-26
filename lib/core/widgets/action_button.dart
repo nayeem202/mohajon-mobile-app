@@ -4,62 +4,61 @@ class ActionButton extends StatelessWidget {
   const ActionButton({
     super.key,
     required this.onPressed,
-    required this.label,
-    this.busyLabel,
+    required this.isBusy,
     this.icon,
-    this.isBusy = false,
-    this.isDestructive = false,
+    required this.label,
+    required this.busyLabel,
     this.expanded = true,
-    this.height = 52,
+    this.height = 48,
   });
 
   final VoidCallback? onPressed;
-  final String label;
-  final String? busyLabel;
-  final IconData? icon;
   final bool isBusy;
-  final bool isDestructive;
+  final IconData? icon;
+  final String label;
+  final String busyLabel;
   final bool expanded;
   final double height;
 
   @override
   Widget build(BuildContext context) {
-    final button = FilledButton.icon(
-      onPressed: isBusy ? null : onPressed,
-      icon: isBusy
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: isDestructive ? Colors.white : Colors.white,
+    final child = isBusy
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
-            )
-          : icon != null
-              ? Icon(icon, size: 20)
-              : const SizedBox.shrink(),
-      label: Text(
-        isBusy ? (busyLabel ?? 'Saving...') : label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-      ),
-      style: FilledButton.styleFrom(
-        backgroundColor: isDestructive
-            ? Theme.of(context).colorScheme.error
-            : const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        minimumSize: Size(expanded ? double.infinity : 0, height),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
+              const SizedBox(width: 10),
+              Text(busyLabel),
+            ],
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18),
+                const SizedBox(width: 8),
+              ],
+              Text(label),
+            ],
+          );
+
+    final style = FilledButton.styleFrom(
+      minimumSize: Size(expanded ? double.infinity : 0, height),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
     );
 
-    if (expanded) {
-      return SizedBox(
-        height: height,
-        child: button,
-      );
-    }
-    return button;
+    return FilledButton(
+      onPressed: isBusy ? null : onPressed,
+      style: style,
+      child: child,
+    );
   }
 }

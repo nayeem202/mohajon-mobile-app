@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/investment_item.dart';
@@ -240,11 +241,7 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet>
       );
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.investment != null ? 'Investment updated' : 'Investment added'),
-          ),
-        );
+        showAppSnackBar(context, widget.investment != null ? 'Investment updated' : 'Investment added');
       }
     });
   }

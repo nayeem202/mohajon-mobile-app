@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/money.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../investors/presentation/widgets/investor_selector.dart';
@@ -257,10 +258,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
           _selectedInvestors.fold<double>(0, (s, si) => s + si.sharePercentage);
       if (totalShare <= 0) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Total share percentage must be > 0')),
-          );
+          showAppSnackBar(context, 'Total share percentage must be > 0', isError: true);
         }
         return;
       }
@@ -286,17 +284,11 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
       });
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Investment created successfully'),
-              backgroundColor: Color(0xFF047857)),
-        );
+        showAppSnackBar(context, 'Investment created successfully');
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $error')),
-        );
+        showAppSnackBar(context, 'Failed: $error', isError: true);
       }
     }
   }

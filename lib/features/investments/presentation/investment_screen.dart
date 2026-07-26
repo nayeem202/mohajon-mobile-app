@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/investment_providers.dart';
@@ -194,14 +195,10 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
         await ref.read(investmentServiceProvider).saveOwners(_draftOwners());
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Owner investments updated')),
-      );
+      showAppSnackBar(context, 'Owner investments updated');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showAppSnackBar(context, error.toString(), isError: true);
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_profile_screen.dart';
@@ -85,6 +86,9 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           FloatingActionButton(
             heroTag: 'add',
             onPressed: _openAddClient,
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            shape: const CircleBorder(),
             child: const Icon(Icons.add_rounded, size: 24),
           ),
         ],
@@ -254,9 +258,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           stats: stats,
           onCall: () {
             Navigator.of(sheetContext).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Call ${customer.phone}')),
-            );
+            showAppSnackBar(context, 'Call ${customer.phone}');
           },
           onViewProfile: () {
             Navigator.of(sheetContext).pop();

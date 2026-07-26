@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/money.dart';
+import '../../../../core/utils/snackbar.dart';
 import '../../../../core/widgets/action_button.dart';
 import '../../../../core/widgets/async_action_state.dart';
 import '../../models/investment_member.dart';
@@ -259,17 +260,11 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
       });
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Payout recorded successfully'),
-              backgroundColor: Color(0xFF047857)),
-        );
+        showAppSnackBar(context, 'Payout recorded successfully');
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $error')),
-        );
+        showAppSnackBar(context, 'Failed: $error', isError: true);
       }
     }
   }

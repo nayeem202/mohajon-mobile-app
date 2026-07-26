@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../../core/widgets/app_icon_asset.dart';
+import '../../../core/widgets/flaticon_icons.dart';
 
 class AccountSecurityScreen extends ConsumerStatefulWidget {
   const AccountSecurityScreen({super.key});
@@ -72,7 +74,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                         obscureText: _obscure,
                         decoration: const InputDecoration(
                           labelText: 'Previous password',
-                          prefixIcon: Icon(Icons.lock_clock_outlined),
+                          prefixIcon: Padding(padding: EdgeInsets.all(12), child: AppIconAsset(assetPath: FlaticonIcons.lock_clock_outlined, size: 20, color: Color(0xFF98A2B3))),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -87,8 +89,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                           onPressed: () => setState(() => _obscure = !_obscure),
                           icon: Icon(
                             _obscure
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
+                                ? FlaticonIcons.eye
+                                : FlaticonIcons.eye,
                           ),
                         ),
                       ),
@@ -99,7 +101,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                       obscureText: _obscure,
                       decoration: const InputDecoration(
                         labelText: 'Confirm password',
-                        prefixIcon: Icon(Icons.lock_reset_outlined),
+                        prefixIcon: Padding(padding: EdgeInsets.all(12), child: AppIconAsset(assetPath: FlaticonIcons.lock_reset_outlined, size: 20, color: Color(0xFF98A2B3))),
                       ),
                     ),
                     if (_message != null) ...[
@@ -115,7 +117,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                     ActionButton(
                       onPressed: hasPassword ? _changePassword : _setPasswordForGoogle,
                       isBusy: isBusy,
-                      icon: Icons.save_outlined,
+                      icon: FlaticonIcons.save,
                       label: hasPassword ? 'Update password' : 'Set password',
                       busyLabel: 'Saving...',
                     ),

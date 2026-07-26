@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/models/payment.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../receipts/services/receipt_pdf_service.dart';
@@ -83,9 +84,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
   Future<void> _savePayment() async {
     final amount = double.tryParse(_amount.text) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid amount')),
-      );
+      showAppSnackBar(context, 'Enter a valid amount', isError: true);
       return;
     }
     await runBusyAction(() async {
@@ -154,9 +153,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to generate receipt: $e')),
-          );
+          showAppSnackBar(context, 'Failed to generate receipt: $e', isError: true);
         }
       }
     }

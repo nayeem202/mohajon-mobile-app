@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/vendor.dart';
@@ -230,9 +231,7 @@ class _VendorFormSheetState extends ConsumerState<VendorFormSheet>
       return v.companyName.toLowerCase() == _companyCtrl.text.trim().toLowerCase();
     });
     if (duplicate) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A vendor with this company name already exists')),
-      );
+      showAppSnackBar(context, 'A vendor with this company name already exists', isError: true);
       return;
     }
 
@@ -250,11 +249,7 @@ class _VendorFormSheetState extends ConsumerState<VendorFormSheet>
       );
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.vendor != null ? 'Vendor updated' : 'Vendor added'),
-          ),
-        );
+        showAppSnackBar(context, widget.vendor != null ? 'Vendor updated' : 'Vendor added');
       }
     });
   }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/customer.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/customer_providers.dart';
@@ -254,9 +255,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not pick image')),
-        );
+        showAppSnackBar(context, 'Could not pick image', isError: true);
       }
     }
   }
