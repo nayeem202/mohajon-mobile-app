@@ -12,14 +12,22 @@ class HomeShortcutSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shortcuts = ref.watch(selectedShortcutsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          onEdit: () => _showEditor(context),
-        ),
-        const SizedBox(height: 14),
-        AnimatedSwitcher(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFECE7DF)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            onEdit: () => _showEditor(context),
+          ),
+          const SizedBox(height: 14),
+          AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           switchInCurve: Curves.easeOut,
           switchOutCurve: Curves.easeIn,
@@ -41,9 +49,10 @@ class HomeShortcutSection extends ConsumerWidget {
                   key: ValueKey(shortcuts.map((s) => s.id).join(',')),
                   shortcuts: shortcuts,
                 ),
-        ),
-      ],
-    );
+      ),
+    ],
+  ),
+);
   }
 
   void _showEditor(BuildContext context) {

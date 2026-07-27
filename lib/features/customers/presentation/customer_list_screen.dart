@@ -714,38 +714,42 @@ class _ClientRow extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final tag = ref.watch(customerTagProvider(customer.customerId));
-                            final displayTag = tag.isNotEmpty ? tag : (hasDue ? 'Has Dues' : '');
-                            if (displayTag.isEmpty) return const SizedBox.shrink();
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: displayTag == 'VIP'
-                                    ? const Color(0xFFFFF7ED)
-                                    : displayTag == 'Has Dues'
-                                        ? const Color(0xFFFFF1F2)
-                                        : const Color(0xFFF0FDF4),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                displayTag,
-                                style: TextStyle(
-                                  color: displayTag == 'VIP'
-                                      ? const Color(0xFFE98300)
-                                      : displayTag == 'Has Dues'
-                                          ? const Color(0xFFEF4444)
-                                          : const Color(0xFF047857),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
+                        Flexible(
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final tag = ref.watch(customerTagProvider(customer.customerId));
+                              final displayTag = tag.isNotEmpty ? tag : (hasDue ? 'Has Dues' : '');
+                              if (displayTag.isEmpty) return const SizedBox.shrink();
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 4,
                                 ),
-                              ),
-                            );
-                          },
+                                decoration: BoxDecoration(
+                                  color: displayTag == 'VIP'
+                                      ? const Color(0xFFFFF7ED)
+                                      : displayTag == 'Has Dues'
+                                          ? const Color(0xFFFFF1F2)
+                                          : const Color(0xFFF0FDF4),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  displayTag,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: displayTag == 'VIP'
+                                        ? const Color(0xFFE98300)
+                                        : displayTag == 'Has Dues'
+                                            ? const Color(0xFFEF4444)
+                                            : const Color(0xFF047857),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -798,58 +802,72 @@ class _ClientRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    money(stats.totalSpent),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF101828),
-                      fontWeight: FontWeight.w900,
+              Flexible(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            money(stats.totalSpent),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF101828),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            hasDue ? 'Due' : 'Clear',
+                            style: TextStyle(
+                              color: hasDue
+                                  ? const Color(0xFFE98300)
+                                  : const Color(0xFF047857),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    hasDue ? 'Due' : 'Clear',
-                    style: TextStyle(
-                      color: hasDue
-                          ? const Color(0xFFE98300)
-                          : const Color(0xFF047857),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            stats.lastVisit == null
+                                ? 'No visits'
+                                : _formatVisitTime(stats.lastVisit!),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF475467),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            '${stats.visitCount} visits',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF667085),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right_rounded, color: Color(0xFF98A2B3)),
+                  ],
+                ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    stats.lastVisit == null
-                        ? 'No visits'
-                        : _formatVisitTime(stats.lastVisit!),
-                    style: const TextStyle(
-                      color: Color(0xFF475467),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '${stats.visitCount} visits',
-                    style: const TextStyle(
-                      color: Color(0xFF667085),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF98A2B3)),
             ],
           ),
         ),

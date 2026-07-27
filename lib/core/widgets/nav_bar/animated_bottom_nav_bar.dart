@@ -213,7 +213,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                   );
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -249,9 +249,10 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.only(
-                                        left: 6),
+                                        left: 4),
                                     child: Text(
                                       widget.destination.label,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,

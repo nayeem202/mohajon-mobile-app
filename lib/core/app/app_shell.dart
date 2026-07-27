@@ -12,6 +12,7 @@ import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/investors/presentation/investor_list_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/staff/presentation/staff_list_screen.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
@@ -139,6 +140,11 @@ class _AppShellState extends ConsumerState<AppShell> {
             context: context,
             sheetContext: sheetContext,
             screen: const ReportsScreen(),
+          ),
+          onStaff: () => _openFromSheet(
+            context: context,
+            sheetContext: sheetContext,
+            screen: const StaffListScreen(),
           ),
           onSettings: () => _openFromSheet(
             context: context,
@@ -351,6 +357,7 @@ class _MoreOptionsSheet extends StatelessWidget {
     required this.onExpenses,
     required this.onInvestments,
     required this.onReports,
+    required this.onStaff,
     required this.onSettings,
   });
 
@@ -360,6 +367,7 @@ class _MoreOptionsSheet extends StatelessWidget {
   final VoidCallback onExpenses;
   final VoidCallback onInvestments;
   final VoidCallback onReports;
+  final VoidCallback onStaff;
   final VoidCallback onSettings;
 
   @override
@@ -444,6 +452,12 @@ class _MoreOptionsSheet extends StatelessWidget {
                       icon: Icons.pie_chart_outline_rounded,
                       color: const Color(0xFFF97316),
                       onTap: onReports,
+                    ),
+                    _MoreOptionTile(
+                      label: 'Staff',
+                      icon: Icons.group_outlined,
+                      color: const Color(0xFF7C3AED),
+                      onTap: onStaff,
                     ),
                     _MoreOptionTile(
                       label: 'Settings',

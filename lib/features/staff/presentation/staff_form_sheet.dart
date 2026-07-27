@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/staff_constants.dart';
 import '../models/staff_model.dart';
@@ -20,7 +23,9 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   final _emailCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _picker = ImagePicker();
 
+  String? _imagePath;
   String _selectedRole = '';
   bool _active = true;
 
@@ -37,6 +42,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
       _usernameCtrl.text = s.username;
       _selectedRole = s.role;
       _active = s.active;
+      _imagePath = s.imagePath;
     } else {
       _selectedRole = staffRoles.first;
     }
@@ -70,7 +76,73 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
       createdAt: _isEditing
           ? widget.staff!.createdAt
           : now.toIso8601String().substring(0, 10),
+      imagePath: _imagePath,
     );
+  }
+
+  Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Profile Photo',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked != null && mounted) {
+        setState(() => _imagePath = picked.path);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not pick image')),
+        );
+      }
+    }
   }
 
   void _submit() {
@@ -113,6 +185,8 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _imagePickerSection(),
+                const SizedBox(height: 16),
                 _header(),
                 const SizedBox(height: 20),
                 _InputField(
@@ -242,11 +316,72 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     );
   }
 
+  Widget _imagePickerSection() {
+    const size = 80.0;
+    final initials = widget.staff?.initials ?? '?';
+    return Center(
+      child: GestureDetector(
+        onTap: _pickImage,
+        child: Stack(
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF0ECE6),
+                border: Border.all(color: const Color(0xFFE8DDD2), width: 2),
+              ),
+              child: _imagePath != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(size / 2),
+                      child: Image.file(
+                        File(_imagePath!),
+                        width: size,
+                        height: size,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _initialsCircle(size, initials),
+                      ),
+                    )
+                  : _initialsCircle(size, initials),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF97316),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _initialsCircle(double size, String initials) {
+    return Center(
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: const Color(0xFF525252),
+          fontSize: size * 0.36,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
   Widget _header() {
     return Row(
       children: [
         Text(
-          _isEditing ? 'Edit Staff Member' : 'Add Staff Member',
+          _isEditing ? 'Staff Member' : 'Add Staff Member',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,

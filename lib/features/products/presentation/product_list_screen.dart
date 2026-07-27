@@ -147,6 +147,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             ).push(MaterialPageRoute(builder: (_) => const ProductFormScreen())),
             backgroundColor: const Color(0xFFF97316),
             foregroundColor: Colors.white,
+            shape: const CircleBorder(),
             child: const Icon(Icons.add_rounded, size: 24),
           ),
         ],

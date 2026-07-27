@@ -9,7 +9,6 @@ import '../../../core/services/sync_service.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
-import '../../staff/presentation/staff_list_screen.dart';
 import 'account_security_screen.dart';
 import 'customer_rules_settings_screen.dart';
 import 'privacy_settings_screen.dart';
@@ -121,12 +120,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           _AppPrefsCard(onToast: _showToast),
           const SizedBox(height: 16),
           _SoundDisplayCard(),
-          const SizedBox(height: 16),
-          _StaffCard(
-            onNavigate: (screen) => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => screen),
-            ),
-          ),
           const SizedBox(height: 16),
           _SecurityCard(
             onNavigate: (screen) => Navigator.of(context).push(
@@ -493,39 +486,6 @@ class _SoundDisplayCardState extends State<_SoundDisplayCard> {
               setState(() => _haptic = v);
               _box.put('hapticFeedback', v);
             },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ========== Staff Card ========== */
-
-class _StaffCard extends StatelessWidget {
-  const _StaffCard({required this.onNavigate});
-
-  final void Function(Widget) onNavigate;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return _SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.group_outlined,
-            title: 'Staff Management',
-            subtitle: 'Add and manage team members',
-            iconColor: const Color(0xFF7C3AED),
-          ),
-          const SizedBox(height: 8),
-          _NavRow(
-            icon: Icons.people_alt_rounded,
-            label: 'Shop Staff',
-            value: '',
-            onTap: () => onNavigate(const StaffListScreen()),
           ),
         ],
       ),

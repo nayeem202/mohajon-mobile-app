@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,27 +16,13 @@ class StaffListScreen extends ConsumerStatefulWidget {
 }
 
 class _StaffListScreenState extends ConsumerState<StaffListScreen> {
+  final _searchController = TextEditingController();
+  bool _showSearch = false;
+
   void _showToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(message, style: const TextStyle(fontSize: 13)),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF1C1917),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        content: Text(message),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -84,6 +72,13 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
   @override
   Widget build(BuildContext context) {
     final staff = ref.watch(staffListProvider);
+    final query = _searchController.text.toLowerCase();
+    final filtered = query.isEmpty
+        ? staff
+        : staff.where((s) =>
+            s.name.toLowerCase().contains(query) ||
+            s.role.toLowerCase().contains(query) ||
+            s.phone.contains(query)).toList();
     final activeCount = staff.where((s) => s.active).length;
     final inactiveCount = staff.length - activeCount;
 
@@ -95,11 +90,39 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       ),
       body: Column(
         children: [
+          if (_showSearch)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Search staff...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.clear_rounded),
+                        ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
+                  ),
+                ),
+              ),
+            ),
           if (staff.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              padding: EdgeInsets.fromLTRB(20, _showSearch ? 4 : 4, 20, 12),
               child: Text(
-                '${staff.length} staff \u2014 $activeCount active'
+                '${filtered.length} of ${staff.length} staff \u2014 $activeCount active'
                 '${inactiveCount > 0 ? ", $inactiveCount inactive" : ""}',
                 style: const TextStyle(
                   fontSize: 12,
@@ -110,26 +133,72 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
           Expanded(
             child: staff.isEmpty
                 ? _emptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-                    itemCount: staff.length,
-                    itemBuilder: (context, index) =>
-                        _StaffCard(
-                          staff: staff[index],
-                          onEdit: () => _openForm(staff: staff[index]),
-                          onDelete: () => _confirmDelete(staff[index]),
-                          onToggle: () => _toggleActive(staff[index]),
-                        ),
-                  ),
+                : filtered.isEmpty
+                    ? _emptySearchState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) =>
+                            _StaffCard(
+                              staff: filtered[index],
+                              onEdit: () => _openForm(staff: filtered[index]),
+                              onDelete: () => _confirmDelete(filtered[index]),
+                              onToggle: () => _toggleActive(filtered[index]),
+                            ),
+                      ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(),
-        backgroundColor: const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: const Icon(Icons.person_add_rounded, size: 26),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'search',
+            onPressed: () {
+              setState(() => _showSearch = !_showSearch);
+              if (!_showSearch) {
+                _searchController.clear();
+              }
+            },
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shape: const CircleBorder(),
+            child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: () => _openForm(),
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add_rounded, size: 24),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptySearchState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFFD4D4D4)),
+            const SizedBox(height: 16),
+            const Text(
+              'No staff match your search',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF525252),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -193,6 +262,26 @@ class _StaffCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onToggle;
 
+  Widget _staffAvatar(StaffMember member) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: member.avatarColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        member.initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -209,23 +298,19 @@ class _StaffCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: staff.avatarColor,
+          if (staff.imagePath != null)
+            ClipRRect(
               borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              staff.initials,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+              child: Image.file(
+                File(staff.imagePath!),
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _staffAvatar(staff),
               ),
-            ),
-          ),
+            )
+          else
+            _staffAvatar(staff),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

@@ -349,9 +349,9 @@ class _ShortcutGrid extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.78,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.85,
         ),
         itemBuilder: (context, index) {
           final item = allShortcutItems[index];
@@ -392,7 +392,7 @@ class _SelectorTile extends StatelessWidget {
               isSelected ? const Color(0xFF22C55E) : const Color(0xFFECE7DF),
           width: isSelected ? 1.5 : 1,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: isSelected
             ? [
                 BoxShadow(
@@ -405,40 +405,40 @@ class _SelectorTile extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Stack(
             children: [
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: item.color
                             .withValues(alpha: isSelected ? 0.15 : 0.08),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         item.icon,
                         color: item.color,
-                        size: 22,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight:
                             isSelected ? FontWeight.w800 : FontWeight.w700,
                         color: isSelected
@@ -451,11 +451,11 @@ class _SelectorTile extends StatelessWidget {
               ),
               if (isSelected)
                 Positioned(
-                  top: 6,
-                  right: 6,
+                  top: 4,
+                  right: 4,
                   child: Container(
-                    width: 22,
-                    height: 22,
+                    width: 18,
+                    height: 18,
                     decoration: const BoxDecoration(
                       color: Color(0xFF22C55E),
                       shape: BoxShape.circle,
@@ -463,7 +463,7 @@ class _SelectorTile extends StatelessWidget {
                     child: const Icon(
                       Icons.check_rounded,
                       color: Colors.white,
-                      size: 14,
+                      size: 12,
                     ),
                   ),
                 ),

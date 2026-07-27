@@ -10,6 +10,7 @@ class StaffMember {
   final String password;
   final bool active;
   final String createdAt;
+  final String? imagePath;
 
   const StaffMember({
     required this.id,
@@ -21,6 +22,7 @@ class StaffMember {
     this.password = '',
     this.active = true,
     required this.createdAt,
+    this.imagePath,
   });
 
   StaffMember copyWith({
@@ -33,6 +35,7 @@ class StaffMember {
     String? password,
     bool? active,
     String? createdAt,
+    String? imagePath,
     bool clearPassword = false,
   }) {
     return StaffMember(
@@ -45,6 +48,7 @@ class StaffMember {
       password: clearPassword ? '' : (password ?? this.password),
       active: active ?? this.active,
       createdAt: createdAt ?? this.createdAt,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 
@@ -58,6 +62,7 @@ class StaffMember {
         'password': password,
         'active': active,
         'createdAt': createdAt,
+        if (imagePath != null) 'imagePath': imagePath,
       };
 
   factory StaffMember.fromJson(Map<String, dynamic> json) => StaffMember(
@@ -70,6 +75,7 @@ class StaffMember {
         password: (json['password'] as String?) ?? '',
         active: (json['active'] as bool?) ?? true,
         createdAt: json['createdAt'] as String,
+        imagePath: json['imagePath'] as String?,
       );
 
   String get initials {
