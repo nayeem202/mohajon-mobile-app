@@ -55,16 +55,33 @@ class _AppShellState extends ConsumerState<AppShell> {
       const FeatureHubScreen(),
     ];
     final destinations = [
-      NavDestination(icon: Icons.home_rounded, label: l10n.t('home')),
-      NavDestination(icon: Icons.point_of_sale_rounded, label: l10n.t('pos')),
-      NavDestination(icon: Icons.inventory_2_rounded, label: l10n.t('stock')),
-      NavDestination(icon: Icons.groups_rounded, label: l10n.t('clients')),
-      NavDestination(icon: Icons.apps_rounded, label: l10n.t('more')),
+      NavDestination(
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home_rounded,
+        label: l10n.t('home'),
+      ),
+      NavDestination(
+        icon: Icons.shopping_cart_outlined,
+        selectedIcon: Icons.shopping_cart_rounded,
+        label: l10n.t('sales'),
+      ),
+      NavDestination(
+        icon: Icons.inventory_2_outlined,
+        selectedIcon: Icons.inventory_2_rounded,
+        label: l10n.t('stock'),
+      ),
+      NavDestination(
+        icon: Icons.group_outlined,
+        selectedIcon: Icons.group_rounded,
+        label: l10n.t('clients'),
+      ),
+      NavDestination(icon: Icons.more_horiz_rounded, label: l10n.t('more')),
     ];
 
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Scaffold(
+        extendBody: !wide,
         backgroundColor: Colors.transparent,
         body: Row(
           children: [

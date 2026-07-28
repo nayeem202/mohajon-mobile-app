@@ -12,32 +12,19 @@ class HomeShortcutSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shortcuts = ref.watch(selectedShortcutsProvider);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            onEdit: () => _showEditor(context),
-          ),
-          const SizedBox(height: 14),
-          AnimatedSwitcher(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(onEdit: () => _showEditor(context)),
+        const SizedBox(height: 12),
+        AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           switchInCurve: Curves.easeOut,
           switchOutCurve: Curves.easeIn,
           transitionBuilder: (child, animation) {
             return FadeTransition(
               opacity: animation,
-              child: ScaleTransition(
-                scale: animation,
-                child: child,
-              ),
+              child: ScaleTransition(scale: animation, child: child),
             );
           },
           child: shortcuts.isEmpty
@@ -49,10 +36,9 @@ class HomeShortcutSection extends ConsumerWidget {
                   key: ValueKey(shortcuts.map((s) => s.id).join(',')),
                   shortcuts: shortcuts,
                 ),
-      ),
-    ],
-  ),
-);
+        ),
+      ],
+    );
   }
 
   void _showEditor(BuildContext context) {
@@ -75,35 +61,56 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          'Shortcuts',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Quick actions',
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Your most-used tools',
+                style: TextStyle(
+                  color: colors.onSurfaceVariant.withValues(alpha: 0.72),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-        const Spacer(),
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: onEdit,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.edit_rounded, size: 14, color: colors.primary),
-                const SizedBox(width: 4),
-                Text(
-                  'Edit',
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
+        Material(
+          color: colors.primary.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: onEdit,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.tune_rounded, size: 15, color: colors.primary),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Customize',
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -119,21 +126,29 @@ class _ShortcutRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 92,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        itemCount: shortcuts.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          return _ShortcutCard(
-            item: shortcuts[index],
-            onTap: () =>
-                navigateToShortcut(context, shortcuts[index]),
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final cardWidth = (constraints.maxWidth - (gap * 3)) / 4;
+        return SizedBox(
+          height: 108,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: shortcuts.length,
+            separatorBuilder: (_, _) => const SizedBox(width: gap),
+            itemBuilder: (context, index) {
+              return SizedBox(
+                width: cardWidth,
+                child: _ShortcutCard(
+                  item: shortcuts[index],
+                  onTap: () => navigateToShortcut(context, shortcuts[index]),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -147,44 +162,67 @@ class _ShortcutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          width: 76,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFECE7DF)),
-            borderRadius: BorderRadius.circular(14),
+    return DecoratedBox(
+      key: ValueKey('shortcut-card-${item.id}'),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(
+          color: colors.outlineVariant.withValues(alpha: 0.78),
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.055),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: item.color.withValues(alpha: 0.12),
+          highlightColor: item.color.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(7, 10, 7, 7),
+            child: Column(
+              children: [
+                Container(
+                  key: ValueKey('shortcut-icon-${item.id}'),
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: item.color.withValues(alpha: 0.10),
+                    ),
+                  ),
+                  child: Icon(item.icon, color: item.color, size: 24),
                 ),
-                child: Icon(item.icon, color: item.color, size: 20),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: colors.onSurface,
+                const SizedBox(height: 7),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.12,
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurface,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -205,21 +243,29 @@ class _EmptyShortcuts extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 22),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFECE7DF)),
-          borderRadius: BorderRadius.circular(14),
+          color: colors.surface,
+          border: Border.all(color: colors.outlineVariant),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [
-            Icon(Icons.widgets_outlined, size: 28, color: colors.onSurfaceVariant),
-            const SizedBox(height: 6),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.09),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(Icons.add_rounded, size: 24, color: colors.primary),
+            ),
+            const SizedBox(height: 10),
             Text(
-              'Customize your shortcuts',
+              'Add your first quick action',
               style: TextStyle(
-                color: colors.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
+                color: colors.onSurface,
+                fontWeight: FontWeight.w800,
                 fontSize: 13,
               ),
             ),

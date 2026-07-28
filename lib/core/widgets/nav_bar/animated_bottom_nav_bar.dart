@@ -11,7 +11,8 @@ class AnimatedBottomNavBar extends StatefulWidget {
     required this.destinations,
     required this.onSelected,
     this.onMoreTap,
-  });
+  }) : assert(destinations.length > 1),
+       assert(selectedIndex >= 0 && selectedIndex < destinations.length);
 
   final int selectedIndex;
   final List<NavDestination> destinations;
@@ -34,6 +35,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
   @override
   Widget build(BuildContext context) {
     final itemCount = widget.destinations.length;
+    final colors = Theme.of(context).colorScheme;
 
     return SafeArea(
       top: false,
@@ -44,80 +46,142 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
           NavBarTheme.horizontalPadding,
           NavBarTheme.bottomMargin,
         ),
-        child: SizedBox(
-          height: NavBarTheme.height,
-          child: Container(
-            decoration: BoxDecoration(
-              color: NavBarTheme.background,
-              borderRadius: BorderRadius.circular(NavBarTheme.cornerRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: NavBarTheme.maxWidth),
+            child: SizedBox(
+              height: NavBarTheme.height,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surface.withValues(alpha: 0.98),
+                  borderRadius: BorderRadius.circular(NavBarTheme.cornerRadius),
+                  border: Border.all(
+                    color: colors.outlineVariant.withValues(alpha: 0.72),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.shadow.withValues(alpha: 0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, 12),
+                    ),
+                    BoxShadow(
+                      color: colors.shadow.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(NavBarTheme.indicatorInset),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final itemWidth =
-                      constraints.maxWidth / itemCount;
-                  final indicatorLeft =
-                      widget.selectedIndex * itemWidth;
+                child: Padding(
+                  padding: const EdgeInsets.all(NavBarTheme.indicatorInset),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableWidth = constraints.maxWidth;
+                      final maxAllowedActiveWidth =
+                          availableWidth -
+                          (NavBarTheme.minInactiveWidth * (itemCount - 1));
+                      final desiredActiveWidth =
+                          (availableWidth * NavBarTheme.activeWidthFraction)
+                              .clamp(
+                                NavBarTheme.minActiveWidth,
+                                NavBarTheme.maxActiveWidth,
+                              );
+                      final activeWidth =
+                          maxAllowedActiveWidth < NavBarTheme.minInactiveWidth
+                          ? availableWidth / itemCount
+                          : desiredActiveWidth
+                                .clamp(
+                                  NavBarTheme.minInactiveWidth,
+                                  maxAllowedActiveWidth,
+                                )
+                                .toDouble();
+                      final inactiveWidth =
+                          (availableWidth - activeWidth) / (itemCount - 1);
+                      final indicatorLeft =
+                          widget.selectedIndex * inactiveWidth;
 
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      AnimatedPositioned(
-                        duration: NavBarTheme.animationDuration,
-                        curve: Curves.easeOutCubic,
-                        left: indicatorLeft,
-                        width: itemWidth,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          margin: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: NavBarTheme.primary,
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(999),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: NavBarTheme.primary
-                                    .withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                      double itemLeft(int index) {
+                        if (index <= widget.selectedIndex) {
+                          return index * inactiveWidth;
+                        }
+                        return activeWidth + ((index - 1) * inactiveWidth);
+                      }
+
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          AnimatedPositioned(
+                            key: const ValueKey('nav-indicator'),
+                            duration: NavBarTheme.animationDuration,
+                            curve: Curves.easeOutCubic,
+                            left: indicatorLeft,
+                            width: activeWidth,
+                            top: 0,
+                            bottom: 0,
+                            child: Container(
+                              margin: const EdgeInsets.all(1),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colors.primary,
+                                    Color.lerp(
+                                      colors.primary,
+                                      Colors.white,
+                                      0.12,
+                                    )!,
+                                  ],
+                                ),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(999),
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withValues(
+                                      alpha: 0.30,
+                                    ),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: List.generate(itemCount, (index) {
-                          final selected =
-                              widget.selectedIndex == index;
-
-                          return Expanded(
-                            child: _AnimatedNavItem(
-                              destination:
-                                  widget.destinations[index],
-                              selected: selected,
-                              onTap: () => _onTap(index),
                             ),
-                          );
-                        }),
-                      ),
-                    ],
-                  );
-                },
+                          ),
+                          for (var index = 0; index < itemCount; index++)
+                            AnimatedPositioned(
+                              key: ValueKey('nav-position-$index'),
+                              duration: NavBarTheme.animationDuration,
+                              curve: Curves.easeOutCubic,
+                              left: itemLeft(index),
+                              width: widget.selectedIndex == index
+                                  ? activeWidth
+                                  : inactiveWidth,
+                              top: 0,
+                              bottom: 0,
+                              child: _AnimatedNavItem(
+                                key: ValueKey('nav-item-$index'),
+                                destination: widget.destinations[index],
+                                selected: widget.selectedIndex == index,
+                                showLabel:
+                                    widget.selectedIndex == index &&
+                                    activeWidth >=
+                                        NavBarTheme.minActiveWidth * 0.82,
+                                activeColor: colors.onPrimary,
+                                inactiveColor: colors.onSurfaceVariant
+                                    .withValues(alpha: 0.62),
+                                onTap: () => _onTap(index),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -129,13 +193,20 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
 
 class _AnimatedNavItem extends StatefulWidget {
   const _AnimatedNavItem({
+    super.key,
     required this.destination,
     required this.selected,
+    required this.showLabel,
+    required this.activeColor,
+    required this.inactiveColor,
     required this.onTap,
   });
 
   final NavDestination destination;
   final bool selected;
+  final bool showLabel;
+  final Color activeColor;
+  final Color inactiveColor;
   final VoidCallback onTap;
 
   @override
@@ -160,18 +231,24 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
   Animation<double> _buildBounceAnimation() {
     return TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 0.9)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: 1.0,
+          end: 0.9,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 33,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.9, end: 1.1)
-            .chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween(
+          begin: 0.9,
+          end: 1.1,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
         weight: 34,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.1, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.1,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 33,
       ),
     ]).animate(_bounceController);
@@ -188,8 +265,11 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
   @override
   Widget build(BuildContext context) {
     final iconColor = widget.selected
-        ? NavBarTheme.onPrimary
-        : NavBarTheme.inactiveIcon;
+        ? widget.activeColor
+        : widget.inactiveColor;
+    final icon = widget.selected
+        ? widget.destination.selectedIcon ?? widget.destination.icon
+        : widget.destination.icon;
 
     return Semantics(
       button: true,
@@ -201,7 +281,9 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
           child: InkWell(
             borderRadius: const BorderRadius.all(Radius.circular(999)),
             onTap: _onTap,
-            splashColor: NavBarTheme.primary.withValues(alpha: 0.15),
+            splashColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.14),
             highlightColor: Colors.transparent,
             child: Center(
               child: AnimatedBuilder(
@@ -213,50 +295,59 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                   );
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        widget.destination.icon,
-                        color: iconColor,
-                        size: NavBarTheme.iconSize,
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(
+                              scale: animation,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            ),
+                        child: Icon(
+                          icon,
+                          key: ValueKey(icon),
+                          color: iconColor,
+                          size: NavBarTheme.iconSize,
+                        ),
                       ),
                       AnimatedSize(
                         duration: NavBarTheme.animationDuration,
                         curve: Curves.easeOutCubic,
                         alignment: Alignment.centerLeft,
                         child: ClipRect(
-                          child: widget.selected
+                          child: widget.showLabel
                               ? TweenAnimationBuilder<double>(
                                   key: const ValueKey('label'),
-                                  duration:
-                                      NavBarTheme.animationDuration,
+                                  duration: NavBarTheme.animationDuration,
                                   curve: Curves.easeOutCubic,
-                                  tween:
-                                      Tween(begin: 0.0, end: 1.0),
-                                  builder:
-                                      (context, value, child) {
+                                  tween: Tween(begin: 0.0, end: 1.0),
+                                  builder: (context, value, child) {
                                     return Opacity(
                                       opacity: value,
                                       child: Transform.translate(
-                                        offset: Offset(
-                                            20 * (1 - value), 0),
+                                        offset: Offset(20 * (1 - value), 0),
                                         child: child,
                                       ),
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 4),
+                                    padding: const EdgeInsets.only(left: 8),
                                     child: Text(
                                       widget.destination.label,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        color: widget.activeColor,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.1,
                                       ),
                                     ),
                                   ),
