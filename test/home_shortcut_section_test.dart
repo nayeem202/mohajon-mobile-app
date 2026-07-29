@@ -6,7 +6,7 @@ import 'package:inventory_1/features/dashboard/presentation/widgets/home_shortcu
 import 'package:inventory_1/features/dashboard/providers/shortcut_providers.dart';
 
 void main() {
-  testWidgets('lays out four shortcut cards with centered icons', (
+  testWidgets('lays out four shortcut icons inside a single card', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 700));
@@ -28,14 +28,8 @@ void main() {
     );
 
     for (final shortcut in shortcuts) {
-      final card = find.byKey(ValueKey('shortcut-card-${shortcut.id}'));
       final icon = find.byKey(ValueKey('shortcut-icon-${shortcut.id}'));
-      expect(card, findsOneWidget);
       expect(icon, findsOneWidget);
-      expect(
-        (tester.getCenter(card).dx - tester.getCenter(icon).dx).abs(),
-        lessThan(0.5),
-      );
     }
 
     expect(tester.takeException(), isNull);

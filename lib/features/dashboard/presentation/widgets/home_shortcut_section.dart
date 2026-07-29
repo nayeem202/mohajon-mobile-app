@@ -126,44 +126,8 @@ class _ShortcutRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gap = 10.0;
-        final cardWidth = (constraints.maxWidth - (gap * 3)) / 4;
-        return SizedBox(
-          height: 108,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            itemCount: shortcuts.length,
-            separatorBuilder: (_, _) => const SizedBox(width: gap),
-            itemBuilder: (context, index) {
-              return SizedBox(
-                width: cardWidth,
-                child: _ShortcutCard(
-                  item: shortcuts[index],
-                  onTap: () => navigateToShortcut(context, shortcuts[index]),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ShortcutCard extends StatelessWidget {
-  const _ShortcutCard({required this.item, required this.onTap});
-
-  final ShortcutItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return DecoratedBox(
-      key: ValueKey('shortcut-card-${item.id}'),
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border.all(
@@ -178,51 +142,73 @@ class _ShortcutCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          splashColor: item.color.withValues(alpha: 0.12),
-          highlightColor: item.color.withValues(alpha: 0.05),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(7, 10, 7, 7),
-            child: Column(
-              children: [
-                Container(
-                  key: ValueKey('shortcut-icon-${item.id}'),
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: item.color.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: item.color.withValues(alpha: 0.10),
-                    ),
-                  ),
-                  child: Icon(item.icon, color: item.color, size: 24),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: GridView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            childAspectRatio: 0.95,
+          ),
+          children: shortcuts.map((item) => _ShortcutCard(
+            item: item,
+            onTap: () => navigateToShortcut(context, item),
+          )).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShortcutCard extends StatelessWidget {
+  const _ShortcutCard({required this.item, required this.onTap});
+
+  final ShortcutItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: item.color.withValues(alpha: 0.12),
+        highlightColor: item.color.withValues(alpha: 0.05),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                key: ValueKey('shortcut-icon-${item.id}'),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: item.color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 7),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        height: 1.12,
-                        fontWeight: FontWeight.w800,
-                        color: colors.onSurface,
-                        letterSpacing: -0.1,
-                      ),
-                    ),
-                  ),
+                child: Icon(item.icon, color: item.color, size: 22),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurface,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
