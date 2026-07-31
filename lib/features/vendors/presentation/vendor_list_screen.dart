@@ -20,6 +20,7 @@ class VendorListScreen extends ConsumerStatefulWidget {
 class _VendorListScreenState extends ConsumerState<VendorListScreen> {
   late final TextEditingController _searchController;
   VendorSort _sort = VendorSort.newest;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -49,7 +50,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
             final totalPending = items.fold<double>(0, (s, v) => s + v.pendingAmount);
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
               children: [
                  _VendorsTopBar(onAddVendor: _openAddVendor),
                 const SizedBox(height: 18),
@@ -57,28 +58,29 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
                   totalVendors: items.length,
                   totalSpent: totalSpent,
                   totalPending: totalPending,
-                  onAddVendor: _openAddVendor,
                 ),
+                if (_showSearch) ...[
+                  const SizedBox(height: 18),
+                  _SearchAndFilters(
+                    controller: _searchController,
+                    searchQuery: searchQuery,
+                    selectedSort: _sort,
+                    selectedCategory: selectedCategory,
+                    onSearchChanged: (value) =>
+                        ref.read(vendorSearchQueryProvider.notifier).state = value,
+                    onClearSearch: () {
+                      _searchController.clear();
+                      ref.read(vendorSearchQueryProvider.notifier).state = '';
+                    },
+                    onSortChanged: (sort) {
+                      setState(() => _sort = sort);
+                      ref.read(vendorSortProvider.notifier).state = sort;
+                    },
+                    onCategoryChanged: (cat) =>
+                        ref.read(vendorCategoryFilterProvider.notifier).state = cat,
+                  ),
+                ],
                 const SizedBox(height: 18),
-                _SearchAndFilters(
-                  controller: _searchController,
-                  searchQuery: searchQuery,
-                  selectedSort: _sort,
-                  selectedCategory: selectedCategory,
-                  onSearchChanged: (value) =>
-                      ref.read(vendorSearchQueryProvider.notifier).state = value,
-                  onClearSearch: () {
-                    _searchController.clear();
-                    ref.read(vendorSearchQueryProvider.notifier).state = '';
-                  },
-                  onSortChanged: (sort) {
-                    setState(() => _sort = sort);
-                    ref.read(vendorSortProvider.notifier).state = sort;
-                  },
-                  onCategoryChanged: (cat) =>
-                      ref.read(vendorCategoryFilterProvider.notifier).state = cat,
-                ),
-                const SizedBox(height: 14),
                 if (items.isEmpty)
                   const EmptyState(
                     message: 'Add vendors to manage purchases and payments.',
@@ -101,10 +103,39 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddVendor,
-        child: const Icon(Icons.add_rounded, size: 28),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'vendorSearch',
+            onPressed: () {
+              setState(() => _showSearch = !_showSearch);
+              if (!_showSearch) {
+                _searchController.clear();
+                ref.read(vendorSearchQueryProvider.notifier).state = '';
+              }
+            },
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shape: const CircleBorder(),
+            child: Icon(
+              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'vendorAdd',
+            onPressed: _openAddVendor,
+            backgroundColor: const Color(0xFFF97316),
+            foregroundColor: Colors.white,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add_rounded, size: 28),
+          ),
+        ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -175,106 +206,274 @@ class _VendorStats extends StatelessWidget {
     required this.totalVendors,
     required this.totalSpent,
     required this.totalPending,
-    required this.onAddVendor,
   });
 
   final int totalVendors;
   final double totalSpent;
   final double totalPending;
-  final VoidCallback onAddVendor;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _VendorStatCard(
-            label: 'Total\nVendors',
-            value: '$totalVendors',
-            subtext: 'Active suppliers',
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _VendorStatCard(
+                spec: _VendorStatSpec(
+                  icon: Icons.storefront_rounded,
+                  label: 'Vendors',
+                  value: '$totalVendors',
+                  subtext: 'Active suppliers',
+                  color: const Color(0xFFE98300),
+                  background: const Color(0xFFFFF4E5),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _VendorStatCard(
+                spec: _VendorStatSpec(
+                  icon: Icons.shopping_cart_rounded,
+                  label: 'Total Spent',
+                  value: money(totalSpent),
+                  subtext: 'Across all vendors',
+                  color: const Color(0xFF2563EB),
+                  background: const Color(0xFFEFF4FF),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _VendorStatCard(
-            label: 'Total\nSpent',
-            value: money(totalSpent),
-            subtext: 'Across all vendors',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _VendorStatCard(
-            label: 'Pending\nPayment',
-            value: money(totalPending),
-            subtext: 'Outstanding dues',
-            valueColor: totalPending > 0 ? colors.error : colors.secondary,
-          ),
+        const SizedBox(height: 12),
+        _PendingPaymentCard(
+          value: money(totalPending),
+          hasPending: totalPending > 0,
         ),
       ],
     );
   }
 }
 
-class _VendorStatCard extends StatelessWidget {
-  const _VendorStatCard({
+class _VendorStatSpec {
+  const _VendorStatSpec({
+    required this.icon,
     required this.label,
     required this.value,
     required this.subtext,
-    this.valueColor,
+    required this.color,
+    required this.background,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final String subtext;
-  final Color? valueColor;
+  final Color color;
+  final Color background;
+}
+
+class _VendorStatCard extends StatelessWidget {
+  const _VendorStatCard({required this.spec});
+
+  final _VendorStatSpec spec;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      height: 138,
-      padding: const EdgeInsets.fromLTRB(10, 11, 10, 10),
+      height: 130,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: colors.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [spec.background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: spec.color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: spec.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    spec.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: spec.color,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: spec.color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(spec.icon, color: spec.color, size: 16),
+              ),
+            ],
+          ),
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              spec.value,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 20,
+                color: colors.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            value,
+            spec.subtext,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: valueColor ?? colors.onSurface,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            subtext,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+              fontSize: 11,
               color: colors.onSurfaceVariant,
-              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingPaymentCard extends StatelessWidget {
+  const _PendingPaymentCard({required this.value, required this.hasPending});
+
+  final String value;
+  final bool hasPending;
+
+  static const _color = Color(0xFFDC2626);
+  static const _background = Color(0xFFFEF1F1);
+  static const _clearedColor = Color(0xFF047857);
+  static const _clearedBackground = Color(0xFFECFDF5);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final color = hasPending ? _color : _clearedColor;
+    final background = hasPending ? _background : _clearedBackground;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      hasPending ? 'Pending Payment' : 'All Cleared',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      hasPending ? 'Needs settlement' : 'No dues',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(13),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(Icons.payments_rounded, color: color, size: 19),
           ),
         ],
       ),

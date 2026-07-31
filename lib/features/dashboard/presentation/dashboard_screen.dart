@@ -740,7 +740,7 @@ class _LowStockProductCard extends StatelessWidget {
           ),
         ),
         child: Container(
-          width: 136,
+          width: 112,
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFECE7DF)),
             borderRadius: BorderRadius.circular(14),
@@ -754,12 +754,12 @@ class _LowStockProductCard extends StatelessWidget {
                 ),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 72,
+                  height: 44,
                   child: product.imagePath != null
                       ? Image.file(
                           File(product.imagePath!),
                           width: double.infinity,
-                          height: 72,
+                          height: 44,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _fallbackImage(),
                         )
@@ -767,7 +767,7 @@ class _LowStockProductCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(11),
+                padding: const EdgeInsets.all(9),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -798,7 +798,7 @@ class _LowStockProductCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 9),
+                    const SizedBox(height: 6),
                     Text(
                       product.nameEn,
                       maxLines: 2,
@@ -806,23 +806,23 @@ class _LowStockProductCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF101828),
                         fontWeight: FontWeight.w900,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       'min ${product.lowStockAlert}',
                       style: const TextStyle(
                         color: Color(0xFF98A2B3),
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
-                        height: 6,
+                        height: 5,
                         color: const Color(0xFFF1E5D6),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
@@ -851,7 +851,7 @@ class _LowStockProductCard extends StatelessWidget {
   Widget _fallbackImage() {
     return Container(
       width: double.infinity,
-      height: 72,
+      height: 44,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -863,7 +863,7 @@ class _LowStockProductCard extends StatelessWidget {
         child: Icon(
           Icons.inventory_2_rounded,
           color: Color(0xFFE98300),
-          size: 28,
+          size: 20,
         ),
       ),
     );

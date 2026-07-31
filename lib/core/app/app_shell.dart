@@ -4,16 +4,8 @@ import 'package:hive/hive.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/expenses/presentation/expenses_screen.dart';
-import '../../features/investments/presentation/investment_dashboard_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
-import '../../features/pos/presentation/sales_history_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
-import '../../features/investors/presentation/investor_list_screen.dart';
-import '../../features/reports/presentation/reports_screen.dart';
-import '../../features/settings/presentation/settings_screen.dart';
-import '../../features/staff/presentation/staff_list_screen.dart';
-import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
 import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
@@ -90,7 +82,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                 selectedIndex: _index,
                 destinations: destinations,
                 onSelected: _onTabSelected,
-                onMoreTap: () => _showMoreOptions(context),
               ),
             Expanded(
               child: AnimatedSwitcher(
@@ -114,72 +105,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                 selectedIndex: _index,
                 destinations: destinations,
                 onSelected: _onTabSelected,
-                onMoreTap: () => _showMoreOptions(context),
               ),
       ),
     );
-  }
-
-  void _showMoreOptions(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _MoreOptionsSheet(
-          onSalesHistory: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const SalesHistoryScreen(),
-          ),
-          onInvestors: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const InvestorListScreen(),
-          ),
-          onVendors: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const VendorListScreen(),
-          ),
-          onExpenses: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const ExpensesScreen(),
-          ),
-          onInvestments: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const InvestmentDashboardScreen(),
-          ),
-          onReports: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const ReportsScreen(),
-          ),
-          onStaff: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const StaffListScreen(),
-          ),
-          onSettings: () => _openFromSheet(
-            context: context,
-            sheetContext: sheetContext,
-            screen: const SettingsScreen(),
-          ),
-        );
-      },
-    );
-  }
-
-  void _openFromSheet({
-    required BuildContext context,
-    required BuildContext sheetContext,
-    required Widget screen,
-  }) {
-    Navigator.of(sheetContext).pop();
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 }
 
@@ -188,13 +116,11 @@ class _SideNav extends StatelessWidget {
     required this.selectedIndex,
     required this.destinations,
     required this.onSelected,
-    required this.onMoreTap,
   });
 
   final int selectedIndex;
   final List<NavDestination> destinations;
   final ValueChanged<int> onSelected;
-  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -283,9 +209,7 @@ class _SideNav extends StatelessWidget {
             _SideNavItem(
               destination: destinations[index],
               selected: selectedIndex == index,
-              onTap: index == destinations.length - 1
-                  ? onMoreTap
-                  : () => onSelected(index),
+              onTap: () => onSelected(index),
             ),
           const Spacer(),
           Container(
@@ -356,189 +280,6 @@ class _SideNavItem extends StatelessWidget {
                 style: TextStyle(
                   color: selected ? colors.primary : colors.onSurface,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MoreOptionsSheet extends StatelessWidget {
-  const _MoreOptionsSheet({
-    required this.onSalesHistory,
-    required this.onInvestors,
-    required this.onVendors,
-    required this.onExpenses,
-    required this.onInvestments,
-    required this.onReports,
-    required this.onStaff,
-    required this.onSettings,
-  });
-
-  final VoidCallback onSalesHistory;
-  final VoidCallback onInvestors;
-  final VoidCallback onVendors;
-  final VoidCallback onExpenses;
-  final VoidCallback onInvestments;
-  final VoidCallback onReports;
-  final VoidCallback onStaff;
-  final VoidCallback onSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'MORE OPTIONS',
-                    style: TextStyle(
-                      color: Color(0xFF667085),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 1.62,
-                  children: [
-                    _MoreOptionTile(
-                      label: 'Sales History',
-                      icon: Icons.history_rounded,
-                      color: const Color(0xFF0F766E),
-                      onTap: onSalesHistory,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Investors',
-                      icon: Icons.people_alt_rounded,
-                      color: const Color(0xFF047857),
-                      onTap: onInvestors,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Vendors',
-                      icon: Icons.store_rounded,
-                      color: const Color(0xFF7C3AED),
-                      onTap: onVendors,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Expenses',
-                      icon: Icons.payments_rounded,
-                      color: const Color(0xFFF97316),
-                      onTap: onExpenses,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Investments',
-                      icon: Icons.account_balance_rounded,
-                      color: const Color(0xFF0F766E),
-                      onTap: onInvestments,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Reports',
-                      icon: Icons.pie_chart_outline_rounded,
-                      color: const Color(0xFFF97316),
-                      onTap: onReports,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Staff',
-                      icon: Icons.group_outlined,
-                      color: const Color(0xFF7C3AED),
-                      onTap: onStaff,
-                    ),
-                    _MoreOptionTile(
-                      label: 'Settings',
-                      icon: Icons.settings_outlined,
-                      color: const Color(0xFF98A2B3),
-                      onTap: onSettings,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MoreOptionTile extends StatelessWidget {
-  const _MoreOptionTile({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFCFBF8),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFECE7DF)),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF101828),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],

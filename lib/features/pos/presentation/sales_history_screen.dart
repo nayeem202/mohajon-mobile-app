@@ -36,8 +36,11 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     with AsyncActionState<SalesHistoryScreen> {
   static const _pageSize = 20;
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
   _SalesTimeFilter _timeFilter = _SalesTimeFilter.allTime;
   _InvoiceStatusFilter _statusFilter = _InvoiceStatusFilter.all;
+  String _searchQuery = '';
+  bool _showSearch = false;
   int _loadedCount = _pageSize;
 
   @override
@@ -50,6 +53,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -81,6 +85,25 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     return withLoadingOverlay(
       Scaffold(
         backgroundColor: const Color(0xFFF8F5EF),
+        floatingActionButton: FloatingActionButton(
+          heroTag: 'sales_history_search',
+          onPressed: () {
+            setState(() => _showSearch = !_showSearch);
+            if (!_showSearch) {
+              _searchController.clear();
+              _searchQuery = '';
+            }
+          },
+          backgroundColor: const Color(0xFFF97316),
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: const CircleBorder(),
+          child: Icon(
+            _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+            size: 28,
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         body: SafeArea(
         child: ListView(
           controller: _scrollController,
@@ -114,6 +137,22 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
             ],
             const SizedBox(height: 14),
             _SalesStats(stats: stats),
+            if (_showSearch) ...[
+              const SizedBox(height: 14),
+              _SearchPanel(
+                controller: _searchController,
+                query: _searchQuery,
+                timeFilter: _timeFilter,
+                onSearchChanged: (value) =>
+                    setState(() => _searchQuery = value),
+                onClearSearch: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+                onTimeChanged: (value) =>
+                    setState(() => _timeFilter = value),
+              ),
+            ],
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
@@ -124,41 +163,6 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
               ),
               child: Column(
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _PillChip(
-                        label: 'All Time',
-                        selected: _timeFilter == _SalesTimeFilter.allTime,
-                        onTap: () => setState(
-                          () => _timeFilter = _SalesTimeFilter.allTime,
-                        ),
-                      ),
-                      _PillChip(
-                        label: 'Today',
-                        selected: _timeFilter == _SalesTimeFilter.today,
-                        onTap: () => setState(
-                          () => _timeFilter = _SalesTimeFilter.today,
-                        ),
-                      ),
-                      _PillChip(
-                        label: 'This Week',
-                        selected: _timeFilter == _SalesTimeFilter.thisWeek,
-                        onTap: () => setState(
-                          () => _timeFilter = _SalesTimeFilter.thisWeek,
-                        ),
-                      ),
-                      _PillChip(
-                        label: 'This Month',
-                        selected: _timeFilter == _SalesTimeFilter.thisMonth,
-                        onTap: () => setState(
-                          () => _timeFilter = _SalesTimeFilter.thisMonth,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -253,6 +257,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     final startOfToday = DateTime(now.year, now.month, now.day);
     final startOfWeek = startOfToday.subtract(Duration(days: now.weekday - 1));
     final startOfMonth = DateTime(now.year, now.month, 1);
+    final query = _searchQuery.trim().toLowerCase();
 
     return sales.where((sale) {
       final matchesTime = switch (_timeFilter) {
@@ -271,7 +276,12 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
         _InvoiceStatusFilter.partial =>
           sale.paymentStatus == PaymentStatus.partial,
       };
-      return matchesTime && matchesStatus;
+      final customer = customerById[sale.customerId];
+      final matchesSearch = query.isEmpty ||
+          sale.saleId.toLowerCase().contains(query) ||
+          (customer?.name.toLowerCase().contains(query) ?? false) ||
+          (customer?.phone.contains(query) ?? false);
+      return matchesTime && matchesStatus && matchesSearch;
     }).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
@@ -481,6 +491,96 @@ class _ActiveCustomerChip extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SearchPanel extends StatelessWidget {
+  const _SearchPanel({
+    required this.controller,
+    required this.query,
+    required this.timeFilter,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+    required this.onTimeChanged,
+  });
+
+  final TextEditingController controller;
+  final String query;
+  final _SalesTimeFilter timeFilter;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+  final ValueChanged<_SalesTimeFilter> onTimeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE8E4DB)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 46,
+              child: TextField(
+                controller: controller,
+                onChanged: onSearchChanged,
+                decoration: InputDecoration(
+                  hintText: 'Search invoice, phone, name...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: query.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: onClearSearch,
+                          icon: const Icon(Icons.clear_rounded),
+                        ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          DropdownButtonHideUnderline(
+            child: Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFCFBF8),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE8E4DB)),
+              ),
+              child: DropdownButton<_SalesTimeFilter>(
+                value: timeFilter,
+                items: const [
+                  DropdownMenuItem(
+                    value: _SalesTimeFilter.allTime,
+                    child: Text('All Time'),
+                  ),
+                  DropdownMenuItem(
+                    value: _SalesTimeFilter.today,
+                    child: Text('Today'),
+                  ),
+                  DropdownMenuItem(
+                    value: _SalesTimeFilter.thisWeek,
+                    child: Text('This Week'),
+                  ),
+                  DropdownMenuItem(
+                    value: _SalesTimeFilter.thisMonth,
+                    child: Text('This Month'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) onTimeChanged(value);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

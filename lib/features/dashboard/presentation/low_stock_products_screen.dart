@@ -7,10 +7,25 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../products/presentation/product_form_screen.dart';
 
-class LowStockProductsScreen extends StatelessWidget {
+class LowStockProductsScreen extends StatefulWidget {
   const LowStockProductsScreen({super.key, required this.products});
 
   final List<Product> products;
+
+  @override
+  State<LowStockProductsScreen> createState() => _LowStockProductsScreenState();
+}
+
+class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _showSearch = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Widget _productIcon(BuildContext context) => Container(
     width: 52,
@@ -28,111 +43,216 @@ class LowStockProductsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localeCode = Localizations.localeOf(context).languageCode;
+    final query = _searchQuery.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? widget.products
+        : widget.products
+              .where((product) =>
+                  product
+                      .displayName(localeCode)
+                      .toLowerCase()
+                      .contains(query) ||
+                  product.category.toLowerCase().contains(query))
+              .toList();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Low stock products'),
       ),
-      body: products.isEmpty
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'low_stock_search',
+        onPressed: () {
+          setState(() {
+            _showSearch = !_showSearch;
+            if (!_showSearch) {
+              _searchController.clear();
+              _searchQuery = '';
+            }
+          });
+        },
+        backgroundColor: const Color(0xFFF97316),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: Icon(
+          _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+          size: 28,
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      body: widget.products.isEmpty
           ? const EmptyState(
               message: 'No low stock products right now.',
               icon: Icons.warning_amber_rounded,
             )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: products.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return Card(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ProductFormScreen(product: product),
-                      ),
+          : Column(
+              children: [
+                if (_showSearch) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _SearchPanel(
+                      controller: _searchController,
+                      query: _searchQuery,
+                      onSearchChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                      onClearSearch: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
-                        children: [
-                          product.imagePath != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Image.file(
-                                    File(product.imagePath!),
-                                    width: 52,
-                                    height: 52,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        _productIcon(context),
-                                  ),
-                                )
-                              : _productIcon(context),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ],
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    itemCount: filtered.isEmpty ? 1 : filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      if (filtered.isEmpty) {
+                        return const EmptyState(
+                          message: 'No products match your search.',
+                          icon: Icons.search_off_rounded,
+                        );
+                      }
+                      final product = filtered[index];
+                      return Card(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ProductFormScreen(product: product),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
                               children: [
-                                Text(
-                                  product.displayName(localeCode),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                product.imagePath != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.file(
+                                          File(product.imagePath!),
+                                          width: 52,
+                                          height: 52,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              _productIcon(context),
+                                        ),
+                                      )
+                                    : _productIcon(context),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        product.displayName(localeCode),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w800),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 6,
+                                        children: [
+                                          _ProductChip(
+                                            label: product.category.isEmpty
+                                                ? 'General'
+                                                : product.category,
+                                          ),
+                                          _ProductChip(
+                                            label: 'Stock ${product.stockQty}',
+                                          ),
+                                          _ProductChip(
+                                            label:
+                                                'Alert ${product.lowStockAlert}',
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 5),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 6,
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    _ProductChip(
-                                      label: product.category.isEmpty
-                                          ? 'General'
-                                          : product.category,
+                                    Text(
+                                      money(product.sellingPrice),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w900),
                                     ),
-                                    _ProductChip(
-                                      label:
-                                          'Stock ${product.stockQty}',
-                                    ),
-                                    _ProductChip(
-                                      label:
-                                          'Alert ${product.lowStockAlert}',
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Low stock',
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(context).colorScheme.error,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                money(product.sellingPrice),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w900),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Low stock',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
+    );
+  }
+}
+
+class _SearchPanel extends StatelessWidget {
+  const _SearchPanel({
+    required this.controller,
+    required this.query,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+  });
+
+  final TextEditingController controller;
+  final String query;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE8E4DB)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: SizedBox(
+        height: 46,
+        child: TextField(
+          controller: controller,
+          onChanged: onSearchChanged,
+          decoration: InputDecoration(
+            hintText: 'Search product name, category...',
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+            suffixIcon: query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: onClearSearch,
+                    icon: const Icon(Icons.clear_rounded),
+                  ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+        ),
+      ),
     );
   }
 }
