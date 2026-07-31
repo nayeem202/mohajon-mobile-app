@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +12,7 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/loading_overlay.dart';
 import '../../../core/widgets/notification_bell.dart';
+import '../../products/presentation/product_form_screen.dart';
 import '../../profile/models/profile.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
 import '../../pos/presentation/sales_history_screen.dart';
@@ -540,35 +543,131 @@ class _LowStockAlert extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visible = products.take(4).toList();
-    return _SectionCard(
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFF0DCC0)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE98300).withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(
-            title: 'Low Stock Alert',
-            action: 'View all',
-            onAction: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => LowStockProductsScreen(products: products),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF97316), Color(0xFFE98300)],
               ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 17,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Low Stock Alert',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${products.length} items',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => LowStockProductsScreen(
+                        products: products,
+                      ),
+                    ),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                    child: Row(
+                      children: [
+                        Text(
+                          'View all',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 14),
-          if (visible.isEmpty)
-            const _InlineEmpty(message: 'No low stock products right now')
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  for (var index = 0; index < visible.length; index++) ...[
-                    if (index != 0) const SizedBox(width: 10),
-                    _LowStockProductCard(product: visible[index]),
-                  ],
-                ],
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+            child: visible.isEmpty
+                ? const _InlineEmpty(message: 'No low stock products right now')
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        for (var index = 0; index < visible.length; index++) ...[
+                          if (index != 0) const SizedBox(width: 10),
+                          _LowStockProductCard(product: visible[index]),
+                        ],
+                      ],
+                    ),
+                  ),
+          ),
         ],
       ),
     );
@@ -582,59 +681,150 @@ class _LowStockProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      width: 148,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFCFBF8),
-        border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final isOut = product.stockQty <= 0;
+    final statusColor = isOut
+        ? const Color(0xFFEF4444)
+        : const Color(0xFFEA580C);
+    final level = (product.stockQty / (product.lowStockAlert * 2))
+        .clamp(0.0, 1.0)
+        .toDouble();
+
+    return Material(
+      color: const Color(0xFFFCFBF8),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProductFormScreen(product: product),
+          ),
+        ),
+        child: Container(
+          width: 136,
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFECE7DF)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
-                  shape: BoxShape.circle,
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 72,
+                  child: product.imagePath != null
+                      ? Image.file(
+                          File(product.imagePath!),
+                          width: double.infinity,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _fallbackImage(),
+                        )
+                      : _fallbackImage(),
                 ),
               ),
-              const SizedBox(width: 7),
-              Text(
-                '${product.stockQty} left',
-                style: const TextStyle(
-                  color: Color(0xFFEF4444),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+              Padding(
+                padding: const EdgeInsets.all(11),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            isOut
+                                ? 'Out of stock'
+                                : '${product.stockQty} left',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 9),
+                    Text(
+                      product.nameEn,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF101828),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'min ${product.lowStockAlert}',
+                      style: const TextStyle(
+                        color: Color(0xFF98A2B3),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        height: 6,
+                        color: const Color(0xFFF1E5D6),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: level,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            product.nameEn,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: colors.onSurface,
-              fontWeight: FontWeight.w900,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'min ${product.lowStockAlert}',
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fallbackImage() {
+    return Container(
+      width: double.infinity,
+      height: 72,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.inventory_2_rounded,
+          color: Color(0xFFE98300),
+          size: 28,
+        ),
       ),
     );
   }
