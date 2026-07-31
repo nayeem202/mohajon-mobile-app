@@ -136,10 +136,6 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
             final dueCount = dueByCustomer.values
                 .where((due) => due > 0)
                 .length;
-            final totalSpent = customerStats.values.fold<double>(
-              0,
-              (sum, stat) => sum + stat.totalSpent,
-            );
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 80),
@@ -150,7 +146,6 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   totalClients: items.length,
                   dueClients: dueCount,
                   totalReceivable: totalDue,
-                  totalSpent: totalSpent,
                 ),
                 if (_showSearch) ...[
                   const SizedBox(height: 18),
@@ -339,41 +334,47 @@ class _ClientStats extends StatelessWidget {
     required this.totalClients,
     required this.dueClients,
     required this.totalReceivable,
-    required this.totalSpent,
   });
 
   final int totalClients;
   final int dueClients;
   final double totalReceivable;
-  final double totalSpent;
 
   @override
   Widget build(BuildContext context) {
     final cards = [
       _ClientStatSpec(
-        label: 'Total\nClients',
+        icon: Icons.people_alt_rounded,
+        label: 'Clients',
         value: '$totalClients',
-        subtext: '+12 this\nmonth',
-        subtextColor: const Color(0xFF047857),
+        subtext: 'All clients',
+        color: const Color(0xFFE98300),
+        background: const Color(0xFFFFF4E5),
       ),
       _ClientStatSpec(
-        label: 'With\nDues',
+        icon: Icons.error_outline_rounded,
+        label: 'With Dues',
         value: '$dueClients',
-        subtext: 'Needs\nattention',
-        subtextColor: const Color(0xFFEF4444),
-      ),
-      _ClientStatSpec(
-        label: 'Total\nReceivable',
-        value: money(totalReceivable),
-        subtext: 'Across\n$dueClients clients',
+        subtext: 'Follow up',
+        color: const Color(0xFFEF4444),
+        background: const Color(0xFFFEF1F1),
       ),
     ];
-    return Row(
+    return Column(
       children: [
-        for (var index = 0; index < cards.length; index++) ...[
-          Expanded(child: _ClientStatCard(spec: cards[index])),
-          if (index != cards.length - 1) const SizedBox(width: 10),
-        ],
+        Row(
+          children: [
+            for (var index = 0; index < cards.length; index++) ...[
+              Expanded(child: _ClientStatCard(spec: cards[index])),
+              if (index != cards.length - 1) const SizedBox(width: 12),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        _ReceivableCard(
+          value: money(totalReceivable),
+          dueClients: dueClients,
+        ),
       ],
     );
   }
@@ -381,16 +382,20 @@ class _ClientStats extends StatelessWidget {
 
 class _ClientStatSpec {
   const _ClientStatSpec({
+    required this.icon,
     required this.label,
     required this.value,
     required this.subtext,
-    this.subtextColor = const Color(0xFF667085),
+    required this.color,
+    required this.background,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final String subtext;
-  final Color subtextColor;
+  final Color color;
+  final Color background;
 }
 
 class _ClientStatCard extends StatelessWidget {
@@ -400,56 +405,206 @@ class _ClientStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
-      height: 135,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      height: 130,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [spec.background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: spec.color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            spec.label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF667085),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: spec.color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(spec.icon, color: spec.color, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: spec.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    spec.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: spec.color,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-            const SizedBox(height: 8),
-            Text(
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
               spec.value,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF101828),
-                fontSize: 22,
+              style: TextStyle(
+                fontSize: 20,
+                color: colors.onSurface,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const Spacer(),
-            Text(
-              spec.subtext,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: spec.subtextColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            spec.subtext,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+class _ReceivableCard extends StatelessWidget {
+  const _ReceivableCard({required this.value, required this.dueClients});
 
+  final String value;
+  final int dueClients;
+
+  static const _color = Color(0xFF0F766E);
+  static const _background = Color(0xFFE4F6F1);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: const [_background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: _color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(13),
+              boxShadow: [
+                BoxShadow(
+                  color: _color.withValues(alpha: 0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.payments_rounded,
+              color: _color,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Total Receivable',
+                      style: TextStyle(
+                        color: _color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Across $dueClients clients',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _SearchAndFilters extends StatelessWidget {
   const _SearchAndFilters({

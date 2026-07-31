@@ -113,43 +113,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
               ),
             ],
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _MiniStatCard(
-                    label: 'Invoices',
-                    value: '${stats.count}',
-                    subtext: 'Filtered',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _MiniStatCard(
-                    label: 'Total Revenue',
-                    value: money(stats.totalRevenue),
-                    subtext: 'Filtered',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _MiniStatCard(
-                    label: 'Collected',
-                    value: money(stats.collected),
-                    subtext: '${stats.paidCount} paid\ninvoices',
-                    accent: const Color(0xFF0F766E),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _MiniStatCard(
-                    label: 'Outstanding',
-                    value: money(stats.outstanding),
-                    subtext: '${stats.dueCount}\npending',
-                    accent: const Color(0xFFEF4444),
-                  ),
-                ),
-              ],
-            ),
+            _SalesStats(stats: stats),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
@@ -537,62 +501,178 @@ class _ActiveCustomerChip extends StatelessWidget {
   }
 }
 
-class _MiniStatCard extends StatelessWidget {
-  const _MiniStatCard({
-    required this.label,
-    required this.value,
-    required this.subtext,
-    this.accent = const Color(0xFFE98300),
-  });
+class _SalesStats extends StatelessWidget {
+  const _SalesStats({required this.stats});
 
-  final String label;
-  final String value;
-  final String subtext;
-  final Color accent;
+  final _SalesSummary stats;
 
   @override
   Widget build(BuildContext context) {
+    final cards = [
+      _SalesStatSpec(
+        icon: Icons.receipt_long_rounded,
+        label: 'Invoices',
+        value: '${stats.count}',
+        subtext: 'Filtered',
+        color: const Color(0xFF2563EB),
+        background: const Color(0xFFEDF3FF),
+      ),
+      _SalesStatSpec(
+        icon: Icons.trending_up_rounded,
+        label: 'Total Revenue',
+        value: money(stats.totalRevenue),
+        subtext: 'Filtered',
+        color: const Color(0xFF047857),
+        background: const Color(0xFFE9F8F1),
+      ),
+      _SalesStatSpec(
+        icon: Icons.payments_rounded,
+        label: 'Collected',
+        value: money(stats.collected),
+        subtext: '${stats.paidCount} paid',
+        color: const Color(0xFF0F766E),
+        background: const Color(0xFFE4F6F1),
+      ),
+      _SalesStatSpec(
+        icon: Icons.error_outline_rounded,
+        label: 'Outstanding',
+        value: money(stats.outstanding),
+        subtext: '${stats.dueCount} pending',
+        color: const Color(0xFFEF4444),
+        background: const Color(0xFFFEF1F1),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final card in cards)
+              SizedBox(width: cardWidth, child: _SalesStatCard(spec: card)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SalesStatSpec {
+  const _SalesStatSpec({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.subtext,
+    required this.color,
+    required this.background,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String subtext;
+  final Color color;
+  final Color background;
+}
+
+class _SalesStatCard extends StatelessWidget {
+  const _SalesStatCard({required this.spec});
+
+  final _SalesStatSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       height: 130,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE8E4DB)),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [spec.background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: spec.color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF667085),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: spec.color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(spec.icon, color: spec.color, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: spec.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    spec.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: spec.color,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              spec.value,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 20,
+                color: colors.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            value,
+            spec.subtext,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: accent,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            subtext,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: accent,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

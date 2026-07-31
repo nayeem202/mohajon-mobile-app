@@ -225,15 +225,37 @@ class _StockStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _StatCard(label: 'Total Products', value: '$totalProducts'),
-      _StatCard(label: 'Stock Value', value: money(stockValue)),
-      _DangerStatCard(
+      _StockStatSpec(
+        icon: Icons.inventory_2_rounded,
+        label: 'Total Products',
+        value: '$totalProducts',
+        subtext: 'All products',
+        color: const Color(0xFF2563EB),
+        background: const Color(0xFFEDF3FF),
+      ),
+      _StockStatSpec(
+        icon: Icons.account_balance_wallet_rounded,
+        label: 'Stock Value',
+        value: money(stockValue),
+        subtext: 'Inventory worth',
+        color: const Color(0xFF047857),
+        background: const Color(0xFFE9F8F1),
+      ),
+      _StockStatSpec(
+        icon: Icons.warning_amber_rounded,
         label: 'Low Stock',
         value: '$lowStockCount',
+        subtext: 'Restock soon',
+        color: const Color(0xFFEA580C),
+        background: const Color(0xFFFFF4E5),
       ),
-      _NeutralStatCard(
+      _StockStatSpec(
+        icon: Icons.remove_circle_outline_rounded,
         label: 'Out of Stock',
         value: '$outStockCount',
+        subtext: 'Unavailable',
+        color: const Color(0xFFEF4444),
+        background: const Color(0xFFFEF1F1),
       ),
     ];
 
@@ -242,13 +264,14 @@ class _StockStats extends StatelessWidget {
         final isSingleColumn = constraints.maxWidth < 320;
         final cardWidth = isSingleColumn
             ? constraints.maxWidth
-            : (constraints.maxWidth - 10) / 2;
+            : (constraints.maxWidth - 12) / 2;
 
         return Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            for (final card in cards) SizedBox(width: cardWidth, child: card),
+            for (final card in cards)
+              SizedBox(width: cardWidth, child: _StockStatCard(spec: card)),
           ],
         );
       },
@@ -256,135 +279,120 @@ class _StockStats extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseStatCard(
-      label: label,
-      value: value,
-      labelColor: const Color(0xFF98A2B3),
-      valueColor: const Color(0xFF101828),
-      iconColor: const Color(0xFFE98300),
-      icon: Icons.inventory_2_outlined,
-      background: const Color(0xFFFCFBF8),
-    );
-  }
-}
-
-class _DangerStatCard extends StatelessWidget {
-  const _DangerStatCard({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseStatCard(
-      label: label,
-      value: value,
-      labelColor: const Color(0xFFEF4444),
-      valueColor: const Color(0xFFEF4444),
-      iconColor: const Color(0xFFEF4444),
-      icon: Icons.warning_amber_rounded,
-      background: const Color(0xFFFFF5F5),
-      borderColor: const Color(0xFFFECACA),
-    );
-  }
-}
-
-class _NeutralStatCard extends StatelessWidget {
-  const _NeutralStatCard({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseStatCard(
-      label: label,
-      value: value,
-      labelColor: const Color(0xFF98A2B3),
-      valueColor: const Color(0xFF101828),
-      iconColor: const Color(0xFF98A2B3),
-      icon: Icons.do_not_disturb_on_outlined,
-      background: const Color(0xFFFCFBF8),
-    );
-  }
-}
-
-class _BaseStatCard extends StatelessWidget {
-  const _BaseStatCard({
-    required this.label,
-    required this.value,
-    required this.labelColor,
-    required this.valueColor,
-    required this.iconColor,
+class _StockStatSpec {
+  const _StockStatSpec({
     required this.icon,
+    required this.label,
+    required this.value,
+    required this.subtext,
+    required this.color,
     required this.background,
-    this.borderColor,
   });
 
+  final IconData icon;
   final String label;
   final String value;
-  final Color labelColor;
-  final Color valueColor;
-  final Color iconColor;
-  final IconData icon;
+  final String subtext;
+  final Color color;
   final Color background;
-  final Color? borderColor;
+}
+
+class _StockStatCard extends StatelessWidget {
+  const _StockStatCard({required this.spec});
+
+  final _StockStatSpec spec;
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(12),
+      height: 130,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: background,
-        border: Border.all(color: borderColor ?? const Color(0xFFE9DECF)),
-        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [spec.background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: spec.color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, size: 15, color: iconColor),
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: spec.color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(spec.icon, color: spec.color, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: spec.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    spec.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: spec.color,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: labelColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              spec.value,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 20,
+                color: colors.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            value,
+            spec.subtext,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: valueColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontSize: 11,
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
