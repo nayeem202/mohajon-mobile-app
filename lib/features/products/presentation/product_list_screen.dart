@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/nav_bar/nav_bar_aware_fab_location.dart';
 import '../providers/product_providers.dart';
 import 'product_form_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
@@ -152,6 +153,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ),
         ],
       ),
+      floatingActionButtonLocation: const NavBarAwareFabLocation(),
     );
   }
 

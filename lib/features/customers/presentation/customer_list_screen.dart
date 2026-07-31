@@ -7,6 +7,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/nav_bar/nav_bar_aware_fab_location.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_profile_screen.dart';
 import '../providers/customer_providers.dart';
@@ -93,6 +94,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           ),
         ],
       ),
+      floatingActionButtonLocation: const NavBarAwareFabLocation(),
       body: SafeArea(
         child: customers.when(
           data: (items) {
