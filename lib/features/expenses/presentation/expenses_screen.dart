@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -19,7 +20,7 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AsyncActionState<ExpensesScreen> {
   late final AnimationController _controller;
   late final Animation<double> _fade;
 
@@ -47,13 +48,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
     final categories = ref.watch(expenseCategoriesProvider);
     final selectedMonth = ref.watch(expenseMonthFilterProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+    return withLoadingOverlay(
+      Scaffold(
+        backgroundColor: const Color(0xFFFFF8F1),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: isBusy ? null : () => Navigator.of(context).pop(),
+          ),
         title: const Text(
           'Expenses',
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
@@ -159,6 +161,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
         categoryLabel: _filterLabel(categories, dashboard.selectedCategoryId),
         total: dashboard.filteredTotal,
       ),
+      ),
+      label: 'Deleting expense...',
     );
   }
 
@@ -216,7 +220,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
     );
     if (shouldDelete != true) return;
 
-    await ref.read(expenseServiceProvider).deleteExpense(expense.expenseId);
+    await runBusyAction(
+      () => ref.read(expenseServiceProvider).deleteExpense(expense.expenseId),
+    );
   }
 }
 

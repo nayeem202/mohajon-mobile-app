@@ -632,6 +632,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
   PaymentMethod _paymentMethod = PaymentMethod.cash;
   double _vatPercent = 0;
   String _customerQuery = '';
+  bool _isCheckingOut = false;
 
   @override
   void initState() {
@@ -716,7 +717,9 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: _isCheckingOut
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close_rounded),
                       ),
                     ],
@@ -1181,18 +1184,22 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: cart.items.isEmpty || (_customerMode == _CustomerMode.existing && cart.customerId.isEmpty)
+                      onPressed: _isCheckingOut ||
+                              cart.items.isEmpty ||
+                              (_customerMode == _CustomerMode.existing &&
+                                  cart.customerId.isEmpty)
                           ? null
                           : () async {
-                              final controller = ref.read(cartProvider.notifier);
-                              controller.setVatPercent(_vatPercent);
-                              controller.setDiscount(discountAmount);
-                              controller.setPaymentMethod(_paymentMethod);
-                              controller.setPaidAmount(_paymentMethod == PaymentMethod.credit ? 0 : total.toDouble());
-                              if (_customerMode == _CustomerMode.walkIn) {
-                                controller.setCustomer('');
-                              }
+                              setState(() => _isCheckingOut = true);
                               try {
+                                final controller = ref.read(cartProvider.notifier);
+                                controller.setVatPercent(_vatPercent);
+                                controller.setDiscount(discountAmount);
+                                controller.setPaymentMethod(_paymentMethod);
+                                controller.setPaidAmount(_paymentMethod == PaymentMethod.credit ? 0 : total.toDouble());
+                                if (_customerMode == _CustomerMode.walkIn) {
+                                  controller.setCustomer('');
+                                }
                                 final sale = await controller.checkout();
                                 if (mounted) {
                                   Navigator.of(context).pop();
@@ -1215,10 +1222,27 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                                     ),
                                   );
                                 }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _isCheckingOut = false);
+                                }
                               }
                             },
-                      icon: const Icon(Icons.shopping_cart_checkout_rounded),
-                      label: const Text('Checkout & invoice'),
+                      icon: _isCheckingOut
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.shopping_cart_checkout_rounded),
+                      label: Text(
+                        _isCheckingOut
+                            ? 'Processing checkout...'
+                            : 'Checkout & invoice',
+                      ),
                     ),
                   ),
                 ],

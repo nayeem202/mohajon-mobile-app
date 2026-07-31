@@ -15,6 +15,7 @@ class _CustomerRulesSettingsScreenState
     extends ConsumerState<CustomerRulesSettingsScreen> {
   final _vipThresholdCtrl = TextEditingController();
   final _regularThresholdCtrl = TextEditingController();
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -139,9 +140,20 @@ class _CustomerRulesSettingsScreenState
                   SizedBox(
                     height: 52,
                     child: FilledButton.icon(
-                      onPressed: _save,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('Save Rules'),
+                      onPressed: _isSaving ? null : _save,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(
+                        _isSaving ? 'Saving...' : 'Save Rules',
+                      ),
                     ),
                   ),
                 ],
@@ -169,8 +181,13 @@ class _CustomerRulesSettingsScreenState
       return;
     }
     final settings = ref.read(localDatabaseProvider).settings;
-    await settings.put('customerVipThreshold', vip);
-    await settings.put('customerRegularThreshold', regular);
+    setState(() => _isSaving = true);
+    try {
+      await settings.put('customerVipThreshold', vip);
+      await settings.put('customerRegularThreshold', regular);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

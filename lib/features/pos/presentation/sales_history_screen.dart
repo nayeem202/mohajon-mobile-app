@@ -10,6 +10,7 @@ import '../../../core/models/shop_profile.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -31,7 +32,8 @@ class SalesHistoryScreen extends ConsumerStatefulWidget {
       _SalesHistoryScreenState();
 }
 
-class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
+class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
+    with AsyncActionState<SalesHistoryScreen> {
   static const _pageSize = 20;
   final _scrollController = ScrollController();
   _SalesTimeFilter _timeFilter = _SalesTimeFilter.allTime;
@@ -76,9 +78,10 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
     final filteredSales = _applyFilters(scopedSales, customerById);
     final displaySales = filteredSales.take(_loadedCount).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      body: SafeArea(
+    return withLoadingOverlay(
+      Scaffold(
+        backgroundColor: const Color(0xFFF8F5EF),
+        body: SafeArea(
         child: ListView(
           controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -276,6 +279,8 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
           ],
         ),
       ),
+      ),
+      label: 'Generating invoice...',
     );
   }
 
@@ -347,15 +352,17 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
           profile: profile,
           onPrint: () async {
             Navigator.of(sheetContext).pop();
-            final bytes = await InvoiceService().buildSaleInvoice(
-              sale,
-              customerName: customer?.name ?? '',
-              customerPhone: customer?.phone ?? '',
-            );
-            await Printing.sharePdf(
-              bytes: bytes,
-              filename: 'invoice-${sale.saleId}.pdf',
-            );
+            await runBusyAction(() async {
+              final bytes = await InvoiceService().buildSaleInvoice(
+                sale,
+                customerName: customer?.name ?? '',
+                customerPhone: customer?.phone ?? '',
+              );
+              await Printing.sharePdf(
+                bytes: bytes,
+                filename: 'invoice-${sale.saleId}.pdf',
+              );
+            });
           },
           onRecordPayment: customer == null
               ? null

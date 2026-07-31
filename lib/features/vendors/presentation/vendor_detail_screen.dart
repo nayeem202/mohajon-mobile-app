@@ -292,28 +292,55 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   Future<void> _confirmDelete(Vendor vendor) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Vendor'),
-        content: Text('Delete ${vendor.companyName}? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+      builder: (ctx) {
+        var deleting = false;
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) => AlertDialog(
+            title: const Text('Delete Vendor'),
+            content: Text('Delete ${vendor.companyName}? This action cannot be undone.'),
+            actions: [
+              TextButton(
+                onPressed: deleting
+                    ? null
+                    : () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                ),
+                onPressed: deleting
+                    ? null
+                    : () async {
+                        setDialogState(() => deleting = true);
+                        try {
+                          await runBusyAction(
+                            () => ref.read(vendorServiceProvider).delete(vendor.vendorId),
+                          );
+                          if (ctx.mounted) {
+                            Navigator.of(ctx).pop(true);
+                          }
+                        } finally {
+                          if (ctx.mounted) {
+                            setDialogState(() => deleting = false);
+                          }
+                        }
+                      },
+                child: deleting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Delete'),
+              ),
+            ],
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () async {
-              await ref.read(vendorServiceProvider).delete(vendor.vendorId);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (ctx.mounted) Navigator.of(ctx).pop(true);
-              });
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     if (confirmed == true && mounted) {
       Navigator.of(context).pop();

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../models/expense.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/async_action_state.dart';
 import '../providers/expense_providers.dart';
 
 class AddExpenseSheet extends ConsumerStatefulWidget {
@@ -15,7 +16,8 @@ class AddExpenseSheet extends ConsumerStatefulWidget {
   ConsumerState<AddExpenseSheet> createState() => _AddExpenseSheetState();
 }
 
-class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
+class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
+    with AsyncActionState<AddExpenseSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _descriptionController;
   late final TextEditingController _amountController;
@@ -216,8 +218,24 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: _save,
-                          child: Text(isEditMode ? 'Update Expense' : 'Save Expense'),
+                          onPressed: isBusy ? null : _save,
+                          child: isBusy
+                              ? const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text('Saving...'),
+                                  ],
+                                )
+                              : Text(isEditMode ? 'Update Expense' : 'Save Expense'),
                         ),
                       ),
                     ],
@@ -241,26 +259,28 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
         .firstWhere((category) => category.id == categoryId)
         .label;
     final service = ref.read(expenseServiceProvider);
-    if (widget.expense == null) {
-      await service.addExpense(
-        description: _descriptionController.text.trim(),
-        amount: amount,
-        categoryId: categoryId,
-        categoryLabel: categoryLabel,
-        date: _selectedDate,
-        notes: _notesController.text.trim(),
-      );
-    } else {
-      await service.updateExpense(
-        existing: widget.expense!,
-        description: _descriptionController.text.trim(),
-        amount: amount,
-        categoryId: categoryId,
-        categoryLabel: categoryLabel,
-        date: _selectedDate,
-        notes: _notesController.text.trim(),
-      );
-    }
-    Navigator.of(context).pop();
+    await runBusyAction(() async {
+      if (widget.expense == null) {
+        await service.addExpense(
+          description: _descriptionController.text.trim(),
+          amount: amount,
+          categoryId: categoryId,
+          categoryLabel: categoryLabel,
+          date: _selectedDate,
+          notes: _notesController.text.trim(),
+        );
+      } else {
+        await service.updateExpense(
+          existing: widget.expense!,
+          description: _descriptionController.text.trim(),
+          amount: amount,
+          categoryId: categoryId,
+          categoryLabel: categoryLabel,
+          date: _selectedDate,
+          notes: _notesController.text.trim(),
+        );
+      }
+    });
+    if (mounted) Navigator.of(context).pop();
   }
 }
