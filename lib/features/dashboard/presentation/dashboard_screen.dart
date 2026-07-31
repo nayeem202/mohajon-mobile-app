@@ -292,36 +292,45 @@ class _OverviewStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final totalDue = summary.totalDue;
+    final isAdvance = totalDue < 0;
     final stats = [
       _StatSpec(
-        icon: Icons.layers_rounded,
+        icon: Icons.inventory_2_rounded,
         label: 'Stock',
         value: _formatQuantity(summary.totalStock),
         subtext: '${summary.lowStock.length} low',
-        subtextColor: const Color(0xFFEF4444),
-        color: colors.secondary,
+        color: const Color(0xFF2563EB),
+        background: const Color(0xFFEDF3FF),
       ),
       _StatSpec(
-        icon: Icons.people_outline_rounded,
+        icon: Icons.people_alt_rounded,
         label: 'Clients',
         value: '${summary.customerCount}',
         subtext: '${summary.customerDueCount} with dues',
         color: const Color(0xFF8B6F47),
+        background: const Color(0xFFF8F3EB),
       ),
       _StatSpec(
-        icon: Icons.error_outline_rounded,
-        label: 'Dues',
-        value: money(summary.totalDue),
-        subtext: '${summary.customerDueCount} clients',
-        color: const Color(0xFFEF4444),
+        icon: isAdvance ? Icons.account_balance_wallet_rounded : Icons.payments_rounded,
+        label: isAdvance ? 'Advance' : 'Dues',
+        value: money(totalDue.abs()),
+        subtext: isAdvance
+            ? 'Received in advance'
+            : '${summary.customerDueCount} clients',
+        color: isAdvance
+            ? const Color(0xFF047857)
+            : const Color(0xFFEF4444),
+        background: isAdvance
+            ? const Color(0xFFE9F8F1)
+            : const Color(0xFFFEF1F1),
       ),
     ];
     return Row(
       children: [
         for (var index = 0; index < stats.length; index++) ...[
           Expanded(child: _StatCard(spec: stats[index])),
-          if (index != stats.length - 1) const SizedBox(width: 10),
+          if (index != stats.length - 1) const SizedBox(width: 12),
         ],
       ],
     );
@@ -335,7 +344,7 @@ class _StatSpec {
     required this.value,
     required this.subtext,
     required this.color,
-    this.subtextColor,
+    required this.background,
   });
 
   final IconData icon;
@@ -343,7 +352,7 @@ class _StatSpec {
   final String value;
   final String subtext;
   final Color color;
-  final Color? subtextColor;
+  final Color background;
 }
 
 class _StatCard extends StatelessWidget {
@@ -355,12 +364,23 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      height: 118,
+      height: 130,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [spec.background, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: spec.color.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,48 +388,65 @@ class _StatCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: spec.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(9),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: spec.color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(spec.icon, color: spec.color, size: 16),
               ),
-              const SizedBox(width: 8),
-              Expanded(
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: spec.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Text(
                   spec.label,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: colors.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
+                    color: spec.color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
           const Spacer(),
-          Text(
-            spec.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 19,
-              color: colors.onSurface,
-              fontWeight: FontWeight.w900,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              spec.value,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 20,
+                color: colors.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 4),
           Text(
             spec.subtext,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
-              color: spec.subtextColor ?? colors.onSurfaceVariant,
+              fontSize: 11,
+              color: colors.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
