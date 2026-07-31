@@ -445,19 +445,15 @@ class _ActiveCustomerChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                _initials(customer.name),
-                style: const TextStyle(
-                  color: Color(0xFFE98300),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                customer.name,
-                style: const TextStyle(
-                  color: Color(0xFFE98300),
-                  fontWeight: FontWeight.w800,
+              Flexible(
+                child: Text(
+                  customer.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFE98300),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -486,18 +482,6 @@ class _ActiveCustomerChip extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _initials(String name) {
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty);
-    final initials = parts
-        .take(2)
-        .map((part) => part.substring(0, 1).toUpperCase())
-        .join();
-    return initials.isEmpty ? '?' : initials;
   }
 }
 
