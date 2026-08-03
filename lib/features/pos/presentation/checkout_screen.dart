@@ -91,7 +91,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 6, 16, 0),
+              padding: const EdgeInsets.fromLTRB(4, 6, 16, 12),
               child: Row(
                 children: [
                   IconButton(
@@ -100,20 +100,59 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         : () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                  const Expanded(
-                    child: Text(
-                      'Checkout',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF101828),
+                  const SizedBox(width: 4),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFF97316), Color(0xFFEA580C)],
                       ),
+                      borderRadius: BorderRadius.circular(13),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF97316).withValues(alpha: 0.28),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.shopping_cart_checkout_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Checkout',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF101828),
+                          ),
+                        ),
+                        Text(
+                          'Review items & payment',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF8A8A8A),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
+            const Divider(height: 1, color: Color(0xFFE8DDD2)),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -489,64 +528,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     const SizedBox(height: 18),
                     _SectionTitle(title: 'Payment Method'),
                     const SizedBox(height: 8),
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 2.2,
-                      children: [
-                        _PaymentTile(
-                          label: 'Cash',
-                          icon: Icons.payments_rounded,
-                          selected: _paymentMethod == PaymentMethod.cash,
-                          onTap: () => setState(
-                            () => _paymentMethod = PaymentMethod.cash,
-                          ),
-                        ),
-                        _PaymentTile(
-                          label: 'bKash',
-                          icon: Icons.phone_android_rounded,
-                          selected: _paymentMethod == PaymentMethod.bkash,
-                          onTap: () => setState(
-                            () => _paymentMethod = PaymentMethod.bkash,
-                          ),
-                        ),
-                        _PaymentTile(
-                          label: 'Nagad',
-                          icon: Icons.account_balance_wallet_rounded,
-                          selected: _paymentMethod == PaymentMethod.nagad,
-                          onTap: () => setState(
-                            () => _paymentMethod = PaymentMethod.nagad,
-                          ),
-                        ),
-                        _PaymentTile(
-                          label: 'Credit',
-                          icon: Icons.credit_card_rounded,
-                          selected: _paymentMethod == PaymentMethod.credit,
-                          enabled: _customerMode == _CustomerMode.existing,
-                          onTap: () => setState(
-                            () => _paymentMethod = PaymentMethod.credit,
-                          ),
-                        ),
-                        _PaymentTile(
-                          label: 'Bank',
-                          icon: Icons.account_balance_rounded,
-                          selected: _paymentMethod == PaymentMethod.bank,
-                          onTap: () => setState(
-                            () => _paymentMethod = PaymentMethod.bank,
-                          ),
-                        ),
-                        _PaymentTile(
-                          label: 'Other',
-                          icon: Icons.more_horiz_rounded,
-                          selected: _paymentMethod == PaymentMethod.other,
-                          onTap: () => setState(
-                            () => _paymentMethod = PaymentMethod.other,
-                          ),
-                        ),
-                      ],
+                    _PaymentMethodDropdown(
+                      selected: _paymentMethod,
+                      creditEnabled: _customerMode == _CustomerMode.existing,
+                      onChanged: (method) {
+                        setState(() => _paymentMethod = method);
+                      },
                     ),
                     const SizedBox(height: 18),
                     Container(
@@ -584,6 +571,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFF97316),
+                      disabledBackgroundColor: const Color(0xFFF3C9A3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     onPressed: _isCheckingOut ||
                             cart.items.isEmpty ||
                             (_customerMode == _CustomerMode.existing &&
@@ -858,54 +856,372 @@ class _RateChip extends StatelessWidget {
   }
 }
 
-class _PaymentTile extends StatelessWidget {
-  const _PaymentTile({
+class _PaymentOption {
+  const _PaymentOption({
     required this.label,
+    required this.subtitle,
     required this.icon,
-    required this.selected,
-    required this.onTap,
-    this.enabled = true,
+    required this.color,
   });
 
   final String label;
+  final String subtitle;
   final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool enabled;
+  final Color color;
+}
+
+const _paymentOptions = <PaymentMethod, _PaymentOption>{
+  PaymentMethod.cash: _PaymentOption(
+    label: 'Cash',
+    subtitle: 'Pay instantly in cash',
+    icon: Icons.payments_rounded,
+    color: Color(0xFFF97316),
+  ),
+  PaymentMethod.bkash: _PaymentOption(
+    label: 'bKash',
+    subtitle: 'Pay via bKash mobile wallet',
+    icon: Icons.phone_android_rounded,
+    color: Color(0xFFE2136E),
+  ),
+  PaymentMethod.nagad: _PaymentOption(
+    label: 'Nagad',
+    subtitle: 'Pay via Nagad mobile wallet',
+    icon: Icons.account_balance_wallet_rounded,
+    color: Color(0xFFF6921E),
+  ),
+  PaymentMethod.credit: _PaymentOption(
+    label: 'Credit',
+    subtitle: "Add to the customer's due balance",
+    icon: Icons.credit_card_rounded,
+    color: Color(0xFF2563EB),
+  ),
+  PaymentMethod.bank: _PaymentOption(
+    label: 'Bank',
+    subtitle: 'Pay via bank transfer',
+    icon: Icons.account_balance_rounded,
+    color: Color(0xFF0F766E),
+  ),
+  PaymentMethod.other: _PaymentOption(
+    label: 'Other',
+    subtitle: 'Any other payment method',
+    icon: Icons.more_horiz_rounded,
+    color: Color(0xFF525252),
+  ),
+};
+
+class _PaymentMethodDropdown extends StatelessWidget {
+  const _PaymentMethodDropdown({
+    required this.selected,
+    required this.creditEnabled,
+    required this.onChanged,
+  });
+
+  final PaymentMethod selected;
+  final bool creditEnabled;
+  final ValueChanged<PaymentMethod> onChanged;
+
+  void _openSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => _PaymentMethodSheet(
+        selected: selected,
+        creditEnabled: creditEnabled,
+        onSelected: (method) {
+          Navigator.of(sheetContext).pop();
+          onChanged(method);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final enabled = this.enabled || selected;
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: 150,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFF8A00) : (enabled ? const Color(0xFFF5EEE5) : const Color(0xFFEDE5D8)),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? const Color(0xFFFF8A00) : const Color(0xFFE5D9C9),
+    final option = _paymentOptions[selected]!;
+    final locked = !creditEnabled && selected == PaymentMethod.credit;
+    final color = locked ? const Color(0xFFB9A78E) : option.color;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _openSheet(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5D9C9)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0B1F17).withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(option.icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF101828),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      locked
+                          ? 'Select a customer to use credit'
+                          : option.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8A8A8A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF8A00).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(0xFFFF8A00),
+                  size: 20,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Row(
+      ),
+    );
+  }
+}
+
+class _PaymentMethodSheet extends StatelessWidget {
+  const _PaymentMethodSheet({
+    required this.selected,
+    required this.creditEnabled,
+    required this.onSelected,
+  });
+
+  final PaymentMethod selected;
+  final bool creditEnabled;
+  final ValueChanged<PaymentMethod> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFFBF5),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: selected ? Colors.white : (enabled ? const Color(0xFF9A5A1B) : const Color(0xFFC0B09A)),
+            const SizedBox(height: 10),
+            Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5D9C9),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? Colors.white : (enabled ? const Color(0xFF9A5A1B) : const Color(0xFFC0B09A)),
-                fontWeight: FontWeight.w800,
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: Column(
+                children: [
+                  Text(
+                    'Select Payment Method',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF101828),
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Choose how the customer will pay',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF8A8A8A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                children: [
+                  for (final method in PaymentMethod.values) ...[
+                    _PaymentOptionRow(
+                      method: method,
+                      selected: method == selected,
+                      enabled:
+                          method != PaymentMethod.credit || creditEnabled,
+                      onTap: () => onSelected(method),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF9A5A1B),
+                    side: const BorderSide(color: Color(0xFFE5D9C9)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    minimumSize: const Size(0, 48),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentOptionRow extends StatelessWidget {
+  const _PaymentOptionRow({
+    required this.method,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final PaymentMethod method;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final option = _paymentOptions[method]!;
+    final color = enabled ? option.color : const Color(0xFFB9A78E);
+    return Material(
+      color: selected ? const Color(0xFFFFF1E0) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: selected ? const Color(0xFFFFC98F) : const Color(0xFFE9E1D8),
+        ),
+      ),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(option.icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF101828),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      enabled
+                          ? option.subtitle
+                          : 'Select a customer to use credit',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8A8A8A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (!enabled)
+                const Icon(
+                  Icons.lock_outline_rounded,
+                  size: 18,
+                  color: Color(0xFFB9A78E),
+                )
+              else if (selected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFFFF8A00),
+                  size: 22,
+                )
+              else
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD5C8B4),
+                      width: 1.6,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
