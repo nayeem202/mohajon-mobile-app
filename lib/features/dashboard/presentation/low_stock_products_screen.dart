@@ -58,24 +58,30 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
       appBar: AppBar(
         title: const Text('Low stock products'),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'low_stock_search',
-        onPressed: () {
-          setState(() {
-            _showSearch = !_showSearch;
-            if (!_showSearch) {
-              _searchController.clear();
-              _searchQuery = '';
-            }
-          });
-        },
-        backgroundColor: const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        elevation: 4,
+      floatingActionButton: Material(
         shape: const CircleBorder(),
-        child: Icon(
-          _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
-          size: 28,
+        elevation: 4,
+        color: const Color(0xFFF97316),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () {
+            setState(() {
+              _showSearch = !_showSearch;
+              if (!_showSearch) {
+                _searchController.clear();
+                _searchQuery = '';
+              }
+            });
+          },
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Icon(
+              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              size: 22,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

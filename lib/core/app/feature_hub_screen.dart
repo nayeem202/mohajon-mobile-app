@@ -34,29 +34,55 @@ class _MoreTopBar extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 30,
-          height: 30,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
-            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+            ),
+            borderRadius: BorderRadius.circular(13),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF97316).withValues(alpha: 0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: const Icon(
-            Icons.storefront_rounded,
+            Icons.grid_view_rounded,
             color: Colors.white,
-            size: 17,
+            size: 19,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         const Expanded(
-          child: Text(
-            'More',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'More',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF101828),
+                ),
+              ),
+              Text(
+                'Everything in one place',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF8A8A8A),
+                ),
+              ),
+            ],
           ),
         ),
         const NotificationBell(),
@@ -100,217 +126,224 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                 email: user?.email ?? 'No email available',
                 sync: sync,
               ),
-              const SizedBox(height: 20),
-            _FeatureSection(
-              title: l10n.t('sectionOperations'),
-              children: [
-                _FeatureItem(
-                  icon: Icons.inventory_2_rounded,
-                  title: l10n.t('products'),
-                  subtitle: l10n.t('productsDesc'),
-                  color: colors.primary,
-                  onTap: () => _open(const ProductListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.add_box_rounded,
-                  title: l10n.t('addProduct'),
-                  subtitle: 'Create or restock item',
-                  color: colors.secondary,
-                  onTap: () => _open(const ProductFormScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.people_alt_rounded,
-                  title: l10n.t('customers'),
-                  subtitle: l10n.t('customersDesc'),
-                  color: colors.tertiary,
-                  onTap: () => _open(const CustomerListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.person_add_alt_1_rounded,
-                  title: l10n.t('addCustomer'),
-                  subtitle: 'New customer profile',
-                  color: colors.tertiary,
-                  onTap: () => _open(const CustomerFormScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.store_rounded,
-                  title: 'Vendors',
-                  subtitle: 'Manage suppliers and purchases',
-                  color: const Color(0xFF7C3AED),
-                  onTap: () => _open(const VendorListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.payments_rounded,
-                  title: 'Expenses',
-                  subtitle: 'Track rent, salaries, and bills',
-                  color: const Color(0xFFF97316),
-                  onTap: () => _open(const ExpensesScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.people_alt_rounded,
-                  title: 'Investors',
-                  subtitle: 'Track investors and payouts',
-                  color: const Color(0xFF047857),
-                  onTap: () => _open(const InvestorListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.qr_code_scanner_rounded,
-                  title: 'Barcode scan',
-                  subtitle: 'Find code from camera',
-                  color: colors.primary,
-                  onTap: () => _open(const BarcodeScanScreen()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _FeatureSection(
-              title: l10n.t('sectionFinance'),
-              children: [
-                _FeatureItem(
-                  icon: Icons.shopping_cart_checkout_rounded,
-                  title: l10n.t('sales'),
-                  subtitle: 'POS cart and invoice',
-                  color: colors.primary,
-                  onTap: () => _open(const PosScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.receipt_long_rounded,
-                  title: l10n.t('generateReceipt'),
-                  subtitle: l10n.t('receiptsDesc'),
-                  color: colors.secondary,
-                  onTap: () => _open(const ReceiptGeneratorScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.account_balance_wallet_rounded,
-                  title: l10n.t('due'),
-                  subtitle: l10n.t('duesDesc'),
-                  color: colors.tertiary,
-                  onTap: () => _open(const CustomerListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.account_balance_rounded,
-                  title: 'Investments',
-                  subtitle: 'Manage investments and ROI',
-                  color: const Color(0xFF0F766E),
-                  onTap: () => _open(const InvestmentDashboardScreen()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _FeatureSection(
-              title: l10n.t('sectionApp'),
-              children: [
-                _FeatureItem(
-                  icon: Icons.person_rounded,
-                  title: 'My Profile',
-                  subtitle: 'View and edit your profile',
-                  color: colors.primary,
-                  onTap: () => _open(const ProfileOverviewScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.cloud_sync_rounded,
-                  title: l10n.t('syncNow'),
-                  subtitle: _syncText(sync),
-                  color: _syncColor(context, sync.phase),
-                  onTap: _syncNow,
-                ),
-                _FeatureItem(
-                  icon: Icons.dark_mode_rounded,
-                  title: 'Theme',
-                  subtitle: _themeLabel(themeMode),
-                  color: colors.primary,
-                  trailing: SegmentedButton<ThemeMode>(
-                    style: _segmentStyle(),
-                    segments: const [
-                      ButtonSegment(
-                        value: ThemeMode.light,
-                        icon: Icon(Icons.light_mode_outlined, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.system,
-                        icon: Icon(Icons.settings_suggest_outlined, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.dark,
-                        icon: Icon(Icons.dark_mode_outlined, size: 16),
-                      ),
-                    ],
-                    selected: {themeMode},
-                    onSelectionChanged: (value) {
-                      final mode = value.first;
-                      ref.read(themeModeProvider.notifier).state = mode;
-                      ref
-                          .read(localDatabaseProvider)
-                          .settings
-                          .put('themeMode', mode.name);
-                    },
+              const SizedBox(height: 22),
+              _FeatureSection(
+                title: l10n.t('sectionOperations'),
+                children: [
+                  _FeatureItem(
+                    icon: Icons.inventory_2_rounded,
+                    title: l10n.t('products'),
+                    subtitle: l10n.t('productsDesc'),
+                    color: colors.primary,
+                    onTap: () => _open(const ProductListScreen()),
                   ),
-                ),
-                _FeatureItem(
-                  icon: Icons.translate_rounded,
-                  title: l10n.t('language'),
-                  subtitle: locale.languageCode == 'bn' ? 'Bangla' : 'English',
-                  color: colors.tertiary,
-                  trailing: SegmentedButton<String>(
-                    style: _segmentStyle(),
-                    segments: [
-                      ButtonSegment(
-                        value: 'en',
-                        label: Text(l10n.t('english')),
-                      ),
-                      ButtonSegment(value: 'bn', label: Text(l10n.t('bangla'))),
-                    ],
-                    selected: {locale.languageCode},
-                    onSelectionChanged: (value) {
-                      final code = value.first;
-                      ref
-                          .read(localDatabaseProvider)
-                          .settings
-                          .put('languageCode', code);
-                      ref.read(localeProvider.notifier).state = Locale(code);
-                    },
+                  _FeatureItem(
+                    icon: Icons.add_box_rounded,
+                    title: l10n.t('addProduct'),
+                    subtitle: 'Create or restock item',
+                    color: colors.secondary,
+                    onTap: () => _open(const ProductFormScreen()),
                   ),
-                ),
-                _FeatureItem(
-                  icon: Icons.lock_outline_rounded,
-                  title: l10n.t('accountSecurity'),
-                  subtitle: l10n.t('accountSecurityDesc'),
-                  color: colors.primary,
-                  onTap: () => _open(const AccountSecurityScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.privacy_tip_outlined,
-                  title: l10n.t('privacy'),
-                  subtitle: l10n.t('privacyDesc'),
-                  color: colors.tertiary,
-                  onTap: () => _open(const PrivacySettingsScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.group_outlined,
-                  title: 'Staff',
-                  subtitle: 'Manage team members',
-                  color: const Color(0xFF7C3AED),
-                  onTap: () => _open(const StaffListScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.settings_rounded,
-                  title: 'Settings',
-                  subtitle: 'App preferences & more',
-                  color: colors.primary,
-                  onTap: () => _open(const SettingsScreen()),
-                ),
-                _FeatureItem(
-                  icon: Icons.logout_rounded,
-                  title: l10n.t('signOut'),
-                  subtitle: l10n.t('signOutDesc'),
-                  color: colors.error,
-                  onTap: _signOut,
-                ),
-              ],
-            ),
-          ],
+                  _FeatureItem(
+                    icon: Icons.people_alt_rounded,
+                    title: l10n.t('customers'),
+                    subtitle: l10n.t('customersDesc'),
+                    color: colors.tertiary,
+                    onTap: () => _open(const CustomerListScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.person_add_alt_1_rounded,
+                    title: l10n.t('addCustomer'),
+                    subtitle: 'New customer profile',
+                    color: colors.tertiary,
+                    onTap: () => _open(const CustomerFormScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.store_rounded,
+                    title: 'Vendors',
+                    subtitle: 'Manage suppliers and purchases',
+                    color: const Color(0xFF7C3AED),
+                    onTap: () => _open(const VendorListScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.payments_rounded,
+                    title: 'Expenses',
+                    subtitle: 'Track rent, salaries, and bills',
+                    color: const Color(0xFFF97316),
+                    onTap: () => _open(const ExpensesScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.people_alt_rounded,
+                    title: 'Investors',
+                    subtitle: 'Track investors and payouts',
+                    color: const Color(0xFF047857),
+                    onTap: () => _open(const InvestorListScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.qr_code_scanner_rounded,
+                    title: 'Barcode scan',
+                    subtitle: 'Find code from camera',
+                    color: colors.primary,
+                    onTap: () => _open(const BarcodeScanScreen()),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _FeatureSection(
+                title: l10n.t('sectionFinance'),
+                children: [
+                  _FeatureItem(
+                    icon: Icons.shopping_cart_checkout_rounded,
+                    title: l10n.t('sales'),
+                    subtitle: 'POS cart and invoice',
+                    color: colors.primary,
+                    onTap: () => _open(const PosScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.receipt_long_rounded,
+                    title: l10n.t('generateReceipt'),
+                    subtitle: l10n.t('receiptsDesc'),
+                    color: colors.secondary,
+                    onTap: () => _open(const ReceiptGeneratorScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.account_balance_wallet_rounded,
+                    title: l10n.t('due'),
+                    subtitle: l10n.t('duesDesc'),
+                    color: colors.tertiary,
+                    onTap: () => _open(const CustomerListScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.account_balance_rounded,
+                    title: 'Investments',
+                    subtitle: 'Manage investments and ROI',
+                    color: const Color(0xFF0F766E),
+                    onTap: () => _open(const InvestmentDashboardScreen()),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _FeatureSection(
+                title: l10n.t('sectionApp'),
+                children: [
+                  _FeatureItem(
+                    icon: Icons.person_rounded,
+                    title: 'My Profile',
+                    subtitle: 'View and edit your profile',
+                    color: colors.primary,
+                    onTap: () => _open(const ProfileOverviewScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.cloud_sync_rounded,
+                    title: l10n.t('syncNow'),
+                    subtitle: _syncText(sync),
+                    color: _syncColor(context, sync.phase),
+                    onTap: _syncNow,
+                  ),
+                  _FeatureItem(
+                    icon: Icons.dark_mode_rounded,
+                    title: 'Theme',
+                    subtitle: _themeLabel(themeMode),
+                    color: colors.primary,
+                    trailing: SegmentedButton<ThemeMode>(
+                      style: _segmentStyle(),
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined, size: 16),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          icon: Icon(Icons.settings_suggest_outlined, size: 16),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined, size: 16),
+                        ),
+                      ],
+                      selected: {themeMode},
+                      onSelectionChanged: (value) {
+                        final mode = value.first;
+                        ref.read(themeModeProvider.notifier).state = mode;
+                        ref
+                            .read(localDatabaseProvider)
+                            .settings
+                            .put('themeMode', mode.name);
+                      },
+                    ),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.translate_rounded,
+                    title: l10n.t('language'),
+                    subtitle: locale.languageCode == 'bn' ? 'Bangla' : 'English',
+                    color: colors.tertiary,
+                    trailing: SegmentedButton<String>(
+                      style: _segmentStyle(),
+                      segments: [
+                        ButtonSegment(
+                          value: 'en',
+                          label: Text(l10n.t('english')),
+                        ),
+                        ButtonSegment(value: 'bn', label: Text(l10n.t('bangla'))),
+                      ],
+                      selected: {locale.languageCode},
+                      onSelectionChanged: (value) {
+                        final code = value.first;
+                        ref
+                            .read(localDatabaseProvider)
+                            .settings
+                            .put('languageCode', code);
+                        ref.read(localeProvider.notifier).state = Locale(code);
+                      },
+                    ),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.lock_outline_rounded,
+                    title: l10n.t('accountSecurity'),
+                    subtitle: l10n.t('accountSecurityDesc'),
+                    color: colors.primary,
+                    onTap: () => _open(const AccountSecurityScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.privacy_tip_outlined,
+                    title: l10n.t('privacy'),
+                    subtitle: l10n.t('privacyDesc'),
+                    color: colors.tertiary,
+                    onTap: () => _open(const PrivacySettingsScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.group_outlined,
+                    title: 'Staff',
+                    subtitle: 'Manage team members',
+                    color: const Color(0xFF7C3AED),
+                    onTap: () => _open(const StaffListScreen()),
+                  ),
+                  _FeatureItem(
+                    icon: Icons.settings_rounded,
+                    title: 'Settings',
+                    subtitle: 'App preferences & more',
+                    color: colors.primary,
+                    onTap: () => _open(const SettingsScreen()),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _FeatureSection(
+                title: 'Account',
+                children: [
+                  _FeatureItem(
+                    icon: Icons.logout_rounded,
+                    title: l10n.t('signOut'),
+                    subtitle: l10n.t('signOutDesc'),
+                    color: colors.error,
+                    destructive: true,
+                    onTap: _signOut,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
       ),
       label: 'Processing...',
     );
@@ -393,28 +426,33 @@ class _FeatureSection extends StatelessWidget {
       children: [
         _SectionTitle(label: title),
         const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth >= 840
-                ? 4
-                : constraints.maxWidth >= 560
-                ? 3
-                : 2;
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: children.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: crossAxisCount >= 3 ? 1.25 : 1.05,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE8DDD2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.045),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-              itemBuilder: (context, index) {
-                return _FeatureCard(item: children[index]);
-              },
-            );
-          },
+            ],
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  const Divider(
+                    height: 1,
+                    indent: 70,
+                    endIndent: 14,
+                    color: Color(0xFFF0EAE2),
+                  ),
+                _FeatureRow(item: children[i]),
+              ],
+            ],
+          ),
         ),
       ],
     );
@@ -429,6 +467,7 @@ class _FeatureItem {
     required this.color,
     this.onTap,
     this.trailing,
+    this.destructive = false,
   });
 
   final IconData icon;
@@ -437,90 +476,77 @@ class _FeatureItem {
   final Color color;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final bool destructive;
 }
 
-class _FeatureCard extends StatelessWidget {
-  const _FeatureCard({required this.item});
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({required this.item});
 
   final _FeatureItem item;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final hasAction = item.onTap != null;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE4E7EC)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: item.onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    final color = item.destructive ? colors.error : item.color;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: item.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: item.destructive ? 0.08 : 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(item.icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: item.color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: item.destructive ? colors.error : colors.onSurface,
                       ),
-                      child: Icon(item.icon, color: item.color, size: 20),
                     ),
-                    const Spacer(),
-                    if (hasAction)
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: colors.onSurfaceVariant,
+                    if (item.subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF8A8A8A),
+                        ),
                       ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                  ),
+              ),
+              const SizedBox(width: 8),
+              if (item.trailing != null)
+                item.trailing!
+              else if (item.onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: Color(0xFFB8B0A6),
                 ),
-                if (item.trailing == null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colors.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ] else ...[
-                  const Spacer(),
-                  item.trailing!,
-                ],
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -599,39 +625,24 @@ class _AccountHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colors.primary.withValues(alpha: 0.1),
+            colors.primary.withValues(alpha: 0.14),
             Colors.white,
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.16)),
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withValues(alpha: 0.07),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
+            color: colors.primary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(Icons.account_circle_rounded, color: colors.primary),
-          ),
-          const SizedBox(width: 12),
+          const ShopAvatar(radius: 27),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,10 +653,10 @@ class _AccountHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 16,
+                    fontSize: 16.5,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   email,
                   maxLines: 1,
@@ -653,11 +664,13 @@ class _AccountHeader extends StatelessWidget {
                   style: TextStyle(
                     color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
