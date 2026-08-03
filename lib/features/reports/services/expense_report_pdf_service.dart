@@ -109,7 +109,7 @@ class ExpenseReportPdfService {
                 ),
                 pw.Text(
                   topCategory,
-                  style: const pw.TextStyle(
+                  style: pw.TextStyle(
                     fontSize: 9,
                     color: PdfColors.grey700,
                   ),
@@ -222,7 +222,7 @@ class ExpenseReportPdfService {
                     ),
                     child: pw.Text(
                       title,
-                      style: const pw.TextStyle(
+                      style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white,
@@ -294,7 +294,7 @@ class ExpenseReportPdfService {
             ),
             pw.TextSpan(
               text: value,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 8,
                 color: PdfColors.grey600,
               ),
@@ -319,7 +319,7 @@ class ExpenseReportPdfService {
         ),
         pw.Text(
           value,
-          style: const pw.TextStyle(
+          style: pw.TextStyle(
             fontSize: 9,
             color: PdfColors.grey700,
           ),
@@ -351,7 +351,7 @@ class ExpenseReportPdfService {
             pw.SizedBox(height: 10),
             pw.Text(
               label,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 9,
                 color: PdfColors.grey500,
               ),
@@ -385,7 +385,7 @@ class ExpenseReportPdfService {
                 textAlign: header == 'Amount (৳)'
                     ? pw.TextAlign.center
                     : pw.TextAlign.left,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white,
@@ -460,7 +460,7 @@ class ExpenseReportPdfService {
       alignment: pw.Alignment.centerRight,
       child: pw.Text(
         'Page ${context.pageNumber} of ${context.pagesCount}',
-        style: const pw.TextStyle(
+        style: pw.TextStyle(
           fontSize: 8,
           color: PdfColors.grey500,
         ),

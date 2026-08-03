@@ -1,21 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PrivacySettingsScreen extends StatelessWidget {
+import '../../../core/app/app_providers.dart';
+
+class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(authStateProvider).value;
     return Scaffold(
       appBar: AppBar(title: const Text('Privacy')),
-      body: user == null
+      body: session == null
           ? const Center(child: Text('No account is signed in.'))
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
                   .collection('users')
-                  .doc(user.uid)
+                  .doc(session.userId)
                   .collection('login_sessions')
                   .orderBy('lastLoginAt', descending: true)
                   .snapshots(),

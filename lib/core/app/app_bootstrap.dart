@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../constants/app_constants.dart';
+import '../config/app_config.dart';
 import '../../firebase_options.dart';
 
 class AppBootstrap {
@@ -33,7 +34,15 @@ class AppBootstrap {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
+      if (AppConfig.useCustomAuth) {
+        // The custom auth service owns the user session. Firebase is only
+        // used for offline-first data sync, so sign in anonymously.
+        if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
+          // Already anonymous.
+        } else {
+          await FirebaseAuth.instance.signInAnonymously();
+        }
+      } else if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
         await FirebaseAuth.instance.signOut();
       }
       firebaseReady = true;

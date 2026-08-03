@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../app/app_bootstrap.dart';
 import '../constants/app_constants.dart';
@@ -78,9 +77,9 @@ class SyncService {
         pendingCount: pendingCount(shopId: shopId),
       );
     }
-    final user = FirebaseAuth.instance.currentUser;
+    final activeUserId = _db.settings.get('activeUserId') as String?;
     if (shopId != AppConstants.demoShopId &&
-        (user == null || user.isAnonymous)) {
+        (activeUserId == null || activeUserId.isEmpty)) {
       return SyncState(
         phase: SyncPhase.failed,
         message: 'Sign in again before syncing this shop.',

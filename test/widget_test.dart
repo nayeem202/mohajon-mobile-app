@@ -17,7 +17,6 @@ void main() {
     await Hive.openBox<Map>(HiveBoxes.purchases);
     await Hive.openBox<Map>(HiveBoxes.suppliers);
     await Hive.openBox<Map>(HiveBoxes.users);
-    await Hive.openBox<Map>(HiveBoxes.syncQueue);
     await Hive.openBox<dynamic>(HiveBoxes.settings);
 
     await tester.pumpWidget(const ProviderScope(child: PosInventoryApp()));

@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
@@ -21,6 +20,7 @@ class ProfileRepository {
   Profile _buildFromSettings(AppUser? user) {
     final db = _ref.read(localDatabaseProvider);
     final settings = db.settings;
+    final session = _ref.read(authStateProvider).value;
 
     return Profile(
       userId: user?.userId ?? AppConstants.demoShopId,
@@ -28,9 +28,7 @@ class ProfileRepository {
       ownerName:
           (settings.get(_keyOwnerName) as String?) ?? user?.name ?? '',
       phone: (settings.get(_keyPhone) as String?) ?? user?.phone ?? '',
-      email: (settings.get(_keyEmail) as String?) ??
-          FirebaseAuth.instance.currentUser?.email ??
-          '',
+      email: (settings.get(_keyEmail) as String?) ?? session?.email ?? '',
       address: (settings.get(_keyAddress) as String?) ?? '',
       imagePath: settings.get(_keyImagePath) as String?,
     );

@@ -126,7 +126,7 @@ class InvoiceService {
                     ),
                     child: pw.Text(
                       'INVOICE',
-                      style: const pw.TextStyle(
+                      style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white,
@@ -193,7 +193,7 @@ class InvoiceService {
         ),
         pw.Text(
           value,
-          style: const pw.TextStyle(
+          style: pw.TextStyle(
             fontSize: 9,
             color: PdfColors.grey700,
           ),
@@ -267,14 +267,14 @@ class InvoiceService {
           if (customerPhone.isNotEmpty)
             pw.Text(
               customerPhone,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 9,
                 color: PdfColors.grey600,
               ),
             ),
           pw.Text(
             'ID: ${sale.customerId}',
-            style: const pw.TextStyle(
+            style: pw.TextStyle(
               fontSize: 8,
               color: PdfColors.grey500,
             ),
@@ -324,7 +324,7 @@ class InvoiceService {
                 textAlign: h == '#' || h == 'Qty' || h == 'Unit Price' || h == 'Total'
                     ? pw.TextAlign.center
                     : pw.TextAlign.left,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white,
@@ -476,18 +476,18 @@ class InvoiceService {
           children: [
             pw.Text(
               '${AppConstants.appName}  Confidential',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
             pw.Text(
               'Page ${context.pageNumber} of ${context.pagesCount}',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
           ],
         ),
         pw.SizedBox(height: 2),
         pw.Text(
           'Generated on ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
-          style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
+          style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
         ),
       ],
     );

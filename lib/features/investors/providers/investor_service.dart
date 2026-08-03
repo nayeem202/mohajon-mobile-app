@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -17,7 +16,8 @@ class InvestorService {
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   FirebaseStorage get _storage => FirebaseStorage.instance;
-  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  String get _userId =>
+        (_ref.read(localDatabaseProvider).settings.get('activeUserId') as String?) ?? 'unknown';
   String get _shopId => _ref.read(shopIdProvider);
   CollectionReference<Map<String, dynamic>> get _investorsCol =>
       FirestorePaths(_firestore, _shopId).collection('investors');

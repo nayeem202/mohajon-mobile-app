@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_bootstrap.dart';
@@ -12,8 +11,8 @@ final shopProfileServiceProvider = Provider<ShopProfileService>(
 );
 
 final shopProfileProvider = StreamProvider<ShopProfile?>((ref) {
-  final authUser = ref.watch(authStateProvider).value;
-  if (!AppBootstrap.firebaseReady || authUser == null || authUser.isAnonymous) {
+  final authSession = ref.watch(authStateProvider).value;
+  if (!AppBootstrap.firebaseReady || authSession == null) {
     return Stream.value(null);
   }
 
@@ -26,7 +25,7 @@ final shopProfileProvider = StreamProvider<ShopProfile?>((ref) {
     if (profile.shopId.isNotEmpty && profile.shopId != shopId) {
       return null;
     }
-    if (profile.ownerUserId.isNotEmpty && profile.ownerUserId != authUser.uid) {
+    if (profile.ownerUserId.isNotEmpty && profile.ownerUserId != authSession.userId) {
       return null;
     }
     return profile;
@@ -47,8 +46,8 @@ class ShopProfileService {
       throw StateError('Firebase is not configured.');
     }
 
-    final authUser = FirebaseAuth.instance.currentUser;
-    if (authUser == null || authUser.isAnonymous) {
+    final authSession = _ref.read(authStateProvider).value;
+    if (authSession == null) {
       throw StateError('Sign in before updating the shop profile.');
     }
 
@@ -69,7 +68,7 @@ class ShopProfileService {
     final shopDoc = FirestorePaths(FirebaseFirestore.instance, shopId).shopDoc;
     await shopDoc.set({
       'shopId': shopId,
-      'ownerUserId': authUser.uid,
+      'ownerUserId': authSession.userId,
       'name': trimmedShopName,
       'location': trimmedLocation,
       'phoneNumber': trimmedPhoneNumber,

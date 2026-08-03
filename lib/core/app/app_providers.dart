@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -9,26 +8,29 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../constants/app_constants.dart';
 import '../models/app_user.dart';
 import '../offline/local_database.dart';
+import '../services/auth_backend.dart';
 import '../services/sync_service.dart';
+import '../../features/auth/providers/auth_providers.dart';
 
 final localDatabaseProvider = Provider<LocalDatabase>((ref) => LocalDatabase());
 
-final authStateProvider = StreamProvider<User?>((ref) {
-  return FirebaseAuth.instance.authStateChanges();
+/// Emits the current auth session (custom auth service or Firebase).
+final authStateProvider = StreamProvider<AuthSession?>((ref) async* {
+  final backend = ref.watch(authBackendProvider);
+  yield await backend.currentSession();
+  yield* backend.sessionChanges;
 });
 
 final shopIdProvider = Provider<String>((ref) {
-  final user =
-      FirebaseAuth.instance.currentUser ?? ref.watch(authStateProvider).value;
-  if (user == null || user.isAnonymous) return AppConstants.demoShopId;
+  final session = ref.watch(authStateProvider).value;
+  if (session == null) return AppConstants.demoShopId;
   final db = ref.watch(localDatabaseProvider);
   final activeUserId = db.settings.get('activeUserId') as String?;
   final activeShopId = db.settings.get('activeShopId') as String?;
-  final userShopId = 'shop_${user.uid}';
-  if (activeUserId == user.uid && activeShopId == userShopId) {
+  if (activeUserId == session.userId && activeShopId != null) {
     return activeShopId!;
   }
-  return userShopId;
+  return 'shop_${session.userId}';
 });
 
 final currentUserProvider = StateProvider<AppUser?>((ref) {

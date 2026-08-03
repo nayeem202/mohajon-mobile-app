@@ -1,10 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../../core/app/app_providers.dart';
 import '../../../core/widgets/app_icon_asset.dart';
 import '../../../core/widgets/flaticon_icons.dart';
 
@@ -35,12 +35,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final hasPassword =
-        user?.providerData.any(
-          (provider) => provider.providerId == EmailAuthProvider.PROVIDER_ID,
-        ) ??
-        false;
+    final session = ref.watch(authStateProvider).value;
+    final hasPassword = session == null || session.provider != 'google';
     final colors = Theme.of(context).colorScheme;
 
     return withLoadingOverlay(

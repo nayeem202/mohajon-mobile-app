@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/providers/auth_providers.dart';
 import '../localization/app_localizations.dart';
 import 'app_providers.dart';
 import 'app_shell.dart';
@@ -19,17 +19,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     Future.microtask(() async {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null && !user.isAnonymous) {
+      final signedIn = await ref.read(authServiceProvider).restoreSession();
+      if (signedIn) {
         await ref.read(syncStateProvider.notifier).syncNow();
       }
       await Future<void>.delayed(const Duration(milliseconds: 450));
       if (mounted) {
-        final signedInUser = FirebaseAuth.instance.currentUser;
+        final session = ref.read(authStateProvider).value;
         final shopId = ref.read(shopIdProvider);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => signedInUser == null || signedInUser.isAnonymous
+            builder: (_) => session == null
                 ? const LoginScreen()
                 : AppShell(key: ValueKey(shopId)),
           ),

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/models/shop_profile.dart';
 import '../../../core/services/firestore_paths.dart';
 import '../models/investment.dart';
 import '../models/investment_category.dart';
@@ -16,7 +16,8 @@ class InvestmentService {
   final Ref _ref;
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  String get _userId =>
+        (_ref.read(localDatabaseProvider).settings.get('activeUserId') as String?) ?? 'unknown';
   String get _shopId => _ref.read(shopIdProvider);
 
   CollectionReference<Map<String, dynamic>> _col(String name) =>
@@ -100,6 +101,14 @@ class InvestmentService {
         });
       }
     }
+  }
+
+  Future<void> saveOwners(List<ShopOwner> owners) async {
+    final shopDoc = FirestorePaths(_firestore, _shopId).shopDoc;
+    await shopDoc.set({
+      'owners': owners.map((owner) => owner.toJson()).toList(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<Investment> createInvestment({

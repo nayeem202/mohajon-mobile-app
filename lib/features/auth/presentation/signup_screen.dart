@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/async_action_state.dart';
 import 'auth_brand.dart';
+import 'email_verification_dialog.dart';
 import '../providers/auth_providers.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -321,6 +323,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                   mobile: _mobile.text,
                   password: _password.text,
                 );
+        if (!mounted) return;
+        if (AppConfig.useCustomAuth) {
+          await showEmailVerificationDialog(
+            context,
+            ref,
+            email: _email.text.trim(),
+          );
+        }
         if (mounted) setState(() => _submitted = true);
       } catch (error) {
         if (mounted) {

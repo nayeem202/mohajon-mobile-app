@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app/app_shell.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auth_backend.dart';
 import '../../../core/widgets/async_action_state.dart';
 import 'auth_brand.dart';
+import 'email_verification_dialog.dart';
 import '../providers/auth_providers.dart';
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
@@ -440,6 +442,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             .signInWithEmail(email: _email.text, password: _password.text);
         if (mounted) _openApp();
       } catch (error) {
+        if (error is AuthException &&
+            error.code == 'VERIFICATION_REQUIRED' &&
+            mounted) {
+          final verified = await showEmailVerificationDialog(
+            context,
+            ref,
+            email: _email.text.trim(),
+          );
+          if (verified && mounted) {
+            await _signInWithEmail();
+          }
+          return;
+        }
         _setMessage(authErrorMessage(error));
       }
     });

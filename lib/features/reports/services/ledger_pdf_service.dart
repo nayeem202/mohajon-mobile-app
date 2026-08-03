@@ -276,7 +276,7 @@ fontSize: 8,
                     ),
                     child: pw.Text(
                       title,
-                      style: const pw.TextStyle(
+                      style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white,
@@ -321,7 +321,7 @@ fontSize: 8,
             ),
             pw.TextSpan(
               text: value,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 8,
                 color: PdfColors.grey600,
               ),
@@ -370,7 +370,7 @@ fontSize: 8,
         ),
         pw.Text(
           value,
-          style: const pw.TextStyle(
+          style: pw.TextStyle(
             fontSize: 9,
             color: PdfColors.grey700,
           ),
@@ -411,7 +411,7 @@ fontSize: 8,
               ),
               pw.Text(
                 customer.phone,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   color: PdfColors.grey800,
                 ),
@@ -446,7 +446,7 @@ fontSize: 8,
             pw.SizedBox(height: 10),
             pw.Text(
               label,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 9,
                 color: PdfColors.grey500,
               ),
@@ -484,7 +484,7 @@ fontSize: 8,
                         h == 'Status'
                     ? pw.TextAlign.center
                     : pw.TextAlign.left,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white,
@@ -565,7 +565,7 @@ fontSize: 8,
               child: pw.Text(
                 c,
                 textAlign: c == 'TOTAL' ? pw.TextAlign.left : pw.TextAlign.right,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColor.fromInt(0xFF1E3A8A),
@@ -635,18 +635,18 @@ fontSize: 8,
           children: [
             pw.Text(
               'Haalkhata — Confidential',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
             pw.Text(
               'Page ${context.pageNumber} of ${context.pagesCount}',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
           ],
         ),
         pw.SizedBox(height: 2),
         pw.Text(
           'Generated on ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
-          style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
+          style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
         ),
       ],
     );

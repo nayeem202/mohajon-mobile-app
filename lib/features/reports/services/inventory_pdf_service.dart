@@ -185,7 +185,7 @@ class InventoryPdfService {
                     ),
                     child: pw.Text(
                       title,
-                      style: const pw.TextStyle(
+                      style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white,
@@ -230,7 +230,7 @@ class InventoryPdfService {
             ),
             pw.TextSpan(
               text: value,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 8,
                 color: PdfColors.grey600,
               ),
@@ -281,7 +281,7 @@ class InventoryPdfService {
         ),
         pw.Text(
           value,
-          style: const pw.TextStyle(
+          style: pw.TextStyle(
             fontSize: 9,
             color: PdfColors.grey700,
           ),
@@ -313,7 +313,7 @@ class InventoryPdfService {
             pw.SizedBox(height: 10),
             pw.Text(
               label,
-              style: const pw.TextStyle(
+              style: pw.TextStyle(
                 fontSize: 9,
                 color: PdfColors.grey500,
               ),
@@ -347,7 +347,7 @@ class InventoryPdfService {
                 textAlign: h == '#' || h == 'Stock' || h == 'Alert' || h == 'Stock Value' || h == 'Status'
                     ? pw.TextAlign.center
                     : pw.TextAlign.left,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white,
@@ -468,18 +468,18 @@ class InventoryPdfService {
           children: [
             pw.Text(
               'Haalkhata — Confidential',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
             pw.Text(
               'Page ${context.pageNumber} of ${context.pagesCount}',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
+              style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
           ],
         ),
         pw.SizedBox(height: 2),
         pw.Text(
           'Generated on ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
-          style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
+          style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
         ),
       ],
     );
