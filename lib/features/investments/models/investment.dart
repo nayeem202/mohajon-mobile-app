@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/utils/date_time_json.dart';
 
 class Investment {
   const Investment({
@@ -80,6 +80,7 @@ class Investment {
   }
 
   Map<String, dynamic> toJson() => {
+    'investmentId': id,
     'title': title,
     'shopId': shopId,
     'description': description,
@@ -89,8 +90,8 @@ class Investment {
     'profitShareMethod': profitShareMethod,
     'notes': notes,
     'createdBy': createdBy,
-    'createdAt': Timestamp.fromDate(createdAt),
-    'updatedAt': Timestamp.fromDate(updatedAt),
+    'createdAt': dateToJson(createdAt),
+    'updatedAt': dateToJson(updatedAt),
     'status': status,
     'roi': roi,
     'totalProfit': totalProfit,
@@ -100,7 +101,9 @@ class Investment {
 
   factory Investment.fromJson(String id, Map<String, dynamic> json) {
     return Investment(
-      id: id,
+      id: (json['investmentId'] as String?)?.isNotEmpty == true
+          ? json['investmentId'] as String
+          : id,
       title: json['title'] as String? ?? '',
       shopId: json['shopId'] as String? ?? '',
       description: json['description'] as String? ?? '',
@@ -110,9 +113,9 @@ class Investment {
       profitShareMethod: json['profitShareMethod'] as String? ?? 'proportional',
       notes: json['notes'] as String? ?? '',
       createdBy: json['createdBy'] as String? ?? '',
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (json['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      status: json['status'] as String? ?? 'active',
+      createdAt: dateFromJson(json['createdAt']),
+      updatedAt: dateFromJson(json['updatedAt']),
+      status: (json['status'] as String? ?? 'active').toLowerCase(),
       roi: (json['roi'] as num?)?.toDouble() ?? 0,
       totalProfit: (json['totalProfit'] as num?)?.toDouble() ?? 0,
       totalPaid: (json['totalPaid'] as num?)?.toDouble() ?? 0,

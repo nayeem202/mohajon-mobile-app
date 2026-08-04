@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/services/api_client.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -14,13 +14,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Privacy')),
       body: session == null
           ? const Center(child: Text('No account is signed in.'))
-          : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(session.userId)
-                  .collection('login_sessions')
-                  .orderBy('lastLoginAt', descending: true)
-                  .snapshots(),
+          : StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _sessionsStream(ref),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -30,7 +25,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     child: Text('Could not load login sessions.'),
                   );
                 }
-                final docs = snapshot.data?.docs ?? const [];
+                final docs = snapshot.data ?? const [];
                 if (docs.isEmpty) {
                   return const Center(
                     child: Text('No login device details recorded yet.'),
@@ -41,13 +36,21 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   itemCount: docs.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final data = docs[index].data();
-                    return _SessionCard(data: data, current: index == 0);
+                    return _SessionCard(data: docs[index], current: index == 0);
                   },
                 );
               },
             ),
     );
+  }
+
+  Stream<List<Map<String, dynamic>>> _sessionsStream(WidgetRef ref) {
+    final api = ApiClient(ref.read(localDatabaseProvider));
+    return pollStream<List<Map<String, dynamic>>>(() async {
+      final data = await api.getJson('/api/v1/sessions');
+      final list = data is List ? data : const [];
+      return list.whereType<Map<String, dynamic>>().toList();
+    }, const Duration(seconds: 10));
   }
 }
 
@@ -137,7 +140,11 @@ class _SessionCard extends StatelessWidget {
   }
 
   String _dateText(Object? value) {
-    if (value is Timestamp) return value.toDate().toLocal().toString();
+    if (value is DateTime) return value.toLocal().toString();
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) return parsed.toLocal().toString();
+    }
     return 'Unknown';
   }
 

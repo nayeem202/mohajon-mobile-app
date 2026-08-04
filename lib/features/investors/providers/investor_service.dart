@@ -1,38 +1,40 @@
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../core/app/app_providers.dart';
-import '../../../core/services/firestore_paths.dart';
+import '../../../core/config/app_config.dart';
+import '../../../core/services/api_client.dart';
 import '../models/investor.dart';
 
 class InvestorService {
-  InvestorService(this._ref);
+  InvestorService(Ref ref) : _api = ApiClient(ref.read(localDatabaseProvider));
 
-  final Ref _ref;
+  final ApiClient _api;
 
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  FirebaseStorage get _storage => FirebaseStorage.instance;
-  String get _userId =>
-        (_ref.read(localDatabaseProvider).settings.get('activeUserId') as String?) ?? 'unknown';
-  String get _shopId => _ref.read(shopIdProvider);
-  CollectionReference<Map<String, dynamic>> get _investorsCol =>
-      FirestorePaths(_firestore, _shopId).collection('investors');
+  static const _pollInterval = Duration(seconds: 8);
 
   Stream<List<Investor>> watchAll() {
-    return _investorsCol
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snap) =>
-            snap.docs.map((doc) => Investor.fromJson(doc.id, doc.data())).toList());
+    return pollStream<List<Investor>>(() async {
+      final data = await _api.getJson('/api/v1/investors');
+      final list = data is List ? data : const [];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map((json) => Investor.fromJson('', json))
+          .toList();
+    }, _pollInterval);
   }
 
   Stream<Investor?> watchById(String id) {
-    return _investorsCol.doc(id).snapshots().map(
-        (doc) => doc.exists ? Investor.fromJson(doc.id, doc.data()!) : null);
+    return pollStream<Investor?>(() async {
+      try {
+        final json = await _api.get('/api/v1/investors/$id');
+        return Investor.fromJson('', json);
+      } on ApiException catch (error) {
+        if (error.statusCode == 404) return null;
+        rethrow;
+      }
+    }, _pollInterval);
   }
 
   Future<Investor> save({
@@ -49,27 +51,15 @@ class InvestorService {
       photoUrl = await _uploadPhoto(photoFile);
     }
 
-    final now = DateTime.now();
-    final investorId = id ?? const Uuid().v4();
-    final investor = Investor(
-      id: investorId,
-      name: name,
-      shopId: _shopId,
-      phone: phone,
-      email: email,
-      address: address,
-      photoUrl: photoUrl,
-      notes: notes,
-      totalInvestment: 0,
-      totalProfit: 0,
-      totalLoss: 0,
-      outstanding: 0,
-      investmentCount: 0,
-      createdAt: now,
-    );
-
-    await _investorsCol.doc(investorId).set(investor.toJson());
-    return investor;
+    final json = await _api.post('/api/v1/investors', {
+      'name': name,
+      'phone': phone,
+      'email': email,
+      'address': address,
+      'photoUrl': photoUrl,
+      'notes': notes,
+    });
+    return Investor.fromJson('', json);
   }
 
   Future<Investor> update({
@@ -82,30 +72,31 @@ class InvestorService {
     String? notes,
     File? photoFile,
   }) async {
-    final data = <String, dynamic>{};
-    if (name != null) data['name'] = name;
-    if (phone != null) data['phone'] = phone;
-    if (email != null) data['email'] = email;
-    if (address != null) data['address'] = address;
-    if (notes != null) data['notes'] = notes;
     if (photoFile != null) {
-      data['photoUrl'] = await _uploadPhoto(photoFile);
+      photoUrl = await _uploadPhoto(photoFile);
     }
-    if (photoUrl != null) data['photoUrl'] = photoUrl;
 
-    await _investorsCol.doc(id).update(data);
-
-    final doc = await _investorsCol.doc(id).get();
-    return Investor.fromJson(id, doc.data()!);
+    final json = await _api.put('/api/v1/investors/$id', {
+      'name': name,
+      'phone': phone,
+      'email': email,
+      'address': address,
+      'photoUrl': photoUrl,
+      'notes': notes,
+    });
+    return Investor.fromJson('', json);
   }
 
   Future<void> delete(String id) async {
-    await _investorsCol.doc(id).delete();
+    await _api.delete('/api/v1/investors/$id');
   }
 
   Future<String> _uploadPhoto(File file) async {
-    final ref = _storage.ref('investors/$_shopId/${const Uuid().v4()}');
-    await ref.putFile(file);
-    return await ref.getDownloadURL();
+    final json = await _api.uploadFile('/api/v1/files', file);
+    final url = (json['url'] ?? '').toString();
+    if (url.isEmpty) {
+      throw const ApiException(500, 'UPLOAD_FAILED', 'Photo upload failed.');
+    }
+    return url.startsWith('http') ? url : '${AppConfig.apiBaseUrl}$url';
   }
 }

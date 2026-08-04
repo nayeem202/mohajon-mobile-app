@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/utils/date_time_json.dart';
 
 class Payout {
   const Payout({
@@ -44,25 +44,28 @@ class Payout {
   }
 
   Map<String, dynamic> toJson() => {
+    'payoutId': id,
     'investmentId': investmentId,
     'investorId': investorId,
     'amount': amount,
     'shopId': shopId,
     'note': note,
     'createdBy': createdBy,
-    'createdAt': Timestamp.fromDate(createdAt),
+    'createdAt': dateToJson(createdAt),
   };
 
   factory Payout.fromJson(String id, Map<String, dynamic> json) {
     return Payout(
-      id: id,
+      id: (json['payoutId'] as String?)?.isNotEmpty == true
+          ? json['payoutId'] as String
+          : id,
       investmentId: json['investmentId'] as String? ?? '',
       investorId: json['investorId'] as String? ?? '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       shopId: json['shopId'] as String? ?? '',
       note: json['note'] as String? ?? '',
       createdBy: json['createdBy'] as String? ?? '',
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: dateFromJson(json['createdAt']),
     );
   }
 }

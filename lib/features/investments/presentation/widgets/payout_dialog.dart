@@ -7,7 +7,6 @@ import '../../../../core/widgets/action_button.dart';
 import '../../../../core/widgets/async_action_state.dart';
 import '../../models/investment_member.dart';
 import '../../providers/investment_providers.dart';
-import '../../providers/investment_service.dart';
 
 class PayoutDialog extends ConsumerStatefulWidget {
   const PayoutDialog({

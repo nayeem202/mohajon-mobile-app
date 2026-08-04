@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// To force one backend at build time:
 ///   flutter build apk --dart-define=USE_CUSTOM_AUTH=false
 ///   flutter run --dart-define=AUTH_BASE_URL=http://192.168.0.10:8080
+///   flutter run --dart-define=HAALKHATA_BASE_URL=http://192.168.0.10:8081
 class AppConfig {
   const AppConfig._();
 
@@ -20,6 +21,10 @@ class AppConfig {
     'AUTH_BASE_URL',
   );
 
+  static const String _apiBaseUrlOverride = String.fromEnvironment(
+    'HAALKHATA_BASE_URL',
+  );
+
   static const String firebaseConfigPath = 'lib/firebase_options.dart';
 
   /// Base URL of the custom auth service.
@@ -30,6 +35,15 @@ class AppConfig {
       return 'http://10.0.2.2:8080';
     }
     return 'http://localhost:8080';
+  }
+
+  /// Base URL of the Haalkhata business service (sync, investments, files).
+  static String get apiBaseUrl {
+    if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:8081';
+    }
+    return 'http://localhost:8081';
   }
 
   static const Duration authTimeout = Duration(seconds: 25);

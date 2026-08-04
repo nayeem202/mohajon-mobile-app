@@ -1,12 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-import '../app/app_bootstrap.dart';
 import '../constants/app_constants.dart';
 import '../models/syncable.dart';
 import '../offline/local_collection.dart';
 import '../offline/local_database.dart';
-import 'firestore_paths.dart';
+import 'api_client.dart';
 
 enum SyncPhase { idle, syncing, offline, firebaseNotConfigured, failed }
 
@@ -22,19 +20,39 @@ class SyncState {
   final int pendingCount;
 }
 
+/// Syncs the local Hive collections with the Haalkhata business service.
 class SyncService {
-  SyncService(this._db, {FirebaseFirestore? firestore})
-    : _firestore =
-          firestore ??
-          (AppBootstrap.firebaseReady ? FirebaseFirestore.instance : null);
+  SyncService(this._db) : _api = ApiClient(_db);
 
   final LocalDatabase _db;
-  final FirebaseFirestore? _firestore;
+  final ApiClient _api;
+
+  static const _pullTimeout = Duration(seconds: 10);
+
+  static const _collections = [
+    ('products', 'products'),
+    ('customers', 'customers'),
+    ('sales', 'sales'),
+    ('customerLedgerEntries', 'customerLedgerEntries'),
+    ('payments', 'payments'),
+    ('purchases', 'purchases'),
+    ('suppliers', 'suppliers'),
+    ('expenses', 'expenses'),
+    ('users', 'users'),
+  ];
 
   Future<bool> get isOnline async {
     try {
       final results = await Connectivity().checkConnectivity();
-      return results.any((result) => result != ConnectivityResult.none);
+      if (!results.any((result) => result != ConnectivityResult.none)) {
+        return false;
+      }
+      // Confirm the business service itself is reachable.
+      await _api.get(
+        '/api/v1/shops/me',
+        timeout: const Duration(seconds: 6),
+      );
+      return true;
     } catch (_) {
       return false;
     }
@@ -70,10 +88,10 @@ class SyncService {
         pendingCount: pendingCount(shopId: shopId),
       );
     }
-    if (_firestore == null) {
+    if (_api.accessToken == null) {
       return SyncState(
         phase: SyncPhase.firebaseNotConfigured,
-        message: 'Firebase is not configured; local mode is active.',
+        message: 'Sign in to sync with the Haalkhata service.',
         pendingCount: pendingCount(shopId: shopId),
       );
     }
@@ -88,89 +106,16 @@ class SyncService {
     }
 
     try {
-      final paths = FirestorePaths(_firestore, shopId);
-      await _pushCollection(shopId, _db.products, paths.collection('products'));
-      await _pushCollection(
-        shopId,
-        _db.customers,
-        paths.collection('customers'),
-      );
-      await _pushCollection(shopId, _db.sales, paths.collection('sales'));
-      await _pushCollection(
-        shopId,
-        _db.customerLedgerEntries,
-        paths.collection('customerLedgerEntries'),
-      );
-      await _pushCollection(
-        shopId,
-        _db.payments,
-        paths.collection('payments'),
-      );
-      await _pushCollection(
-        shopId,
-        _db.purchases,
-        paths.collection('purchases'),
-      );
-      await _pushCollection(
-        shopId,
-        _db.suppliers,
-        paths.collection('suppliers'),
-      );
-      await _pushCollection(
-        shopId,
-        _db.expenses,
-        paths.collection('expenses'),
-      );
-      await _pushCollection(shopId, _db.users, paths.collection('users'));
-
-      await _pullCollection(
-        'products',
-        shopId,
-        _db.products,
-        paths.collection('products'),
-      );
-      await _pullCollection(
-        'customers',
-        shopId,
-        _db.customers,
-        paths.collection('customers'),
-      );
-      await _pullCollection('sales', shopId, _db.sales, paths.collection('sales'));
-      await _pullCollection(
-        'customerLedgerEntries',
-        shopId,
-        _db.customerLedgerEntries,
-        paths.collection('customerLedgerEntries'),
-      );
-      await _pullCollection(
-        'payments',
-        shopId,
-        _db.payments,
-        paths.collection('payments'),
-      );
-      await _pullCollection(
-        'purchases',
-        shopId,
-        _db.purchases,
-        paths.collection('purchases'),
-      );
-      await _pullCollection(
-        'suppliers',
-        shopId,
-        _db.suppliers,
-        paths.collection('suppliers'),
-      );
-      await _pullCollection(
-        'expenses',
-        shopId,
-        _db.expenses,
-        paths.collection('expenses'),
-      );
-      await _pullCollection('users', shopId, _db.users, paths.collection('users'));
+      for (final (name, _) in _collections) {
+        await _pushCollection(shopId, name);
+      }
+      for (final (name, _) in _collections) {
+        await _pullCollection(name, shopId);
+      }
 
       return SyncState(
         phase: SyncPhase.idle,
-        message: 'Synced with Firebase.',
+        message: 'Synced with the Haalkhata service.',
         pendingCount: pendingCount(shopId: shopId),
       );
     } catch (error) {
@@ -182,44 +127,64 @@ class SyncService {
     }
   }
 
-  Future<void> _pushCollection<T extends Syncable>(
-    String shopId,
-    LocalCollection<T> collection,
-    CollectionReference<Map<String, dynamic>> remote,
-  ) async {
-    for (final item in collection.pending()) {
-      if (item.shopId != shopId) continue;
-      final remoteJson = item.toJson()
-        ..['syncStatus'] = SyncStatus.synced.value;
-      await remote.doc(item.id).set(remoteJson, SetOptions(merge: true));
+  LocalCollection<Syncable> _collectionFor(String name) {
+    return switch (name) {
+      'products' => _db.products,
+      'customers' => _db.customers,
+      'sales' => _db.sales,
+      'customerLedgerEntries' => _db.customerLedgerEntries,
+      'payments' => _db.payments,
+      'purchases' => _db.purchases,
+      'suppliers' => _db.suppliers,
+      'expenses' => _db.expenses,
+      'users' => _db.users,
+      _ => throw ArgumentError('Unknown collection: $name'),
+    };
+  }
+
+  Future<void> _pushCollection(String shopId, String name) async {
+    final collection = _collectionFor(name);
+    final items = collection.pendingForShop(shopId);
+    if (items.isEmpty) return;
+
+    final documents = <Map<String, dynamic>>[];
+    for (final item in items) {
+      documents.add(
+        item.toJson()..['syncStatus'] = SyncStatus.synced.value,
+      );
+    }
+
+    await _api.post('/api/v1/sync/push', {
+      'collection': name,
+      'documents': documents,
+    });
+
+    for (final item in items) {
       await collection.putSynced(item);
     }
   }
 
-  Future<void> _pullCollection<T extends Syncable>(
-    String name,
-    String shopId,
-    LocalCollection<T> collection,
-    CollectionReference<Map<String, dynamic>> remote,
-  ) async {
+  Future<void> _pullCollection(String name, String shopId) async {
+    final collection = _collectionFor(name);
     final lastPulledAt = _lastPulledAt(name, shopId);
-    final query = lastPulledAt == null
-        ? remote.orderBy('updatedAt')
-        : remote
-              .where(
-                'updatedAt',
-                isGreaterThan: lastPulledAt.toUtc().toIso8601String(),
-              )
-              .orderBy('updatedAt');
-    final snapshot = await query.get();
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      if (data['shopId'] != shopId) continue;
-      await collection.mergeRemote(data);
+    final response = await _api.get(
+      '/api/v1/sync/pull',
+      query: {
+        'collection': name,
+        if (lastPulledAt != null) 'after': lastPulledAt.toIso8601String(),
+      },
+      timeout: _pullTimeout,
+    );
+    final documents = (response['documents'] as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        const <Map<String, dynamic>>[];
+    for (final doc in documents) {
+      if (doc['shopId'] != shopId) continue;
+      await collection.mergeRemote(doc);
     }
     await _db.settings.put(
       _lastPulledKey(name, shopId),
-      DateTime.now().toUtc().toIso8601String(),
+      DateTime.now().toIso8601String(),
     );
   }
 

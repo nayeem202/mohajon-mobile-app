@@ -1,14 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../constants/app_constants.dart';
-import '../config/app_config.dart';
-import '../../firebase_options.dart';
 
 class AppBootstrap {
   const AppBootstrap._();
 
+  /// Firebase is no longer used by the app: authentication is handled by the
+  /// auth service and business data by the Haalkhata service. The flag stays
+  /// for the legacy Firebase auth backend, which is never active by default.
   static bool firebaseReady = false;
 
   static Future<void> init() async {
@@ -29,25 +28,5 @@ class AppBootstrap {
       Hive.openBox<Map>(HiveBoxes.users),
       Hive.openBox<dynamic>(HiveBoxes.settings),
     ]);
-
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      if (AppConfig.useCustomAuth) {
-        // The custom auth service owns the user session. Firebase is only
-        // used for offline-first data sync, so sign in anonymously.
-        if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
-          // Already anonymous.
-        } else {
-          await FirebaseAuth.instance.signInAnonymously();
-        }
-      } else if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
-        await FirebaseAuth.instance.signOut();
-      }
-      firebaseReady = true;
-    } catch (_) {
-      firebaseReady = false;
-    }
   }
 }

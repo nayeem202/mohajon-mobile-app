@@ -6,7 +6,6 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../providers/investment_providers.dart';
-import '../providers/investment_service.dart';
 import 'add_investment_sheet.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/investment_card.dart';

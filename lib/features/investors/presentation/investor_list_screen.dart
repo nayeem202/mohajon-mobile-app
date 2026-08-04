@@ -9,7 +9,6 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../models/investor.dart';
 import '../providers/investor_providers.dart';
-import '../providers/investor_service.dart';
 import 'investor_detail_screen.dart';
 import 'widgets/investor_card.dart';
 

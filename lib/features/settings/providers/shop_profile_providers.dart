@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/app/app_bootstrap.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/shop_profile.dart';
-import '../../../core/services/firestore_paths.dart';
+import '../../../core/services/api_client.dart';
 
 final shopProfileServiceProvider = Provider<ShopProfileService>(
   (ref) => ShopProfileService(ref),
@@ -12,24 +10,29 @@ final shopProfileServiceProvider = Provider<ShopProfileService>(
 
 final shopProfileProvider = StreamProvider<ShopProfile?>((ref) {
   final authSession = ref.watch(authStateProvider).value;
-  if (!AppBootstrap.firebaseReady || authSession == null) {
+  if (authSession == null) {
     return Stream.value(null);
   }
 
-  final shopId = ref.watch(shopIdProvider);
-  final shopDoc = FirestorePaths(FirebaseFirestore.instance, shopId).shopDoc;
-  return shopDoc.snapshots().map((snapshot) {
-    final data = snapshot.data();
-    if (data == null) return null;
-    final profile = ShopProfile.fromJson(data);
-    if (profile.shopId.isNotEmpty && profile.shopId != shopId) {
-      return null;
+  final api = ApiClient(ref.watch(localDatabaseProvider));
+  return pollStream<ShopProfile?>(() async {
+    try {
+      final json = await api.get('/api/v1/shops/me');
+      final profile = ShopProfile.fromJson(json);
+      final shopId = ref.read(shopIdProvider);
+      if (profile.shopId.isNotEmpty && profile.shopId != shopId) {
+        return null;
+      }
+      if (profile.ownerUserId.isNotEmpty &&
+          profile.ownerUserId != authSession.userId) {
+        return null;
+      }
+      return profile;
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) return null;
+      rethrow;
     }
-    if (profile.ownerUserId.isNotEmpty && profile.ownerUserId != authSession.userId) {
-      return null;
-    }
-    return profile;
-  });
+  }, const Duration(seconds: 10));
 });
 
 class ShopProfileService {
@@ -42,10 +45,6 @@ class ShopProfileService {
     required String location,
     required String phoneNumber,
   }) async {
-    if (!AppBootstrap.firebaseReady) {
-      throw StateError('Firebase is not configured.');
-    }
-
     final authSession = _ref.read(authStateProvider).value;
     if (authSession == null) {
       throw StateError('Sign in before updating the shop profile.');
@@ -64,15 +63,11 @@ class ShopProfileService {
       throw StateError('Phone number is required.');
     }
 
-    final shopId = _ref.read(shopIdProvider);
-    final shopDoc = FirestorePaths(FirebaseFirestore.instance, shopId).shopDoc;
-    await shopDoc.set({
-      'shopId': shopId,
-      'ownerUserId': authSession.userId,
+    final api = ApiClient(_ref.read(localDatabaseProvider));
+    await api.put('/api/v1/shops/me', {
       'name': trimmedShopName,
       'location': trimmedLocation,
       'phoneNumber': trimmedPhoneNumber,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    });
   }
 }

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class InvestmentMember {
   const InvestmentMember({
     required this.id,
@@ -65,7 +63,9 @@ class InvestmentMember {
 
   factory InvestmentMember.fromJson(String id, Map<String, dynamic> json) {
     return InvestmentMember(
-      id: id,
+      id: (json['id'] as String?)?.isNotEmpty == true
+          ? json['id'] as String
+          : '${json['investmentId']}:${json['investorId']}',
       investmentId: json['investmentId'] as String? ?? '',
       investorId: json['investorId'] as String? ?? '',
       investmentAmount: (json['investmentAmount'] as num?)?.toDouble() ?? 0,
