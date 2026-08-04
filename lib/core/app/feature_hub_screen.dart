@@ -13,7 +13,6 @@ import '../../features/products/presentation/barcode_scan_screen.dart';
 import '../../features/products/presentation/product_form_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/investors/presentation/investor_list_screen.dart';
-import '../../features/receipts/presentation/receipt_generator_screen.dart';
 import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -198,13 +197,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     subtitle: 'POS cart and invoice',
                     color: colors.primary,
                     onTap: () => _open(const PosScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.receipt_long_rounded,
-                    title: l10n.t('generateReceipt'),
-                    subtitle: l10n.t('receiptsDesc'),
-                    color: colors.secondary,
-                    onTap: () => _open(const ReceiptGeneratorScreen()),
                   ),
                   _FeatureItem(
                     icon: Icons.account_balance_wallet_rounded,
