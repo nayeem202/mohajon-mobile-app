@@ -11,6 +11,7 @@ class StaffMember {
   final bool active;
   final String createdAt;
   final String? imagePath;
+  final List<String> menuCodes;
 
   const StaffMember({
     required this.id,
@@ -23,6 +24,7 @@ class StaffMember {
     this.active = true,
     required this.createdAt,
     this.imagePath,
+    this.menuCodes = const [],
   });
 
   StaffMember copyWith({
@@ -62,6 +64,7 @@ class StaffMember {
         'password': password,
         'active': active,
         'createdAt': createdAt,
+        'menuCodes': menuCodes,
         if (imagePath != null) 'imagePath': imagePath,
       };
 
@@ -75,7 +78,25 @@ class StaffMember {
         password: (json['password'] as String?) ?? '',
         active: (json['active'] as bool?) ?? true,
         createdAt: json['createdAt'] as String,
+        menuCodes: ((json['menuCodes'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
         imagePath: json['imagePath'] as String?,
+      );
+
+  /// Parses a staff record from the Haalkhata users API.
+  factory StaffMember.fromApi(Map<String, dynamic> json) => StaffMember(
+        id: (json['userId'] ?? '') as String,
+        name: (json['name'] ?? '') as String,
+        role: (json['role'] ?? 'STAFF') as String,
+        phone: (json['phone'] ?? '') as String,
+        email: (json['email'] ?? '') as String,
+        username: ((json['email'] ?? '') as String).split('@').first,
+        active: true,
+        createdAt: ((json['updatedAt'] ?? '') as String).substring(0, 10),
+        menuCodes: ((json['menus'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
       );
 
   String get initials {

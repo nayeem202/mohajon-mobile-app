@@ -1,12 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/staff_model.dart';
 import '../providers/staff_providers.dart';
+import '../services/staff_api_service.dart';
 import 'delete_staff_dialog.dart';
-import 'staff_form_sheet.dart';
+import 'staff_form_screen.dart';
 
 class StaffListScreen extends ConsumerStatefulWidget {
   const StaffListScreen({super.key});
@@ -23,56 +22,47 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
+        backgroundColor: isError ? const Color(0xFFDC2626) : null,
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  void _openForm({StaffMember? staff}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => StaffFormSheet(staff: staff),
-    ).then((result) {
-      if (result == null || !mounted) return;
-      final member = result as StaffMember;
-      if (staff == null) {
-        ref.read(staffListProvider.notifier).add(member);
-        _showToast('Staff member added');
-      } else {
-        ref.read(staffListProvider.notifier).update(staff.id, member);
-        _showToast('${member.name} updated');
-      }
-    });
+  Future<void> _openForm({StaffMember? staff}) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => StaffFormScreen(staff: staff)),
+    );
+    if (saved == true && mounted) {
+      _showToast(staff == null ? 'Staff member added' : '${staff.name} updated');
+    }
   }
 
-  void _confirmDelete(StaffMember staff) {
-    showDialog(
+  Future<void> _confirmDelete(StaffMember staff) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (_) => DeleteStaffDialog(
-        onConfirm: () {
-          ref.read(staffListProvider.notifier).delete(staff.id);
-          _showToast('${staff.name} removed');
-        },
+        onConfirm: () => Navigator.of(context).pop(true),
       ),
     );
-  }
-
-  void _toggleActive(StaffMember staff) {
-    ref.read(staffListProvider.notifier).toggleActive(staff.id);
-    if (!staff.active) {
-      _showToast('${staff.name} activated');
-    } else {
-      _showToast('${staff.name} deactivated');
+    if (confirmed != true || !mounted) return;
+    try {
+      final api = ref.read(staffApiServiceProvider);
+      await api.deleteStaff(staff.id);
+      ref.invalidate(staffListProvider);
+      if (!mounted) return;
+      _showToast('${staff.name} removed');
+    } catch (error) {
+      if (!mounted) return;
+      _showToast('Could not remove staff. Please try again.', isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final staff = ref.watch(staffListProvider);
+    final staffAsync = ref.watch(staffListProvider);
     final query = _searchController.text.toLowerCase();
+    final staff = staffAsync.value ?? const <StaffMember>[];
     final filtered = query.isEmpty
         ? staff
         : staff.where((s) =>
@@ -110,7 +100,8 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                         ),
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
@@ -131,21 +122,24 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               ),
             ),
           Expanded(
-            child: staff.isEmpty
-                ? _emptyState()
-                : filtered.isEmpty
-                    ? _emptySearchState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) =>
-                            _StaffCard(
-                              staff: filtered[index],
-                              onEdit: () => _openForm(staff: filtered[index]),
-                              onDelete: () => _confirmDelete(filtered[index]),
-                              onToggle: () => _toggleActive(filtered[index]),
-                            ),
-                      ),
+            child: staffAsync.isLoading && staff.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : staffAsync.hasError && staff.isEmpty
+                    ? _errorState()
+                    : staff.isEmpty
+                        ? _emptyState()
+                        : filtered.isEmpty
+                            ? _emptySearchState()
+                            : ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                                itemCount: filtered.length,
+                                itemBuilder: (context, index) => _StaffCard(
+                                  staff: filtered[index],
+                                  onEdit: () => _openForm(staff: filtered[index]),
+                                  onDelete: () =>
+                                      _confirmDelete(filtered[index]),
+                                ),
+                              ),
           ),
         ],
       ),
@@ -164,7 +158,10 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
             foregroundColor: Colors.white,
             elevation: 4,
             shape: const CircleBorder(),
-            child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
+            child: Icon(
+              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              size: 24,
+            ),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
@@ -180,6 +177,39 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     );
   }
 
+  Widget _errorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 48,
+              color: Color(0xFFD4D4D4),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Could not load staff.\nPlease check your connection.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF525252),
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () => ref.invalidate(staffListProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _emptySearchState() {
     return Center(
       child: Padding(
@@ -187,7 +217,11 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFFD4D4D4)),
+            const Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: Color(0xFFD4D4D4),
+            ),
             const SizedBox(height: 16),
             const Text(
               'No staff match your search',
@@ -234,7 +268,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Add your team members and give them\naccess to the shop',
+              'Add your team members and choose\nwhich menus they can access',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -254,13 +288,11 @@ class _StaffCard extends StatelessWidget {
     required this.staff,
     required this.onEdit,
     required this.onDelete,
-    required this.onToggle,
   });
 
   final StaffMember staff;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onToggle;
 
   Widget _staffAvatar(StaffMember member) {
     return Container(
@@ -290,27 +322,11 @@ class _StaffCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: staff.active
-              ? const Color(0xFFF0ECE6)
-              : const Color(0xFFF0ECE6).withValues(alpha: 0.6),
-        ),
+        border: Border.all(color: const Color(0xFFF0ECE6)),
       ),
       child: Row(
         children: [
-          if (staff.imagePath != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.file(
-                File(staff.imagePath!),
-                width: 44,
-                height: 44,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _staffAvatar(staff),
-              ),
-            )
-          else
-            _staffAvatar(staff),
+          _staffAvatar(staff),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -320,12 +336,10 @@ class _StaffCard extends StatelessWidget {
                   staff.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: staff.active
-                        ? const Color(0xFF1C1917)
-                        : const Color(0xFF1C1917).withValues(alpha: 0.5),
+                    color: Color(0xFF1C1917),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -346,6 +360,32 @@ class _StaffCard extends StatelessWidget {
                       fontSize: 10,
                       color: Color(0xFF98A2B3),
                     ),
+                  ),
+                ],
+                if (staff.menuCodes.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: staff.menuCodes
+                        .take(3)
+                        .map((code) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF1E6),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                code,
+                                style: const TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFF97316),
+                                ),
+                              ),
+                            ))
+                        .toList(),
                   ),
                 ],
               ],
@@ -382,35 +422,6 @@ class _StaffCard extends StatelessWidget {
                 Icons.delete_outline_rounded,
                 size: 16,
                 color: Color(0xFFEF5350),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onToggle,
-            child: Container(
-              width: 40,
-              height: 22,
-              decoration: BoxDecoration(
-                color: staff.active
-                    ? const Color(0xFFF97316)
-                    : const Color(0xFFD4D4D4),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: AnimatedAlign(
-                duration: const Duration(milliseconds: 200),
-                alignment: staff.active
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  margin: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
               ),
             ),
           ),

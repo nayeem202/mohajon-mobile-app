@@ -1,55 +1,50 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
-import 'package:hive/hive.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../models/staff_model.dart';
+import '../models/staff_role.dart';
+import '../services/staff_api_service.dart';
 
-final staffListProvider =
-    StateNotifierProvider<StaffListNotifier, List<StaffMember>>((ref) {
-  return StaffListNotifier();
+/// Roles are fetched from the Java service (configurable from the DB).
+final staffRolesProvider = FutureProvider<List<StaffRole>>((ref) async {
+  return ref.watch(staffApiServiceProvider).fetchRoles();
 });
 
-class StaffListNotifier extends StateNotifier<List<StaffMember>> {
-  StaffListNotifier() : super([]) {
-    _load();
-  }
+/// Menus are fetched from the Java service (configurable from the DB).
+final staffMenusProvider = FutureProvider<List<AppMenu>>((ref) async {
+  return ref.watch(staffApiServiceProvider).fetchMenus();
+});
 
-  Box<dynamic> get _box => Hive.box(HiveBoxes.settings);
+/// Staff list backed by the Java service users API.
+final staffListProvider = FutureProvider<List<StaffMember>>((ref) async {
+  return ref.watch(staffApiServiceProvider).fetchStaff();
+});
 
-  void _load() {
-    final raw = _box.get('staff_list');
-    if (raw is List) {
-      state = raw
-          .map((e) => StaffMember.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    }
-  }
+/// Menu codes granted to the currently signed-in user. The owner sees all
+/// menus; staff members only see the menus the shop owner granted them.
+final myMenuCodesProvider = FutureProvider<List<String>>((ref) async {
+  return ref.watch(staffApiServiceProvider).myMenuCodes();
+});
 
-  void _save() {
-    _box.put('staff_list', state.map((s) => s.toJson()).toList());
-  }
+class StaffApiException implements Exception {
+  const StaffApiException(this.message);
 
-  void add(StaffMember member) {
-    state = [...state, member];
-    _save();
-  }
+  final String message;
 
-  void update(String id, StaffMember updates) {
-    state = state.map((s) => s.id == id ? updates : s).toList();
-    _save();
-  }
+  @override
+  String toString() => message;
+}
 
-  void delete(String id) {
-    state = state.where((s) => s.id != id).toList();
-    _save();
+/// Performs a staff create/update/delete against the API and refreshes the
+/// staff list provider afterwards.
+Future<void> staffApiAction(
+  Ref ref,
+  Future<void> Function(StaffApiService api) action,
+) async {
+  final api = ref.read(staffApiServiceProvider);
+  try {
+    await action(api);
+  } catch (error) {
+    throw StaffApiException(error.toString());
   }
-
-  void toggleActive(String id) {
-    state = state.map((s) {
-      if (s.id == id) return s.copyWith(active: !s.active);
-      return s;
-    }).toList();
-    _save();
-  }
+  ref.invalidate(staffListProvider);
 }

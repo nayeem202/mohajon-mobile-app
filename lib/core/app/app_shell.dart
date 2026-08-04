@@ -6,6 +6,8 @@ import '../../features/customers/presentation/customer_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
+import '../../features/staff/models/menu_codes.dart';
+import '../../features/staff/providers/staff_providers.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
 import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
@@ -39,36 +41,13 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
-    final screens = [
-      const DashboardScreen(),
-      const PosScreen(),
-      const ProductListScreen(),
-      const CustomerListScreen(),
-      const FeatureHubScreen(),
-    ];
-    final destinations = [
-      NavDestination(
-        icon: Icons.home_outlined,
-        selectedIcon: Icons.home_rounded,
-        label: l10n.t('home'),
-      ),
-      NavDestination(
-        icon: Icons.shopping_cart_outlined,
-        selectedIcon: Icons.shopping_cart_rounded,
-        label: l10n.t('sales'),
-      ),
-      NavDestination(
-        icon: Icons.inventory_2_outlined,
-        selectedIcon: Icons.inventory_2_rounded,
-        label: l10n.t('stock'),
-      ),
-      NavDestination(
-        icon: Icons.group_outlined,
-        selectedIcon: Icons.group_rounded,
-        label: l10n.t('clients'),
-      ),
-      NavDestination(icon: Icons.more_horiz_rounded, label: l10n.t('more')),
-    ];
+    final grantedMenus = ref.watch(myMenuCodesProvider).value;
+    final tabs = _buildTabs(l10n, grantedMenus);
+    final screens = [for (final tab in tabs) tab.screen];
+    final destinations = [for (final tab in tabs) tab.destination];
+    if (_index >= screens.length) {
+      _index = screens.length - 1;
+    }
 
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -109,6 +88,67 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
     );
   }
+
+  List<_Tab> _buildTabs(
+    AppLocalizations l10n,
+    List<String>? grantedMenus,
+  ) {
+    return [
+      _Tab(
+        destination: NavDestination(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home_rounded,
+          label: l10n.t('home'),
+        ),
+        screen: const DashboardScreen(),
+        menu: MenuCodes.home,
+      ),
+      _Tab(
+        destination: NavDestination(
+          icon: Icons.shopping_cart_outlined,
+          selectedIcon: Icons.shopping_cart_rounded,
+          label: l10n.t('sales'),
+        ),
+        screen: const PosScreen(),
+        menu: MenuCodes.sales,
+      ),
+      _Tab(
+        destination: NavDestination(
+          icon: Icons.inventory_2_outlined,
+          selectedIcon: Icons.inventory_2_rounded,
+          label: l10n.t('stock'),
+        ),
+        screen: const ProductListScreen(),
+        menu: MenuCodes.stock,
+      ),
+      _Tab(
+        destination: NavDestination(
+          icon: Icons.group_outlined,
+          selectedIcon: Icons.group_rounded,
+          label: l10n.t('clients'),
+        ),
+        screen: const CustomerListScreen(),
+        menu: MenuCodes.clients,
+      ),
+      const _Tab(
+        destination: NavDestination(icon: Icons.more_horiz_rounded, label: 'More'),
+        screen: FeatureHubScreen(),
+        menu: null,
+      ),
+    ].where((tab) => hasMenuAccess(grantedMenus, tab.menu)).toList();
+  }
+}
+
+class _Tab {
+  const _Tab({
+    required this.destination,
+    required this.screen,
+    required this.menu,
+  });
+
+  final NavDestination destination;
+  final Widget screen;
+  final String? menu;
 }
 
 class _SideNav extends StatelessWidget {

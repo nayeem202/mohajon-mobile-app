@@ -95,6 +95,21 @@ class ApiClient {
     return (data is Map<String, dynamic>) ? data : const {};
   }
 
+  Future<Map<String, dynamic>> patch(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final data = await _send(
+      () => http.patch(
+        _uri(path),
+        headers: _headers(json: true),
+        body: jsonEncode(body),
+      ),
+      path: path,
+    );
+    return (data is Map<String, dynamic>) ? data : const {};
+  }
+
   Future<Map<String, dynamic>> delete(String path) async {
     final data = await _send(
       () => http.delete(_uri(path), headers: _headers()),

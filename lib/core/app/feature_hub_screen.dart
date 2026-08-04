@@ -17,6 +17,8 @@ import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_list_screen.dart';
+import '../../features/staff/models/menu_codes.dart';
+import '../../features/staff/providers/staff_providers.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
@@ -109,6 +111,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
     final themeMode = ref.watch(themeModeProvider);
+    final grantedMenus = ref.watch(myMenuCodesProvider).value;
 
     return withLoadingOverlay(
       Scaffold(
@@ -134,6 +137,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('products'),
                     subtitle: l10n.t('productsDesc'),
                     color: colors.primary,
+                    menu: MenuCodes.products,
                     onTap: () => _open(const ProductListScreen()),
                   ),
                   _FeatureItem(
@@ -141,6 +145,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('addProduct'),
                     subtitle: 'Create or restock item',
                     color: colors.secondary,
+                    menu: MenuCodes.addProduct,
                     onTap: () => _open(const ProductFormScreen()),
                   ),
                   _FeatureItem(
@@ -148,6 +153,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('customers'),
                     subtitle: l10n.t('customersDesc'),
                     color: colors.tertiary,
+                    menu: MenuCodes.clients,
                     onTap: () => _open(const CustomerListScreen()),
                   ),
                   _FeatureItem(
@@ -155,6 +161,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('addCustomer'),
                     subtitle: 'New customer profile',
                     color: colors.tertiary,
+                    menu: MenuCodes.addCustomer,
                     onTap: () => _open(const CustomerFormScreen()),
                   ),
                   _FeatureItem(
@@ -162,6 +169,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Vendors',
                     subtitle: 'Manage suppliers and purchases',
                     color: const Color(0xFF7C3AED),
+                    menu: MenuCodes.vendors,
                     onTap: () => _open(const VendorListScreen()),
                   ),
                   _FeatureItem(
@@ -169,6 +177,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Expenses',
                     subtitle: 'Track rent, salaries, and bills',
                     color: const Color(0xFFF97316),
+                    menu: MenuCodes.expenses,
                     onTap: () => _open(const ExpensesScreen()),
                   ),
                   _FeatureItem(
@@ -176,6 +185,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Investors',
                     subtitle: 'Track investors and payouts',
                     color: const Color(0xFF047857),
+                    menu: MenuCodes.investors,
                     onTap: () => _open(const InvestorListScreen()),
                   ),
                   _FeatureItem(
@@ -183,9 +193,10 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Barcode scan',
                     subtitle: 'Find code from camera',
                     color: colors.primary,
+                    menu: MenuCodes.barcode,
                     onTap: () => _open(const BarcodeScanScreen()),
                   ),
-                ],
+                ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(
@@ -196,6 +207,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('sales'),
                     subtitle: 'POS cart and invoice',
                     color: colors.primary,
+                    menu: MenuCodes.sales,
                     onTap: () => _open(const PosScreen()),
                   ),
                   _FeatureItem(
@@ -203,6 +215,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('due'),
                     subtitle: l10n.t('duesDesc'),
                     color: colors.tertiary,
+                    menu: MenuCodes.due,
                     onTap: () => _open(const CustomerListScreen()),
                   ),
                   _FeatureItem(
@@ -210,9 +223,10 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Investments',
                     subtitle: 'Manage investments and ROI',
                     color: const Color(0xFF0F766E),
+                    menu: MenuCodes.investments,
                     onTap: () => _open(const InvestmentDashboardScreen()),
                   ),
-                ],
+                ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(
@@ -223,6 +237,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'My Profile',
                     subtitle: 'View and edit your profile',
                     color: colors.primary,
+                    menu: MenuCodes.profile,
                     onTap: () => _open(const ProfileOverviewScreen()),
                   ),
                   _FeatureItem(
@@ -294,6 +309,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('accountSecurity'),
                     subtitle: l10n.t('accountSecurityDesc'),
                     color: colors.primary,
+                    menu: MenuCodes.security,
                     onTap: () => _open(const AccountSecurityScreen()),
                   ),
                   _FeatureItem(
@@ -301,6 +317,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: l10n.t('privacy'),
                     subtitle: l10n.t('privacyDesc'),
                     color: colors.tertiary,
+                    menu: MenuCodes.privacy,
                     onTap: () => _open(const PrivacySettingsScreen()),
                   ),
                   _FeatureItem(
@@ -308,6 +325,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Staff',
                     subtitle: 'Manage team members',
                     color: const Color(0xFF7C3AED),
+                    menu: MenuCodes.staff,
                     onTap: () => _open(const StaffListScreen()),
                   ),
                   _FeatureItem(
@@ -315,9 +333,10 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     title: 'Settings',
                     subtitle: 'App preferences & more',
                     color: colors.primary,
+                    menu: MenuCodes.settings,
                     onTap: () => _open(const SettingsScreen()),
                   ),
-                ],
+                ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(
@@ -413,6 +432,7 @@ class _FeatureSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -457,6 +477,7 @@ class _FeatureItem {
     required this.title,
     required this.subtitle,
     required this.color,
+    this.menu,
     this.onTap,
     this.trailing,
     this.destructive = false,
@@ -466,6 +487,7 @@ class _FeatureItem {
   final String title;
   final String subtitle;
   final Color color;
+  final String? menu;
   final VoidCallback? onTap;
   final Widget? trailing;
   final bool destructive;
