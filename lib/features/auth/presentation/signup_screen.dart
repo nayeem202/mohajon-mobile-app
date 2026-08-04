@@ -325,11 +325,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                 );
         if (!mounted) return;
         if (AppConfig.useCustomAuth) {
-          await showEmailVerificationDialog(
+          final verified = await showEmailVerificationDialog(
             context,
             ref,
             email: _email.text.trim(),
           );
+          if (verified && mounted) {
+            Navigator.of(context).pop(_email.text.trim());
+            return;
+          }
         }
         if (mounted) setState(() => _submitted = true);
       } catch (error) {
