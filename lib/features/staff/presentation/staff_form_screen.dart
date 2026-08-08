@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/config/app_config.dart';
 import '../models/staff_model.dart';
 import '../models/staff_role.dart';
 import '../providers/staff_providers.dart';
@@ -24,7 +28,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _picker = ImagePicker();
 
+  String? _imagePath;
+  String? _photoUrl;
   String _selectedRole = '';
   final Set<String> _selectedMenus = {};
   bool _saving = false;
@@ -41,6 +48,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
       _emailCtrl.text = s.email;
       _selectedRole = s.role;
       _selectedMenus.addAll(s.menuCodes);
+      _photoUrl = s.photoUrl;
     }
   }
 
@@ -63,6 +71,70 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Profile Photo',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked != null && mounted) {
+        setState(() => _imagePath = picked.path);
+      }
+    } catch (_) {
+      if (mounted) {
+        _showToast('Could not pick image', isError: true);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedRole.isEmpty) {
@@ -72,6 +144,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     setState(() => _saving = true);
     try {
       final api = ref.read(staffApiServiceProvider);
+      String? photoUrl = _photoUrl;
+      if (_imagePath != null) {
+        photoUrl = await api.uploadImage(File(_imagePath!));
+      }
       if (_isEditing) {
         await api.updateStaff(
           userId: widget.staff!.id,
@@ -79,6 +155,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
           phone: _phoneCtrl.text.trim(),
           role: _selectedRole,
           menuCodes: _selectedMenus.toList(),
+          photoUrl: photoUrl,
         );
       } else {
         await api.createStaff(
@@ -88,6 +165,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
           password: _passwordCtrl.text,
           role: _selectedRole,
           menuCodes: _selectedMenus.toList(),
+          photoUrl: photoUrl,
         );
       }
       ref.invalidate(staffListProvider);
@@ -142,6 +220,8 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                     children: [
+                      _imagePickerSection(),
+                      const SizedBox(height: 20),
                       _InputField(
                         label: 'Full Name',
                         controller: _nameCtrl,
@@ -243,6 +323,86 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _imagePickerSection() {
+    const size = 88.0;
+    return Center(
+      child: GestureDetector(
+        onTap: _saving ? null : _pickImage,
+        child: Stack(
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF0ECE6),
+                border: Border.all(color: const Color(0xFFE8DDD2), width: 2),
+              ),
+              child: ClipOval(
+                child: _imagePath != null
+                    ? Image.file(
+                        File(_imagePath!),
+                        width: size,
+                        height: size,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            _initialsCircle(size),
+                      )
+                    : _photoUrl != null
+                        ? Image.network(
+                            '${AppConfig.apiBaseUrl}$_photoUrl',
+                            width: size,
+                            height: size,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                _initialsCircle(size),
+                          )
+                        : _initialsCircle(size),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF97316),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: Colors.white,
+                  size: 15,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _initialsCircle(double size) {
+    final name = _nameCtrl.text.trim();
+    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final initials = parts.length >= 2
+        ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
+        : name.isNotEmpty
+            ? name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase()
+            : (widget.staff?.initials ?? '?');
+    return Center(
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: const Color(0xFF525252),
+          fontSize: size * 0.34,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 

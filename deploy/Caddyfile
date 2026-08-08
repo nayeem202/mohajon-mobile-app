@@ -1,0 +1,14 @@
+{
+	email admin@haalkhata.local
+	default_sni 104.207.92.108
+}
+
+104.207.92.108 {
+	tls internal
+	reverse_proxy auth-service:8080
+}
+
+104.207.92.108:8443 {
+	tls internal
+	reverse_proxy haalkhata-service:8081
+}

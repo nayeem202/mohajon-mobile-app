@@ -11,6 +11,7 @@ class StaffMember {
   final bool active;
   final String createdAt;
   final String? imagePath;
+  final String? photoUrl;
   final List<String> menuCodes;
 
   const StaffMember({
@@ -24,6 +25,7 @@ class StaffMember {
     this.active = true,
     required this.createdAt,
     this.imagePath,
+    this.photoUrl,
     this.menuCodes = const [],
   });
 
@@ -38,6 +40,7 @@ class StaffMember {
     bool? active,
     String? createdAt,
     String? imagePath,
+    String? photoUrl,
     bool clearPassword = false,
   }) {
     return StaffMember(
@@ -51,6 +54,7 @@ class StaffMember {
       active: active ?? this.active,
       createdAt: createdAt ?? this.createdAt,
       imagePath: imagePath ?? this.imagePath,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
@@ -66,6 +70,7 @@ class StaffMember {
         'createdAt': createdAt,
         'menuCodes': menuCodes,
         if (imagePath != null) 'imagePath': imagePath,
+        if (photoUrl != null) 'photoUrl': photoUrl,
       };
 
   factory StaffMember.fromJson(Map<String, dynamic> json) => StaffMember(
@@ -82,6 +87,7 @@ class StaffMember {
             .map((e) => e.toString())
             .toList(),
         imagePath: json['imagePath'] as String?,
+        photoUrl: json['photoUrl'] as String?,
       );
 
   /// Parses a staff record from the Haalkhata users API.
@@ -97,6 +103,9 @@ class StaffMember {
         menuCodes: ((json['menus'] as List?) ?? const [])
             .map((e) => e.toString())
             .toList(),
+        photoUrl: ((json['photoUrl'] ?? '') as String).isEmpty
+            ? null
+            : (json['photoUrl'] as String),
       );
 
   String get initials {

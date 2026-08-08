@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
@@ -5,6 +7,15 @@ import '../../../core/offline/local_database.dart';
 import '../../../core/services/api_client.dart';
 import '../models/staff_model.dart';
 import '../models/staff_role.dart';
+
+class StaffApiException implements Exception {
+  const StaffApiException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 final staffApiServiceProvider = Provider<StaffApiService>((ref) {
   return StaffApiService(ref.read(localDatabaseProvider));
@@ -48,6 +59,7 @@ class StaffApiService {
     required String password,
     required String role,
     required List<String> menuCodes,
+    String? photoUrl,
   }) async {
     final json = await _api.post('/api/v1/users', {
       'name': name,
@@ -56,6 +68,7 @@ class StaffApiService {
       'password': password,
       'role': role,
       'menuCodes': menuCodes,
+      if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
     });
     return StaffMember.fromApi(json);
   }
@@ -66,14 +79,26 @@ class StaffApiService {
     required String phone,
     required String role,
     required List<String> menuCodes,
+    String? photoUrl,
   }) async {
     final json = await _api.patch('/api/v1/users/$userId', {
       'name': name,
       'phone': phone,
       'role': role,
       'menuCodes': menuCodes,
+      'photoUrl': ?photoUrl,
     });
     return StaffMember.fromApi(json);
+  }
+
+  /// Uploads a local image and returns the server URL for it.
+  Future<String> uploadImage(File file) async {
+    final json = await _api.uploadFile('/api/v1/files', file);
+    final url = (json['url'] ?? '') as String;
+    if (url.isEmpty) {
+      throw const StaffApiException('Could not upload image');
+    }
+    return url;
   }
 
   Future<void> deleteStaff(String userId) async {

@@ -25,15 +25,6 @@ final myMenuCodesProvider = FutureProvider<List<String>>((ref) async {
   return ref.watch(staffApiServiceProvider).myMenuCodes();
 });
 
-class StaffApiException implements Exception {
-  const StaffApiException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
 /// Performs a staff create/update/delete against the API and refreshes the
 /// staff list provider afterwards.
 Future<void> staffApiAction(

@@ -11,6 +11,7 @@ import '../config/app_config.dart';
 import '../offline/local_database.dart';
 import 'auth_backend.dart';
 import 'device_session_service.dart';
+import 'secure_http.dart';
 
 /// Google Sign-In instance used by the custom auth backend.
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
@@ -240,8 +241,9 @@ class CustomAuthBackend implements AuthBackend {
     Map<String, dynamic> body, {
     bool authenticated = false,
   }) async {
+    final client = await secureHttpClient();
     return _request(
-      () => http.post(
+      () => client.post(
         _uri(path),
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +277,8 @@ class CustomAuthBackend implements AuthBackend {
     final refreshToken = _settings.get(_kRefreshToken) as String?;
     if (refreshToken == null) return false;
     try {
-      final response = await http
+      final client = await secureHttpClient();
+      final response = await client
           .post(
             _uri('/api/v1/auth/refresh'),
             headers: const {'Content-Type': 'application/json'},

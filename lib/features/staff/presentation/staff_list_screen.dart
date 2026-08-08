@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_config.dart';
 import '../models/staff_model.dart';
 import '../providers/staff_providers.dart';
 import '../services/staff_api_service.dart';
@@ -295,12 +298,13 @@ class _StaffCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   Widget _staffAvatar(StaffMember member) {
-    return Container(
-      width: 44,
-      height: 44,
+    const size = 44.0;
+    final circle = Container(
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: member.avatarColor,
-        borderRadius: BorderRadius.circular(10),
+        shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Text(
@@ -312,6 +316,29 @@ class _StaffCard extends StatelessWidget {
         ),
       ),
     );
+    if (member.photoUrl != null && member.photoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          '${AppConfig.apiBaseUrl}${member.photoUrl}',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => circle,
+        ),
+      );
+    }
+    if (member.imagePath != null) {
+      return ClipOval(
+        child: Image.file(
+          File(member.imagePath!),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => circle,
+        ),
+      );
+    }
+    return circle;
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../offline/local_database.dart';
+import 'secure_http.dart';
 
 /// Thrown when the Haalkhata business service returns a non-2xx response.
 class ApiException implements Exception {
@@ -49,8 +50,9 @@ class ApiClient {
     Map<String, String>? query,
     Duration? timeout,
   }) async {
+    final client = await secureHttpClient();
     return _send(
-      () => http.get(_uri(path, query), headers: _headers()),
+      () => client.get(_uri(path, query), headers: _headers()),
       path: path,
       timeout: timeout,
     );
@@ -69,8 +71,9 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
+    final client = await secureHttpClient();
     final data = await _send(
-      () => http.post(
+      () => client.post(
         _uri(path),
         headers: _headers(json: true),
         body: jsonEncode(body),
@@ -84,8 +87,9 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
+    final client = await secureHttpClient();
     final data = await _send(
-      () => http.put(
+      () => client.put(
         _uri(path),
         headers: _headers(json: true),
         body: jsonEncode(body),
@@ -99,8 +103,9 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
+    final client = await secureHttpClient();
     final data = await _send(
-      () => http.patch(
+      () => client.patch(
         _uri(path),
         headers: _headers(json: true),
         body: jsonEncode(body),
@@ -111,8 +116,9 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> delete(String path) async {
+    final client = await secureHttpClient();
     final data = await _send(
-      () => http.delete(_uri(path), headers: _headers()),
+      () => client.delete(_uri(path), headers: _headers()),
       path: path,
     );
     return (data is Map<String, dynamic>) ? data : const {};
@@ -121,10 +127,11 @@ class ApiClient {
   /// Uploads [file] as multipart field `file` and returns the decoded JSON
   /// (e.g. `{url, fileName}`).
   Future<Map<String, dynamic>> uploadFile(String path, File file) async {
+    final client = await secureHttpClient();
     final request = http.MultipartRequest('POST', _uri(path))
       ..headers.addAll(_headers())
       ..files.add(await http.MultipartFile.fromPath('file', file.path));
-    final streamed = await request.send().timeout(_timeout);
+    final streamed = await client.send(request).timeout(_timeout);
     final response = await http.Response.fromStream(streamed);
     final data = _decode(response, path);
     return (data is Map<String, dynamic>) ? data : const {};
@@ -154,7 +161,8 @@ class ApiClient {
     final refreshToken = _settings.get(_kRefreshToken) as String?;
     if (refreshToken == null) return false;
     try {
-      final response = await http
+      final client = await secureHttpClient();
+      final response = await client
           .post(
             Uri.parse('${AppConfig.authBaseUrl}/api/v1/auth/refresh'),
             headers: const {'Content-Type': 'application/json'},
