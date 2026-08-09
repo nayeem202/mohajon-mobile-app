@@ -6,6 +6,7 @@ class ProfileTextField extends StatelessWidget {
     required this.label,
     required this.controller,
     this.hint,
+    this.prefixIcon,
     this.keyboardType,
     this.maxLines = 1,
     this.textInputAction,
@@ -18,6 +19,7 @@ class ProfileTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
+  final IconData? prefixIcon;
   final TextInputType? keyboardType;
   final int maxLines;
   final TextInputAction? textInputAction;
@@ -55,6 +57,9 @@ class ProfileTextField extends StatelessWidget {
               : null,
           decoration: InputDecoration(
             hintText: hint,
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, size: 20, color: colors.onSurfaceVariant)
+                : null,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,

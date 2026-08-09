@@ -13,6 +13,9 @@ class ShortcutRepository {
     'add_client',
     'stock',
     'clients',
+    'pos',
+    'expenses',
+    'reports',
   ];
 
   List<String> load() {

@@ -86,8 +86,9 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final p = widget.profile;
+    final storeName = p.storeName.trim();
+    final displayName = storeName.isEmpty ? 'My Store' : storeName;
 
     return Scaffold(
       appBar: AppBar(
@@ -102,9 +103,17 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           AnimatedSection(
+            child: _StoreHero(
+              storeName: displayName,
+              ownerName: p.ownerName,
+            ),
+          ),
+          const SizedBox(height: 16),
+          AnimatedSection(
+            delay: const Duration(milliseconds: 70),
             child: ProfileInfoCard(
               title: 'STORE / BUSINESS',
               children: [
@@ -113,6 +122,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                     label: 'Store Name',
                     controller: _storeNameController,
                     hint: 'Enter store name',
+                    prefixIcon: Icons.storefront_rounded,
                     focusNode: _storeNameFocus,
                     nextFocusNode: _ownerNameFocus,
                   ),
@@ -121,20 +131,31 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                     label: 'Owner Name',
                     controller: _ownerNameController,
                     hint: 'Enter owner name',
+                    prefixIcon: Icons.person_outline_rounded,
                     focusNode: _ownerNameFocus,
                     nextFocusNode: _phoneFocus,
                   ),
                 ] else ...[
-                  _InfoRow(label: 'Store Name', value: p.storeName),
-                  const SizedBox(height: 12),
-                  _InfoRow(label: 'Owner Name', value: p.ownerName),
+                  _InfoTile(
+                    icon: Icons.storefront_rounded,
+                    color: const Color(0xFFF97316),
+                    label: 'Store Name',
+                    value: p.storeName,
+                  ),
+                  const SizedBox(height: 16),
+                  _InfoTile(
+                    icon: Icons.person_outline_rounded,
+                    color: const Color(0xFF0F766E),
+                    label: 'Owner Name',
+                    value: p.ownerName,
+                  ),
                 ],
               ],
             ),
           ),
           const SizedBox(height: 16),
           AnimatedSection(
-            delay: const Duration(milliseconds: 80),
+            delay: const Duration(milliseconds: 130),
             child: ProfileInfoCard(
               title: 'CONTACT INFORMATION',
               children: [
@@ -143,6 +164,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                     label: 'Phone',
                     controller: _phoneController,
                     hint: 'Enter phone number',
+                    prefixIcon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
                     focusNode: _phoneFocus,
                     nextFocusNode: _emailFocus,
@@ -152,6 +174,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                     label: 'Email',
                     controller: _emailController,
                     hint: 'Enter email address',
+                    prefixIcon: Icons.alternate_email_rounded,
                     keyboardType: TextInputType.emailAddress,
                     focusNode: _emailFocus,
                     nextFocusNode: _addressFocus,
@@ -161,16 +184,32 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                     label: 'Address',
                     controller: _addressController,
                     hint: 'Enter your address',
+                    prefixIcon: Icons.location_on_outlined,
                     maxLines: 3,
                     focusNode: _addressFocus,
                     textInputAction: TextInputAction.newline,
                   ),
                 ] else ...[
-                  _InfoRow(label: 'Phone', value: p.phone),
-                  const SizedBox(height: 12),
-                  _InfoRow(label: 'Email', value: p.email),
-                  const SizedBox(height: 12),
-                  _InfoRow(label: 'Address', value: p.address),
+                  _InfoTile(
+                    icon: Icons.phone_outlined,
+                    color: const Color(0xFF2563EB),
+                    label: 'Phone',
+                    value: p.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  _InfoTile(
+                    icon: Icons.alternate_email_rounded,
+                    color: const Color(0xFF7C3AED),
+                    label: 'Email',
+                    value: p.email,
+                  ),
+                  const SizedBox(height: 16),
+                  _InfoTile(
+                    icon: Icons.location_on_outlined,
+                    color: const Color(0xFFDC2626),
+                    label: 'Address',
+                    value: p.address,
+                  ),
                 ],
               ],
             ),
@@ -178,7 +217,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
           if (_isEditing) ...[
             const SizedBox(height: 24),
             AnimatedSection(
-              delay: const Duration(milliseconds: 120),
+              delay: const Duration(milliseconds: 180),
               child: ActionButton(
                 onPressed: _saveProfile,
                 isBusy: _isSaving,
@@ -273,9 +312,99 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+class _StoreHero extends StatelessWidget {
+  const _StoreHero({required this.storeName, required this.ownerName});
 
+  final String storeName;
+  final String ownerName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF97316), Color(0xFFC2410C)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFC2410C).withValues(alpha: 0.3),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.35),
+                width: 1.2,
+              ),
+            ),
+            child: const Icon(
+              Icons.storefront_rounded,
+              size: 30,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  storeName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  ownerName.trim().isEmpty
+                      ? 'Store Owner'
+                      : 'Owned by ${ownerName.trim()}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  const _InfoTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color color;
   final String label;
   final String value;
 
@@ -287,27 +416,41 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: colors.onSurfaceVariant,
-            ),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: Icon(icon, color: color, size: 20),
         ),
+        const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            isEmpty ? 'Not set' : value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: isEmpty
-                  ? colors.onSurfaceVariant.withValues(alpha: 0.5)
-                  : colors.onSurface,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isEmpty ? 'Not set' : value,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                  color: isEmpty
+                      ? colors.onSurfaceVariant.withValues(alpha: 0.5)
+                      : colors.onSurface,
+                ),
+              ),
+            ],
           ),
         ),
       ],

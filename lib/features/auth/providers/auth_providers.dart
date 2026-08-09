@@ -34,6 +34,11 @@ class AuthService {
   final Ref _ref;
   final _deviceSessionService = DeviceSessionService();
 
+  static const _kProfileStoreName = 'profile_storeName';
+  static const _kProfileOwnerName = 'profile_ownerName';
+  static const _kProfilePhone = 'profile_phone';
+  static const _kProfileEmail = 'profile_email';
+
   AuthBackend get backend => _ref.read(authBackendProvider);
 
   /// Restores the locally persisted session (JWT or Firebase) after app
@@ -64,6 +69,30 @@ class AuthService {
       password: password,
       metadata: {'shopName': shopName.trim()},
     );
+    await _persistSignupProfile(
+      shopName: shopName,
+      ownerName: ownerName,
+      email: email,
+      mobile: mobile,
+    );
+  }
+
+  /// Stores the registration values locally so the profile / store
+  /// information screens show them right away, even before the shop
+  /// profile exists on the backend.
+  Future<void> _persistSignupProfile({
+    required String shopName,
+    required String ownerName,
+    required String email,
+    required String mobile,
+  }) async {
+    final settings = _ref.read(localDatabaseProvider).settings;
+    await Future.wait([
+      settings.put(_kProfileStoreName, shopName.trim()),
+      settings.put(_kProfileOwnerName, ownerName.trim()),
+      settings.put(_kProfilePhone, mobile.trim()),
+      settings.put(_kProfileEmail, email.trim().toLowerCase()),
+    ]);
   }
 
   /// Sends an email verification code (custom backend) or a fresh
@@ -182,10 +211,29 @@ class AuthService {
     );
     await db.users.put(appUser);
     _ref.read(currentUserProvider.notifier).state = appUser;
+    await _fillMissingProfileFromSession(session);
     final syncService = SyncService(db);
     if (await syncService.isOnline) {
       await syncService.sync(shopId: shopId);
     }
+  }
+
+  /// Backfills profile fields from the signed-in session, but never
+  /// overwrites values the user already saved or that were captured at
+  /// registration.
+  Future<void> _fillMissingProfileFromSession(AuthSession session) async {
+    final settings = _ref.read(localDatabaseProvider).settings;
+    final ownerName = (settings.get(_kProfileOwnerName) as String?) ?? '';
+    final phone = (settings.get(_kProfilePhone) as String?) ?? '';
+    final email = (settings.get(_kProfileEmail) as String?) ?? '';
+    await Future.wait([
+      if (ownerName.trim().isEmpty && session.displayName.trim().isNotEmpty)
+        settings.put(_kProfileOwnerName, session.displayName.trim()),
+      if (phone.trim().isEmpty && session.phone.trim().isNotEmpty)
+        settings.put(_kProfilePhone, session.phone.trim()),
+      if (email.trim().isEmpty && session.email.trim().isNotEmpty)
+        settings.put(_kProfileEmail, session.email.trim().toLowerCase()),
+    ]);
   }
 }
 
