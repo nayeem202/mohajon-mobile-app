@@ -5,11 +5,15 @@ class ReportItem {
     required this.icon,
     required this.title,
     required this.description,
-    required this.color,
+    required this.startColor,
+    required this.endColor,
+    this.available = true,
   });
 
   final IconData icon;
   final String title;
   final String description;
-  final Color color;
+  final Color startColor;
+  final Color endColor;
+  final bool available;
 }
