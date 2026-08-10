@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
@@ -65,6 +66,38 @@ class ApiClient {
   }) async {
     final data = await getJson(path, query: query, timeout: timeout);
     return (data is Map<String, dynamic>) ? data : const {};
+  }
+
+  /// Downloads a binary payload (e.g. a server-rendered PDF/XLSX report).
+  ///
+  /// Returns `null` when the response is empty. Throws [ApiException] on
+  /// non-2xx responses (the caller decides whether to fall back offline).
+  Future<Uint8List?> getBytes(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async {
+    final client = await secureHttpClient();
+    var response = await client
+        .get(_uri(path, query), headers: _headers())
+        .timeout(timeout ?? _timeout);
+    if (response.statusCode == 401 && _settings.get(_kRefreshToken) != null) {
+      final refreshed = await _tryRefresh();
+      if (refreshed) {
+        response = await client
+            .get(_uri(path, query), headers: _headers())
+            .timeout(timeout ?? _timeout);
+      }
+    }
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.bodyBytes.isEmpty) return null;
+      return response.bodyBytes;
+    }
+    throw ApiException(
+      response.statusCode,
+      'download_failed',
+      'Download failed ($path).',
+    );
   }
 
   Future<Map<String, dynamic>> post(

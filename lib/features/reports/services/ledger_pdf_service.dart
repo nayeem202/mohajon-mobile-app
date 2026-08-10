@@ -8,46 +8,65 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/download_export_service.dart';
+import '../../../core/services/server_report_downloader.dart';
 import '../models/customer_ledger.dart';
 import '../models/ledger_entry.dart';
 
 class LedgerPdfService {
   final _downloadExportService = DownloadExportService();
+  final _serverDownloader = ServerReportDownloader();
   pw.Font? _baseFont;
   pw.Font? _boldFont;
 
   Future<pw.ThemeData> _buildTheme() async {
     if (_baseFont == null) {
-      final regular = await rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf');
+      final regular = await rootBundle.load(
+        'assets/fonts/NotoSansBengali-Regular.ttf',
+      );
       _baseFont = pw.Font.ttf(regular);
     }
     if (_boldFont == null) {
-      final bold = await rootBundle.load('assets/fonts/NotoSansBengali-Bold.ttf');
+      final bold = await rootBundle.load(
+        'assets/fonts/NotoSansBengali-Bold.ttf',
+      );
       _boldFont = pw.Font.ttf(bold);
     }
     return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
   }
 
   Future<File> saveAllCustomers(List<CustomerLedger> customers) async {
+    final fileName = 'customer-ledger-all.pdf';
+    final serverBytes = await _serverDownloader.download(
+      reportType: 'customer-ledger',
+      format: 'pdf',
+    );
+    if (serverBytes != null) return _saveFile(fileName, serverBytes);
+
     final bytes = await buildAllCustomersPdf(customers);
-    return _saveFile('customer-ledger-all.pdf', bytes);
+    return _saveFile(fileName, bytes);
   }
 
   Future<File> saveCustomerDetail(
     CustomerLedger customer,
     List<LedgerEntry> entries,
   ) async {
-    final bytes = await buildCustomerDetailPdf(customer, entries);
     final fileName =
         'ledger-${_safeFilePart(customer.name.isEmpty ? 'customer' : customer.name)}.pdf';
+    final serverBytes = await _serverDownloader.download(
+      reportType: 'customer-ledger',
+      format: 'pdf',
+      extraQuery: {'customerId': customer.customerId},
+    );
+    if (serverBytes != null) return _saveFile(fileName, serverBytes);
+
+    final bytes = await buildCustomerDetailPdf(customer, entries);
     return _saveFile(fileName, bytes);
   }
 
   Future<Uint8List> buildAllCustomersPdf(List<CustomerLedger> customers) async {
     final theme = await _buildTheme();
     final doc = pw.Document(theme: theme);
-    final totalOutstanding =
-        customers.fold<double>(0, (s, c) => s + c.balance);
+    final totalOutstanding = customers.fold<double>(0, (s, c) => s + c.balance);
     final withDues = customers.where((c) => c.hasDue).length;
     final now = DateTime.now();
 
@@ -84,8 +103,10 @@ class LedgerPdfService {
           pw.SizedBox(height: 20),
           pw.Table(
             border: pw.TableBorder(
-              horizontalInside:
-                  pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+              horizontalInside: pw.BorderSide(
+                color: PdfColors.grey300,
+                width: 0.5,
+              ),
               bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
               top: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
             ),
@@ -107,8 +128,8 @@ class LedgerPdfService {
                 'Status',
               ]),
               ...customers.asMap().entries.map(
-                    (e) => _customerRow(e.value, e.key.isOdd),
-                  ),
+                (e) => _customerRow(e.value, e.key.isOdd),
+              ),
             ],
           ),
         ],
@@ -170,8 +191,10 @@ class LedgerPdfService {
           pw.SizedBox(height: 20),
           pw.Table(
             border: pw.TableBorder(
-              horizontalInside:
-                  pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+              horizontalInside: pw.BorderSide(
+                color: PdfColors.grey300,
+                width: 0.5,
+              ),
               bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
               top: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
             ),
@@ -191,11 +214,15 @@ class LedgerPdfService {
                 'Balance',
               ]),
               ...entries.asMap().entries.map(
-                    (e) => _entryRow(e.value, e.key.isOdd),
-                  ),
-              _totalRow(
-                ['TOTAL', '', _fmt(totalDebit), _fmt(totalCredit), _fmt(lastBalance)],
+                (e) => _entryRow(e.value, e.key.isOdd),
               ),
+              _totalRow([
+                'TOTAL',
+                '',
+                _fmt(totalDebit),
+                _fmt(totalCredit),
+                _fmt(lastBalance),
+              ]),
             ],
           ),
         ],
@@ -228,32 +255,20 @@ class LedgerPdfService {
                   ),
                   pw.Text(
                     'Smart POS & Inventory Management',
-                    style: pw.TextStyle(
-fontSize: 8,
-                      color: PdfColors.grey600,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
                   ),
                   pw.SizedBox(height: 6),
                   pw.Text(
                     'Dhaka, Bangladesh',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                   pw.Text(
                     '+880 1700-000000',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                   pw.Text(
                     'hello@haalkhata.com',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                 ],
               ),
@@ -284,8 +299,14 @@ fontSize: 8,
                     ),
                   ),
                   pw.SizedBox(height: 8),
-                  _metaRow('Generated', DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())),
-                  _metaRow('Period', 'As of ${DateFormat('MMMM d, yyyy').format(DateTime.now())}'),
+                  _metaRow(
+                    'Generated',
+                    DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now()),
+                  ),
+                  _metaRow(
+                    'Period',
+                    'As of ${DateFormat('MMMM d, yyyy').format(DateTime.now())}',
+                  ),
                   _metaRow('Report Type', reportType),
                 ],
               ),
@@ -321,10 +342,7 @@ fontSize: 8,
             ),
             pw.TextSpan(
               text: value,
-              style: pw.TextStyle(
-                fontSize: 8,
-                color: PdfColors.grey600,
-              ),
+              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
             ),
           ],
         ),
@@ -332,7 +350,10 @@ fontSize: 8,
     );
   }
 
-  pw.Widget _reportMetaBar(DateTime now, {String reportType = 'All Customers'}) {
+  pw.Widget _reportMetaBar(
+    DateTime now, {
+    String reportType = 'All Customers',
+  }) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: pw.BoxDecoration(
@@ -345,7 +366,10 @@ fontSize: 8,
           pw.Expanded(
             child: pw.Row(
               children: [
-                _metaBadge('Period', 'As of ${DateFormat('MMMM d, yyyy').format(now)}'),
+                _metaBadge(
+                  'Period',
+                  'As of ${DateFormat('MMMM d, yyyy').format(now)}',
+                ),
                 pw.SizedBox(width: 16),
                 _metaBadge('Report Type', reportType),
               ],
@@ -370,10 +394,7 @@ fontSize: 8,
         ),
         pw.Text(
           value,
-          style: pw.TextStyle(
-            fontSize: 9,
-            color: PdfColors.grey700,
-          ),
+          style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
         ),
       ],
     );
@@ -411,10 +432,7 @@ fontSize: 8,
               ),
               pw.Text(
                 customer.phone,
-                style: pw.TextStyle(
-                  fontSize: 9,
-                  color: PdfColors.grey800,
-                ),
+                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
               ),
             ],
           ),
@@ -446,10 +464,7 @@ fontSize: 8,
             pw.SizedBox(height: 10),
             pw.Text(
               label,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfColors.grey500,
-              ),
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
             ),
             pw.SizedBox(height: 4),
             pw.Text(
@@ -468,16 +483,18 @@ fontSize: 8,
 
   pw.TableRow _tableHeaderRow(List<String> headers) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFF1E3A8A),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF1E3A8A)),
       children: headers
           .map(
             (h) => pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 8,
+              ),
               child: pw.Text(
                 h,
-                textAlign: h == 'Debit (DR)' ||
+                textAlign:
+                    h == 'Debit (DR)' ||
                         h == 'Credit (CR)' ||
                         h == 'Closing Balance' ||
                         h == 'Balance' ||
@@ -500,9 +517,7 @@ fontSize: 8,
     final settled = !c.hasDue;
     return pw.TableRow(
       decoration: pw.BoxDecoration(
-        color: odd
-            ? const PdfColor.fromInt(0xFFF8FAFC)
-            : PdfColors.white,
+        color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
         _cell(c.name),
@@ -526,9 +541,7 @@ fontSize: 8,
     final dateStr = DateFormat('MMM d, y').format(entry.date);
     return pw.TableRow(
       decoration: pw.BoxDecoration(
-        color: odd
-            ? const PdfColor.fromInt(0xFFF8FAFC)
-            : PdfColors.white,
+        color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
         _cell(dateStr),
@@ -555,16 +568,19 @@ fontSize: 8,
 
   pw.TableRow _totalRow(List<String> cells) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFFF1F5F9),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: cells
           .map(
             (c) => pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 7,
+              ),
               child: pw.Text(
                 c,
-                textAlign: c == 'TOTAL' ? pw.TextAlign.left : pw.TextAlign.right,
+                textAlign: c == 'TOTAL'
+                    ? pw.TextAlign.left
+                    : pw.TextAlign.right,
                 style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,

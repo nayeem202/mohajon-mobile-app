@@ -7,9 +7,15 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../models/report_item.dart';
 import 'customer_ledger_screen.dart';
+import 'daily_transactions_screen.dart';
+import 'due_payments_screen.dart';
 import 'expense_report_screen.dart';
 import 'inventory_report_screen.dart';
+import 'payment_methods_screen.dart';
+import 'product_sales_screen.dart';
+import 'profit_loss_screen.dart';
 import 'sales_summary_screen.dart';
+import 'vat_report_screen.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -54,7 +60,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: 'Revenue, cost & net profit summary',
       startColor: Color(0xFF059669),
       endColor: Color(0xFF34D399),
-      available: false,
     ),
     ReportItem(
       icon: Icons.shopping_bag_rounded,
@@ -62,7 +67,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: 'Quantity & revenue per product',
       startColor: Color(0xFFD97706),
       endColor: Color(0xFFFBBF24),
-      available: false,
     ),
     ReportItem(
       icon: Icons.receipt_rounded,
@@ -70,7 +74,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: 'All transactions recorded per day',
       startColor: Color(0xFF0891B2),
       endColor: Color(0xFF22D3EE),
-      available: false,
     ),
     ReportItem(
       icon: Icons.payment_rounded,
@@ -78,7 +81,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: 'Cash, bKash, Nagad & card breakdown',
       startColor: Color(0xFF7C3AED),
       endColor: Color(0xFFA78BFA),
-      available: false,
     ),
     ReportItem(
       icon: Icons.warning_amber_rounded,
@@ -86,7 +88,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: 'Overdue and pending payment list',
       startColor: Color(0xFFDC2626),
       endColor: Color(0xFFFB7185),
-      available: false,
     ),
     ReportItem(
       icon: Icons.calculate_rounded,
@@ -94,7 +95,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: 'VAT collected summaries',
       startColor: Color(0xFF0891B2),
       endColor: Color(0xFF67E8F9),
-      available: false,
     ),
     ReportItem(
       icon: Icons.people_rounded,
@@ -233,6 +233,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       'Customer Ledger' => const CustomerLedgerScreen(),
       'Inventory Report' => const InventoryReportScreen(),
       'Expense Report' => const ExpenseReportScreen(),
+      'Profit & Loss' => const ProfitLossScreen(),
+      'Product-wise Sales' => const ProductSalesScreen(),
+      'Daily Transactions' => const DailyTransactionsScreen(),
+      'Payment Methods' => const PaymentMethodsScreen(),
+      'Due Payments' => const DuePaymentsScreen(),
+      'VAT Report' => const VatReportScreen(),
       _ => null,
     };
     if (screen == null) return;

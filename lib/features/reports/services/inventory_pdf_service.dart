@@ -9,28 +9,41 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/models/product.dart';
 import '../../../core/services/download_export_service.dart';
+import '../../../core/services/server_report_downloader.dart';
 import '../providers/report_providers.dart';
 
 class InventoryPdfService {
   final _downloadExportService = DownloadExportService();
+  final _serverDownloader = ServerReportDownloader();
   pw.Font? _baseFont;
   pw.Font? _boldFont;
 
   Future<pw.ThemeData> _buildTheme() async {
     if (_baseFont == null) {
-      final regular = await rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf');
+      final regular = await rootBundle.load(
+        'assets/fonts/NotoSansBengali-Regular.ttf',
+      );
       _baseFont = pw.Font.ttf(regular);
     }
     if (_boldFont == null) {
-      final bold = await rootBundle.load('assets/fonts/NotoSansBengali-Bold.ttf');
+      final bold = await rootBundle.load(
+        'assets/fonts/NotoSansBengali-Bold.ttf',
+      );
       _boldFont = pw.Font.ttf(bold);
     }
     return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
   }
 
   Future<File> saveInventoryReport(InventoryReport report) async {
+    final fileName = 'inventory-report.pdf';
+    final serverBytes = await _serverDownloader.download(
+      reportType: 'inventory',
+      format: 'pdf',
+    );
+    if (serverBytes != null) return _saveFile(fileName, serverBytes);
+
     final bytes = await buildInventoryPdf(report);
-    return _saveFile('inventory-report.pdf', bytes);
+    return _saveFile(fileName, bytes);
   }
 
   Future<Uint8List> buildInventoryPdf(InventoryReport report) async {
@@ -77,8 +90,10 @@ class InventoryPdfService {
           pw.SizedBox(height: 20),
           pw.Table(
             border: pw.TableBorder(
-              horizontalInside:
-                  pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+              horizontalInside: pw.BorderSide(
+                color: PdfColors.grey300,
+                width: 0.5,
+              ),
               bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
               top: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
             ),
@@ -102,8 +117,8 @@ class InventoryPdfService {
                 'Status',
               ]),
               ...report.products.asMap().entries.map(
-                    (e) => _productRow(e.value, e.key),
-                  ),
+                (e) => _productRow(e.value, e.key),
+              ),
               _totalRow(report),
             ],
           ),
@@ -137,32 +152,20 @@ class InventoryPdfService {
                   ),
                   pw.Text(
                     'Smart POS & Inventory Management',
-                    style: pw.TextStyle(
-                      fontSize: 9,
-                      color: PdfColors.grey600,
-                    ),
+                    style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                   ),
                   pw.SizedBox(height: 6),
                   pw.Text(
                     'Dhaka, Bangladesh',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                   pw.Text(
                     '+880 1700-000000',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                   pw.Text(
                     'hello@haalkhata.com',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                 ],
               ),
@@ -193,8 +196,14 @@ class InventoryPdfService {
                     ),
                   ),
                   pw.SizedBox(height: 8),
-                  _metaRow('Generated', DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())),
-                  _metaRow('Period', 'As of ${DateFormat('MMMM d, yyyy').format(DateTime.now())}'),
+                  _metaRow(
+                    'Generated',
+                    DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now()),
+                  ),
+                  _metaRow(
+                    'Period',
+                    'As of ${DateFormat('MMMM d, yyyy').format(DateTime.now())}',
+                  ),
                   _metaRow('Report Type', 'Inventory Report'),
                 ],
               ),
@@ -230,10 +239,7 @@ class InventoryPdfService {
             ),
             pw.TextSpan(
               text: value,
-              style: pw.TextStyle(
-                fontSize: 8,
-                color: PdfColors.grey600,
-              ),
+              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
             ),
           ],
         ),
@@ -254,7 +260,10 @@ class InventoryPdfService {
           pw.Expanded(
             child: pw.Row(
               children: [
-                _metaBadge('Period', 'As of ${DateFormat('MMMM d, yyyy').format(now)}'),
+                _metaBadge(
+                  'Period',
+                  'As of ${DateFormat('MMMM d, yyyy').format(now)}',
+                ),
                 pw.SizedBox(width: 16),
                 _metaBadge('Report Type', 'Inventory Report'),
                 pw.SizedBox(width: 16),
@@ -281,10 +290,7 @@ class InventoryPdfService {
         ),
         pw.Text(
           value,
-          style: pw.TextStyle(
-            fontSize: 9,
-            color: PdfColors.grey700,
-          ),
+          style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
         ),
       ],
     );
@@ -313,10 +319,7 @@ class InventoryPdfService {
             pw.SizedBox(height: 10),
             pw.Text(
               label,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfColors.grey500,
-              ),
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
             ),
             pw.SizedBox(height: 4),
             pw.Text(
@@ -335,16 +338,22 @@ class InventoryPdfService {
 
   pw.TableRow _tableHeaderRow(List<String> headers) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFF1E3A8A),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF1E3A8A)),
       children: headers
           .map(
             (h) => pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 8,
+              ),
               child: pw.Text(
                 h,
-                textAlign: h == '#' || h == 'Stock' || h == 'Alert' || h == 'Stock Value' || h == 'Status'
+                textAlign:
+                    h == '#' ||
+                        h == 'Stock' ||
+                        h == 'Alert' ||
+                        h == 'Stock Value' ||
+                        h == 'Status'
                     ? pw.TextAlign.center
                     : pw.TextAlign.left,
                 style: pw.TextStyle(
@@ -364,15 +373,13 @@ class InventoryPdfService {
     final statusLabel = status == InventoryStatus.outOfStock
         ? 'Out of Stock'
         : status == InventoryStatus.low
-            ? 'Low'
-            : 'Normal';
+        ? 'Low'
+        : 'Normal';
     final stockValue = p.stockQty * p.purchasePrice;
     final odd = index.isOdd;
     return pw.TableRow(
       decoration: pw.BoxDecoration(
-        color: odd
-            ? const PdfColor.fromInt(0xFFF8FAFC)
-            : PdfColors.white,
+        color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
         _cell('${index + 1}'),
@@ -388,16 +395,22 @@ class InventoryPdfService {
 
   pw.TableRow _totalRow(InventoryReport report) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFFF1F5F9),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: [
         _cell('TOTAL', bold: true),
         _cell('', bold: true),
         _cell('', bold: true),
-        _cell('${report.products.fold<int>(0, (s, p) => s + p.stockQty)}', align: pw.TextAlign.right, bold: true),
+        _cell(
+          '${report.products.fold<int>(0, (s, p) => s + p.stockQty)}',
+          align: pw.TextAlign.right,
+          bold: true,
+        ),
         _cell('', bold: true),
-        _cell(_fmt(report.totalStockValue), align: pw.TextAlign.right, bold: true),
+        _cell(
+          _fmt(report.totalStockValue),
+          align: pw.TextAlign.right,
+          bold: true,
+        ),
         _cell('', bold: true),
       ],
     );
@@ -407,18 +420,18 @@ class InventoryPdfService {
     final bg = status == InventoryStatus.normal
         ? const PdfColor.fromInt(0xFFDCFCE7)
         : status == InventoryStatus.low
-            ? const PdfColor.fromInt(0xFFFEF3C7)
-            : const PdfColor.fromInt(0xFFFEE2E2);
+        ? const PdfColor.fromInt(0xFFFEF3C7)
+        : const PdfColor.fromInt(0xFFFEE2E2);
     final fg = status == InventoryStatus.normal
         ? const PdfColor.fromInt(0xFF16A34A)
         : status == InventoryStatus.low
-            ? const PdfColor.fromInt(0xFFD97706)
-            : const PdfColor.fromInt(0xFFDC2626);
+        ? const PdfColor.fromInt(0xFFD97706)
+        : const PdfColor.fromInt(0xFFDC2626);
     final label = status == InventoryStatus.normal
         ? 'Normal'
         : status == InventoryStatus.low
-            ? 'Low'
-            : 'Out';
+        ? 'Low'
+        : 'Out';
     return pw.Center(
       child: pw.Container(
         padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),

@@ -9,20 +9,26 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/download_export_service.dart';
+import '../../../core/services/server_report_downloader.dart';
 import '../../expenses/models/expense.dart';
 
 class ExpenseReportPdfService {
   final _downloadExportService = DownloadExportService();
+  final _serverDownloader = ServerReportDownloader();
   pw.Font? _baseFont;
   pw.Font? _boldFont;
 
   Future<pw.ThemeData> _buildTheme() async {
     if (_baseFont == null) {
-      final regular = await rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf');
+      final regular = await rootBundle.load(
+        'assets/fonts/NotoSansBengali-Regular.ttf',
+      );
       _baseFont = pw.Font.ttf(regular);
     }
     if (_boldFont == null) {
-      final bold = await rootBundle.load('assets/fonts/NotoSansBengali-Bold.ttf');
+      final bold = await rootBundle.load(
+        'assets/fonts/NotoSansBengali-Bold.ttf',
+      );
       _boldFont = pw.Font.ttf(bold);
     }
     return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
@@ -32,8 +38,16 @@ class ExpenseReportPdfService {
     required List<Expense> expenses,
     required DateTimeRange range,
   }) async {
-    final bytes = await buildExpenseReportPdf(expenses, range);
     final fileName = 'expense-report-${_rangeFilePart(range)}.pdf';
+    final serverBytes = await _serverDownloader.download(
+      reportType: 'expenses',
+      format: 'pdf',
+      from: range.start,
+      to: range.end,
+    );
+    if (serverBytes != null) return _saveFile(fileName, serverBytes);
+
+    final bytes = await buildExpenseReportPdf(expenses, range);
     return _saveFile(fileName, bytes);
   }
 
@@ -43,9 +57,15 @@ class ExpenseReportPdfService {
   ) async {
     final theme = await _buildTheme();
     final doc = pw.Document(theme: theme);
-    final total = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final total = expenses.fold<double>(
+      0,
+      (sum, expense) => sum + expense.amount,
+    );
     final average = expenses.isEmpty ? 0.0 : total / expenses.length;
-    final categoryCount = expenses.map((expense) => expense.categoryId).toSet().length;
+    final categoryCount = expenses
+        .map((expense) => expense.categoryId)
+        .toSet()
+        .length;
     final topCategory = _topCategory(expenses);
     final periodText =
         '${DateFormat('dd MMM yyyy').format(range.start)} - ${DateFormat('dd MMM yyyy').format(range.end)}';
@@ -57,10 +77,7 @@ class ExpenseReportPdfService {
         header: (context) => _header('Expense Report'),
         footer: (context) => _pageFooter(context),
         build: (context) => [
-          _reportMetaBar(
-            periodText: periodText,
-            reportType: 'Date Range',
-          ),
+          _reportMetaBar(periodText: periodText, reportType: 'Date Range'),
           pw.SizedBox(height: 16),
           pw.Row(
             children: [
@@ -109,10 +126,7 @@ class ExpenseReportPdfService {
                 ),
                 pw.Text(
                   topCategory,
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    color: PdfColors.grey700,
-                  ),
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
                 ),
               ],
             ),
@@ -120,8 +134,10 @@ class ExpenseReportPdfService {
           pw.SizedBox(height: 16),
           pw.Table(
             border: pw.TableBorder(
-              horizontalInside:
-                  pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+              horizontalInside: pw.BorderSide(
+                color: PdfColors.grey300,
+                width: 0.5,
+              ),
               bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
               top: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
             ),
@@ -139,8 +155,8 @@ class ExpenseReportPdfService {
                 'Amount (৳)',
               ]),
               ...expenses.asMap().entries.map(
-                    (e) => _expenseRow(e.value, e.key.isOdd),
-                  ),
+                (e) => _expenseRow(e.value, e.key.isOdd),
+              ),
               _totalRow(total),
             ],
           ),
@@ -174,32 +190,20 @@ class ExpenseReportPdfService {
                   ),
                   pw.Text(
                     'Smart POS & Inventory Management',
-                    style: pw.TextStyle(
-                      fontSize: 9,
-                      color: PdfColors.grey600,
-                    ),
+                    style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                   ),
                   pw.SizedBox(height: 6),
                   pw.Text(
                     'Dhaka, Bangladesh',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                   pw.Text(
                     '+880 1700-000000',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                   pw.Text(
                     'hello@haalkhata.com',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
                   ),
                 ],
               ),
@@ -230,8 +234,14 @@ class ExpenseReportPdfService {
                     ),
                   ),
                   pw.SizedBox(height: 8),
-                  _metaRow('Generated', DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())),
-                  _metaRow('Period', 'As of ${DateFormat('MMMM d, yyyy').format(DateTime.now())}'),
+                  _metaRow(
+                    'Generated',
+                    DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now()),
+                  ),
+                  _metaRow(
+                    'Period',
+                    'As of ${DateFormat('MMMM d, yyyy').format(DateTime.now())}',
+                  ),
                   _metaRow('Report Type', 'Expense Report'),
                 ],
               ),
@@ -294,10 +304,7 @@ class ExpenseReportPdfService {
             ),
             pw.TextSpan(
               text: value,
-              style: pw.TextStyle(
-                fontSize: 8,
-                color: PdfColors.grey600,
-              ),
+              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
             ),
           ],
         ),
@@ -319,10 +326,7 @@ class ExpenseReportPdfService {
         ),
         pw.Text(
           value,
-          style: pw.TextStyle(
-            fontSize: 9,
-            color: PdfColors.grey700,
-          ),
+          style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
         ),
       ],
     );
@@ -351,10 +355,7 @@ class ExpenseReportPdfService {
             pw.SizedBox(height: 10),
             pw.Text(
               label,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfColors.grey500,
-              ),
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
             ),
             pw.SizedBox(height: 4),
             pw.Text(
@@ -373,13 +374,14 @@ class ExpenseReportPdfService {
 
   pw.TableRow _tableHeaderRow(List<String> headers) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFF1E3A8A),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF1E3A8A)),
       children: headers
           .map(
             (header) => pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 8,
+              ),
               child: pw.Text(
                 header,
                 textAlign: header == 'Amount (৳)'
@@ -418,9 +420,7 @@ class ExpenseReportPdfService {
 
   pw.TableRow _totalRow(double total) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFFF1F5F9),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: [
         _cell('TOTAL', bold: true),
         _cell(''),
@@ -460,10 +460,7 @@ class ExpenseReportPdfService {
       alignment: pw.Alignment.centerRight,
       child: pw.Text(
         'Page ${context.pageNumber} of ${context.pagesCount}',
-        style: pw.TextStyle(
-          fontSize: 8,
-          color: PdfColors.grey500,
-        ),
+        style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
       ),
     );
   }

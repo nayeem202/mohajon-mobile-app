@@ -8,17 +8,27 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/services/download_export_service.dart';
+import '../../../core/services/server_report_downloader.dart';
 import '../../expenses/models/expense.dart';
 
 class ExpenseReportExcelService {
   final _downloadExportService = DownloadExportService();
+  final _serverDownloader = ServerReportDownloader();
 
   Future<File> saveExpenseReport({
     required List<Expense> expenses,
     required DateTimeRange range,
   }) async {
-    final bytes = buildWorkbook(expenses, range);
     final fileName = 'expense-report-${_rangeFilePart(range)}.xlsx';
+    final serverBytes = await _serverDownloader.download(
+      reportType: 'expenses',
+      format: 'xlsx',
+      from: range.start,
+      to: range.end,
+    );
+    if (serverBytes != null) return _saveFile(fileName, serverBytes);
+
+    final bytes = buildWorkbook(expenses, range);
     return _saveFile(fileName, bytes);
   }
 
@@ -97,73 +107,97 @@ class ExpenseReportExcelService {
   String _worksheetXml(List<Expense> expenses, DateTimeRange range) {
     final rows = <String>[];
     var rowIndex = 1;
-    final total = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
-    final categories = expenses.map((expense) => expense.categoryId).toSet().length;
+    final total = expenses.fold<double>(
+      0,
+      (sum, expense) => sum + expense.amount,
+    );
+    final categories = expenses
+        .map((expense) => expense.categoryId)
+        .toSet()
+        .length;
     final average = expenses.isEmpty ? 0.0 : total / expenses.length;
     final topCategory = _highestCategory(expenses);
     final lastDataRow = expenses.isEmpty ? 8 : 8 + expenses.length;
     final rangeText =
         '${DateFormat('dd MMM yyyy').format(range.start)} - ${DateFormat('dd MMM yyyy').format(range.end)}';
 
-    rows.add(_row(rowIndex++, [
-      _textCell('A1', 'Expense Report', styleId: 1),
-    ]));
-    rows.add(_row(rowIndex++, [
-      _textCell('A2', 'Period', styleId: 2),
-      _textCell('B2', rangeText, styleId: 3),
-    ]));
+    rows.add(_row(rowIndex++, [_textCell('A1', 'Expense Report', styleId: 1)]));
+    rows.add(
+      _row(rowIndex++, [
+        _textCell('A2', 'Period', styleId: 2),
+        _textCell('B2', rangeText, styleId: 3),
+      ]),
+    );
     rows.add(_row(rowIndex++, []));
-    rows.add(_row(rowIndex++, [
-      _textCell('A4', 'Total Expense', styleId: 4),
-      _textCell('B4', _fmt(total), styleId: 5),
-      _textCell('C4', 'Entries', styleId: 4),
-      _textCell('D4', '${expenses.length}', styleId: 5),
-    ]));
-    rows.add(_row(rowIndex++, [
-      _textCell('A5', 'Average', styleId: 4),
-      _textCell('B5', _fmt(average), styleId: 5),
-      _textCell('C5', 'Categories', styleId: 4),
-      _textCell('D5', '$categories', styleId: 5),
-    ]));
-    rows.add(_row(rowIndex++, [
-      _textCell('A6', 'Top Category', styleId: 4),
-      _textCell('B6', topCategory, styleId: 5),
-    ]));
+    rows.add(
+      _row(rowIndex++, [
+        _textCell('A4', 'Total Expense', styleId: 4),
+        _textCell('B4', _fmt(total), styleId: 5),
+        _textCell('C4', 'Entries', styleId: 4),
+        _textCell('D4', '${expenses.length}', styleId: 5),
+      ]),
+    );
+    rows.add(
+      _row(rowIndex++, [
+        _textCell('A5', 'Average', styleId: 4),
+        _textCell('B5', _fmt(average), styleId: 5),
+        _textCell('C5', 'Categories', styleId: 4),
+        _textCell('D5', '$categories', styleId: 5),
+      ]),
+    );
+    rows.add(
+      _row(rowIndex++, [
+        _textCell('A6', 'Top Category', styleId: 4),
+        _textCell('B6', topCategory, styleId: 5),
+      ]),
+    );
     rows.add(_row(rowIndex++, []));
-    rows.add(_row(rowIndex++, [
-      _textCell('A8', 'Date', styleId: 6),
-      _textCell('B8', 'Category', styleId: 6),
-      _textCell('C8', 'Description', styleId: 6),
-      _textCell('D8', 'Amount (৳)', styleId: 6),
-    ]));
+    rows.add(
+      _row(rowIndex++, [
+        _textCell('A8', 'Date', styleId: 6),
+        _textCell('B8', 'Category', styleId: 6),
+        _textCell('C8', 'Description', styleId: 6),
+        _textCell('D8', 'Amount (৳)', styleId: 6),
+      ]),
+    );
 
     var dataRow = 9;
     for (final expense in expenses) {
       final style = dataRow.isOdd ? 7 : 8;
-      rows.add(_row(dataRow, [
-        _textCell('A$dataRow', DateFormat('dd MMM yyyy').format(expense.date), styleId: style),
-        _textCell('B$dataRow', expense.categoryLabel, styleId: style),
-        _textCell('C$dataRow', expense.description, styleId: style),
-        _numberCell('D$dataRow', expense.amount, styleId: style),
-      ]));
+      rows.add(
+        _row(dataRow, [
+          _textCell(
+            'A$dataRow',
+            DateFormat('dd MMM yyyy').format(expense.date),
+            styleId: style,
+          ),
+          _textCell('B$dataRow', expense.categoryLabel, styleId: style),
+          _textCell('C$dataRow', expense.description, styleId: style),
+          _numberCell('D$dataRow', expense.amount, styleId: style),
+        ]),
+      );
       dataRow++;
     }
 
-    rows.add(_row(dataRow, [
-      _textCell('A$dataRow', 'TOTAL', styleId: 9),
-      _textCell('B$dataRow', '', styleId: 9),
-      _textCell('C$dataRow', '', styleId: 9),
-      _numberCell('D$dataRow', total, styleId: 9),
-    ]));
+    rows.add(
+      _row(dataRow, [
+        _textCell('A$dataRow', 'TOTAL', styleId: 9),
+        _textCell('B$dataRow', '', styleId: 9),
+        _textCell('C$dataRow', '', styleId: 9),
+        _numberCell('D$dataRow', total, styleId: 9),
+      ]),
+    );
     dataRow++;
     rows.add(_row(dataRow++, []));
-    rows.add(_row(dataRow, [
-      _textCell(
-        'A$dataRow',
-        'Generated by Haalkhata on ${DateFormat('dd MMM yyyy').format(DateTime.now())}',
-        styleId: 10,
-      ),
-    ]));
+    rows.add(
+      _row(dataRow, [
+        _textCell(
+          'A$dataRow',
+          'Generated by Haalkhata on ${DateFormat('dd MMM yyyy').format(DateTime.now())}',
+          styleId: 10,
+        ),
+      ]),
+    );
 
     return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">

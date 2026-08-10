@@ -1,80 +1,162 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/models/sale.dart';
 import '../../../core/utils/money.dart';
+import '../../customers/providers/customer_providers.dart';
 import '../models/daily_sales.dart';
+import '../services/sales_summary_excel_service.dart';
+import '../services/sales_summary_pdf_service.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 
-class SalesSummaryScreen extends StatelessWidget {
+class SalesSummaryScreen extends ConsumerStatefulWidget {
   const SalesSummaryScreen({super.key});
 
-  static const _summaryCards = [
-    _SummaryCardData(label: 'Total Sales', amount: 458500),
-    _SummaryCardData(label: 'Transactions', amount: 672),
-    _SummaryCardData(label: 'Average Order', amount: 682),
-  ];
+  @override
+  ConsumerState<SalesSummaryScreen> createState() => _SalesSummaryScreenState();
+}
 
-  static final _dailySales = [
-    DailySales(
-      date: DateTime(2026, 7, 10),
-      label: 'Jul 10',
-      amount: 45850,
-      transactionCount: 67,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 9),
-      label: 'Jul 9',
-      amount: 46500,
-      transactionCount: 71,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 8),
-      label: 'Jul 8',
-      amount: 38200,
-      transactionCount: 55,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 7),
-      label: 'Jul 7',
-      amount: 42100,
-      transactionCount: 63,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 6),
-      label: 'Jul 6',
-      amount: 35400,
-      transactionCount: 52,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 5),
-      label: 'Jul 5',
-      amount: 28700,
-      transactionCount: 41,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 4),
-      label: 'Jul 4',
-      amount: 31200,
-      transactionCount: 46,
-      maxAmount: 46500,
-    ),
-    DailySales(
-      date: DateTime(2026, 7, 3),
-      label: 'Jul 3',
-      amount: 39800,
-      transactionCount: 58,
-      maxAmount: 46500,
-    ),
-  ];
+class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
+  final _pdfService = SalesSummaryPdfService();
+  final _excelService = SalesSummaryExcelService();
+  bool _exporting = false;
+
+  late DateTimeRange _range;
+
+  @override
+  void initState() {
+    super.initState();
+    final end = DateTime.now();
+    _range = DateTimeRange(
+      start: DateTime(end.year, end.month, end.day).subtract(const Duration(days: 9)),
+      end: end,
+    );
+  }
+
+  bool _inRange(DateTime value) {
+    final end = _range.end;
+    return !value.isBefore(_range.start) &&
+        !value.isAfter(DateTime(end.year, end.month, end.day, 23, 59, 59));
+  }
+
+  ({List<DailySales> days, double totalSales, int transactions,
+      double averageOrder}) _compute() {
+    final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
+    final byDay = <DateTime, List<Sale>>{};
+    for (final sale in sales) {
+      if (!_inRange(sale.createdAt)) continue;
+      final day = DateTime(
+        sale.createdAt.year,
+        sale.createdAt.month,
+        sale.createdAt.day,
+      );
+      byDay.putIfAbsent(day, () => []).add(sale);
+    }
+
+    final dayKeys = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
+    var maxAmount = 0.0;
+    for (final day in dayKeys) {
+      final amount =
+          byDay[day]!.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      if (amount > maxAmount) maxAmount = amount;
+    }
+
+    final days = <DailySales>[];
+    for (final day in dayKeys) {
+      final daySales = byDay[day]!;
+      final amount =
+          daySales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      days.add(
+        DailySales(
+          date: day,
+          label: DateFormat('dd MMM').format(day),
+          amount: amount,
+          transactionCount: daySales.length,
+          maxAmount: maxAmount,
+        ),
+      );
+    }
+
+    final totalSales = days.fold<double>(0, (sum, day) => sum + day.amount);
+    final transactions = days.fold<int>(
+      0,
+      (sum, day) => sum + day.transactionCount,
+    );
+    final averageOrder = transactions > 0 ? totalSales / transactions : 0.0;
+
+    return (
+      days: days,
+      totalSales: totalSales,
+      transactions: transactions,
+      averageOrder: averageOrder,
+    );
+  }
+
+  Future<void> _exportXlsx() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final data = _compute();
+      await _excelService.saveSalesSummary(
+        days: data.days,
+        range: _range,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sales summary exported as XLSX')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final data = _compute();
+      await _pdfService.saveSalesSummary(
+        days: data.days,
+        range: _range,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sales summary exported as PDF')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final data = _compute();
+    final summaryCards = [
+      _SummaryCardData(label: 'Total Sales', amount: data.totalSales),
+      _SummaryCardData(label: 'Transactions', amount: data.transactions),
+      _SummaryCardData(label: 'Average Order', amount: data.averageOrder),
+    ];
+    final rangeLabel =
+        '${DateFormat('dd MMM yyyy').format(_range.start)} – ${DateFormat('dd MMM yyyy').format(_range.end)}';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sales Summary'),
@@ -89,9 +171,9 @@ class SalesSummaryScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'July 1 – July 10, 2026',
-                style: TextStyle(
+              Text(
+                rangeLabel,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF667085),
@@ -102,23 +184,25 @@ class SalesSummaryScreen extends StatelessWidget {
                 label: 'XLSX',
                 icon: Icons.table_chart_outlined,
                 color: const Color(0xFF059669),
-                onTap: () => debugPrint('Export XLSX'),
+                isBusy: _exporting,
+                onTap: _exportXlsx,
               ),
               const SizedBox(width: 8),
               _ExportButton(
                 label: 'PDF',
                 icon: Icons.picture_as_pdf_rounded,
                 color: const Color(0xFFF97316),
-                onTap: () => debugPrint('Export PDF'),
+                isBusy: _exporting,
+                onTap: _exportPdf,
               ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              for (var i = 0; i < _summaryCards.length; i++) ...[
+              for (var i = 0; i < summaryCards.length; i++) ...[
                 if (i > 0) const SizedBox(width: 10),
-                Expanded(child: _SummaryCard(data: _summaryCards[i])),
+                Expanded(child: _SummaryCard(data: summaryCards[i])),
               ],
             ],
           ),
@@ -132,10 +216,23 @@ class SalesSummaryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          for (final day in _dailySales) ...[
+          for (final day in data.days) ...[
             _DailySalesRow(day: day),
             const SizedBox(height: 8),
           ],
+          if (data.days.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'No sales in the last 10 days',
+                  style: TextStyle(
+                    color: Color(0xFF98A2B3),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -148,18 +245,20 @@ class _ExportButton extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onTap,
+    this.isBusy = false,
   });
 
   final String label;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
+      onTap: isBusy ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
@@ -170,7 +269,17 @@ class _ExportButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: color),
+            if (isBusy)
+              SizedBox(
+                width: 13,
+                height: 13,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
+                ),
+              )
+            else
+              Icon(icon, size: 16, color: color),
             const SizedBox(width: 6),
             Text(
               label,
