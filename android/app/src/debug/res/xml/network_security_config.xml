@@ -6,4 +6,11 @@
             <certificates src="system"/>
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">104.207.92.108</domain>
+        <trust-anchors>
+            <certificates src="@raw/haalkhata_ca"/>
+            <certificates src="system"/>
+        </trust-anchors>
+    </domain-config>
 </network-security-config>

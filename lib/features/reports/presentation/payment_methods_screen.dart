@@ -167,14 +167,14 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
       case 'cash':
         return const Color(0xFF059669);
       case 'cash_walk_in':
-        return const Color(0xFF1E3A8A);
+        return const Color(0xFF9A3412);
       case 'bkash':
       case 'nagad':
         return const Color(0xFFD97706);
       case 'credit':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFF0F766E);
       case 'bank':
-        return const Color(0xFF0E7490);
+        return const Color(0xFFB45309);
       default:
         return const Color(0xFF667085);
     }
@@ -244,7 +244,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
                 child: ReportSummaryCard(
                   label: 'Top Method',
                   value: data.rows.isEmpty ? '—' : _methodLabel('${data.rows.first['method']}'),
-                  valueColor: const Color(0xFF1E3A8A),
+                  valueColor: const Color(0xFF9A3412),
                 ),
               ),
             ],

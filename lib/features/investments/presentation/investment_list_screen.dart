@@ -173,7 +173,7 @@ class _InvestmentsTopBar extends StatelessWidget {
         ),
         const NotificationBell(),
         const SizedBox(width: 14),
-        const ShopAvatar(radius: 17, backgroundColor: Color(0xFFE0F2FE), textColor: Color(0xFF2563EB)),
+        const ShopAvatar(radius: 17, backgroundColor: Color(0xFFFFF4E5), textColor: Color(0xFFB45309)),
       ],
     );
   }
@@ -488,8 +488,8 @@ class _CategoryBreakdown extends StatelessWidget {
     switch (category) {
       case 'Setup': return const Color(0xFFF97316);
       case 'Equipment': return const Color(0xFF0F766E);
-      case 'Technology': return const Color(0xFF2563EB);
-      case 'Inventory': return const Color(0xFF7C3AED);
+      case 'Technology': return const Color(0xFF059669);
+      case 'Inventory': return const Color(0xFFB45309);
       case 'Vehicle': return const Color(0xFFDC2626);
       case 'Marketing': return const Color(0xFFF59E0B);
       default: return const Color(0xFF98A2B3);
@@ -819,8 +819,8 @@ class _InvestmentCardState extends State<_InvestmentCard>
     switch (category) {
       case 'Setup': return const Color(0xFFF97316);
       case 'Equipment': return const Color(0xFF0F766E);
-      case 'Technology': return const Color(0xFF2563EB);
-      case 'Inventory': return const Color(0xFF7C3AED);
+      case 'Technology': return const Color(0xFF059669);
+      case 'Inventory': return const Color(0xFFB45309);
       case 'Vehicle': return const Color(0xFFDC2626);
       case 'Marketing': return const Color(0xFFF59E0B);
       default: return const Color(0xFF98A2B3);

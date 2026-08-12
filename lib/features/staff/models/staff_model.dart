@@ -123,12 +123,12 @@ class StaffMember {
     const colors = [
       Color(0xFFF97316),
       Color(0xFF0F766E),
-      Color(0xFF2563EB),
-      Color(0xFF7C3AED),
+      Color(0xFF8B6F47),
+      Color(0xFFB45309),
       Color(0xFF059669),
-      Color(0xFFDB2777),
+      Color(0xFFEA580C),
       Color(0xFFD97706),
-      Color(0xFF0891B2),
+      Color(0xFF2DD4BF),
     ];
     return colors[name.hashCode.abs() % colors.length];
   }

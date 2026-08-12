@@ -60,11 +60,15 @@ class DashboardScreen extends ConsumerWidget {
                 _OverviewStats(summary: summary),
                 const SizedBox(height: 20),
                 SalesChartCard(
-                  data: summary.dayWiseSales.map((d) => WeeklySalesData(
-                    dayLabel: d.label,
-                    fullDayName: DateFormat('EEEE').format(d.date),
-                    sales: d.sales,
-                  )).toList(),
+                  data: summary.dayWiseSales
+                      .map(
+                        (d) => WeeklySalesData(
+                          dayLabel: d.label,
+                          fullDayName: DateFormat('EEEE').format(d.date),
+                          sales: d.sales,
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 20),
                 _RecentSalesCard(sales: summary.recentSales),
@@ -121,7 +125,12 @@ class _HomeTopBar extends StatelessWidget {
         ),
         const NotificationBell(),
         const SizedBox(width: 14),
-        AppAvatar(name: name, imagePath: imagePath, onTap: onAvatarTap, radius: 17),
+        AppAvatar(
+          name: name,
+          imagePath: imagePath,
+          onTap: onAvatarTap,
+          radius: 17,
+        ),
       ],
     );
   }
@@ -135,81 +144,171 @@ class _GreetingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final date = DateFormat('EEEE, MMMM d, y').format(DateTime.now());
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colors.primary,
-        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: const [Color(0xFFFFFBF5), Color(0xFFFFE8D6)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFFC2410C).withValues(alpha: 0.42),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF97316).withValues(alpha: 0.16),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  date,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+          Positioned(
+            right: -46,
+            top: -66,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF97316).withValues(alpha: 0.07),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 42,
+            bottom: -94,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFF97316).withValues(alpha: 0.1),
+                  width: 22,
                 ),
               ),
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.wb_sunny_outlined,
-                  color: Colors.white,
-                  size: 21,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Good day, $name!',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Your shop is doing great today',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.92),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _HeroMetric(
-                    label: "Today's Sales",
-                    value: money(summary.todaySales),
-                    footnote: _salesChangeFootnote(summary),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        date,
+                        style: TextStyle(
+                          color: const Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: const Color(
+                            0xFFF97316,
+                          ).withValues(alpha: 0.14),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.wb_sunny_rounded,
+                            color: Color(0xFFEA580C),
+                            size: 14,
+                          ),
+                          SizedBox(width: 5),
+                          Text(
+                            'OPEN TODAY',
+                            style: TextStyle(
+                              color: Color(0xFF9A3412),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Good day, $name!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF172B4D),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(width: 16),
-                _HeroMetric(
-                  label: 'Transactions',
-                  value: '${summary.todayTransactionCount}',
-                  alignEnd: true,
+                const SizedBox(height: 5),
+                Text(
+                  'Here is your shop at a glance.',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(15, 13, 15, 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _HeroMetric(
+                          label: "Today's Sales",
+                          value: money(summary.todaySales),
+                          footnote: _salesChangeFootnote(summary),
+                          foregroundColor: const Color(0xFF172B4D),
+                          labelColor: const Color(0xFF64748B),
+                          footnoteColor: const Color(0xFF047857),
+                        ),
+                      ),
+                      Container(
+                        height: 42,
+                        width: 1,
+                        color: const Color(0xFFF97316).withValues(alpha: 0.16),
+                      ),
+                      Expanded(
+                        child: _HeroMetric(
+                          label: 'Transactions',
+                          value: '${summary.todayTransactionCount}',
+                          alignEnd: true,
+                          foregroundColor: const Color(0xFF172B4D),
+                          labelColor: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -236,12 +335,18 @@ class _HeroMetric extends StatelessWidget {
     required this.value,
     this.footnote,
     this.alignEnd = false,
+    this.foregroundColor = Colors.white,
+    this.labelColor,
+    this.footnoteColor,
   });
 
   final String label;
   final String value;
   final String? footnote;
   final bool alignEnd;
+  final Color foregroundColor;
+  final Color? labelColor;
+  final Color? footnoteColor;
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +358,7 @@ class _HeroMetric extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: labelColor ?? foregroundColor.withValues(alpha: 0.9),
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
@@ -263,8 +368,8 @@ class _HeroMetric extends StatelessWidget {
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: foregroundColor,
             fontSize: 26,
             fontWeight: FontWeight.w900,
           ),
@@ -273,8 +378,8 @@ class _HeroMetric extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             footnote!,
-            style: const TextStyle(
-              color: Color(0xFF99F6E4),
+            style: TextStyle(
+              color: footnoteColor ?? const Color(0xFF99F6E4),
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -312,15 +417,15 @@ class _OverviewStats extends StatelessWidget {
         background: const Color(0xFFF8F3EB),
       ),
       _StatSpec(
-        icon: isAdvance ? Icons.account_balance_wallet_rounded : Icons.payments_rounded,
+        icon: isAdvance
+            ? Icons.account_balance_wallet_rounded
+            : Icons.payments_rounded,
         label: isAdvance ? 'Advance' : 'Dues',
         value: money(totalDue.abs()),
         subtext: isAdvance
             ? 'Received in advance'
             : '${summary.customerDueCount} clients',
-        color: isAdvance
-            ? const Color(0xFF047857)
-            : const Color(0xFFEF4444),
+        color: isAdvance ? const Color(0xFF047857) : const Color(0xFFEF4444),
         background: isAdvance
             ? const Color(0xFFE9F8F1)
             : const Color(0xFFFEF1F1),
@@ -661,9 +766,8 @@ class _LowStockAlert extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => LowStockProductsScreen(
-                        products: products,
-                      ),
+                      builder: (_) =>
+                          LowStockProductsScreen(products: products),
                     ),
                   ),
                   child: const Padding(
@@ -700,7 +804,11 @@ class _LowStockAlert extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        for (var index = 0; index < visible.length; index++) ...[
+                        for (
+                          var index = 0;
+                          index < visible.length;
+                          index++
+                        ) ...[
                           if (index != 0) const SizedBox(width: 10),
                           _LowStockProductCard(product: visible[index]),
                         ],
@@ -784,9 +892,7 @@ class _LowStockProductCard extends StatelessWidget {
                         const SizedBox(width: 7),
                         Expanded(
                           child: Text(
-                            isOut
-                                ? 'Out of stock'
-                                : '${product.stockQty} left',
+                            isOut ? 'Out of stock' : '${product.stockQty} left',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

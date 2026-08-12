@@ -57,14 +57,14 @@ class InvestmentCategory {
       id: 'technology',
       name: 'Technology',
       icon: 'computer',
-      color: 0xFF2563EB,
+      color: 0xFF059669,
       createdAt: DateTime(2020),
     ),
     InvestmentCategory(
       id: 'inventory',
       name: 'Inventory',
       icon: 'inventory_2',
-      color: 0xFF7C3AED,
+      color: 0xFFB45309,
       createdAt: DateTime(2020),
     ),
     InvestmentCategory(

@@ -51,7 +51,7 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
+              color: const Color(0xFFF7F5F0),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFF0ECE4)),
             ),

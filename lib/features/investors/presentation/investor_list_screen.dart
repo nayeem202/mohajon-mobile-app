@@ -161,7 +161,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                 child: _SummaryBox(
                     label: 'Outstanding',
                     value: money(overview.totalOutstanding),
-                    color: const Color(0xFF2563EB)),
+                    color: const Color(0xFF0F766E)),
               ),
             ],
           ),
@@ -253,7 +253,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF9FAFB),
+                                    color: const Color(0xFFF7F5F0),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                         color: const Color(0xFFF0ECE4)),

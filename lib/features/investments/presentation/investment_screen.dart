@@ -283,7 +283,7 @@ class _OverviewCard extends StatelessWidget {
               label: 'Net profit',
               value: money(overview.netProfit),
               icon: Icons.pie_chart_rounded,
-              color: const Color(0xFF7C3AED),
+              color: const Color(0xFFB45309),
             ),
             _MiniMetric(
               label: 'Sales count',

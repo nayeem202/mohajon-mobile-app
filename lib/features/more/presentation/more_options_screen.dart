@@ -33,7 +33,7 @@ class MoreOptionsScreen extends StatelessWidget {
       _MoreItem(
         label: 'Vendors',
         icon: FlaticonIcons.store,
-        color: const Color(0xFF7C3AED),
+        color: const Color(0xFFB45309),
         screen: const VendorListScreen(),
       ),
       _MoreItem(
@@ -57,7 +57,7 @@ class MoreOptionsScreen extends StatelessWidget {
       _MoreItem(
         label: 'Staff',
         icon: FlaticonIcons.user,
-        color: const Color(0xFF7C3AED),
+        color: const Color(0xFFB45309),
         screen: const StaffListScreen(),
       ),
       _MoreItem(

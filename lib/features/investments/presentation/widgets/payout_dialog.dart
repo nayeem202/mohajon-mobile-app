@@ -185,9 +185,9 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: const Color(0xFFFFF4E5),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                  border: Border.all(color: const Color(0xFFFCE7C8)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,12 +195,12 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                     Row(
                       children: [
                         const Icon(Icons.info_outline_rounded,
-                            size: 16, color: Color(0xFF2563EB)),
+                            size: 16, color: Color(0xFFEA580C)),
                         const SizedBox(width: 6),
                         const Text('How Payouts Work',
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1E40AF),
+                                color: Color(0xFF9A3412),
                                 fontSize: 12)),
                       ],
                     ),
@@ -210,7 +210,7 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                       '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.\n'
                       '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
                       style: TextStyle(
-                          color: Color(0xFF1E40AF),
+                          color: Color(0xFF9A3412),
                           fontSize: 11,
                           height: 1.4),
                     ),

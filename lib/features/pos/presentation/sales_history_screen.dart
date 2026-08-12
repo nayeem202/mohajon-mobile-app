@@ -606,8 +606,8 @@ class _SalesStats extends StatelessWidget {
         label: 'Invoices',
         value: '${stats.count}',
         subtext: 'Filtered',
-        color: const Color(0xFF2563EB),
-        background: const Color(0xFFEDF3FF),
+        color: const Color(0xFF0F766E),
+        background: const Color(0xFFE4F6F1),
       ),
       _SalesStatSpec(
         icon: Icons.trending_up_rounded,

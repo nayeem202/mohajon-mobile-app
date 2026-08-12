@@ -229,7 +229,7 @@ class _ProfitLossScreenState extends ConsumerState<ProfitLossScreen>
           const SizedBox(height: 10),
           ReportRowTile(
             icon: Icons.storefront_outlined,
-            iconColor: const Color(0xFF1E3A8A),
+            iconColor: const Color(0xFF9A3412),
             title: 'Sales Revenue',
             subtitle: 'Total sales in period',
             trailing: money(data.revenue),
@@ -237,7 +237,7 @@ class _ProfitLossScreenState extends ConsumerState<ProfitLossScreen>
           const SizedBox(height: 8),
           ReportRowTile(
             icon: Icons.inventory_2_outlined,
-            iconColor: const Color(0xFF7C3AED),
+            iconColor: const Color(0xFFB45309),
             title: 'Cost of Goods Sold',
             subtitle: 'Purchase cost of sold items',
             trailing: money(data.cogs),

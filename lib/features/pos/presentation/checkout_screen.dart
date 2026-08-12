@@ -1322,7 +1322,7 @@ const _paymentOptions = <PaymentMethod, _PaymentOption>{
     label: 'Credit',
     subtitle: "Add to the customer's due balance",
     icon: Icons.credit_card_rounded,
-    color: Color(0xFF2563EB),
+    color: Color(0xFF0F766E),
   ),
   PaymentMethod.bank: _PaymentOption(
     label: 'Bank',

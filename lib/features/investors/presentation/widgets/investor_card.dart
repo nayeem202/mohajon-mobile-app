@@ -172,7 +172,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
+                color: const Color(0xFFF7F5F0),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -232,7 +232,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                   value: money(inv.totalInvestment +
                       inv.totalProfit -
                       inv.outstanding),
-                  color: const Color(0xFF2563EB)),
+                  color: const Color(0xFF0F766E)),
               const SizedBox(width: 6),
               _EStat(
                   label: 'Outstanding',
@@ -385,7 +385,7 @@ class _InvestmentMiniCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: const Color(0xFFF7F5F0),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFF0ECE4)),
       ),
@@ -496,9 +496,9 @@ class _InvestmentMiniCard extends StatelessWidget {
       case 'Equipment':
         return const Color(0xFF0F766E);
       case 'Technology':
-        return const Color(0xFF2563EB);
+        return const Color(0xFF059669);
       case 'Inventory':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFFB45309);
       case 'Vehicle':
         return const Color(0xFFDC2626);
       case 'Marketing':

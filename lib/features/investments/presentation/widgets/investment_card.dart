@@ -104,7 +104,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                                   decoration: BoxDecoration(
                                     color: inv.profitShareMethod == 'fixed'
                                         ? const Color(0xFFFEF3C7)
-                                        : const Color(0xFFE0F2FE),
+                                        : const Color(0xFFFFF4E5),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -342,7 +342,7 @@ color: colors.primary,
       case 'Technology':
         return colors.tertiary;
       case 'Inventory':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFFB45309);
       case 'Vehicle':
         return colors.error;
       case 'Marketing':
@@ -436,7 +436,7 @@ class _MemberCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: const Color(0xFFF7F5F0),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFF0ECE4)),
       ),

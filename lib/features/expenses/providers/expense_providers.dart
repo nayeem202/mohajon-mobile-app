@@ -15,7 +15,7 @@ final expenseCategoriesProvider = Provider<List<ExpenseCategory>>((ref) {
       id: 'rent',
       label: 'Rent',
       icon: Icons.home_work_outlined,
-      color: Color(0xFF7C3AED),
+      color: Color(0xFFB45309),
     ),
     ExpenseCategory(
       id: 'electricity',
@@ -33,7 +33,7 @@ final expenseCategoriesProvider = Provider<List<ExpenseCategory>>((ref) {
       id: 'transport',
       label: 'Transport',
       icon: Icons.directions_bus_outlined,
-      color: Color(0xFF2563EB),
+      color: Color(0xFF0F766E),
     ),
     ExpenseCategory(
       id: 'maintenance',

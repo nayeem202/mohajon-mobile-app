@@ -438,9 +438,9 @@ class _CategoryBreakdownCard extends StatelessWidget {
       case 'equipment':
         return const Color(0xFF0F766E);
       case 'technology':
-        return const Color(0xFF2563EB);
+        return const Color(0xFF059669);
       case 'inventory':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFFB45309);
       case 'vehicle':
         return const Color(0xFFDC2626);
       case 'marketing':

@@ -191,7 +191,7 @@ class _VatReportScreenState extends ConsumerState<VatReportScreen>
                   value: data.vatSaleCount == 0
                       ? '0'
                       : money(data.totalVat / data.vatSaleCount),
-                  valueColor: const Color(0xFF1E3A8A),
+                  valueColor: const Color(0xFF9A3412),
                 ),
               ),
               const SizedBox(width: 8),

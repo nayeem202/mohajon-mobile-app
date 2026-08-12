@@ -511,7 +511,7 @@ class _SecurityCard extends StatelessWidget {
             icon: Icons.shield_outlined,
             title: 'Security',
             subtitle: 'Protect your account and data',
-            iconColor: const Color(0xFF2563EB),
+            iconColor: const Color(0xFF0F766E),
           ),
           const SizedBox(height: 8),
           _NavRow(
@@ -605,7 +605,7 @@ class _DataBackupCard extends StatelessWidget {
             icon: Icons.storage_rounded,
             title: 'Data & Backup',
             subtitle: 'Manage your data and storage',
-            iconColor: const Color(0xFF7C3AED),
+            iconColor: const Color(0xFFB45309),
           ),
           const SizedBox(height: 8),
           _NavRow(

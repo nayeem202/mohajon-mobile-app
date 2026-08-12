@@ -202,7 +202,7 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
                 child: ReportSummaryCard(
                   label: 'Active Days',
                   value: '${data.days.length}',
-                  valueColor: const Color(0xFF1E3A8A),
+                  valueColor: const Color(0xFF9A3412),
                 ),
               ),
             ],

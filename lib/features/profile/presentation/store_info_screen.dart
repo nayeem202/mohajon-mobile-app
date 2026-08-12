@@ -192,14 +192,14 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                 ] else ...[
                   _InfoTile(
                     icon: Icons.phone_outlined,
-                    color: const Color(0xFF2563EB),
+                    color: const Color(0xFF0F766E),
                     label: 'Phone',
                     value: p.phone,
                   ),
                   const SizedBox(height: 16),
                   _InfoTile(
                     icon: Icons.alternate_email_rounded,
-                    color: const Color(0xFF7C3AED),
+                    color: const Color(0xFFB45309),
                     label: 'Email',
                     value: p.email,
                   ),

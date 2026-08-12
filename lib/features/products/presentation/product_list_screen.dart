@@ -230,8 +230,8 @@ class _StockStats extends StatelessWidget {
         label: 'Total Products',
         value: '$totalProducts',
         subtext: 'All products',
-        color: const Color(0xFF2563EB),
-        background: const Color(0xFFEDF3FF),
+        color: const Color(0xFF0F766E),
+        background: const Color(0xFFE4F6F1),
       ),
       _StockStatSpec(
         icon: Icons.account_balance_wallet_rounded,

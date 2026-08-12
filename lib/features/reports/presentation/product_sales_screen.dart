@@ -176,7 +176,7 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
                 child: ReportSummaryCard(
                   label: 'Top Seller',
                   value: data.rows.isEmpty ? '—' : '${data.rows.first['product']}',
-                  valueColor: const Color(0xFF1E3A8A),
+                  valueColor: const Color(0xFF9A3412),
                 ),
               ),
             ],
