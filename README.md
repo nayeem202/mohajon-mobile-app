@@ -7,7 +7,7 @@ Offline-first Flutter POS, inventory, customer due, and purchase management app 
 - Flutter Material 3
 - Riverpod for app state
 - Hive for offline local storage
-- Firebase Auth, Firestore, and FCM integration points
+- Self-hosted Java backend services (auth-service, haalkhata-service)
 - `intl` powered English/Bangla localization
 - PDF invoice generation and sharing
 
@@ -20,9 +20,9 @@ Offline-first Flutter POS, inventory, customer due, and purchase management app 
 - Due management: separate sales and payment records with chronological ledger
 - Payments: partial payments by cash, bKash, or Nagad
 - Purchases: stock increment and supplier due-ready model
-- Offline sync: Hive writes first, pending sync records, Firestore push/pull with last-write-wins
+- Offline sync: Hive writes first, pending sync records, push/pull with the Haalkhata service (last-write-wins)
 - Localization: English and Bangla language switch
-- Auth module: Firebase phone OTP service and login screen
+- Auth module: email/password, phone OTP, and Google sign-in via the auth-service
 
 ## Due Rule
 
@@ -42,7 +42,9 @@ Payment -1000
 Final due = 1500
 ```
 
-## Firestore Structure
+## Sync Data Structure
+
+Collections synced with the Haalkhata service (`haalkhata-service`):
 
 ```text
 shops/
@@ -56,22 +58,19 @@ shops/
     users/
 ```
 
-## Firebase Setup
+## Google Sign-In
 
-The app starts in local offline mode if Firebase is not configured. To enable Firebase:
+Google sign-in runs through the common authenticate service (`auth-service`):
 
-1. Run FlutterFire configuration in this project.
-2. Add the generated `firebase_options.dart`.
-3. Update `AppBootstrap.init()` to call:
+1. The Flutter app obtains a Google ID token via `google_sign_in`.
+2. `CustomAuthBackend` posts it to `POST /api/v1/auth/google`.
+3. `GoogleIdTokenVerifier` validates the token against Google's public JWKS and
+   the configured `app.google.client-id` (env: `GOOGLE_CLIENT_ID`).
+4. The auth-service provisions/links the user and returns JWT access/refresh
+   tokens.
 
-```dart
-await Firebase.initializeApp(
-  options: DefaultFirebaseOptions.currentPlatform,
-);
-```
-
-4. Enable Phone Authentication in Firebase Auth.
-5. Configure Firestore rules around `shops/{shopId}` membership and user role.
+On Android the web client ID used as the ID-token audience lives in
+`android/app/src/main/res/values/strings.xml` (`default_web_client_id`).
 
 ## Development
 
@@ -86,18 +85,12 @@ The Flutter CLI was not available in the current shell while this implementation
 
 ## Custom Auth Backend (Auth Service)
 
-The app can authenticate against a self-hosted auth service (Spring Boot) instead
-of Firebase Auth. This is enabled by default.
+The app authenticates against a self-hosted auth service (Spring Boot),
+`auth-service`.
 
-**Switch backends:**
+**Backends:**
 
-```bash
-# Custom auth service (default)
-flutter run --dart-define=USE_CUSTOM_AUTH=true
-
-# Legacy Firebase Auth
-flutter run --dart-define=USE_CUSTOM_AUTH=false
-```
+Custom auth service only; Firebase Auth is no longer a backend.
 
 **Point the app at a different auth server:**
 
@@ -115,8 +108,8 @@ Defaults: `http://10.0.2.2:8080` (Android emulator → host machine).
   `auth_session`); expired access tokens are refreshed automatically on 401
 - Google sign-in via `google_sign_in`; the ID token is verified server-side
 - Logout revokes the refresh token on the server
-- Firebase is still used for Firestore data sync via anonymous sign-in
-  (tokens are stored per device; no FirebaseAuth user accounts are created)
+- Data sync uses the Haalkhata service directly (`/api/v1/sync/push|pull`);
+  there is no Firestore anymore
 
 ### Android note
 

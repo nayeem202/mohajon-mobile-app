@@ -1,4 +1,4 @@
-/// Abstraction over authentication providers (Firebase Auth or a custom
+/// Abstraction over the authentication backend (custom auth service).
 /// auth service). The app only talks to this interface, so backends can be
 /// swapped without touching screens or providers.
 library;
@@ -56,7 +56,7 @@ class AuthSession {
 
 /// Authentication backend contract.
 abstract class AuthBackend {
-  /// Whether this backend can be used right now (e.g. Firebase initialized).
+  /// Whether this backend can be used right now.
   bool get isReady;
 
   /// Current session or null when signed out.

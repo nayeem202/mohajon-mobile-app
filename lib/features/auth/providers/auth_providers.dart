@@ -1,21 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
-import '../../../core/config/app_config.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/services/auth_backend.dart';
 import '../../../core/services/custom_auth_backend.dart';
 import '../../../core/services/device_session_service.dart';
-import '../../../core/services/firebase_auth_backend.dart';
 import '../../../core/services/sync_service.dart';
 
-/// The active auth backend, chosen by [AppConfig.useCustomAuth].
-final authBackendProvider = Provider<AuthBackend>((ref) {
-  return AppConfig.useCustomAuth
-      ? CustomAuthBackend(ref)
-      : FirebaseAuthBackend(ref);
-});
+/// The auth backend. The app authenticates against the self-hosted
+/// auth service (Spring Boot); there is no Firebase backend anymore.
+final authBackendProvider = Provider<AuthBackend>((ref) => CustomAuthBackend(ref));
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 
@@ -41,7 +36,7 @@ class AuthService {
 
   AuthBackend get backend => _ref.read(authBackendProvider);
 
-  /// Restores the locally persisted session (JWT or Firebase) after app
+  /// Restores the locally persisted session (JWT) after app
   /// restart so the app can reopen directly on the home screen.
   Future<bool> restoreSession() async {
     final session = await backend.currentSession();
@@ -95,8 +90,7 @@ class AuthService {
     ]);
   }
 
-  /// Sends an email verification code (custom backend) or a fresh
-  /// verification email (Firebase backend).
+  /// Sends an email verification code through the custom backend.
   Future<void> sendEmailVerificationCode(String email) {
     return backend.sendEmailVerificationCode(email);
   }

@@ -264,7 +264,7 @@ class _SideNav extends StatelessWidget {
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
-                    'Offline first, Firebase ready',
+                    'Offline first, cloud ready',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                 ),

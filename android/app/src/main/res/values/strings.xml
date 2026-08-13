@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Google OAuth web client ID used by google_sign_in on Android.
+      Previously injected by the google-services Gradle plugin, which has
+      been removed. The ID token is exchanged for a JWT session by the
+      auth-service (/api/v1/auth/google).
+    -->
+    <string name="default_web_client_id" translatable="false">273885941339-5eigr18p3tp5lt8h5ait4k2ae5oi6lbl.apps.googleusercontent.com</string>
+</resources>

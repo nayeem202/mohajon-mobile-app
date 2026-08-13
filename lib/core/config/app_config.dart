@@ -2,20 +2,13 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-/// Central configuration to switch between authentication backends.
+/// Central configuration for the self-hosted backend services.
 ///
-/// To force one backend at build time:
-///   flutter build apk --dart-define=USE_CUSTOM_AUTH=false
+/// To point the app at a different server at build time:
 ///   flutter run --dart-define=AUTH_BASE_URL=http://192.168.0.10:8080
 ///   flutter run --dart-define=HAALKHATA_BASE_URL=http://192.168.0.10:8081
 class AppConfig {
   const AppConfig._();
-
-  /// true → custom auth service (Spring Boot), false → Firebase Auth.
-  static const bool useCustomAuth = bool.fromEnvironment(
-    'USE_CUSTOM_AUTH',
-    defaultValue: true,
-  );
 
   static const String _authBaseUrlOverride = String.fromEnvironment(
     'AUTH_BASE_URL',
@@ -25,7 +18,11 @@ class AppConfig {
     'HAALKHATA_BASE_URL',
   );
 
-  static const String firebaseConfigPath = 'lib/firebase_options.dart';
+  /// Whether to use the custom self-hosted auth service (default: true).
+  static const bool useCustomAuth = bool.fromEnvironment(
+    'USE_CUSTOM_AUTH',
+    defaultValue: true,
+  );
 
   /// Base URL of the custom auth service.
   static String get authBaseUrl {

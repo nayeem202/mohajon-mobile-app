@@ -115,7 +115,7 @@ class LocalDatabase {
       users.clear(),
     ]);
     final keys = settings.keys
-        .where((key) => key.toString().startsWith('firebaseLastPulledAt.'))
+        .where((key) => key.toString().startsWith('lastPulledAt.'))
         .toList();
     await settings.deleteAll(keys);
     await settings.delete('activeUserId');

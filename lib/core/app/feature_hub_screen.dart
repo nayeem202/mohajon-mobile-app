@@ -376,7 +376,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     final colors = Theme.of(context).colorScheme;
     return switch (phase) {
       SyncPhase.failed => colors.error,
-      SyncPhase.firebaseNotConfigured => colors.tertiary,
+      SyncPhase.notSignedIn => colors.tertiary,
       SyncPhase.offline => colors.onSurfaceVariant,
       SyncPhase.syncing => colors.primary,
       SyncPhase.idle => colors.secondary,
@@ -384,8 +384,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
   }
 
   String _syncText(SyncState sync) {
-    if (sync.phase == SyncPhase.firebaseNotConfigured) {
-      return 'Firebase pending';
+    if (sync.phase == SyncPhase.notSignedIn) {
+      return 'Sign in to sync';
     }
     if (sync.phase == SyncPhase.offline) {
       return 'Offline • ${sync.pendingCount} pending';
@@ -615,7 +615,7 @@ class _AccountHeader extends StatelessWidget {
   String get _syncLabel {
     return switch (sync.phase) {
       SyncPhase.failed => 'Sync failed',
-      SyncPhase.firebaseNotConfigured => 'Firebase pending',
+      SyncPhase.notSignedIn => 'Sign in to sync',
       SyncPhase.offline => 'Offline • ${sync.pendingCount}',
       SyncPhase.syncing => 'Syncing',
       SyncPhase.idle => 'Synced',
@@ -627,7 +627,7 @@ class _AccountHeader extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final statusColor = switch (sync.phase) {
       SyncPhase.failed => colors.error,
-      SyncPhase.firebaseNotConfigured => colors.secondary,
+      SyncPhase.notSignedIn => colors.secondary,
       SyncPhase.offline => colors.onSurfaceVariant,
       SyncPhase.syncing => colors.tertiary,
       SyncPhase.idle => colors.primary,

@@ -14,7 +14,7 @@ import '../../features/auth/providers/auth_providers.dart';
 
 final localDatabaseProvider = Provider<LocalDatabase>((ref) => LocalDatabase());
 
-/// Emits the current auth session (custom auth service or Firebase).
+/// Emits the current auth session (custom auth service).
 final authStateProvider = StreamProvider<AuthSession?>((ref) async* {
   final backend = ref.watch(authBackendProvider);
   yield await backend.currentSession();

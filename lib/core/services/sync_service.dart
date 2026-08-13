@@ -6,7 +6,7 @@ import '../offline/local_collection.dart';
 import '../offline/local_database.dart';
 import 'api_client.dart';
 
-enum SyncPhase { idle, syncing, offline, firebaseNotConfigured, failed }
+enum SyncPhase { idle, syncing, offline, notSignedIn, failed }
 
 class SyncState {
   const SyncState({
@@ -90,7 +90,7 @@ class SyncService {
     }
     if (_api.accessToken == null) {
       return SyncState(
-        phase: SyncPhase.firebaseNotConfigured,
+        phase: SyncPhase.notSignedIn,
         message: 'Sign in to sync with the Haalkhata service.',
         pendingCount: pendingCount(shopId: shopId),
       );
@@ -194,5 +194,5 @@ class SyncService {
   }
 
   String _lastPulledKey(String name, String shopId) =>
-      'firebaseLastPulledAt.$shopId.$name';
+      'lastPulledAt.$shopId.$name';
 }

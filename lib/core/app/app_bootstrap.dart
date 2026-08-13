@@ -2,13 +2,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../constants/app_constants.dart';
 
+/// No external SDKs are initialized: authentication is handled by the
+/// auth service and business data by the Haalkhata service.
 class AppBootstrap {
   const AppBootstrap._();
-
-  /// Firebase is no longer used by the app: authentication is handled by the
-  /// auth service and business data by the Haalkhata service. The flag stays
-  /// for the legacy Firebase auth backend, which is never active by default.
-  static bool firebaseReady = false;
 
   static Future<void> init() async {
     await Hive.initFlutter();

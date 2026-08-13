@@ -33,14 +33,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  cloud_firestore: ^6.1.0
   archive: ^3.6.1
   connectivity_plus: ^7.0.0
   cupertino_icons: ^1.0.8
-  firebase_auth: ^6.1.2
-  firebase_core: ^4.2.1
-  firebase_messaging: ^16.0.4
-  firebase_storage: ^13.4.1
   flutter_riverpod: ^3.0.3
   google_sign_in: ^7.2.0
   http: ^1.6.0

@@ -40,7 +40,7 @@ final profileProvider = Provider<Profile?>((ref) {
 
   final user = ref.watch(currentUserProvider);
   final shopProfile = ref.watch(shopProfileProvider).value;
-  final firebaseUser = ref.watch(authStateProvider).value;
+  final authUser = ref.watch(authStateProvider).value;
 
   if (user == null) return null;
 
@@ -50,7 +50,7 @@ final profileProvider = Provider<Profile?>((ref) {
     ownerName: _deriveOwnerName(user, shopProfile),
     phone:
         user.phone.isNotEmpty ? user.phone : shopProfile?.phoneNumber ?? '',
-    email: firebaseUser?.email ?? '',
+    email: authUser?.email ?? '',
     address: shopProfile?.location ?? '',
     imagePath: settings.get('profile_imagePath') as String?,
   );
