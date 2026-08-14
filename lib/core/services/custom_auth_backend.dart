@@ -29,6 +29,10 @@ class CustomAuthBackend implements AuthBackend {
   final Ref _ref;
   final _deviceSessionService = DeviceSessionService();
   final _sessionController = StreamController<AuthSession?>.broadcast();
+  Future<void>? _googleInitialization;
+
+  static const _googleServerClientId =
+      '273885941339-5eigr18p3tp5lt8h5ait4k2ae5oi6lbl.apps.googleusercontent.com';
 
   static const _kAccessToken = 'auth_access_token';
   static const _kRefreshToken = 'auth_refresh_token';
@@ -55,7 +59,8 @@ class CustomAuthBackend implements AuthBackend {
       emailVerified: (raw['emailVerified'] ?? false) as bool,
       isNewUser: (raw['isNewUser'] ?? false) as bool,
       provider: (raw['provider'] ?? 'local') as String,
-      roles: (raw['roles'] as List?)?.map((e) => e.toString()).toList() ??
+      roles:
+          (raw['roles'] as List?)?.map((e) => e.toString()).toList() ??
           const [],
     );
   }
@@ -101,11 +106,16 @@ class CustomAuthBackend implements AuthBackend {
 
   @override
   Future<void> sendEmailVerificationCode(String email) async {
-    await _post('/api/v1/auth/resend-verification', {'email': email.trim().toLowerCase()});
+    await _post('/api/v1/auth/resend-verification', {
+      'email': email.trim().toLowerCase(),
+    });
   }
 
   @override
-  Future<void> verifyEmail({required String email, required String code}) async {
+  Future<void> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
     await _post('/api/v1/auth/verify-email', {
       'email': email.trim().toLowerCase(),
       'code': code.trim(),
@@ -131,24 +141,34 @@ class CustomAuthBackend implements AuthBackend {
   Future<AuthSession> signInWithGoogle() async {
     final googleSignIn = _ref.read(googleSignInProvider);
     try {
-      await googleSignIn.disconnect();
-    } catch (_) {
-      // No active Google session to disconnect.
-    }
-    final googleUser = await googleSignIn.authenticate();
-    final idToken = googleUser.authentication.idToken;
-    if (idToken == null) {
-      throw const AuthException(
-        'Gmail sign-in could not start. Please try again.',
+      // google_sign_in 7.x requires explicit initialization before the
+      // interactive authenticate call. Without this, Android throws a
+      // configuration exception before the request reaches auth-service.
+      _googleInitialization ??= googleSignIn.initialize(
+        serverClientId: _googleServerClientId,
+      );
+      await _googleInitialization;
+
+      final googleUser = await googleSignIn.authenticate();
+      final idToken = googleUser.authentication.idToken;
+      if (idToken == null) {
+        throw const AuthException(
+          'Gmail sign-in did not return an ID token. Please try again.',
+        );
+      }
+      final session = await _deviceSessionService.currentSession();
+      final response = await _post('/api/v1/auth/google', {
+        'idToken': idToken,
+        'deviceId': session.sessionId,
+        'deviceName': session.deviceName,
+      });
+      return _handleTokenResponse(response);
+    } on GoogleSignInException catch (error) {
+      throw AuthException(
+        'Google sign-in failed: ${error.description ?? error.code.name}',
+        code: error.code.name,
       );
     }
-    final session = await _deviceSessionService.currentSession();
-    final response = await _post('/api/v1/auth/google', {
-      'idToken': idToken,
-      'deviceId': session.sessionId,
-      'deviceName': session.deviceName,
-    });
-    return _handleTokenResponse(response);
   }
 
   @override
@@ -195,14 +215,10 @@ class CustomAuthBackend implements AuthBackend {
     required String currentPassword,
     required String newPassword,
   }) async {
-    await _post(
-      '/api/v1/auth/change-password',
-      {
-        'currentPassword': currentPassword,
-        'newPassword': newPassword,
-      },
-      authenticated: true,
-    );
+    await _post('/api/v1/auth/change-password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    }, authenticated: true);
   }
 
   @override
@@ -310,8 +326,9 @@ class CustomAuthBackend implements AuthBackend {
       return data ?? const <String, dynamic>{};
     }
     final code = (data?['code'] ?? '').toString();
-    final message = (data?['message'] ?? 'Something went wrong. Please try again.')
-        .toString();
+    final message =
+        (data?['message'] ?? 'Something went wrong. Please try again.')
+            .toString();
     throw AuthException(message, code: code);
   }
 
@@ -319,9 +336,7 @@ class CustomAuthBackend implements AuthBackend {
     await _saveTokens(data);
     final session = _sessionFromHive();
     if (session == null) {
-      throw const AuthException(
-        'We could not sign you in. Please try again.',
-      );
+      throw const AuthException('We could not sign you in. Please try again.');
     }
     return session;
   }
@@ -342,7 +357,8 @@ class CustomAuthBackend implements AuthBackend {
         'emailVerified': (user['emailVerified'] ?? false) as bool,
         'isNewUser': (user['isNewUser'] ?? false) as bool,
         'provider': (user['provider'] ?? 'local') as String,
-        'roles': (user['roles'] as List?)?.map((e) => e.toString()).toList() ??
+        'roles':
+            (user['roles'] as List?)?.map((e) => e.toString()).toList() ??
             const [],
       });
     }

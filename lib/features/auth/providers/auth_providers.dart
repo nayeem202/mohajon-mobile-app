@@ -10,7 +10,9 @@ import '../../../core/services/sync_service.dart';
 
 /// The auth backend. The app authenticates against the self-hosted
 /// auth service (Spring Boot); there is no Firebase backend anymore.
-final authBackendProvider = Provider<AuthBackend>((ref) => CustomAuthBackend(ref));
+final authBackendProvider = Provider<AuthBackend>(
+  (ref) => CustomAuthBackend(ref),
+);
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 
@@ -33,6 +35,7 @@ class AuthService {
   static const _kProfileOwnerName = 'profile_ownerName';
   static const _kProfilePhone = 'profile_phone';
   static const _kProfileEmail = 'profile_email';
+  static const _kProfileUserId = 'profile_userId';
 
   AuthBackend get backend => _ref.read(authBackendProvider);
 
@@ -95,10 +98,7 @@ class AuthService {
     return backend.sendEmailVerificationCode(email);
   }
 
-  Future<void> verifyEmail({
-    required String email,
-    required String code,
-  }) {
+  Future<void> verifyEmail({required String email, required String code}) {
     return backend.verifyEmail(email: email, code: code);
   }
 
@@ -129,7 +129,19 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await _ref.read(localDatabaseProvider).clearBusinessData();
+    final db = _ref.read(localDatabaseProvider);
+    await db.clearBusinessData();
+    // Store information is account-specific. Do not show the previous
+    // account's owner/email after another user signs in on this device.
+    await db.settings.deleteAll([
+      _kProfileStoreName,
+      _kProfileOwnerName,
+      _kProfilePhone,
+      _kProfileEmail,
+      _kProfileUserId,
+      'profile_address',
+      'profile_imagePath',
+    ]);
     await backend.signOut();
     _ref.read(currentUserProvider.notifier).state = null;
   }
@@ -205,11 +217,35 @@ class AuthService {
     );
     await db.users.put(appUser);
     _ref.read(currentUserProvider.notifier).state = appUser;
+    await _prepareProfileForSession(session);
     await _fillMissingProfileFromSession(session);
     final syncService = SyncService(db);
     if (await syncService.isOnline) {
       await syncService.sync(shopId: shopId);
     }
+  }
+
+  Future<void> _prepareProfileForSession(AuthSession session) async {
+    final settings = _ref.read(localDatabaseProvider).settings;
+    final savedUserId = settings.get(_kProfileUserId) as String?;
+    final savedEmail = (settings.get(_kProfileEmail) as String?) ?? '';
+    final belongsToSession =
+        savedUserId == session.userId ||
+        (savedUserId == null &&
+            savedEmail.trim().toLowerCase() ==
+                session.email.trim().toLowerCase());
+
+    if (!belongsToSession && (savedUserId != null || savedEmail.isNotEmpty)) {
+      await settings.deleteAll([
+        _kProfileStoreName,
+        _kProfileOwnerName,
+        _kProfilePhone,
+        _kProfileEmail,
+        'profile_address',
+        'profile_imagePath',
+      ]);
+    }
+    await settings.put(_kProfileUserId, session.userId);
   }
 
   /// Backfills profile fields from the signed-in session, but never

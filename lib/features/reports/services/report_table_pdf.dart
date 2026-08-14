@@ -73,7 +73,7 @@ pw.Widget _dataTable(ReportTableData table) {
                 textAlign: column.rightAlign
                     ? pw.TextAlign.right
                     : pw.TextAlign.left,
-                style: const pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white,
@@ -123,7 +123,7 @@ pw.Widget _header(String title) {
     children: [
       pw.Text(
         'HAALKHATA',
-        style: const pw.TextStyle(
+        style: pw.TextStyle(
           fontSize: 14,
           fontWeight: pw.FontWeight.bold,
           color: PdfColor.fromInt(0xFFF97316),
@@ -132,7 +132,7 @@ pw.Widget _header(String title) {
       ),
       pw.Text(
         title,
-        style: const pw.TextStyle(
+        style: pw.TextStyle(
           fontSize: 14,
           fontWeight: pw.FontWeight.bold,
           color: PdfColor.fromInt(0xFF101828),

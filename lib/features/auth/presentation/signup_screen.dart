@@ -375,13 +375,13 @@ class _AuthHero extends StatelessWidget {
               color: AuthBrand.primary,
               boxShadow: [
                 BoxShadow(
-                  color: AuthBrand.primary.withValues(alpha: 0.35),
+                  color: AuthBrand.primary.withValues(alpha: 0.28),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 36),
+            child: Icon(icon, color: AuthBrand.onGold, size: 36),
           ),
         ),
         const SizedBox(height: 14),
@@ -525,49 +525,57 @@ class _PrimaryActionButton extends StatelessWidget {
     final disabled = isBusy || onPressed == null;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(999),
       child: Ink(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: disabled ? AuthBrand.buttonDisabled : AuthBrand.primary,
+          borderRadius: BorderRadius.circular(999),
+          gradient: disabled
+              ? const LinearGradient(
+                  colors: [Color(0xFF2A2A22), Color(0xFF262621)],
+                )
+              : AuthBrand.gradient,
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: AuthBrand.primary.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
+                    color: AuthBrand.primary.withValues(alpha: 0.28),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(999),
           onTap: disabled ? null : onPressed,
           child: SizedBox(
-            height: 52,
+            height: 54,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   isBusy ? (busyLabel ?? 'Sending...') : label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                  style: TextStyle(
+                    color: disabled
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : AuthBrand.onGold,
+                    fontWeight: FontWeight.w900,
                     fontSize: 15,
                     letterSpacing: 0.2,
                   ),
                 ),
                 const SizedBox(width: 10),
                 isBusy
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: Colors.white,
+                          color: disabled
+                              ? Colors.white.withValues(alpha: 0.5)
+                              : AuthBrand.primaryDeep,
                         ),
                       )
-                    : Icon(icon, color: Colors.white, size: 20),
+                    : Icon(icon, color: AuthBrand.onGold, size: 20),
               ],
             ),
           ),
@@ -590,9 +598,9 @@ class _MessageBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.08),
+        color: tone.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: tone.withValues(alpha: 0.28)),
+        border: Border.all(color: tone.withValues(alpha: 0.38)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -649,22 +657,22 @@ class _VerificationNotice extends StatelessWidget {
             child: Container(
               width: 78,
               height: 78,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                color: AuthBrand.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AuthBrand.primary.withValues(alpha: 0.32),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
+decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    color: AuthBrand.primary,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AuthBrand.primary.withValues(alpha: 0.28),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.mark_email_read_outlined,
-                color: Colors.white,
-                size: 36,
-              ),
+                  child: const Icon(
+                    Icons.mark_email_read_outlined,
+                    color: AuthBrand.onGold,
+                    size: 36,
+                  ),
             ),
           ),
           const SizedBox(height: 16),
