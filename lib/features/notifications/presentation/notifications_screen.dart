@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/app/app_providers.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_providers.dart';
 import 'push_notification_sheet.dart';
@@ -19,14 +20,22 @@ class _NotificationsScreenState
   final Set<String> _deletingIds = {};
 
   Future<void> _deleteNotification(AppNotification notification) async {
+    final session = ref.read(authStateProvider).value;
+    final canDeleteEveryone = session != null &&
+        (session.userId == notification.senderUserId ||
+            session.roles.any((role) =>
+                role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN'));
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete notification?'),
-        content: const Text('Choose whether to remove it only for you or for everyone in this shop.'),
+        content: Text(canDeleteEveryone
+            ? 'Choose whether to remove it only for you or for everyone in this shop.'
+            : 'This notification will be removed only for you.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, 'me'), child: const Text('Delete for me')),
-          TextButton(onPressed: () => Navigator.pop(context, 'everyone'), child: const Text('Delete for everyone')),
+          if (canDeleteEveryone)
+            TextButton(onPressed: () => Navigator.pop(context, 'everyone'), child: const Text('Delete for everyone')),
         ],
       ),
     );

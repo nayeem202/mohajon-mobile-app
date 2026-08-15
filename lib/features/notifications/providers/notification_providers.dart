@@ -178,6 +178,7 @@ class NotificationsController extends StateNotifier<NotificationsState> {
     required String message,
     NotificationCategory? category,
     String? sourceKey,
+    String? senderUserId,
   }) {
     if (sourceKey != null &&
         state.items.any((item) => item.sourceKey == sourceKey)) {
@@ -196,6 +197,7 @@ class NotificationsController extends StateNotifier<NotificationsState> {
               : NotificationCategory.shop),
       shopId: _shopId,
       sourceKey: sourceKey,
+      senderUserId: senderUserId,
     );
     state = state.copyWith(items: [item, ...state.items]);
     _persist(item);
@@ -231,6 +233,7 @@ class NotificationService {
     required String message,
     NotificationCategory? category,
     String? sourceKey,
+    String? senderUserId,
   }) {
     if (!isNotificationPushEnabled()) return;
     if (!isNotificationTypeEnabled(type)) return;
@@ -240,6 +243,8 @@ class NotificationService {
           message: message,
           category: category,
           sourceKey: sourceKey,
+          senderUserId: senderUserId ??
+              _ref.read(authStateProvider).value?.userId,
         );
   }
 

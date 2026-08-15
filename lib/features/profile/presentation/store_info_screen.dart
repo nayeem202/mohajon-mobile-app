@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
+import '../../../core/app/app_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../models/profile.dart';
 import '../providers/profile_providers.dart';
 import 'widgets/animated_section.dart';
@@ -20,6 +22,7 @@ class StoreInfoScreen extends ConsumerStatefulWidget {
 
 class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   bool _isEditing = false;
+  late Profile _currentProfile;
 
   final _storeNameController = TextEditingController();
   final _ownerNameController = TextEditingController();
@@ -38,6 +41,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   @override
   void initState() {
     super.initState();
+    _currentProfile = widget.profile;
     _initControllers();
   }
 
@@ -58,15 +62,18 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       oldWidget.profile.email,
       oldWidget.profile.address,
     );
-    if (hash != oldHash) _initControllers();
+    if (hash != oldHash) {
+      _currentProfile = widget.profile;
+      _initControllers();
+    }
   }
 
   void _initControllers() {
-    _storeNameController.text = widget.profile.storeName;
-    _ownerNameController.text = widget.profile.ownerName;
-    _phoneController.text = widget.profile.phone;
-    _emailController.text = widget.profile.email;
-    _addressController.text = widget.profile.address;
+    _storeNameController.text = _currentProfile.storeName;
+    _ownerNameController.text = _currentProfile.ownerName;
+    _phoneController.text = _currentProfile.phone;
+    _emailController.text = _currentProfile.email;
+    _addressController.text = _currentProfile.address;
   }
 
   @override
@@ -86,7 +93,11 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.profile;
+    final p = _currentProfile;
+    final session = ref.watch(authStateProvider).value;
+    final canEdit = session?.roles.any((role) =>
+            role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN') ??
+        false;
     final storeName = p.storeName.trim();
     final displayName = storeName.isEmpty ? 'My Store' : storeName;
 
@@ -95,11 +106,12 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
         leading: const BackButton(),
         title: const Text('Store Information'),
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
-            tooltip: _isEditing ? 'Cancel editing' : 'Edit',
-            onPressed: _toggleEdit,
-          ),
+          if (canEdit)
+            IconButton(
+              icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
+              tooltip: _isEditing ? 'Cancel editing' : 'Edit',
+              onPressed: _toggleEdit,
+            ),
         ],
       ),
       body: ListView(
@@ -214,7 +226,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
               ],
             ),
           ),
-          if (_isEditing) ...[
+          if (_isEditing && canEdit) ...[
             const SizedBox(height: 24),
             AnimatedSection(
               delay: const Duration(milliseconds: 180),
@@ -240,11 +252,11 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   }
 
   void _resetControllers() {
-    _storeNameController.text = widget.profile.storeName;
-    _ownerNameController.text = widget.profile.ownerName;
-    _phoneController.text = widget.profile.phone;
-    _emailController.text = widget.profile.email;
-    _addressController.text = widget.profile.address;
+    _storeNameController.text = _currentProfile.storeName;
+    _ownerNameController.text = _currentProfile.ownerName;
+    _phoneController.text = _currentProfile.phone;
+    _emailController.text = _currentProfile.email;
+    _addressController.text = _currentProfile.address;
   }
 
   Future<void> _saveProfile() async {
@@ -262,7 +274,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       return;
     }
 
-    final updated = widget.profile.copyWith(
+    final updated = _currentProfile.copyWith(
       storeName: storeName,
       ownerName: ownerName,
       phone: phone,
@@ -272,10 +284,17 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
 
     setState(() => _isSaving = true);
     try {
+      await ref.read(shopProfileServiceProvider).updateProfile(
+            shopName: storeName,
+            location: address,
+            phoneNumber: phone,
+          );
       await ref.read(profileRepositoryProvider).saveProfile(updated);
       ref.read(profileVersionProvider.notifier).state++;
+      ref.invalidate(shopProfileProvider);
       if (!mounted) return;
       setState(() {
+        _currentProfile = updated;
         _isSaving = false;
         _isEditing = false;
       });

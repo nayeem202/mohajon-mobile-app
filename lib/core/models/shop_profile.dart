@@ -33,6 +33,7 @@ class ShopProfile {
     required this.phoneNumber,
     required this.updatedAt,
     this.owners = const <ShopOwner>[],
+    this.ownerEmail = '',
     this.createdAt,
   });
 
@@ -43,6 +44,7 @@ class ShopProfile {
   final String phoneNumber;
   final DateTime updatedAt;
   final List<ShopOwner> owners;
+  final String ownerEmail;
   final DateTime? createdAt;
 
   List<ShopOwner> get effectiveOwners {
@@ -86,6 +88,7 @@ class ShopProfile {
     return ShopProfile(
       shopId: (json['shopId'] ?? '') as String,
       ownerUserId: (json['ownerUserId'] ?? '') as String,
+      ownerEmail: (json['ownerEmail'] ?? '') as String,
       shopName: (json['name'] ?? '') as String,
       location: (json['location'] ?? '') as String,
       phoneNumber: (json['phoneNumber'] ?? '') as String,

@@ -177,6 +177,7 @@ class FcmService {
           category: category,
           title: title,
           message: body,
+          senderUserId: message.data['senderUserId']?.toString(),
           sourceKey: message.data['notificationId'] != null
               ? 'server:${message.data['notificationId']}'
               : 'fcm:${message.messageId ?? message.sentTime}',

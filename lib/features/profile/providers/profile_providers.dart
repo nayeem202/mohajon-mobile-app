@@ -21,23 +21,6 @@ final profileProvider = Provider<Profile?>((ref) {
   final db = ref.watch(localDatabaseProvider);
   final settings = db.settings;
 
-  final savedStoreName =
-      settings.get('profile_storeName') as String? ?? '';
-  final savedOwnerName =
-      settings.get('profile_ownerName') as String? ?? '';
-
-  if (savedStoreName.isNotEmpty || savedOwnerName.isNotEmpty) {
-    return Profile(
-      userId: _resolveUserId(ref),
-      storeName: savedStoreName,
-      ownerName: savedOwnerName,
-      phone: (settings.get('profile_phone') as String?) ?? '',
-      email: (settings.get('profile_email') as String?) ?? '',
-      address: (settings.get('profile_address') as String?) ?? '',
-      imagePath: settings.get('profile_imagePath') as String?,
-    );
-  }
-
   final user = ref.watch(currentUserProvider);
   final shopProfile = ref.watch(shopProfileProvider).value;
   final authUser = ref.watch(authStateProvider).value;
@@ -47,10 +30,16 @@ final profileProvider = Provider<Profile?>((ref) {
   return Profile(
     userId: user.userId,
     storeName: shopProfile?.shopName ?? '',
-    ownerName: _deriveOwnerName(user, shopProfile),
+    ownerName: shopProfile == null
+        ? _deriveOwnerName(user, shopProfile)
+        : (shopProfile.effectiveOwners.first.name.isNotEmpty
+            ? shopProfile.effectiveOwners.first.name
+            : 'Store Owner'),
     phone:
-        user.phone.isNotEmpty ? user.phone : shopProfile?.phoneNumber ?? '',
-    email: authUser?.email ?? '',
+        shopProfile?.phoneNumber ?? user.phone,
+    email: shopProfile?.ownerEmail.isNotEmpty == true
+        ? shopProfile!.ownerEmail
+        : (authUser?.email ?? ''),
     address: shopProfile?.location ?? '',
     imagePath: settings.get('profile_imagePath') as String?,
   );

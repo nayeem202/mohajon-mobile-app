@@ -12,6 +12,7 @@ class AppNotification {
   final NotificationCategory category;
   final String shopId;
   final String? sourceKey;
+  final String? senderUserId;
 
   const AppNotification({
     required this.id,
@@ -23,6 +24,7 @@ class AppNotification {
     required this.category,
     required this.shopId,
     this.sourceKey,
+    this.senderUserId,
   });
 
   AppNotification copyWith({bool? read}) {
@@ -36,6 +38,7 @@ class AppNotification {
       category: category,
       shopId: shopId,
       sourceKey: sourceKey,
+      senderUserId: senderUserId,
     );
   }
 
@@ -49,6 +52,7 @@ class AppNotification {
     'category': category.name,
     'shopId': shopId,
     'sourceKey': sourceKey,
+    'senderUserId': senderUserId,
   };
 
   factory AppNotification.fromJson(Map<dynamic, dynamic> json) {
@@ -68,6 +72,7 @@ class AppNotification {
       ),
       shopId: (json['shopId'] ?? '') as String,
       sourceKey: json['sourceKey'] as String?,
+      senderUserId: json['senderUserId'] as String?,
     );
   }
 }
