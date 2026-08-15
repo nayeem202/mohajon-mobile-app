@@ -7,6 +7,8 @@ import '../../../core/models/syncable.dart';
 import '../models/vendor.dart';
 import '../models/vendor_payment.dart';
 import '../models/vendor_purchase.dart';
+import '../../notifications/models/notification_model.dart';
+import '../../notifications/providers/notification_providers.dart';
 
 final vendorsProvider = StreamProvider<List<Vendor>>((ref) {
   final shopId = ref.watch(shopIdProvider);
@@ -85,7 +87,7 @@ final vendorOutstandingProvider = Provider.family<double, String>((ref, vendorId
   final payments = ref.watch(vendorPaymentsForVendorProvider(vendorId));
   final totalPurchase = purchases.fold<double>(0, (s, p) => s + p.amount);
   final totalPaid = payments.fold<double>(0, (s, p) => s + p.amount);
-  return totalPurchase - totalPaid;
+  return (totalPurchase - totalPaid).clamp(0.0, double.infinity).toDouble();
 });
 
 class VendorLedgerEntry {
@@ -139,11 +141,6 @@ final vendorLedgerProvider = Provider.family<List<VendorLedgerEntry>, String>((r
   return entries;
 });
 
-final vendorTotalExpenseProvider = Provider<double>((ref) {
-  final allPurchases = ref.watch(vendorPurchasesProvider).value ?? [];
-  return allPurchases.fold<double>(0, (s, p) => s + p.amount);
-});
-
 final vendorServiceProvider = Provider<VendorService>((ref) {
   return VendorService(ref, const Uuid());
 });
@@ -167,23 +164,41 @@ class VendorService {
     String status = 'active',
   }) async {
     final now = DateTime.now();
-    final vendor = Vendor(
-      vendorId: vendorId ?? _uuid.v4(),
-      companyName: companyName,
-      contactPerson: contactPerson,
-      phone: phone,
-      email: email,
-      category: category,
-      address: address,
-      products: products,
-      rating: rating,
-      status: status,
-      shopId: _ref.read(shopIdProvider),
-      updatedAt: now,
-      createdAt: vendorId == null ? now : null,
-      syncStatus: SyncStatus.pending,
-    );
-    await _ref.read(localDatabaseProvider).vendors.put(vendor);
+    final db = _ref.read(localDatabaseProvider);
+    final existing = vendorId == null
+        ? null
+        : db.vendors.getForShop(_ref.read(shopIdProvider), vendorId);
+    final vendor = existing == null
+        ? Vendor(
+            vendorId: vendorId ?? _uuid.v4(),
+            companyName: companyName,
+            contactPerson: contactPerson,
+            phone: phone,
+            email: email,
+            category: category,
+            address: address,
+            products: products,
+            rating: rating,
+            status: status,
+            shopId: _ref.read(shopIdProvider),
+            updatedAt: now,
+            createdAt: now,
+            syncStatus: SyncStatus.pending,
+          )
+        : existing.copyWith(
+            companyName: companyName,
+            contactPerson: contactPerson,
+            phone: phone,
+            email: email,
+            category: category,
+            address: address,
+            products: products,
+            rating: rating,
+            status: status,
+            updatedAt: now,
+            syncStatus: SyncStatus.pending,
+          );
+    await db.vendors.put(vendor);
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
     return vendor;
   }
@@ -224,6 +239,12 @@ class VendorService {
     );
     final db = _ref.read(localDatabaseProvider);
     await db.vendorPurchases.put(purchase);
+    _ref.read(notificationServiceProvider).add(
+          type: NotificationType.stock,
+          title: 'Vendor stock received',
+          message: '৳${amount.toStringAsFixed(2)} purchase recorded from vendor.',
+          sourceKey: 'vendor-purchase:${purchase.purchaseId}',
+        );
 
     final vendor = db.vendors.getForShop(_ref.read(shopIdProvider), vendorId);
     if (vendor != null) {
@@ -254,6 +275,10 @@ class VendorService {
     String notes = '',
   }) async {
     final now = DateTime.now();
+    final outstanding = _ref.read(vendorOutstandingProvider(vendorId));
+    if (amount <= 0 || amount > outstanding) {
+      throw StateError('Vendor payment must be positive and cannot exceed the outstanding balance.');
+    }
     final payment = VendorPayment(
       paymentId: _uuid.v4(),
       vendorId: vendorId,
@@ -268,6 +293,12 @@ class VendorService {
     );
     final db = _ref.read(localDatabaseProvider);
     await db.vendorPayments.put(payment);
+    _ref.read(notificationServiceProvider).add(
+          type: NotificationType.payment,
+          title: 'Vendor payment recorded',
+          message: '৳${amount.toStringAsFixed(2)} vendor payment recorded.',
+          sourceKey: 'vendor-payment:${payment.paymentId}',
+        );
 
     final vendor = db.vendors.getForShop(_ref.read(shopIdProvider), vendorId);
     if (vendor != null) {

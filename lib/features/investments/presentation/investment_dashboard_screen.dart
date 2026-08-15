@@ -9,11 +9,6 @@ import '../providers/investment_providers.dart';
 import 'add_investment_sheet.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/investment_card.dart';
-import 'reports/investment_report_screen.dart';
-import 'reports/outstanding_report_screen.dart';
-import 'reports/payout_history_screen.dart';
-import '../../investors/presentation/investor_list_screen.dart';
-import '../../investors/presentation/investor_report_screen.dart';
 
 class InvestmentDashboardScreen extends ConsumerStatefulWidget {
   const InvestmentDashboardScreen({super.key});

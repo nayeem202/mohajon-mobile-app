@@ -25,7 +25,7 @@ class _NotificationsScreenState
       backgroundColor: Colors.transparent,
       builder: (_) => PushNotificationSheet(
         onSubmit: (type, title, message) {
-          ref.read(notificationsProvider.notifier).addNotification(
+          return ref.read(notificationServiceProvider).sendPush(
                 type: type,
                 title: title,
                 message: message,
@@ -39,7 +39,6 @@ class _NotificationsScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(notificationsProvider);
     final filtered = state.filtered;
-    final colors = Theme.of(context).colorScheme;
     final totalUnread = state.unreadCount;
 
     return Scaffold(
@@ -233,7 +232,6 @@ class _FilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SingleChildScrollView(

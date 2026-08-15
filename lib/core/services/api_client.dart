@@ -81,7 +81,8 @@ class ApiClient {
     var response = await client
         .get(_uri(path, query), headers: _headers())
         .timeout(timeout ?? _timeout);
-    if (response.statusCode == 401 && _settings.get(_kRefreshToken) != null) {
+    if ((response.statusCode == 401 || response.statusCode == 403) &&
+        _settings.get(_kRefreshToken) != null) {
       final refreshed = await _tryRefresh();
       if (refreshed) {
         response = await client
@@ -181,7 +182,8 @@ class ApiClient {
     Duration? timeout,
   }) async {
     var response = await send().timeout(timeout ?? _timeout);
-    if (response.statusCode == 401 && _settings.get(_kRefreshToken) != null) {
+    if ((response.statusCode == 401 || response.statusCode == 403) &&
+        _settings.get(_kRefreshToken) != null) {
       final refreshed = await _tryRefresh();
       if (refreshed) {
         response = await send().timeout(timeout ?? _timeout);

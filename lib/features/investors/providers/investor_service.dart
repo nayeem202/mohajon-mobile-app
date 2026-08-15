@@ -88,7 +88,9 @@ class InvestorService {
   }
 
   Future<void> delete(String id) async {
-    await _api.delete('/api/v1/investors/$id');
+    throw UnsupportedError(
+      'Investor information is protected and cannot be deleted.',
+    );
   }
 
   Future<String> _uploadPhoto(File file) async {

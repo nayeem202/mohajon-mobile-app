@@ -866,7 +866,6 @@ class _VendorExpandedDetails extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final outstanding = ref.watch(vendorOutstandingProvider(vendor.vendorId));
     final purchases = ref.watch(vendorPurchasesForVendorProvider(vendor.vendorId));
-    final payments = ref.watch(vendorPaymentsForVendorProvider(vendor.vendorId));
     final colors = Theme.of(context).colorScheme;
 
     return Container(

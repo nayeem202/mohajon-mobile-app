@@ -37,6 +37,9 @@ class SyncService {
     ('payments', 'payments'),
     ('purchases', 'purchases'),
     ('suppliers', 'suppliers'),
+    ('vendors', 'vendors'),
+    ('vendorPurchases', 'vendorPurchases'),
+    ('vendorPayments', 'vendorPayments'),
     ('expenses', 'expenses'),
     ('users', 'users'),
   ];
@@ -67,6 +70,9 @@ class SyncService {
           _db.payments.pending().length +
           _db.purchases.pending().length +
           _db.suppliers.pending().length +
+          _db.vendors.pending().length +
+          _db.vendorPurchases.pending().length +
+          _db.vendorPayments.pending().length +
           _db.expenses.pending().length +
           _db.users.pending().length;
     }
@@ -77,6 +83,9 @@ class SyncService {
         _db.payments.pendingForShop(shopId).length +
         _db.purchases.pendingForShop(shopId).length +
         _db.suppliers.pendingForShop(shopId).length +
+        _db.vendors.pendingForShop(shopId).length +
+        _db.vendorPurchases.pendingForShop(shopId).length +
+        _db.vendorPayments.pendingForShop(shopId).length +
         _db.expenses.pendingForShop(shopId).length +
         _db.users.pendingForShop(shopId).length;
   }
@@ -136,6 +145,9 @@ class SyncService {
       'payments' => _db.payments,
       'purchases' => _db.purchases,
       'suppliers' => _db.suppliers,
+      'vendors' => _db.vendors,
+      'vendorPurchases' => _db.vendorPurchases,
+      'vendorPayments' => _db.vendorPayments,
       'expenses' => _db.expenses,
       'users' => _db.users,
       _ => throw ArgumentError('Unknown collection: $name'),

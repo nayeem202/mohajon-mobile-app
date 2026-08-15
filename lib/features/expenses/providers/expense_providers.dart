@@ -8,6 +8,8 @@ import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/syncable.dart';
 import '../models/expense.dart';
+import '../../notifications/models/notification_model.dart';
+import '../../notifications/providers/notification_providers.dart';
 
 final expenseCategoriesProvider = Provider<List<ExpenseCategory>>((ref) {
   return const [
@@ -336,6 +338,12 @@ class ExpenseService {
       syncStatus: SyncStatus.pending,
     );
     await _ref.read(localDatabaseProvider).expenses.put(expense);
+    _ref.read(notificationServiceProvider).add(
+          type: NotificationType.expense,
+          title: 'Expense recorded',
+          message: '${expense.categoryLabel}: ৳${expense.amount.toStringAsFixed(2)}',
+          sourceKey: 'expense:${expense.expenseId}',
+        );
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
     return expense;
   }

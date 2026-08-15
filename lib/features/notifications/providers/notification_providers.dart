@@ -1,5 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+
+import '../../../core/app/app_providers.dart';
+import '../../../core/offline/local_database.dart';
+import '../../../core/services/api_client.dart';
+import '../../../core/services/notification_preferences.dart';
 import '../models/notification_model.dart';
 
 class NotificationsState {
@@ -18,13 +23,9 @@ class NotificationsState {
     if (categoryFilter != null) {
       result = result.where((n) => n.category == categoryFilter).toList();
     }
-    if (unreadOnly) {
-      result = result.where((n) => !n.read).toList();
-    }
+    if (unreadOnly) result = result.where((n) => !n.read).toList();
     result.sort((a, b) {
-      final aUnread = !a.read;
-      final bUnread = !b.read;
-      if (aUnread != bUnread) return aUnread ? -1 : 1;
+      if (a.read != b.read) return a.read ? 1 : -1;
       return b.timestamp.compareTo(a.timestamp);
     });
     return result;
@@ -32,113 +33,77 @@ class NotificationsState {
 
   int get unreadCount => items.where((n) => !n.read).length;
 
-  int get shopUnreadCount =>
-      items.where((n) => n.category == NotificationCategory.shop && !n.read).length;
+  int get shopUnreadCount => items
+      .where((n) => n.category == NotificationCategory.shop && !n.read)
+      .length;
 
-  int get platformUnreadCount =>
-      items.where((n) => n.category == NotificationCategory.platform && !n.read).length;
+  int get platformUnreadCount => items
+      .where((n) => n.category == NotificationCategory.platform && !n.read)
+      .length;
 
   NotificationsState copyWith({
     List<AppNotification>? items,
     NotificationCategory? categoryFilter,
     bool? unreadOnly,
     bool clearCategory = false,
-    bool clearCategoryFilter = false,
   }) {
     return NotificationsState(
       items: items ?? this.items,
-      categoryFilter: clearCategoryFilter
-          ? null
-          : (clearCategory ? null : categoryFilter ?? this.categoryFilter),
+      categoryFilter:
+          clearCategory ? null : categoryFilter ?? this.categoryFilter,
       unreadOnly: unreadOnly ?? this.unreadOnly,
     );
   }
 }
 
-final _sampleData = [
-  AppNotification(
-    id: 'n1',
-    type: NotificationType.sale,
-    title: 'New Sale Completed',
-    description:
-        'POS sale of \u09F3\u09E8,\u09EF\u09E6\u09E6 by Karim \u2014 5 items sold from Inventory.',
-    timestamp: DateTime.now().subtract(const Duration(hours: 12)),
-    read: false,
-    category: NotificationCategory.shop,
-  ),
-  AppNotification(
-    id: 'n2',
-    type: NotificationType.stock,
-    title: 'Low Stock Alert',
-    description:
-        'Basmati Rice (5kg) is down to 3 units. Consider restocking soon.',
-    timestamp: DateTime.now().subtract(const Duration(hours: 12)),
-    read: false,
-    category: NotificationCategory.shop,
-  ),
-  AppNotification(
-    id: 'n3',
-    type: NotificationType.expense,
-    title: 'New Expense Recorded',
-    description:
-        'Electricity bill of \u09F3\u09EA,\u09E8\u09E6\u09E6 added for July 2026.',
-    timestamp: DateTime.now().subtract(const Duration(days: 1)),
-    read: false,
-    category: NotificationCategory.shop,
-  ),
-  AppNotification(
-    id: 'n4',
-    type: NotificationType.investment,
-    title: 'Investor Payout Due',
-    description:
-        'Monthly profit distribution is due in 3 days. Net profit pool: \u09F3\u09E8\u09E7,\u09E9\u09E6\u09E6.',
-    timestamp: DateTime.now().subtract(const Duration(days: 1)),
-    read: false,
-    category: NotificationCategory.platform,
-  ),
-  AppNotification(
-    id: 'n5',
-    type: NotificationType.stock,
-    title: 'Stock Received',
-    description:
-        'Vendor \u201CFresh Traders\u201D delivered 50 units of Cooking Oil (5L).',
-    timestamp: DateTime.now().subtract(const Duration(days: 2)),
-    read: true,
-    category: NotificationCategory.shop,
-  ),
-  AppNotification(
-    id: 'n6',
-    type: NotificationType.sale,
-    title: 'Daily Sales Summary',
-    description:
-        'July 23 \u2014 Total sales: \u09F3\u09E9\u09EE,\u09ED\u09EB\u09E6 across 24 transactions.',
-    timestamp: DateTime.now().subtract(const Duration(days: 1)),
-    read: true,
-    category: NotificationCategory.shop,
-  ),
-];
-
 class NotificationsController extends StateNotifier<NotificationsState> {
-  NotificationsController() : super(NotificationsState(items: _sampleData));
+  NotificationsController(this._db, this._shopId)
+      : super(NotificationsState(items: _load(_db, _shopId))) {
+    _sortAndPersist();
+  }
+
+  final LocalDatabase _db;
+  final String _shopId;
+
+  static List<AppNotification> _load(LocalDatabase db, String shopId) {
+    return db.notifications.values
+        .map(AppNotification.fromJson)
+        .where((item) => item.shopId == shopId)
+        .toList();
+  }
+
+  void _sortAndPersist() {
+    final items = [...state.items]
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    state = state.copyWith(items: items);
+  }
+
+  Future<void> _persist(AppNotification item) =>
+      _db.notifications.put(item.id, item.toJson());
 
   void markAsRead(String id) {
+    final item = state.items.where((n) => n.id == id).firstOrNull;
+    if (item == null || item.read) return;
+    final updated = item.copyWith(read: true);
     state = state.copyWith(
-      items: state.items.map((n) {
-        return n.id == id ? n.copyWith(read: true) : n;
-      }).toList(),
+      items: state.items.map((n) => n.id == id ? updated : n).toList(),
     );
+    _persist(updated);
   }
 
   void markAllAsRead() {
-    state = state.copyWith(
-      items: state.items.map((n) => n.copyWith(read: true)).toList(),
-    );
+    final updated = state.items.map((n) => n.copyWith(read: true)).toList();
+    state = state.copyWith(items: updated);
+    for (final item in updated) {
+      _persist(item);
+    }
   }
 
   void delete(String id) {
     state = state.copyWith(
       items: state.items.where((n) => n.id != id).toList(),
     );
+    _db.notifications.delete(id);
   }
 
   void setCategoryFilter(NotificationCategory? category) {
@@ -148,31 +113,90 @@ class NotificationsController extends StateNotifier<NotificationsState> {
     );
   }
 
+  void setUnreadOnly(bool value) {
+    state = state.copyWith(unreadOnly: value);
+  }
+
   void addNotification({
     required NotificationType type,
     required String title,
     required String message,
+    NotificationCategory? category,
+    String? sourceKey,
   }) {
-    final newNotif = AppNotification(
-      id: 'n${DateTime.now().millisecondsSinceEpoch}',
+    if (sourceKey != null &&
+        state.items.any((item) => item.sourceKey == sourceKey)) {
+      return;
+    }
+    final now = DateTime.now();
+    final item = AppNotification(
+      id: 'n-${now.microsecondsSinceEpoch}',
       type: type,
       title: title,
       description: message,
-      timestamp: DateTime.now(),
-      read: false,
-      category: type == NotificationType.system
-          ? NotificationCategory.platform
-          : NotificationCategory.shop,
+      timestamp: now,
+      category: category ??
+          (type == NotificationType.system || type == NotificationType.platform
+              ? NotificationCategory.platform
+              : NotificationCategory.shop),
+      shopId: _shopId,
+      sourceKey: sourceKey,
     );
-    state = state.copyWith(items: [newNotif, ...state.items]);
-  }
-
-  void setUnreadOnly(bool value) {
-    state = state.copyWith(unreadOnly: value);
+    state = state.copyWith(items: [item, ...state.items]);
+    _persist(item);
   }
 }
 
 final notificationsProvider =
     StateNotifierProvider<NotificationsController, NotificationsState>((ref) {
-  return NotificationsController();
+  return NotificationsController(
+    ref.watch(localDatabaseProvider),
+    ref.watch(shopIdProvider),
+  );
 });
+
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService(ref);
+});
+
+class NotificationService {
+  NotificationService(this._ref);
+
+  final Ref _ref;
+
+  void add({
+    required NotificationType type,
+    required String title,
+    required String message,
+    NotificationCategory? category,
+    String? sourceKey,
+  }) {
+    if (!isNotificationPushEnabled()) return;
+    if (!isNotificationTypeEnabled(type)) return;
+    _ref.read(notificationsProvider.notifier).addNotification(
+          type: type,
+          title: title,
+          message: message,
+          category: category,
+          sourceKey: sourceKey,
+        );
+  }
+
+  Future<void> sendPush({
+    required NotificationType type,
+    required String title,
+    required String message,
+  }) async {
+    if (!isNotificationPushEnabled()) {
+      throw StateError('Push notifications are disabled in Settings.');
+    }
+    await ApiClient(_ref.read(localDatabaseProvider)).post(
+      '/api/v1/notifications/send',
+      {
+        'title': title,
+        'body': message,
+        'data': {'type': type.name},
+      },
+    );
+  }
+}

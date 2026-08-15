@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'dart:async';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/admin_service.dart';
 import '../../../core/services/sync_service.dart';
+import '../../../core/services/fcm_service.dart';
+import '../../../core/services/notification_preferences.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -32,7 +35,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   void initState() {
     super.initState();
     _settingsBox = Hive.box('settings');
-    _pushEnabled = _settingsBox.get('pushEnabled', defaultValue: true) as bool;
+    _pushEnabled = _settingsBox.get(
+          notificationPushEnabledKey,
+          defaultValue: true,
+        ) as bool;
     final saved = _settingsBox.get('notifTypes', defaultValue: <String>[]) as List;
     if (saved.isNotEmpty) {
       _selectedTypes.clear();
@@ -42,7 +48,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   void _togglePush(bool val) {
     setState(() => _pushEnabled = val);
-    _settingsBox.put('pushEnabled', val);
+    unawaited(setNotificationPushEnabled(val));
+    unawaited(ref.read(fcmServiceProvider).setEnabled(val));
   }
 
   void _toggleType(String type) {
@@ -55,6 +62,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       }
     });
     _settingsBox.put('notifTypes', _selectedTypes.toList());
+    unawaited(ref.read(fcmServiceProvider).syncPreferences());
   }
 
   void _showToast(String message, {bool isError = false}) {

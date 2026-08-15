@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/models/sale.dart';
+import '../../../core/models/payment.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -54,6 +55,7 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
       int transactionCount, double salesAmount, double received,
       ReportTableData table}) _compute() {
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
+    final payments = ref.watch(paymentsStreamProvider).value ?? const <Payment>[];
     final byDay = <DateTime, List<Sale>>{};
     for (final sale in sales) {
       if (!_inRange(sale.createdAt)) continue;
@@ -82,6 +84,19 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
           maxAmount: amount,
         ),
       );
+    }
+
+    for (final payment in payments) {
+      if (!_inRange(payment.createdAt)) continue;
+      final day = DateTime(
+        payment.createdAt.year,
+        payment.createdAt.month,
+        payment.createdAt.day,
+      );
+      // Checkout payments are already included in Sale.paidAmount.
+      if (payment.saleId == null) {
+        receivedByDay[day] = (receivedByDay[day] ?? 0) + payment.amount;
+      }
     }
 
     final transactionCount = days.fold<int>(

@@ -7,9 +7,11 @@ import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
+import '../../investments/providers/investment_providers.dart';
 import '../models/investor.dart';
 import '../providers/investor_providers.dart';
 import 'investor_detail_screen.dart';
+import 'investor_form_sheet.dart';
 import 'widgets/investor_card.dart';
 
 class InvestorListScreen extends ConsumerStatefulWidget {
@@ -37,6 +39,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
     final filtered = ref.watch(filteredInvestorsProvider);
     final query = ref.watch(investorSearchQueryProvider);
     final overview = ref.watch(investorsOverviewProvider);
+    final businessProfit = ref.watch(businessProfitProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -145,7 +148,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryBox(
-                    label: 'Total Profit',
+                    label: 'Net Profit',
                     value: money(overview.totalProfit),
                     color: const Color(0xFF047857)),
               ),
@@ -164,6 +167,60 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                     color: const Color(0xFF0F766E)),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFECE7DF)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ProfitMetric(
+                        label: 'Gross Profit',
+                        value: money(businessProfit.grossProfit),
+                        color: const Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ProfitMetric(
+                        label: 'Gross Loss',
+                        value: money(businessProfit.grossLoss),
+                        color: const Color(0xFFDC2626),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ProfitMetric(
+                        label: 'Expenses',
+                        value: money(businessProfit.totalExpense),
+                        color: const Color(0xFFB45309),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ProfitMetric(
+                        label: 'Net Profit / Loss',
+                        value: money(businessProfit.netProfit),
+                        color: businessProfit.netProfit >= 0
+                            ? const Color(0xFF047857)
+                            : const Color(0xFFDC2626),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
           Container(
@@ -411,11 +468,14 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
   }
 
   void _showAddDialog(BuildContext context) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (_) => const _AddInvestorDialog(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const InvestorFormSheet(),
     );
   }
+
 }
 
 class _SummaryBox extends StatelessWidget {
@@ -463,6 +523,40 @@ class _SummaryBox extends StatelessWidget {
                   fontWeight: FontWeight.w600)),
         ],
       ),
+    );
+  }
+}
+
+class _ProfitMetric extends StatelessWidget {
+  const _ProfitMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.w900, fontSize: 14)),
+        const SizedBox(height: 3),
+        Text(label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                color: Color(0xFF667085),
+                fontSize: 10,
+                fontWeight: FontWeight.w700)),
+      ],
     );
   }
 }

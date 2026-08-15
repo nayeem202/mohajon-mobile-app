@@ -1,6 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../features/investments/models/investment_item.dart';
 import '../../features/vendors/models/vendor.dart';
 import '../../features/vendors/models/vendor_payment.dart';
 import '../../features/vendors/models/vendor_purchase.dart';
@@ -57,10 +56,6 @@ class LocalDatabase {
           Hive.box<Map>(HiveBoxes.vendorPayments),
           VendorPayment.fromJson,
         ),
-        investments = LocalCollection<InvestmentItem>(
-          Hive.box<Map>(HiveBoxes.investments),
-          InvestmentItem.fromJson,
-        ),
         expenses = LocalCollection<Expense>(
           Hive.box<Map>(HiveBoxes.expenses),
           Expense.fromJson,
@@ -81,10 +76,10 @@ class LocalDatabase {
   final LocalCollection<Vendor> vendors;
   final LocalCollection<VendorPurchase> vendorPurchases;
   final LocalCollection<VendorPayment> vendorPayments;
-  final LocalCollection<InvestmentItem> investments;
   final LocalCollection<Expense> expenses;
   final LocalCollection<AppUser> users;
   final Box<dynamic> settings;
+  Box<Map> get notifications => Hive.box<Map>(HiveBoxes.notifications);
 
   Future<void> setActiveAccount({
     required String userId,
@@ -110,8 +105,8 @@ class LocalDatabase {
       vendors.clear(),
       vendorPurchases.clear(),
       vendorPayments.clear(),
-      investments.clear(),
       expenses.clear(),
+      notifications.clear(),
       users.clear(),
     ]);
     final keys = settings.keys

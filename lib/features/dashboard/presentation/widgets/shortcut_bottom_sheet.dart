@@ -500,22 +500,12 @@ class _SelectionTile extends StatefulWidget {
 
 class _SelectionTileState extends State<_SelectionTile>
     with TickerProviderStateMixin {
-  late AnimationController _pulseCtrl;
-  late Animation<double> _pulseAnim;
   late AnimationController _checkCtrl;
   late Animation<double> _checkAnim;
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _pulseAnim = CurvedAnimation(
-      parent: _pulseCtrl,
-      curve: Curves.elasticOut,
-    );
     _checkCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
@@ -533,9 +523,6 @@ class _SelectionTileState extends State<_SelectionTile>
   void didUpdateWidget(covariant _SelectionTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isSelected != oldWidget.isSelected) {
-      _pulseCtrl
-        ..value = 0
-        ..forward();
       if (widget.isSelected) {
         _checkCtrl.forward();
       } else {
@@ -546,7 +533,6 @@ class _SelectionTileState extends State<_SelectionTile>
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
     _checkCtrl.dispose();
     super.dispose();
   }

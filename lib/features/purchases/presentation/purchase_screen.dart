@@ -5,8 +5,6 @@ import '../../../core/models/product.dart';
 import '../../../core/models/purchase.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/action_button.dart';
-import '../../../core/widgets/app_icon_asset.dart';
-import '../../../core/widgets/flaticon_icons.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../products/providers/product_providers.dart';
 import '../providers/purchase_providers.dart';

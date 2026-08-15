@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/customer.dart';
-import '../../../core/models/ledger_entry.dart' as core;
 import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';

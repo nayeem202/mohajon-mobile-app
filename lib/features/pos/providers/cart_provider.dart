@@ -8,6 +8,8 @@ import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/models/product.dart';
 import '../../../features/products/providers/product_providers.dart';
+import '../../notifications/models/notification_model.dart';
+import '../../notifications/providers/notification_providers.dart';
 
 final cartProvider = StateNotifierProvider<CartController, CartState>((ref) {
   return CartController(ref);
@@ -125,6 +127,14 @@ class CartController extends StateNotifier<CartState> {
     if (state.due > 0 && state.customerId.isEmpty) {
       throw StateError('Select a customer before saving a due sale.');
     }
+    final db = _ref.read(localDatabaseProvider);
+    for (final item in state.items) {
+      final product = db.products.getForShop(_ref.read(shopIdProvider), item.productId);
+      if (product == null) throw StateError('${item.name} is no longer available.');
+      if (product.stockQty < item.qty.round()) {
+        throw StateError('${item.name} has only ${product.stockQty} ${product.unit} in stock.');
+      }
+    }
     final now = DateTime.now();
     final sale = Sale(
       saleId: _uuid.v4(),
@@ -147,7 +157,6 @@ class CartController extends StateNotifier<CartState> {
       syncStatus: SyncStatus.pending,
     );
 
-    final db = _ref.read(localDatabaseProvider);
     await db.sales.put(sale);
     for (final item in state.items) {
       await _ref.read(productServiceProvider).adjustStock(
@@ -171,6 +180,12 @@ class CartController extends StateNotifier<CartState> {
         ),
       );
     }
+    _ref.read(notificationServiceProvider).add(
+          type: NotificationType.sale,
+          title: 'Sale completed',
+          message: 'Sale of ৳${sale.totalAmount.toStringAsFixed(2)} recorded.',
+          sourceKey: 'sale:${sale.saleId}',
+        );
     clear();
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
     return sale;

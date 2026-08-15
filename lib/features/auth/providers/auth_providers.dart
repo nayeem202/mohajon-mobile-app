@@ -5,7 +5,6 @@ import '../../../core/models/app_user.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/services/auth_backend.dart';
 import '../../../core/services/custom_auth_backend.dart';
-import '../../../core/services/device_session_service.dart';
 import '../../../core/services/sync_service.dart';
 
 /// The auth backend. The app authenticates against the self-hosted
@@ -29,7 +28,6 @@ class AuthService {
   AuthService(this._ref);
 
   final Ref _ref;
-  final _deviceSessionService = DeviceSessionService();
 
   static const _kProfileStoreName = 'profile_storeName';
   static const _kProfileOwnerName = 'profile_ownerName';

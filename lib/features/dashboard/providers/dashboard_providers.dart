@@ -8,7 +8,6 @@ import '../../../core/models/sale.dart';
 import '../../expenses/providers/expense_providers.dart';
 import '../../../features/customers/providers/customer_providers.dart';
 import '../../../features/products/providers/product_providers.dart';
-import '../../../features/vendors/providers/vendor_providers.dart';
 
 final dashboardProvider = Provider<DashboardSummary>((ref) {
   final products = ref.watch(productsProvider).value ?? const <Product>[];
@@ -61,10 +60,8 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     0,
     (sum, sale) => sum + (sale.profit < 0 ? sale.profit.abs() : 0),
   );
-  final vendorExpenses = ref.watch(vendorTotalExpenseProvider);
   final operatingExpenses = ref.watch(expenseTotalProvider);
-  final netProfit =
-      grossProfit - grossLoss - vendorExpenses - operatingExpenses;
+  final netProfit = grossProfit - grossLoss - operatingExpenses;
   final profitLossRatio = grossLoss == 0
       ? (grossProfit == 0 ? 0.0 : double.infinity)
       : grossProfit / grossLoss;

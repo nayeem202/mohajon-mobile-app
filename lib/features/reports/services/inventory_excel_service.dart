@@ -6,7 +6,6 @@ import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../../core/models/product.dart';
 import '../../../core/services/download_export_service.dart';
 import '../../../core/services/server_report_downloader.dart';
 import '../providers/report_providers.dart';

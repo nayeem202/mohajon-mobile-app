@@ -28,7 +28,7 @@ final shopIdProvider = Provider<String>((ref) {
   final activeUserId = db.settings.get('activeUserId') as String?;
   final activeShopId = db.settings.get('activeShopId') as String?;
   if (activeUserId == session.userId && activeShopId != null) {
-    return activeShopId!;
+    return activeShopId;
   }
   return 'shop_${session.userId}';
 });

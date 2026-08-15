@@ -8,8 +8,11 @@ class PushNotificationSheet extends StatefulWidget {
     required this.onSubmit,
   });
 
-  final void Function(NotificationType type, String title, String message)
-      onSubmit;
+  final Future<void> Function(
+    NotificationType type,
+    String title,
+    String message,
+  ) onSubmit;
 
   @override
   State<PushNotificationSheet> createState() => _PushNotificationSheetState();
@@ -29,22 +32,27 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
-    widget.onSubmit(
-      _selectedType,
-      _titleController.text.trim(),
-      _messageController.text.trim(),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Notification sent successfully'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-    Navigator.of(context).pop();
+    try {
+      await widget.onSubmit(
+        _selectedType,
+        _titleController.text.trim(),
+        _messageController.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notification sent successfully')),
+      );
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not send notification')),
+      );
+    }
   }
 
   @override
@@ -110,7 +118,7 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
                       children: [
                         const Icon(Icons.send_rounded, size: 16),
                         const SizedBox(width: 8),
-                        const Text('Push Notification'),
+                        const Text('Send Notification'),
                       ],
                     ),
                   ),

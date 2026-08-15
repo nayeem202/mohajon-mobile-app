@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/models/payment.dart';
+import '../../../core/models/sale.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -11,6 +12,7 @@ import '../../receipts/services/receipt_pdf_service.dart';
 import '../../receipts/models/receipt.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 import '../providers/payment_providers.dart';
+import '../../customers/providers/customer_providers.dart';
 
 class AddPaymentScreen extends ConsumerStatefulWidget {
   const AddPaymentScreen({super.key, required this.customer});
@@ -25,6 +27,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
     with AsyncActionState<AddPaymentScreen> {
   final _amount = TextEditingController();
   PaymentMethod _method = PaymentMethod.cash;
+  String? _saleId;
 
   @override
   void dispose() {
@@ -34,6 +37,10 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final openSales = (ref.watch(salesStreamProvider).value ?? const <Sale>[])
+        .where((sale) =>
+            sale.customerId == widget.customer.customerId && sale.dueAmount > 0)
+        .toList();
     return withLoadingOverlay(
       Scaffold(
         appBar: AppBar(title: const Text('Add payment')),
@@ -51,6 +58,25 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
               decoration: const InputDecoration(labelText: 'Amount'),
             ),
             const SizedBox(height: 12),
+            if (openSales.isNotEmpty) ...[
+              DropdownButtonFormField<String?>(
+                value: _saleId,
+                decoration: const InputDecoration(labelText: 'Apply to invoice (optional)'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Customer account / advance'),
+                  ),
+                  for (final sale in openSales)
+                    DropdownMenuItem<String?>(
+                      value: sale.saleId,
+                      child: Text('Invoice ${sale.saleId.substring(0, 6).toUpperCase()} • Due ৳${sale.dueAmount.toStringAsFixed(2)}'),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _saleId = value),
+              ),
+              const SizedBox(height: 12),
+            ],
             DropdownButtonFormField<PaymentMethod>(
               value: _method,
               decoration: const InputDecoration(labelText: 'Payment Method'),
@@ -90,6 +116,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
     await runBusyAction(() async {
       await ref.read(paymentServiceProvider).addPayment(
         customerId: widget.customer.customerId,
+        saleId: _saleId,
         amount: amount,
         method: _method,
       );

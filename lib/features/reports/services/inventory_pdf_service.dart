@@ -370,11 +370,6 @@ class InventoryPdfService {
 
   pw.TableRow _productRow(Product p, int index) {
     final status = inventoryStatus(p);
-    final statusLabel = status == InventoryStatus.outOfStock
-        ? 'Out of Stock'
-        : status == InventoryStatus.low
-        ? 'Low'
-        : 'Normal';
     final stockValue = p.stockQty * p.purchasePrice;
     final odd = index.isOdd;
     return pw.TableRow(

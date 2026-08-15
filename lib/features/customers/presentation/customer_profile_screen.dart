@@ -298,9 +298,6 @@ class _CustomerProfileScreenState
     });
   }
 
-  void _showError(String message) {
-    showAppSnackBar(context, message, isError: true);
-  }
 }
 
 class _ProfileHeader extends StatelessWidget {
@@ -505,29 +502,6 @@ class _FieldLabel extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: colors.onSurfaceVariant,
-          letterSpacing: 0.3,
-        ),
       ),
     );
   }

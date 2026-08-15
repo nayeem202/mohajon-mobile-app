@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/models/sale.dart';
+import '../../../core/models/payment.dart';
+import '../../../core/models/customer_ledger_entry.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -29,15 +31,29 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
   })
   _compute() {
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
+    final payments = ref.watch(paymentsStreamProvider).value ?? const <Payment>[];
+    final ledgerEntries = ref.watch(customerLedgerEntriesStreamProvider).value ??
+        const <CustomerLedgerEntry>[];
     final customers = ref.watch(customersProvider).value ?? const <Customer>[];
     final byCustomer = <String, Map<String, Object?>>{};
     for (final sale in sales) {
-      if (sale.dueAmount <= 0) continue;
       final entry = byCustomer.putIfAbsent(sale.customerId, () {
         return <String, Object?>{'due': 0.0, 'count': 0};
       });
       entry['due'] = (entry['due'] as double) + sale.dueAmount;
-      entry['count'] = (entry['count'] as int) + 1;
+      if (sale.dueAmount > 0) entry['count'] = (entry['count'] as int) + 1;
+    }
+    for (final payment in payments.where((p) => p.saleId == null)) {
+      final entry = byCustomer.putIfAbsent(payment.customerId, () {
+        return <String, Object?>{'due': 0.0, 'count': 0};
+      });
+      entry['due'] = (entry['due'] as double) - payment.amount;
+    }
+    for (final adjustment in ledgerEntries) {
+      final entry = byCustomer.putIfAbsent(adjustment.customerId, () {
+        return <String, Object?>{'due': 0.0, 'count': 0};
+      });
+      entry['due'] = (entry['due'] as double) + adjustment.signedAmount;
     }
 
     final customerByName = <String, Customer>{
@@ -45,6 +61,7 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
     };
     final rows =
         byCustomer.entries
+            .where((entry) => (entry.value['due'] as double) > 0)
             .map(
               (entry) => <String, Object?>{
                 'customer': entry.key,

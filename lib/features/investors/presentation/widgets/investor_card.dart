@@ -27,6 +27,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
   @override
   Widget build(BuildContext context) {
     final inv = widget.investor;
+    final financials = ref.watch(investorFinancialsProvider(inv.id));
     final colors = Theme.of(context).colorScheme;
 
     return Container(
@@ -101,7 +102,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                'Profit ${money(inv.totalProfit)}',
+                                'Profit ${money(financials.profit)}',
                                 style: const TextStyle(
                                     color: Color(0xFF047857),
                                     fontSize: 10,
@@ -120,7 +121,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                       color: colors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text('${inv.investmentCount}',
+                  child: Text('${financials.investmentCount}',
                         style: TextStyle(
                             color: colors.primary,
                             fontWeight: FontWeight.w800,
@@ -139,7 +140,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
           ),
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
-            secondChild: _buildExpanded(inv, colors),
+            secondChild: _buildExpanded(inv, financials, colors),
             crossFadeState: _expanded
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
@@ -150,10 +151,14 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
     );
   }
 
-  Widget _buildExpanded(Investor inv, ColorScheme colors) {
-    final progress = (inv.totalInvestment + inv.totalProfit) > 0
-        ? ((inv.totalInvestment + inv.totalProfit - inv.outstanding) /
-                (inv.totalInvestment + inv.totalProfit))
+  Widget _buildExpanded(
+    Investor inv,
+    InvestorFinancials financials,
+    ColorScheme colors,
+  ) {
+    final totalDue = financials.investment + financials.profit;
+    final progress = totalDue > 0
+        ? ((totalDue - financials.outstanding) / totalDue)
             .clamp(0.0, 1.0)
         : 0.0;
 
@@ -210,17 +215,17 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
             children: [
               _EStat(
                   label: 'Invested',
-                  value: money(inv.totalInvestment),
+                  value: money(financials.investment),
                   color: colors.primary),
               const SizedBox(width: 6),
               _EStat(
                   label: 'Profit',
-                  value: money(inv.totalProfit),
+                  value: money(financials.profit),
                   color: const Color(0xFF047857)),
               const SizedBox(width: 6),
               _EStat(
                   label: 'Loss',
-                  value: money(inv.totalLoss),
+                  value: money(financials.loss),
                   color: colors.error),
             ],
           ),
@@ -229,15 +234,13 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
             children: [
               _EStat(
                   label: 'Paid Out',
-                  value: money(inv.totalInvestment +
-                      inv.totalProfit -
-                      inv.outstanding),
+                  value: money(totalDue - financials.outstanding),
                   color: const Color(0xFF0F766E)),
               const SizedBox(width: 6),
               _EStat(
                   label: 'Outstanding',
-                  value: money(inv.outstanding),
-                  color: inv.outstanding > 0
+                  value: money(financials.outstanding),
+                  color: financials.outstanding > 0
                       ? colors.error
                       : const Color(0xFF047857)),
             ],
@@ -267,7 +270,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                       fontWeight: FontWeight.w600)),
             ],
           ),
-          if (inv.investmentCount > 0) ...[
+          if (financials.investmentCount > 0) ...[
             const SizedBox(height: 14),
             const Text('INVESTMENT DETAILS',
                 style: TextStyle(

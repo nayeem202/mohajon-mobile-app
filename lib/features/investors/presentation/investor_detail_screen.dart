@@ -6,6 +6,7 @@ import '../../investments/models/payout.dart';
 import '../../investments/providers/investment_providers.dart';
 import '../models/investor.dart';
 import '../providers/investor_providers.dart';
+import 'investor_form_sheet.dart';
 
 class InvestorDetailScreen extends ConsumerStatefulWidget {
   const InvestorDetailScreen({super.key, required this.investorId});
@@ -43,12 +44,20 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
 
   Widget _buildDetail(Investor investor, List<Payout> payouts) {
     final colors = Theme.of(context).colorScheme;
+    final financials = ref.watch(investorFinancialsProvider(investor.id));
 
     return CustomScrollView(
       slivers: [
         SliverAppBar(
           expandedHeight: 160,
           pinned: true,
+          actions: [
+            IconButton(
+              tooltip: 'Update investor',
+              icon: const Icon(Icons.edit_rounded),
+              onPressed: () => _openEditForm(investor),
+            ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: BoxDecoration(
@@ -116,7 +125,7 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _FinancialSummary(investor: investor),
+                _FinancialSummary(financials: financials),
                 const SizedBox(height: 16),
                 if (investor.email.isNotEmpty ||
                     investor.address.isNotEmpty) ...[
@@ -228,11 +237,20 @@ class _InvestorDetailScreenState extends ConsumerState<InvestorDetailScreen> {
       ],
     );
   }
+
+  void _openEditForm(Investor investor) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => InvestorFormSheet(investor: investor),
+    );
+  }
 }
 
 class _FinancialSummary extends StatelessWidget {
-  const _FinancialSummary({required this.investor});
-  final Investor investor;
+  const _FinancialSummary({required this.financials});
+  final InvestorFinancials financials;
 
   @override
   Widget build(BuildContext context) {
@@ -251,13 +269,13 @@ return Container(
             children: [
               _SummaryBox(
                 label: 'Total Invested',
-                value: money(investor.totalInvestment),
+                value: money(financials.investment),
                 color: colors.primary,
               ),
               const SizedBox(width: 8),
               _SummaryBox(
                 label: 'Total Profit',
-                value: money(investor.totalProfit),
+                value: money(financials.profit),
                 color: colors.secondary,
               ),
             ],
@@ -267,14 +285,14 @@ return Container(
             children: [
               _SummaryBox(
                 label: 'Total Loss',
-                value: money(investor.totalLoss),
+                value: money(financials.loss),
                 color: colors.error,
               ),
               const SizedBox(width: 8),
               _SummaryBox(
                 label: 'Outstanding',
-                value: money(investor.outstanding),
-                color: investor.outstanding > 0
+                value: money(financials.outstanding),
+                color: financials.outstanding > 0
                     ? colors.error
                     : colors.secondary,
               ),

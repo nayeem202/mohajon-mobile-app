@@ -1075,10 +1075,6 @@ class _ClientAvatar extends StatelessWidget {
   }
 }
 
-int _visitCount(Customer customer) {
-  return 12 + customer.customerId.hashCode.abs() % 88;
-}
-
 String _formatVisitTime(DateTime time) {
   final diff = DateTime.now().difference(time);
   if (diff.inMinutes < 60) {

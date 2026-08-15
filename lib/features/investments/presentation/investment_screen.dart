@@ -274,9 +274,9 @@ class _OverviewCard extends StatelessWidget {
               color: const Color(0xFF15803D),
             ),
             _MiniMetric(
-              label: 'Gross loss',
-              value: money(overview.grossLoss),
-              icon: Icons.trending_down_rounded,
+              label: 'Expenses',
+              value: money(overview.totalExpense),
+              icon: Icons.receipt_long_rounded,
               color: const Color(0xFFB91C1C),
             ),
             _MiniMetric(

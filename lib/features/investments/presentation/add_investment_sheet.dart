@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -40,13 +39,10 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final catsAsync = ref.watch(investmentCategoriesStreamProvider);
     final loaded = catsAsync.value;
-    final _categories =
+    final categories =
         (loaded != null && loaded.isNotEmpty) ? loaded : InvestmentCategory.defaults;
-    final totalInvestment = _selectedInvestors
-        .fold<double>(0, (s, si) => s + si.investmentAmount);
     final hasInvalid = _selectedInvestors.any((si) => si.investorId.isEmpty);
     final hasZeroAmount =
         _selectedInvestors.any((si) => si.investmentAmount <= 0);
@@ -128,7 +124,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                         decoration: const InputDecoration(
                           hintText: 'Category',
                         ),
-                        items: (_categories)
+                        items: categories
                             .map((cat) => DropdownMenuItem(
                                   value: cat.id,
                                   child: Text(cat.name),
@@ -139,7 +135,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                         onChanged: (v) {
                           if (v == null) return;
                           final cat =
-                              _categories.firstWhere((c) => c.id == v);
+                              categories.firstWhere((c) => c.id == v);
                           setState(() {
                             _categoryId = v;
                             _categoryName = cat.name;

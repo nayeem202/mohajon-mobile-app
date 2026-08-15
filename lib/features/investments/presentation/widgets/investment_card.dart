@@ -424,9 +424,12 @@ class _MemberCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final investor =
         ref.watch(memberInvestorProvider(member.investorId));
-    final netDue =
-        member.investmentAmount + member.profit - member.paidAmount;
-    final totalDue = member.investmentAmount + member.profit;
+    final totalDue = (member.investmentAmount + member.profit)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    final netDue = (totalDue - member.paidAmount)
+        .clamp(0.0, double.infinity)
+        .toDouble();
     final progress = totalDue > 0
         ? (member.paidAmount / totalDue).clamp(0.0, 1.0)
         : 0.0;
@@ -467,12 +470,12 @@ class _MemberCard extends ConsumerWidget {
                         fontSize: 14)),
               ),
               InkWell(
-                onTap: onPayout,
+                onTap: netDue > 0 ? onPayout : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: colors.primary,
+                    color: netDue > 0 ? colors.primary : colors.outline,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text('Record Payout',
@@ -499,9 +502,11 @@ class _MemberCard extends ConsumerWidget {
                   color: colors.onSurfaceVariant),
               const SizedBox(width: 6),
               _MiniStat(
-                  label: 'Profit',
-                  value: money(member.profit),
-                  color: const Color(0xFF047857)),
+                  label: member.profit < 0 ? 'Loss' : 'Profit',
+                  value: money(member.profit.abs()),
+                  color: member.profit < 0
+                      ? colors.error
+                      : const Color(0xFF047857)),
               const SizedBox(width: 6),
               _MiniStat(
                 label: 'Net Due',

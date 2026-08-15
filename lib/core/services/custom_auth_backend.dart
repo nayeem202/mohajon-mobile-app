@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 
 import '../app/app_providers.dart';
 import '../config/app_config.dart';
-import '../offline/local_database.dart';
 import 'auth_backend.dart';
 import 'device_session_service.dart';
 import 'secure_http.dart';

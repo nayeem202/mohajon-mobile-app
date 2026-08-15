@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/money.dart';
-import '../../investments/providers/investment_providers.dart';
 import '../providers/investor_providers.dart';
 
 class InvestorReportScreen extends ConsumerWidget {

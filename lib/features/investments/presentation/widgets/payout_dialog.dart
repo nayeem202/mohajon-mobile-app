@@ -45,7 +45,12 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
   @override
   Widget build(BuildContext context) {
     final member = widget.member;
-    final totalDue = member.investmentAmount + member.profit;
+    final totalDue = (member.investmentAmount + member.profit)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    final remaining = member.remainingAmount
+        .clamp(0.0, double.infinity)
+        .toDouble();
     final colors = Theme.of(context).colorScheme;
     final investor =
         ref.watch(memberInvestorProvider(member.investorId));
@@ -127,8 +132,8 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   const SizedBox(width: 8),
                   _PStat(
                       label: 'Remaining',
-                      value: money(member.remainingAmount),
-                      color: member.remainingAmount > 0
+                      value: money(remaining),
+                      color: remaining > 0
                           ? colors.error
                           : const Color(0xFF047857)),
                 ],
@@ -151,8 +156,8 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   if (amount == null || amount <= 0) {
                     return 'Enter a valid amount';
                   }
-                  if (amount > member.remainingAmount) {
-                    return 'Cannot exceed ${money(member.remainingAmount)}';
+                  if (amount > remaining) {
+                    return 'Cannot exceed ${money(remaining)}';
                   }
                   return null;
                 },

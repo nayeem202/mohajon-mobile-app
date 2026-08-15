@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/utils/money.dart';
 import '../../models/investor.dart';
 import '../../providers/investor_providers.dart';
 
@@ -44,9 +43,6 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
         ...widget.selectedInvestors.asMap().entries.map((entry) {
           final index = entry.key;
           final si = entry.value;
-          final investor =
-              investors.where((i) => i.id == si.investorId).firstOrNull;
-
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
@@ -63,7 +59,8 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: si.investorId.isEmpty ? null : si.investorId,
+                        initialValue:
+                            si.investorId.isEmpty ? null : si.investorId,
                         decoration: const InputDecoration(
                           labelText: 'Investor *',
                           isDense: true,

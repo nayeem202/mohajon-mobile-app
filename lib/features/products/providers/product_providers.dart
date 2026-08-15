@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/syncable.dart';
+import '../../notifications/models/notification_model.dart';
+import '../../notifications/providers/notification_providers.dart';
 
 final productsProvider = StreamProvider<List<Product>>((ref) {
   final shopId = ref.watch(shopIdProvider);
@@ -88,13 +90,24 @@ class ProductService {
     final shopId = _ref.read(shopIdProvider);
     final product = db.products.getForShop(shopId, productId);
     if (product == null) return;
-    await db.products.put(
-      product.copyWith(
+    if (product.stockQty + delta < 0) {
+      throw StateError('${product.nameEn} stock cannot become negative.');
+    }
+    final updated = product.copyWith(
         stockQty: product.stockQty + delta,
         updatedAt: DateTime.now(),
         syncStatus: SyncStatus.pending,
-      ),
-    );
+      );
+    await db.products.put(updated);
+    if (updated.isLowStock) {
+      final day = DateTime.now();
+      _ref.read(notificationServiceProvider).add(
+            type: NotificationType.stock,
+            title: 'Low stock alert',
+            message: '${updated.nameEn} has ${updated.stockQty} ${updated.unit} left.',
+            sourceKey: 'low-stock:${updated.productId}:${day.year}-${day.month}-${day.day}',
+          );
+    }
     if (syncAfterSave) {
       await _ref.read(syncStateProvider.notifier).syncIfOnline();
     }

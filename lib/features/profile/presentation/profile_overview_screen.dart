@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/app/app_providers.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../models/profile.dart';

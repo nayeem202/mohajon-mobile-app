@@ -6,12 +6,7 @@ import '../../features/auth/providers/auth_providers.dart';
 import '../../features/investments/presentation/investment_dashboard_screen.dart';
 import '../../features/expenses/presentation/expenses_screen.dart';
 import '../../features/profile/presentation/profile_overview_screen.dart';
-import '../../features/customers/presentation/customer_form_screen.dart';
-import '../../features/customers/presentation/customer_list_screen.dart';
-import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/barcode_scan_screen.dart';
-import '../../features/products/presentation/product_form_screen.dart';
-import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/investors/presentation/investor_list_screen.dart';
 import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
@@ -110,6 +105,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     final locale = ref.watch(localeProvider);
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
+    final displayName = user?.displayName;
     final themeMode = ref.watch(themeModeProvider);
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
 
@@ -122,8 +118,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
               const _MoreTopBar(),
               const SizedBox(height: 18),
               _AccountHeader(
-                name: user?.displayName?.isNotEmpty == true
-                    ? user!.displayName!
+                name: displayName?.isNotEmpty == true
+                    ? (displayName ?? 'Signed in account')
                     : 'Signed in account',
                 email: user?.email ?? 'No email available',
                 sync: sync,
@@ -132,38 +128,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
               _FeatureSection(
                 title: l10n.t('sectionOperations'),
                 children: [
-                  _FeatureItem(
-                    icon: Icons.inventory_2_rounded,
-                    title: l10n.t('products'),
-                    subtitle: l10n.t('productsDesc'),
-                    color: colors.primary,
-                    menu: MenuCodes.products,
-                    onTap: () => _open(const ProductListScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.add_box_rounded,
-                    title: l10n.t('addProduct'),
-                    subtitle: 'Create or restock item',
-                    color: colors.secondary,
-                    menu: MenuCodes.addProduct,
-                    onTap: () => _open(const ProductFormScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.people_alt_rounded,
-                    title: l10n.t('customers'),
-                    subtitle: l10n.t('customersDesc'),
-                    color: colors.tertiary,
-                    menu: MenuCodes.clients,
-                    onTap: () => _open(const CustomerListScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.person_add_alt_1_rounded,
-                    title: l10n.t('addCustomer'),
-                    subtitle: 'New customer profile',
-                    color: colors.tertiary,
-                    menu: MenuCodes.addCustomer,
-                    onTap: () => _open(const CustomerFormScreen()),
-                  ),
                   _FeatureItem(
                     icon: Icons.store_rounded,
                     title: 'Vendors',
@@ -196,28 +160,20 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     menu: MenuCodes.barcode,
                     onTap: () => _open(const BarcodeScanScreen()),
                   ),
+                  _FeatureItem(
+                    icon: Icons.group_outlined,
+                    title: 'Staff',
+                    subtitle: 'Manage team members',
+                    color: const Color(0xFFB45309),
+                    menu: MenuCodes.staff,
+                    onTap: () => _open(const StaffListScreen()),
+                  ),
                 ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(
                 title: l10n.t('sectionFinance'),
                 children: [
-                  _FeatureItem(
-                    icon: Icons.shopping_cart_checkout_rounded,
-                    title: l10n.t('sales'),
-                    subtitle: 'POS cart and invoice',
-                    color: colors.primary,
-                    menu: MenuCodes.sales,
-                    onTap: () => _open(const PosScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.account_balance_wallet_rounded,
-                    title: l10n.t('due'),
-                    subtitle: l10n.t('duesDesc'),
-                    color: colors.tertiary,
-                    menu: MenuCodes.due,
-                    onTap: () => _open(const CustomerListScreen()),
-                  ),
                   _FeatureItem(
                     icon: Icons.account_balance_rounded,
                     title: 'Investments',
@@ -319,14 +275,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     color: colors.tertiary,
                     menu: MenuCodes.privacy,
                     onTap: () => _open(const PrivacySettingsScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.group_outlined,
-                    title: 'Staff',
-                    subtitle: 'Manage team members',
-                    color: const Color(0xFFB45309),
-                    menu: MenuCodes.staff,
-                    onTap: () => _open(const StaffListScreen()),
                   ),
                   _FeatureItem(
                     icon: Icons.settings_rounded,

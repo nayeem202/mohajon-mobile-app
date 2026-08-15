@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/sale.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../customers/providers/customer_providers.dart';
+import '../../expenses/providers/expense_providers.dart';
 import '../../investors/models/investor.dart';
 import '../../investors/providers/investor_providers.dart';
 import '../../settings/providers/shop_profile_providers.dart';
+import '../../notifications/models/notification_model.dart';
+import '../../notifications/providers/notification_providers.dart';
 import '../models/investment.dart';
 import '../models/investment_category.dart';
 import '../models/investment_member.dart';
@@ -18,6 +22,49 @@ final investmentServiceProvider = Provider<InvestmentService>((ref) {
 
 final investmentsStreamProvider = StreamProvider<List<Investment>>((ref) {
   return ref.watch(investmentServiceProvider).watchInvestments();
+});
+
+final _profitSyncSignatureProvider = StateProvider<String>((ref) => '');
+
+/// Keeps backend investment profit allocation current even when the investor
+/// screen is not open.
+final investmentProfitSyncProvider = Provider<void>((ref) {
+  final investments = ref.watch(investmentsStreamProvider).value;
+  final netProfit = ref.watch(businessProfitProvider).netProfit;
+  if (investments == null || investments.isEmpty) return;
+  final totalInvestment = investments.fold<double>(
+    0,
+    (sum, investment) => sum + investment.totalInvestment,
+  );
+  if (totalInvestment <= 0) return;
+  final composition = investments
+      .map((investment) =>
+          '${investment.id}:${investment.totalInvestment.toStringAsFixed(2)}')
+      .join('|');
+  final signature = '${netProfit.toStringAsFixed(2)}:$totalInvestment:$composition';
+  if (ref.read(_profitSyncSignatureProvider) == signature) return;
+  ref.read(_profitSyncSignatureProvider.notifier).state = signature;
+  Future<void>(() async {
+    final service = ref.read(investmentServiceProvider);
+    for (final investment in investments) {
+      final share = investment.totalInvestment / totalInvestment;
+      await service.updateInvestmentProfit(
+        investmentId: investment.id,
+        totalProfit: netProfit * share,
+      );
+    }
+    ref.read(notificationServiceProvider).add(
+          type: NotificationType.investment,
+          title: netProfit < 0 ? 'Investor loss updated' : 'Investor profit updated',
+          message: netProfit < 0
+              ? 'Current business loss allocation: ৳${netProfit.abs().toStringAsFixed(2)}.'
+              : 'Current net profit pool: ৳${netProfit.toStringAsFixed(2)}.',
+          category: NotificationCategory.platform,
+          sourceKey: 'investment-profit:$signature',
+        );
+  }).catchError((_) {
+    ref.read(_profitSyncSignatureProvider.notifier).state = '';
+  });
 });
 
 final investmentCategoriesStreamProvider =
@@ -195,7 +242,12 @@ final investmentOverviewProvider = Provider<InvestmentOverview>((ref) {
     0,
     (sum, sale) => sum + (sale.profit < 0 ? sale.profit.abs() : 0),
   );
-  final netProfit = grossProfit - grossLoss;
+  final totalExpense = ref.watch(expensesProvider).value?.fold<double>(
+            0,
+            (sum, expense) => sum + expense.amount,
+          ) ??
+      0;
+  final netProfit = grossProfit - grossLoss - totalExpense;
 
   return InvestmentOverview(
     owners: owners,
@@ -203,6 +255,7 @@ final investmentOverviewProvider = Provider<InvestmentOverview>((ref) {
     grossProfit: grossProfit,
     grossLoss: grossLoss,
     netProfit: netProfit,
+    totalExpense: totalExpense,
     totalSales: totalSales,
   );
 });
@@ -214,6 +267,7 @@ class InvestmentOverview {
     required this.grossProfit,
     required this.grossLoss,
     required this.netProfit,
+    required this.totalExpense,
     required this.totalSales,
   });
 
@@ -222,5 +276,6 @@ class InvestmentOverview {
   final double grossProfit;
   final double grossLoss;
   final double netProfit;
+  final double totalExpense;
   final int totalSales;
 }

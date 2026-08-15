@@ -94,6 +94,32 @@ class Sale with Syncable {
   double get profit =>
       items.fold<double>(0, (total, item) => total + item.profit) - discount;
 
+  Sale copyWith({
+    double? paidAmount,
+    double? dueAmount,
+    PaymentStatus? paymentStatus,
+    DateTime? updatedAt,
+    SyncStatus? syncStatus,
+  }) {
+    return Sale(
+      saleId: saleId,
+      customerId: customerId,
+      items: items,
+      discount: discount,
+      vatPercent: vatPercent,
+      charge: charge,
+      totalAmount: totalAmount,
+      paidAmount: paidAmount ?? this.paidAmount,
+      dueAmount: dueAmount ?? this.dueAmount,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      shopId: shopId,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted,
+      syncStatus: syncStatus ?? this.syncStatus,
+    );
+  }
+
   @override
   Map<String, dynamic> toJson() => {
     'saleId': saleId,
