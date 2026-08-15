@@ -13,6 +13,7 @@ import '../localization/app_localizations.dart';
 import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
 import '../widgets/nav_bar/nav_destination.dart';
 import 'feature_hub_screen.dart';
+import 'app_providers.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -42,7 +43,26 @@ class _AppShellState extends ConsumerState<AppShell> {
     final l10n = AppLocalizations.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
-    final tabs = _buildTabs(l10n, grantedMenus);
+    final session = ref.watch(authStateProvider).value;
+    final isOwner = session?.roles.any(
+          (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+        ) ?? false;
+    final tabs = _buildTabs(l10n, grantedMenus, isOwner);
+    if (tabs.isEmpty) {
+      return const Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'No app features have been assigned to this account.\nPlease contact the shop owner.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final screens = [for (final tab in tabs) tab.screen];
     final destinations = [for (final tab in tabs) tab.destination];
     if (_index >= screens.length) {
@@ -78,7 +98,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             ),
           ],
         ),
-        bottomNavigationBar: wide
+        bottomNavigationBar: wide || destinations.length <= 1
             ? null
             : AnimatedBottomNavBar(
                 selectedIndex: _index,
@@ -92,6 +112,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   List<_Tab> _buildTabs(
     AppLocalizations l10n,
     List<String>? grantedMenus,
+    bool isOwner,
   ) {
     return [
       _Tab(
@@ -135,7 +156,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         screen: FeatureHubScreen(),
         menu: null,
       ),
-    ].where((tab) => hasMenuAccess(grantedMenus, tab.menu)).toList();
+    ].where((tab) => hasMenuAccess(grantedMenus, tab.menu, isOwner: isOwner)).toList();
   }
 }
 

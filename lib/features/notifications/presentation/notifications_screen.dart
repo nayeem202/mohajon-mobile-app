@@ -18,6 +18,35 @@ class _NotificationsScreenState
     extends ConsumerState<NotificationsScreen> {
   final Set<String> _deletingIds = {};
 
+  Future<void> _deleteNotification(AppNotification notification) async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete notification?'),
+        content: const Text('Choose whether to remove it only for you or for everyone in this shop.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, 'me'), child: const Text('Delete for me')),
+          TextButton(onPressed: () => Navigator.pop(context, 'everyone'), child: const Text('Delete for everyone')),
+        ],
+      ),
+    );
+    if (choice == null || !mounted) return;
+    setState(() => _deletingIds.add(notification.id));
+    try {
+      await ref.read(notificationsProvider.notifier).delete(
+            notification.id,
+            everyone: choice == 'everyone',
+          );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are not allowed to delete for everyone.')),
+        );
+      }
+    }
+    if (mounted) setState(() => _deletingIds.remove(notification.id));
+  }
+
   void _openPushSheet() {
     showModalBottomSheet(
       context: context,
@@ -97,20 +126,7 @@ class _NotificationsScreenState
                             .read(notificationsProvider.notifier)
                             .markAsRead(notification.id);
                       },
-                      onDelete: () {
-                        setState(() => _deletingIds.add(notification.id));
-                        Future.delayed(
-                          const Duration(milliseconds: 200),
-                          () {
-                            if (!mounted) return;
-                            ref
-                                .read(notificationsProvider.notifier)
-                                .delete(notification.id);
-                            setState(
-                                () => _deletingIds.remove(notification.id));
-                          },
-                        );
-                      },
+                      onDelete: () => _deleteNotification(notification),
                     );
                   },
                 ),

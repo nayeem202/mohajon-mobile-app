@@ -24,11 +24,19 @@ abstract final class MenuCodes {
   static const privacy = 'PRIVACY';
 }
 
-/// Returns true when [granted] (nullable so a failed fetch falls back to
-/// full access for offline safety) contains [required]. A null [required]
-/// means the feature is always available.
-bool hasMenuAccess(List<String>? granted, String? required) {
+/// Returns true when [granted] contains [required]. Owners/admins have full
+/// access; a missing permission response is denied for staff by default.
+bool hasMenuAccess(List<String>? granted, String? required, {bool isOwner = false}) {
   if (required == null) return true;
-  if (granted == null) return true;
+  if (isOwner) return true;
+  // A missing permission response must fail closed for staff. Treating it as
+  // full access made every menu visible while the request was loading or had
+  // failed. Owners receive all menu codes from the backend as well.
+  if (granted == null) return false;
+  if (required == MenuCodes.stock) {
+    return granted.contains(MenuCodes.stock) ||
+        granted.contains(MenuCodes.products) ||
+        granted.contains(MenuCodes.addProduct);
+  }
   return granted.contains(required);
 }

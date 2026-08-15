@@ -94,6 +94,27 @@ class FcmService {
     }
   }
 
+  /// Rebinds the current device token to the newly signed-in account. The
+  /// FCM token can stay identical across logout/login, but its shop/user
+  /// ownership must still be updated on the backend.
+  Future<void> refreshRegistration() async {
+    if (kIsWeb || !isNotificationPushEnabled()) return;
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) return;
+      _registeredToken = null;
+      await _registerToken(token);
+      await syncPreferences();
+    } catch (error) {
+      debugPrint('FCM account registration refresh failed: $error');
+    }
+  }
+
   Future<void> _disableToken(String token) {
     return ApiClient(_ref.read(localDatabaseProvider)).post(
       '/api/v1/notifications/devices/disable',
@@ -156,7 +177,9 @@ class FcmService {
           category: category,
           title: title,
           message: body,
-          sourceKey: 'fcm:${message.messageId ?? message.sentTime}',
+          sourceKey: message.data['notificationId'] != null
+              ? 'server:${message.data['notificationId']}'
+              : 'fcm:${message.messageId ?? message.sentTime}',
         );
   }
 

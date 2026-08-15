@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -60,10 +63,16 @@ class NotificationsController extends StateNotifier<NotificationsState> {
   NotificationsController(this._db, this._shopId)
       : super(NotificationsState(items: _load(_db, _shopId))) {
     _sortAndPersist();
+    unawaited(_loadSharedHistory());
+    _historyRefreshTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => unawaited(_loadSharedHistory()),
+    );
   }
 
   final LocalDatabase _db;
   final String _shopId;
+  Timer? _historyRefreshTimer;
 
   static List<AppNotification> _load(LocalDatabase db, String shopId) {
     return db.notifications.values
@@ -80,6 +89,33 @@ class NotificationsController extends StateNotifier<NotificationsState> {
 
   Future<void> _persist(AppNotification item) =>
       _db.notifications.put(item.id, item.toJson());
+
+  Future<void> _loadSharedHistory() async {
+    try {
+      final data = await ApiClient(_db).getJson('/api/v1/notifications/history');
+      if (data is! List) return;
+      final remote = data
+          .whereType<Map>()
+          .map((item) => AppNotification.fromJson(item))
+          .toList();
+      final existingBySource = <String, AppNotification>{
+        for (final item in state.items)
+          if (item.sourceKey != null) item.sourceKey!: item,
+      };
+      final merged = [...state.items];
+      for (final item in remote) {
+        final old = item.sourceKey == null ? null : existingBySource[item.sourceKey];
+        if (old == null) {
+          merged.add(item);
+          await _persist(item);
+        }
+      }
+      state = state.copyWith(items: merged);
+      _sortAndPersist();
+    } catch (_) {
+      // Local notifications remain available when the history endpoint is offline.
+    }
+  }
 
   void markAsRead(String id) {
     final item = state.items.where((n) => n.id == id).firstOrNull;
@@ -99,11 +135,30 @@ class NotificationsController extends StateNotifier<NotificationsState> {
     }
   }
 
-  void delete(String id) {
+  Future<void> delete(String id, {bool everyone = false}) async {
+    final item = state.items.where((n) => n.id == id).firstOrNull;
+    final sourceKey = item?.sourceKey;
+    final serverId = sourceKey != null && sourceKey.startsWith('server:')
+        ? sourceKey.substring('server:'.length)
+        : null;
+    if (everyone && serverId != null) {
+      await ApiClient(_db).delete(
+        '/api/v1/notifications/history/$serverId/everyone',
+      );
+    }
     state = state.copyWith(
       items: state.items.where((n) => n.id != id).toList(),
     );
     _db.notifications.delete(id);
+    if (serverId == null || everyone) return;
+    try {
+      await ApiClient(_db).delete(
+        '/api/v1/notifications/history/$serverId',
+      );
+    } catch (_) {
+      // The local delete remains applied; a later sync can restore it if the
+      // server deletion failed.
+    }
   }
 
   void setCategoryFilter(NotificationCategory? category) {
@@ -144,6 +199,12 @@ class NotificationsController extends StateNotifier<NotificationsState> {
     );
     state = state.copyWith(items: [item, ...state.items]);
     _persist(item);
+  }
+
+  @override
+  void dispose() {
+    _historyRefreshTimer?.cancel();
+    super.dispose();
   }
 }
 
@@ -190,13 +251,37 @@ class NotificationService {
     if (!isNotificationPushEnabled()) {
       throw StateError('Push notifications are disabled in Settings.');
     }
-    await ApiClient(_ref.read(localDatabaseProvider)).post(
+    final response = await ApiClient(_ref.read(localDatabaseProvider)).post(
       '/api/v1/notifications/send',
       {
         'title': title,
         'body': message,
-        'data': {'type': type.name},
+        // System notifications are stored/filtered under the Platform type.
+        'data': {'type': type == NotificationType.system ? 'platform' : type.name},
       },
     );
+    final notificationId = response['notificationId']?.toString();
+    final storedType = type == NotificationType.system
+        ? NotificationType.platform
+        : type;
+    try {
+      _ref.read(notificationServiceProvider).add(
+            type: storedType,
+            category: storedType == NotificationType.platform
+                ? NotificationCategory.platform
+                : NotificationCategory.shop,
+            title: title,
+            message: message,
+            sourceKey: notificationId == null
+                ? null
+                : 'server:$notificationId',
+          );
+    } catch (error, stackTrace) {
+      // The server has already accepted the notification. Do not report a
+      // successful remote send as a failed send if local Hive/UI persistence
+      // has a separate problem.
+      debugPrint('Local notification display failed after remote send: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 }

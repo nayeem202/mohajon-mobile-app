@@ -22,8 +22,15 @@ String notificationTypeLabel(NotificationType type) {
 
 List<String> enabledNotificationTypeKeys() {
   final saved = Hive.box('settings').get('notifTypes', defaultValue: <String>[]);
-  final selected = saved is List ? saved.cast<String>() : const <String>[];
+  final selected = saved is List ? saved.cast<String>().toList() : <String>[];
   if (selected.isEmpty) return allNotificationTypeKeys;
+  final settings = Hive.box('settings');
+  final migrated = settings.get('notifTypesPlatformMigrated', defaultValue: false) as bool;
+  if (!migrated && !selected.contains('Platform')) {
+    selected.add('Platform');
+    settings.put('notifTypesPlatformMigrated', true);
+    settings.put('notifTypes', selected);
+  }
   return allNotificationTypeKeys.where((key) {
     final type = NotificationType.values.firstWhere(
       (value) => value.name == key,

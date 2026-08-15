@@ -19,7 +19,11 @@ class PosInventoryApp extends ConsumerWidget {
     ref.watch(investmentProfitSyncProvider);
     ref.listen(authStateProvider, (previous, next) {
       if (next.value != null) {
-        unawaited(ref.read(fcmServiceProvider).initialize());
+        unawaited(() async {
+          final fcm = ref.read(fcmServiceProvider);
+          await fcm.initialize();
+          await fcm.refreshRegistration();
+        }());
       }
     });
     final locale = ref.watch(localeProvider);

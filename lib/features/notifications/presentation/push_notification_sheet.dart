@@ -46,11 +46,17 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
         const SnackBar(content: Text('Notification sent successfully')),
       );
       Navigator.of(context).pop();
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Notification send failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not send notification')),
+        const SnackBar(
+          content: Text(
+            'Could not send notification. Check the app log for the exact error.',
+          ),
+        ),
       );
     }
   }

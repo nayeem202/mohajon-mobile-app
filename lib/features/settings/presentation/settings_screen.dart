@@ -28,7 +28,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   late Box _settingsBox;
   bool _pushEnabled = true;
   final Set<String> _selectedTypes = {
-    'Sales', 'Stock', 'Expenses', 'Payments', 'Investment',
+    'Sales', 'Stock', 'Expenses', 'Payments', 'Investment', 'Platform',
   };
 
   @override
@@ -43,6 +43,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     if (saved.isNotEmpty) {
       _selectedTypes.clear();
       _selectedTypes.addAll(saved.cast<String>());
+      // Older builds omitted Platform from the default selection. Migrate
+      // that old preference once so manual/system notifications are received.
+      final migrated = _settingsBox.get('notifTypesPlatformMigrated', defaultValue: false) as bool;
+      if (!migrated) {
+        _selectedTypes.add('Platform');
+        _settingsBox.put('notifTypesPlatformMigrated', true);
+        _settingsBox.put('notifTypes', _selectedTypes.toList());
+      }
     }
   }
 

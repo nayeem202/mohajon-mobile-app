@@ -105,6 +105,9 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     final locale = ref.watch(localeProvider);
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
+    final isOwner = user?.roles.any(
+          (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+        ) ?? false;
     final displayName = user?.displayName;
     final themeMode = ref.watch(themeModeProvider);
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
@@ -168,7 +171,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     menu: MenuCodes.staff,
                     onTap: () => _open(const StaffListScreen()),
                   ),
-                ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
+                ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(
@@ -182,7 +185,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     menu: MenuCodes.investments,
                     onTap: () => _open(const InvestmentDashboardScreen()),
                   ),
-                ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
+                ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(
@@ -284,7 +287,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     menu: MenuCodes.settings,
                     onTap: () => _open(const SettingsScreen()),
                   ),
-                ].where((item) => hasMenuAccess(grantedMenus, item.menu)).toList(),
+                ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
               ),
               const SizedBox(height: 16),
               _FeatureSection(

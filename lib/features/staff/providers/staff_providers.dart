@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/staff_model.dart';
 import '../models/staff_role.dart';
 import '../services/staff_api_service.dart';
+import '../../../core/app/app_providers.dart';
 
 /// Roles are fetched from the Java service (configurable from the DB).
 final staffRolesProvider = FutureProvider<List<StaffRole>>((ref) async {
@@ -22,6 +23,10 @@ final staffListProvider = FutureProvider<List<StaffMember>>((ref) async {
 /// Menu codes granted to the currently signed-in user. The owner sees all
 /// menus; staff members only see the menus the shop owner granted them.
 final myMenuCodesProvider = FutureProvider<List<String>>((ref) async {
+  // Re-fetch permissions whenever the signed-in account changes. Without
+  // this dependency, an owner's cached menu list could survive logout/login
+  // and be reused for a staff account.
+  ref.watch(authStateProvider);
   return ref.watch(staffApiServiceProvider).myMenuCodes();
 });
 

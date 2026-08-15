@@ -11,6 +11,9 @@ import '../providers/product_providers.dart';
 import 'product_form_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
+import '../../staff/models/menu_codes.dart';
+import '../../staff/providers/staff_providers.dart';
+import '../../../core/app/app_providers.dart';
 
 enum _StockFilter { all, low, out }
 
@@ -42,6 +45,16 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsProvider);
     final searchQuery = ref.watch(productSearchQueryProvider);
+    final grantedMenus = ref.watch(myMenuCodesProvider).value;
+    final session = ref.watch(authStateProvider).value;
+    final isOwner = session?.roles.any(
+          (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+        ) ?? false;
+    final canAddProduct = hasMenuAccess(
+      grantedMenus,
+      MenuCodes.addProduct,
+      isOwner: isOwner,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
@@ -141,7 +154,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
           ),
           const SizedBox(height: 8),
-          FloatingActionButton(
+          if (canAddProduct) FloatingActionButton(
             heroTag: 'add',
             onPressed: () => Navigator.of(
               context,
