@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/nav_bar/nav_bar_aware_fab_location.dart';
 import '../providers/product_providers.dart';
 import 'product_form_screen.dart';
@@ -566,7 +567,7 @@ class _InventoryRow extends StatelessWidget {
     final leading = product.imagePath != null
         ? ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.file(
+            child: AppImage.file(
               File(product.imagePath!),
               width: 42,
               height: 42,

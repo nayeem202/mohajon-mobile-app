@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'app_image.dart';
+
 class AppAvatar extends StatelessWidget {
   const AppAvatar({
     super.key,
@@ -33,7 +35,7 @@ class AppAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: backgroundColor ?? const Color(0xFFD6F2EA),
       backgroundImage: imagePath != null && imagePath!.isNotEmpty
-          ? FileImage(File(imagePath!))
+          ? imageProviderForPath(imagePath!)
           : null,
       child: imagePath == null || imagePath!.isEmpty
           ? Text(

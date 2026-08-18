@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/app_user.dart';
+import '../../../core/services/api_client.dart';
+import '../../../core/services/file_upload_service.dart';
 import '../models/profile.dart';
 
 class ProfileRepository {
@@ -43,13 +45,20 @@ class ProfileRepository {
     final db = _ref.read(localDatabaseProvider);
     final settings = db.settings;
 
+    final imagePath = await FileUploadService(db).uploadIfNeeded(profile.imagePath);
+    if (_ref.read(authStateProvider).value != null &&
+        profile.userId != 'local-owner') {
+      await ApiClient(db).put('/api/v1/shops/me', {
+        'imagePath': imagePath ?? '',
+      });
+    }
     await settings.put(_keyStoreName, profile.storeName);
     await settings.put(_keyOwnerName, profile.ownerName);
     await settings.put(_keyPhone, profile.phone);
     await settings.put(_keyEmail, profile.email);
     await settings.put(_keyAddress, profile.address);
-    if (profile.imagePath != null) {
-      await settings.put(_keyImagePath, profile.imagePath);
+    if (imagePath != null) {
+      await settings.put(_keyImagePath, imagePath);
     } else {
       await settings.delete(_keyImagePath);
     }

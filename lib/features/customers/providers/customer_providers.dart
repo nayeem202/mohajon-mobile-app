@@ -9,6 +9,7 @@ import '../../../core/models/ledger_entry.dart';
 import '../../../core/models/payment.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
+import '../../../core/services/file_upload_service.dart';
 
 final customersProvider = StreamProvider<List<Customer>>((ref) {
   final shopId = ref.watch(shopIdProvider);
@@ -193,7 +194,9 @@ class CustomerService {
       email: email,
       address: address,
       notes: notes,
-      imagePath: imagePath,
+      imagePath: await FileUploadService(
+        _ref.read(localDatabaseProvider),
+      ).uploadIfNeeded(imagePath),
       shopId: _ref.read(shopIdProvider),
       updatedAt: DateTime.now(),
       syncStatus: SyncStatus.pending,

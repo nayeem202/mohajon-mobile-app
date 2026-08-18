@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_image.dart';
+
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({
     super.key,
@@ -72,7 +74,7 @@ class ProfileAvatar extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(size / 2),
-          child: Image.file(
+          child: AppImage.file(
             File(imagePath!),
             width: size,
             height: size,

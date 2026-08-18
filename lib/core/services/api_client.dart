@@ -162,11 +162,20 @@ class ApiClient {
   /// (e.g. `{url, fileName}`).
   Future<Map<String, dynamic>> uploadFile(String path, File file) async {
     final client = await secureHttpClient();
-    final request = http.MultipartRequest('POST', _uri(path))
-      ..headers.addAll(_headers())
-      ..files.add(await http.MultipartFile.fromPath('file', file.path));
-    final streamed = await client.send(request).timeout(_timeout);
-    final response = await http.Response.fromStream(streamed);
+    Future<http.Response> sendUpload() async {
+      final request = http.MultipartRequest('POST', _uri(path))
+        ..headers.addAll(_headers())
+        ..files.add(await http.MultipartFile.fromPath('file', file.path));
+      final streamed = await client.send(request).timeout(_timeout);
+      return http.Response.fromStream(streamed);
+    }
+
+    var response = await sendUpload();
+    if ((response.statusCode == 401 || response.statusCode == 403) &&
+        _settings.get(_kRefreshToken) != null) {
+      final refreshed = await _tryRefresh();
+      if (refreshed) response = await sendUpload();
+    }
     final data = _decode(response, path);
     return (data is Map<String, dynamic>) ? data : const {};
   }

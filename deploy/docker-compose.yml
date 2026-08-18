@@ -51,6 +51,8 @@ services:
       dockerfile: Dockerfile.auth
     container_name: auth-service
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     environment:
       JAVA_OPTS: ${AUTH_JAVA_OPTS}
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
@@ -89,6 +91,8 @@ services:
       dockerfile: Dockerfile.haalkhata
     container_name: haalkhata-service
     restart: unless-stopped
+    ports:
+      - "8081:8081"
     environment:
       JAVA_OPTS: ${HAALKHATA_JAVA_OPTS}
       DB_HOST: postgres

@@ -10,6 +10,7 @@ import '../../../core/models/product.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/app_avatar.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/loading_overlay.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../products/presentation/product_form_screen.dart';
@@ -864,7 +865,7 @@ class _LowStockProductCard extends StatelessWidget {
                   width: double.infinity,
                   height: 44,
                   child: product.imagePath != null
-                      ? Image.file(
+                      ? AppImage.file(
                           File(product.imagePath!),
                           width: double.infinity,
                           height: 44,

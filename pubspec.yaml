@@ -55,6 +55,7 @@ dependencies:
   uuid: ^4.5.1
   fl_chart: ^0.70.0
   remixicon: ^4.9.3
+  speech_to_text: ^7.3.0
 
 dev_dependencies:
   flutter_test:

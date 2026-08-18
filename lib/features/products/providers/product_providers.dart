@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/syncable.dart';
+import '../../../core/services/file_upload_service.dart';
 import '../../notifications/models/notification_model.dart';
 import '../../notifications/providers/notification_providers.dart';
 
@@ -59,6 +60,7 @@ class ProductService {
   }) async {
     final db = _ref.read(localDatabaseProvider);
     final id = productId ?? _uuid.v4();
+    final uploadedImagePath = await FileUploadService(db).uploadIfNeeded(imagePath);
     await db.products.put(
       Product(
         productId: id,
@@ -67,7 +69,7 @@ class ProductService {
         barcode: barcode,
         category: category,
         unit: unit,
-        imagePath: imagePath,
+        imagePath: uploadedImagePath,
         buyingPrice: buyingPrice,
         purchasePrice: purchasePrice,
         sellingPrice: sellingPrice,

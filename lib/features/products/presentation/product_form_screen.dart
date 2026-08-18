@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
 import '../../../core/widgets/action_button.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -485,7 +486,7 @@ class _ImagePlaceholder extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.file(
+                    AppImage.file(
                       File(imagePath!),
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _placeholder(),

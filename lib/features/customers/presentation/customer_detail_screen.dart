@@ -7,6 +7,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_form_screen.dart';
 import '../providers/customer_providers.dart';
@@ -85,7 +86,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                       if (customer.imagePath != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
+                          child: AppImage.file(
                             File(customer.imagePath!),
                             width: 42,
                             height: 42,

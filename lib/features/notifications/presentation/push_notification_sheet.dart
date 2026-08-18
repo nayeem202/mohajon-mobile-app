@@ -53,9 +53,7 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Could not send notification. Check the app log for the exact error.',
-          ),
+          content: Text('Unable to send notification. Please try again.'),
         ),
       );
     }
@@ -122,9 +120,24 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.send_rounded, size: 16),
-                        const SizedBox(width: 8),
-                        const Text('Send Notification'),
+                        if (_submitting) ...[
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Sending...'),
+                        ] else ...[
+                          const Icon(Icons.send_rounded, size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Send Notification'),
+                        ],
                       ],
                     ),
                   ),

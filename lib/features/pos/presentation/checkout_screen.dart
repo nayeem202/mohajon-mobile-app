@@ -10,6 +10,7 @@ import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/utils/money.dart';
 import '../../products/providers/product_providers.dart';
 import '../providers/cart_provider.dart';
@@ -300,7 +301,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 leading: customer.imagePath != null
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(20),
-                                        child: Image.file(
+                                        child: AppImage.file(
                                           File(customer.imagePath!),
                                           width: 40,
                                           height: 40,
@@ -1026,7 +1027,7 @@ class _SelectedCustomerCard extends StatelessWidget {
           customer.imagePath != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(22),
-                  child: Image.file(
+                  child: AppImage.file(
                     File(customer.imagePath!),
                     width: 44,
                     height: 44,
@@ -1109,7 +1110,7 @@ class _CheckoutItemRow extends StatelessWidget {
         imagePath != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.file(
+                child: AppImage.file(
                   File(imagePath!),
                   width: 46,
                   height: 46,

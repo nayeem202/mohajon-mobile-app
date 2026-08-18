@@ -35,6 +35,7 @@ class ShopProfile {
     this.owners = const <ShopOwner>[],
     this.ownerEmail = '',
     this.createdAt,
+    this.imagePath = '',
   });
 
   final String shopId;
@@ -46,6 +47,7 @@ class ShopProfile {
   final List<ShopOwner> owners;
   final String ownerEmail;
   final DateTime? createdAt;
+  final String imagePath;
 
   List<ShopOwner> get effectiveOwners {
     if (owners.isNotEmpty) return owners;
@@ -73,6 +75,7 @@ class ShopProfile {
     'ownerCount': effectiveOwners.length,
     'totalInvestment': totalInvestment,
     if (createdAt != null) 'createdAt': dateToJson(createdAt!),
+    'imagePath': imagePath,
     'updatedAt': dateToJson(updatedAt),
   };
 
@@ -92,6 +95,7 @@ class ShopProfile {
       shopName: (json['name'] ?? '') as String,
       location: (json['location'] ?? '') as String,
       phoneNumber: (json['phoneNumber'] ?? '') as String,
+      imagePath: (json['imagePath'] ?? '') as String,
       owners: owners,
       createdAt: json['createdAt'] == null
           ? null

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/customer_providers.dart';
 
@@ -318,7 +319,7 @@ class _ProfilePhoto extends StatelessWidget {
               child: imagePath != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(size / 2),
-                      child: Image.file(
+                      child: AppImage.file(
                         File(imagePath!),
                         width: size,
                         height: size,

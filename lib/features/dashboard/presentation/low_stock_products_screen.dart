@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../products/presentation/product_form_screen.dart';
 
 class LowStockProductsScreen extends StatefulWidget {
@@ -135,7 +136,7 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                 product.imagePath != null
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(16),
-                                        child: Image.file(
+                                        child: AppImage.file(
                                           File(product.imagePath!),
                                           width: 52,
                                           height: 52,

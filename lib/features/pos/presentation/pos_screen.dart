@@ -6,6 +6,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../products/providers/product_providers.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
@@ -416,7 +417,7 @@ class _ProductCard extends StatelessWidget {
                 child: Stack(
                   children: [
                     if (product.imagePath != null)
-                      Image.file(
+                      AppImage.file(
                         File(product.imagePath!),
                         width: double.infinity,
                         height: 80,
@@ -670,4 +671,3 @@ IconData _iconForCategory(String category) {
       return Icons.inventory_2_rounded;
   }
 }
-

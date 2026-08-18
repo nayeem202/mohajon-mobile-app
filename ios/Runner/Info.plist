@@ -18,6 +18,8 @@
 	<string>Haalkhata</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is required to scan product barcodes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is required for voice commands.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

@@ -197,9 +197,17 @@ class _ProfileOverviewScreenState
   Future<void> _saveImagePath(String? path) async {
     final current = ref.read(profileProvider);
     if (current == null) return;
-    final updated = current.copyWith(imagePath: path);
-    await ref.read(profileRepositoryProvider).saveProfile(updated);
-    ref.read(profileVersionProvider.notifier).state++;
+    try {
+      final updated = current.copyWith(imagePath: path);
+      await ref.read(profileRepositoryProvider).saveProfile(updated);
+      ref.read(profileVersionProvider.notifier).state++;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not upload profile image')),
+        );
+      }
+    }
   }
 
   void _openStoreInfo(Profile? profile) {

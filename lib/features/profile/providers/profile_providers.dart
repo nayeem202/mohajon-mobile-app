@@ -41,7 +41,9 @@ final profileProvider = Provider<Profile?>((ref) {
         ? shopProfile!.ownerEmail
         : (authUser?.email ?? ''),
     address: shopProfile?.location ?? '',
-    imagePath: settings.get('profile_imagePath') as String?,
+    imagePath: (shopProfile?.imagePath.isNotEmpty == true
+        ? shopProfile!.imagePath
+        : settings.get('profile_imagePath') as String?),
   );
 });
 

@@ -7,6 +7,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/nav_bar/nav_bar_aware_fab_location.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_profile_screen.dart';
@@ -840,7 +841,7 @@ class _ClientRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   child: GestureDetector(
                     onTap: onTap,
-                    child: Image.file(
+                    child: AppImage.file(
                       File(customer.imagePath!),
                       width: 46,
                       height: 46,
@@ -1149,7 +1150,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     if (customer.imagePath != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.file(
+                        child: AppImage.file(
                           File(customer.imagePath!),
                           width: 58,
                           height: 58,

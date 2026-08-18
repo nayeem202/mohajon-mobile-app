@@ -14,6 +14,9 @@ import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
 import '../widgets/nav_bar/nav_destination.dart';
 import 'feature_hub_screen.dart';
 import 'app_providers.dart';
+import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/voice_assistant/models/voice_command.dart';
+import '../../features/voice_assistant/presentation/voice_assistant_button.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -36,6 +39,39 @@ class _AppShellState extends ConsumerState<AppShell> {
     setState(() => _index = index);
     final box = Hive.box(HiveBoxes.settings);
     box.put('selectedTab', index);
+  }
+
+  void _handleVoiceCommand(VoiceCommand command) {
+    final target = switch (command.type) {
+      VoiceCommandType.openHome => MenuCodes.home,
+      VoiceCommandType.openSales => MenuCodes.sales,
+      VoiceCommandType.openProducts => MenuCodes.stock,
+      VoiceCommandType.openCustomers => MenuCodes.clients,
+      _ => null,
+    };
+    if (target != null) {
+      final grantedMenus = ref.read(myMenuCodesProvider).value;
+      final session = ref.read(authStateProvider).value;
+      final isOwner = session?.roles.any((role) =>
+              role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN') ??
+          false;
+      final tabs = _buildTabs(AppLocalizations.of(context), grantedMenus, isOwner);
+      final index = tabs.indexWhere((tab) => tab.menu == target);
+      if (index >= 0) {
+        _onTabSelected(index);
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('এই feature-এর permission আপনার নেই।')),
+      );
+      return;
+    }
+    if (command.type == VoiceCommandType.openNotifications) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+      return;
+    }
+    final tabs = _buildTabs(AppLocalizations.of(context), ref.read(myMenuCodesProvider).value, true);
+    if (tabs.isNotEmpty) _onTabSelected(tabs.length - 1);
   }
 
   @override
@@ -97,6 +133,10 @@ class _AppShellState extends ConsumerState<AppShell> {
               ),
             ),
           ],
+        ),
+        floatingActionButton: VoiceAssistantButton(
+          onCommand: _handleVoiceCommand,
+          database: ref.read(localDatabaseProvider),
         ),
         bottomNavigationBar: wide || destinations.length <= 1
             ? null
