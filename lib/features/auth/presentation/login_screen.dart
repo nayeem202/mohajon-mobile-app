@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint, debugPrintStack;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -148,6 +149,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             );
         if (mounted) _openApp();
       } catch (error) {
+        debugPrint('AUTH UI: email sign-in failed: $error');
+        debugPrintStack();
         if (error is AuthException &&
             error.code == 'VERIFICATION_REQUIRED' &&
             mounted) {
@@ -395,10 +398,9 @@ class _CommerceIllustration extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.storefront_rounded,
-              color: AuthBrand.primary,
-              size: 58,
+            child: Image.asset(
+              'assets/brand/mohajon.png',
+              fit: BoxFit.contain,
             ),
           ),
         ],

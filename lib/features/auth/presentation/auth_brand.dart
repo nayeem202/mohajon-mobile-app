@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 class AuthBrand {
   const AuthBrand._();
 
-  static const backgroundColor = Color(0xFFF5F8FF);
+  static const backgroundColor = Color(0xFFFFF8E1);
   static const panelBackground = Colors.white;
-  static const panelBorder = Color(0xFFDDE5F5);
-  static const panelText = Color(0xFF10234C);
-  static const panelMuted = Color(0xFF657394);
-  static const primary = Color(0xFF2057F5);
-  static const primaryDeep = Color(0xFF1745D0);
-  static const secondary = Color(0xFF2057F5);
-  static const secondarySoft = Color(0xFFEAF0FF);
-  static const accent = Color(0xFF7B4DF5);
-  static const gold = Color(0xFFF6A623);
-  static const shadow = Color(0xFF7187B5);
+  static const panelBorder = Color(0xFFF1DFAD);
+  static const panelText = Color(0xFF2F3028);
+  static const panelMuted = Color(0xFF77735F);
+  static const primary = Color(0xFFFFC800);
+  static const primaryDeep = Color(0xFFE98300);
+  static const secondary = Color(0xFFD97706);
+  static const secondarySoft = Color(0xFFFFF0A6);
+  static const accent = Color(0xFFE98300);
+  static const gold = Color(0xFFFFC800);
+  static const shadow = Color(0xFF8C7538);
   static const danger = Color(0xFFD64545);
-  static const buttonDisabled = Color(0xFFAAB6D1);
-  static const onGold = Colors.white;
+  static const buttonDisabled = Color(0xFFD7CFAE);
+  static const onGold = Color(0xFF2F3028);
 
   static const gradient = LinearGradient(
     begin: Alignment.centerLeft,
@@ -30,17 +30,17 @@ class AuthBrand {
     const scheme = ColorScheme(
       brightness: Brightness.light,
       primary: primary,
-      onPrimary: Colors.white,
+      onPrimary: panelText,
       secondary: accent,
       onSecondary: Colors.white,
       error: danger,
       onError: Colors.white,
       surface: panelBackground,
       onSurface: panelText,
-      surfaceContainerHighest: Color(0xFFF1F5FF),
+      surfaceContainerHighest: Color(0xFFFFFDF5),
       onSurfaceVariant: panelMuted,
       outline: panelBorder,
-      outlineVariant: Color(0xFFE9EEFA),
+      outlineVariant: Color(0xFFF6EAC7),
       shadow: shadow,
       scrim: Colors.black,
       inverseSurface: panelText,
@@ -97,7 +97,7 @@ class AuthBrand {
       checkboxTheme: CheckboxThemeData(
         side: const BorderSide(color: panelBorder),
         fillColor: WidgetStateProperty.all(primary),
-        checkColor: WidgetStateProperty.all(Colors.white),
+        checkColor: WidgetStateProperty.all(panelText),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       ),
       textButtonTheme: TextButtonThemeData(

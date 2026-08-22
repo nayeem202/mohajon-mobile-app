@@ -68,17 +68,9 @@ public class MainActivity extends FlutterActivity {
                 result.notImplemented();
                 return;
             }
-            if (!hasLocationPermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                pendingDeviceSessionResult = result;
-                requestPermissions(
-                        new String[]{
-                                android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                                android.Manifest.permission.ACCESS_FINE_LOCATION
-                        },
-                        LOCATION_PERMISSION_REQUEST
-                );
-                return;
-            }
+            // Authentication only needs a stable device/session id. Do not
+            // block login on the optional location permission; location is
+            // best-effort metadata and is handled as unavailable below.
             result.success(currentDeviceSession());
         });
     }

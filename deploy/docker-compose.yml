@@ -66,6 +66,12 @@ services:
       APP_OTP_STORE: redis
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-${MAIL_HOST}}
+      SMTP_PORT: ${SMTP_PORT:-${MAIL_PORT}}
+      SMTP_USERNAME: ${SMTP_USERNAME:-${MAIL_USERNAME}}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-${MAIL_PASSWORD}}
+      MAIL_FROM: ${MAIL_FROM:-${MAIL_USERNAME}}
     depends_on:
       postgres:
         condition: service_healthy

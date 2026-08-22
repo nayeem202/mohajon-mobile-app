@@ -52,10 +52,17 @@ class _AppShellState extends ConsumerState<AppShell> {
     if (target != null) {
       final grantedMenus = ref.read(myMenuCodesProvider).value;
       final session = ref.read(authStateProvider).value;
-      final isOwner = session?.roles.any((role) =>
-              role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN') ??
+      final isOwner =
+          session?.roles.any(
+            (role) =>
+                role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+          ) ??
           false;
-      final tabs = _buildTabs(AppLocalizations.of(context), grantedMenus, isOwner);
+      final tabs = _buildTabs(
+        AppLocalizations.of(context),
+        grantedMenus,
+        isOwner,
+      );
       final index = tabs.indexWhere((tab) => tab.menu == target);
       if (index >= 0) {
         _onTabSelected(index);
@@ -67,10 +74,16 @@ class _AppShellState extends ConsumerState<AppShell> {
       return;
     }
     if (command.type == VoiceCommandType.openNotifications) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
       return;
     }
-    final tabs = _buildTabs(AppLocalizations.of(context), ref.read(myMenuCodesProvider).value, true);
+    final tabs = _buildTabs(
+      AppLocalizations.of(context),
+      ref.read(myMenuCodesProvider).value,
+      true,
+    );
     if (tabs.isNotEmpty) _onTabSelected(tabs.length - 1);
   }
 
@@ -80,9 +93,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
     final session = ref.watch(authStateProvider).value;
-    final isOwner = session?.roles.any(
-          (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
-        ) ?? false;
+    final isOwner =
+        session?.roles.any(
+          (role) =>
+              role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+        ) ??
+        false;
     final tabs = _buildTabs(l10n, grantedMenus, isOwner);
     if (tabs.isEmpty) {
       return const Scaffold(
@@ -155,48 +171,53 @@ class _AppShellState extends ConsumerState<AppShell> {
     bool isOwner,
   ) {
     return [
-      _Tab(
-        destination: NavDestination(
-          icon: Icons.home_outlined,
-          selectedIcon: Icons.home_rounded,
-          label: l10n.t('home'),
-        ),
-        screen: const DashboardScreen(),
-        menu: MenuCodes.home,
-      ),
-      _Tab(
-        destination: NavDestination(
-          icon: Icons.shopping_cart_outlined,
-          selectedIcon: Icons.shopping_cart_rounded,
-          label: l10n.t('sales'),
-        ),
-        screen: const PosScreen(),
-        menu: MenuCodes.sales,
-      ),
-      _Tab(
-        destination: NavDestination(
-          icon: Icons.inventory_2_outlined,
-          selectedIcon: Icons.inventory_2_rounded,
-          label: l10n.t('stock'),
-        ),
-        screen: const ProductListScreen(),
-        menu: MenuCodes.stock,
-      ),
-      _Tab(
-        destination: NavDestination(
-          icon: Icons.group_outlined,
-          selectedIcon: Icons.group_rounded,
-          label: l10n.t('clients'),
-        ),
-        screen: const CustomerListScreen(),
-        menu: MenuCodes.clients,
-      ),
-      const _Tab(
-        destination: NavDestination(icon: Icons.more_horiz_rounded, label: 'More'),
-        screen: FeatureHubScreen(),
-        menu: null,
-      ),
-    ].where((tab) => hasMenuAccess(grantedMenus, tab.menu, isOwner: isOwner)).toList();
+          _Tab(
+            destination: NavDestination(
+              icon: Icons.home_outlined,
+              selectedIcon: Icons.home_rounded,
+              label: l10n.t('home'),
+            ),
+            screen: const DashboardScreen(),
+            menu: MenuCodes.home,
+          ),
+          _Tab(
+            destination: NavDestination(
+              icon: Icons.shopping_cart_outlined,
+              selectedIcon: Icons.shopping_cart_rounded,
+              label: l10n.t('sales'),
+            ),
+            screen: const PosScreen(),
+            menu: MenuCodes.sales,
+          ),
+          _Tab(
+            destination: NavDestination(
+              icon: Icons.inventory_2_outlined,
+              selectedIcon: Icons.inventory_2_rounded,
+              label: l10n.t('stock'),
+            ),
+            screen: const ProductListScreen(),
+            menu: MenuCodes.stock,
+          ),
+          _Tab(
+            destination: NavDestination(
+              icon: Icons.group_outlined,
+              selectedIcon: Icons.group_rounded,
+              label: l10n.t('clients'),
+            ),
+            screen: const CustomerListScreen(),
+            menu: MenuCodes.clients,
+          ),
+          const _Tab(
+            destination: NavDestination(
+              icon: Icons.more_horiz_rounded,
+              label: 'More',
+            ),
+            screen: FeatureHubScreen(),
+            menu: null,
+          ),
+        ]
+        .where((tab) => hasMenuAccess(grantedMenus, tab.menu, isOwner: isOwner))
+        .toList();
   }
 }
 
@@ -225,18 +246,17 @@ class _SideNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
       width: 244,
       margin: const EdgeInsets.all(18),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        border: Border.all(color: colors.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFFFF7D6),
+        border: Border.all(color: const Color(0xFFF0DF9A)),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withValues(alpha: 0.07),
+            color: const Color(0xFF2F3028).withValues(alpha: 0.14),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -253,15 +273,17 @@ class _SideNav extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE98300),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFC800), Color(0xFFFFE36E)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Stack(
                     children: [
                       const Center(
                         child: Icon(
                           Icons.receipt_long_rounded,
-                          color: Colors.white,
+                          color: const Color(0xFF2F3028),
                           size: 22,
                         ),
                       ),
@@ -272,7 +294,7 @@ class _SideNav extends StatelessWidget {
                           width: 7,
                           height: 7,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF0F766E),
+                            color: Color(0xFF2F3028),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -288,6 +310,7 @@ class _SideNav extends StatelessWidget {
                       Text(
                         AppConstants.appName,
                         style: TextStyle(
+                          color: Color(0xFF2F3028),
                           fontWeight: FontWeight.w900,
                           fontSize: 18,
                         ),
@@ -296,7 +319,7 @@ class _SideNav extends StatelessWidget {
                       Text(
                         AppConstants.appTagline,
                         style: TextStyle(
-                          color: Color(0xFF667085),
+                          color: Color(0xFF77735F),
                           fontSize: 12,
                         ),
                       ),
@@ -316,17 +339,21 @@ class _SideNav extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFFFFF0A6),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                Icon(Icons.cloud_done_rounded, color: colors.primary),
+                Icon(Icons.cloud_done_rounded, color: Color(0xFF2F3028)),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
                     'Offline first, cloud ready',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                    style: TextStyle(
+                      color: Color(0xFF5D5B45),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -351,7 +378,6 @@ class _SideNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: InkWell(
@@ -361,25 +387,27 @@ class _SideNavItem extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: selected
-                ? colors.primary.withValues(alpha: 0.12)
-                : Colors.transparent,
+            color: selected ? const Color(0xFFFFC800) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: selected
-                ? Border.all(color: colors.primary.withValues(alpha: 0.22))
+                ? Border.all(color: Colors.white.withValues(alpha: 0.22))
                 : null,
           ),
           child: Row(
             children: [
               Icon(
                 destination.icon,
-                color: selected ? colors.primary : colors.onSurfaceVariant,
+                color: selected
+                    ? const Color(0xFF2F3028)
+                    : const Color(0xFF77735F),
               ),
               const SizedBox(width: 12),
               Text(
                 destination.label,
                 style: TextStyle(
-                  color: selected ? colors.primary : colors.onSurface,
+                  color: selected
+                      ? const Color(0xFF2F3028)
+                      : const Color(0xFF5D5B45),
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 ),
               ),

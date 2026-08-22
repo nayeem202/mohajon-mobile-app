@@ -4,11 +4,7 @@ import '../models/weekly_sales.dart';
 import 'sales_line_chart.dart';
 
 class SalesChartCard extends StatelessWidget {
-  const SalesChartCard({
-    super.key,
-    this.data,
-    this.onSalesOverviewTap,
-  });
+  const SalesChartCard({super.key, this.data, this.onSalesOverviewTap});
 
   final List<WeeklySalesData>? data;
   final VoidCallback? onSalesOverviewTap;
@@ -23,13 +19,14 @@ class SalesChartCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: colors.surface,
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: const Color(0xFF2F3028).withValues(alpha: 0.055),
             blurRadius: 20,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -78,7 +75,7 @@ class _Header extends StatelessWidget {
           child: Text(
             'Sales Overview',
             style: TextStyle(
-              color: const Color(0xFFFF6B00),
+              color: colors.primary,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),

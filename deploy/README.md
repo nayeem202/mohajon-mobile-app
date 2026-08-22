@@ -86,9 +86,16 @@ flutter run --dart-define=USE_CUSTOM_AUTH=true \
 ## Security notes
 
 - Secrets live only in `/opt/haalkhata/.env` (generated, chmod 600) — never commit them.
+- For Gmail SMTP, set `MAIL_PROVIDER=smtp` and fill the `MAIL_*` values from
+  `.env.template`. Use a Google App Password (with 2-Step Verification
+  enabled), never the normal Gmail password. Gmail SMTP is suitable for
+  low-volume transactional OTP during an initial launch, but it has sending
+  limits and Gmail may still place messages in Spam; delivery cannot be
+  guaranteed. For reliable production delivery, use a transactional provider
+  with a verified domain and SPF/DKIM/DMARC.
 - PostgreSQL/Redis have no published ports; only Caddy faces the internet.
 - Containers run as non-root (uid 1001) with memory/CPU limits and log rotation.
 - Auto security updates via unattended-upgrades (reboots at 04:00 if needed).
 - 2 GiB swap added; JVM heaps capped (auth 256m, haalkhata 384m).
-- The VM root password (`Nayeem_123`) no longer works for SSH — rotate it anyway:
+- The VM root password no longer works for SSH — rotate it anyway:
   `sudo passwd root`

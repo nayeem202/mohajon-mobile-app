@@ -5,6 +5,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
+import '../config/app_config.dart';
+
 /// Builds an [http.Client] that trusts the Haalkhata self-signed CA
 /// (bundled as an asset) in addition to the platform root certificates.
 ///
@@ -28,4 +30,15 @@ Future<http.Client>? _cachedClient;
 
 /// Lazily-created, cached secure client shared by all API callers.
 Future<http.Client> secureHttpClient() =>
-    _cachedClient ??= createSecureHttpClient();
+    _cachedClient ??= _createHttpClient();
+
+Future<http.Client> _createHttpClient() {
+  // Local development uses plain HTTP. Trying to load the bundled TLS CA for
+  // an HTTP request can fail before the request is sent, which only surfaces
+  // in the UI as the generic sign-in error. Keep the custom CA for HTTPS.
+  final usesLocalHttp =
+      AppConfig.authBaseUrl.startsWith('http://') ||
+      AppConfig.apiBaseUrl.startsWith('http://');
+  if (usesLocalHttp) return Future.value(http.Client());
+  return createSecureHttpClient();
+}

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show debugPrint, debugPrintStack;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
@@ -126,7 +128,27 @@ class CustomAuthBackend implements AuthBackend {
     required String email,
     required String password,
   }) async {
-    final session = await _deviceSessionService.currentSession();
+    debugPrint('AUTH: signInWithEmail started');
+    DeviceSession session;
+    try {
+      session = await _deviceSessionService.currentSession();
+    } catch (error, stackTrace) {
+      // Device metadata is optional; it must never prevent email login.
+      debugPrint('AUTH: device session unavailable, using fallback: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      session = const DeviceSession(
+        sessionId: 'android-local-fallback',
+        platform: 'Android',
+        deviceName: 'Android device',
+        model: '',
+        manufacturer: '',
+        osVersion: '',
+        locationLabel: 'Unavailable',
+        latitude: null,
+        longitude: null,
+      );
+    }
+    debugPrint('AUTH: device session ready');
     final response = await _post('/api/v1/auth/login', {
       'email': email.trim().toLowerCase(),
       'password': password,
@@ -256,20 +278,57 @@ class CustomAuthBackend implements AuthBackend {
     Map<String, dynamic> body, {
     bool authenticated = false,
   }) async {
-    final client = await secureHttpClient();
-    return _request(
-      () => client.post(
-        _uri(path),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authenticated)
-            'Authorization': 'Bearer ${_settings.get(_kAccessToken)}',
-        },
-        body: jsonEncode(body),
-      ),
-      path: path,
-      body: body,
-    );
+    try {
+      debugPrint('AUTH: POST $_baseUrl$path');
+      final client = await secureHttpClient();
+      return await _request(
+        () => client.post(
+          _uri(path),
+          headers: {
+            'Content-Type': 'application/json',
+            if (authenticated)
+              'Authorization': 'Bearer ${_settings.get(_kAccessToken)}',
+          },
+          body: jsonEncode(body),
+        ),
+        path: path,
+        body: body,
+      );
+    } on SocketException catch (error) {
+      throw AuthException(
+        'Cannot reach the auth service. Check that the local backend is running. '
+        '(${error.message})',
+        code: 'AUTH_SERVICE_UNREACHABLE',
+      );
+    } on HandshakeException catch (error) {
+      throw AuthException(
+        'Secure connection to the auth service failed. (${error.message})',
+        code: 'AUTH_TLS_FAILED',
+      );
+    } on TimeoutException {
+      throw const AuthException(
+        'The auth service took too long to respond. Please try again.',
+        code: 'AUTH_SERVICE_TIMEOUT',
+      );
+    } on http.ClientException catch (error, stackTrace) {
+      debugPrint(
+        'AUTH: HTTP client exception message=${error.message} '
+        'uri=${error.uri} full=$error',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+      throw AuthException(
+        'Auth client error: ${error.message} '
+        '(uri: ${error.uri})',
+        code: 'AUTH_CLIENT_ERROR',
+      );
+    } on Object catch (error, stackTrace) {
+      debugPrint('AUTH: client failure for $path: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      throw AuthException(
+        'Auth client error: ${error.toString()}',
+        code: 'AUTH_CLIENT_ERROR',
+      );
+    }
   }
 
   Future<Map<String, dynamic>> _request(

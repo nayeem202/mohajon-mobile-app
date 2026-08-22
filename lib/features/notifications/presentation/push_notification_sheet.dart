@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/api_client.dart';
 import '../models/notification_model.dart';
 
 class PushNotificationSheet extends StatefulWidget {
-  const PushNotificationSheet({
-    super.key,
-    required this.onSubmit,
-  });
+  const PushNotificationSheet({super.key, required this.onSubmit});
 
   final Future<void> Function(
     NotificationType type,
     String title,
     String message,
-  ) onSubmit;
+  )
+  onSubmit;
 
   @override
   State<PushNotificationSheet> createState() => _PushNotificationSheetState();
@@ -51,10 +50,20 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       setState(() => _submitting = false);
+      final message = switch (error) {
+        ApiException(:final statusCode)
+            when statusCode == 401 || statusCode == 403 =>
+          'Your session has expired. Please log in again, then retry.',
+        ApiException(:final code) when code == 'FCM_NOT_CONFIGURED' =>
+          'Push notifications are not configured on the server yet.',
+        ApiException(:final code) when code == 'FCM_CONFIG_INVALID' =>
+          'The server Firebase configuration is invalid.',
+        ApiException(:final message) => message,
+        _ =>
+          'Unable to send notification. Check your connection and try again.',
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to send notification. Please try again.'),
-        ),
+        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
       );
     }
   }
@@ -188,10 +197,7 @@ class _Header extends StatelessWidget {
 }
 
 class _TypeSelector extends StatelessWidget {
-  const _TypeSelector({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _TypeSelector({required this.selected, required this.onSelected});
 
   final NotificationType selected;
   final void Function(NotificationType) onSelected;
@@ -220,8 +226,10 @@ class _TypeSelector extends StatelessWidget {
             return GestureDetector(
               onTap: () => onSelected(opt.type),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isActive ? Colors.white : const Color(0xFFF0ECE6),
                   borderRadius: BorderRadius.circular(999),
@@ -298,20 +306,16 @@ class _FormField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           validator: validator,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF1C1917),
-          ),
+          style: const TextStyle(fontSize: 13, color: Color(0xFF1C1917)),
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFFD4D4D4),
-            ),
+            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFD4D4D4)),
             filled: true,
             fillColor: const Color(0xFFFFF8F1),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
@@ -322,7 +326,10 @@ class _FormField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFFFC089), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFFFC089),
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -330,7 +337,10 @@ class _FormField extends StatelessWidget {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFDC2626),
+                width: 1.5,
+              ),
             ),
           ),
         ),

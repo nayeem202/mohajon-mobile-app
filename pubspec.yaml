@@ -124,6 +124,6 @@ flutter_launcher_icons:
     generate: true
   linux:
     generate: true
-  image_path: "assets/brand/haalkhata_icon_1024.png"
-  adaptive_icon_background: "#F97316"
-  adaptive_icon_foreground: "assets/brand/haalkhata_icon_1024.png"
+  image_path: "assets/brand/mohajon.png"
+  adaptive_icon_background: "#FFF8E1"
+  adaptive_icon_foreground: "assets/brand/mohajon.png"

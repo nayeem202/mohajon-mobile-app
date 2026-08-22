@@ -89,7 +89,7 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         Material(
-          color: colors.primary.withValues(alpha: 0.09),
+          color: const Color(0xFFFFC800),
           borderRadius: BorderRadius.circular(999),
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
@@ -99,12 +99,16 @@ class _SectionHeader extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.tune_rounded, size: 15, color: colors.primary),
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 15,
+                    color: const Color(0xFF2F3028),
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     'Customize',
                     style: TextStyle(
-                      color: colors.primary,
+                      color: const Color(0xFF2F3028),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                     ),
@@ -153,10 +157,14 @@ class _ShortcutRow extends StatelessWidget {
             crossAxisSpacing: 4,
             childAspectRatio: 0.95,
           ),
-          children: shortcuts.map((item) => _ShortcutCard(
-            item: item,
-            onTap: () => navigateToShortcut(context, item),
-          )).toList(),
+          children: shortcuts
+              .map(
+                (item) => _ShortcutCard(
+                  item: item,
+                  onTap: () => navigateToShortcut(context, item),
+                ),
+              )
+              .toList(),
         ),
       ),
     );

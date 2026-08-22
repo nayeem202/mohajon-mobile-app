@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
-import '../localization/app_localizations.dart';
 import 'app_providers.dart';
 import 'app_shell.dart';
 
@@ -40,33 +39,34 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF97316),
+      backgroundColor: const Color(0xFFFFF8E1),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/brand/haalkhata_icon_1024.png',
-              width: 88,
-              height: 88,
+              'assets/brand/mohajon.png',
+              width: 180,
+              height: 180,
+              fit: BoxFit.contain,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Text(
-              l10n.t('appName'),
+              'মহাজন',
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
+                color: Color(0xFF2F3028),
+                fontSize: 30,
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              l10n.t('offlineReady'),
+              'আপনার ব্যবসার হিসাবের সঙ্গী',
               style: const TextStyle(
-                color: Color(0xFFFFD6A5),
+                color: Color(0xFF77735F),
                 fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 32),
@@ -75,7 +75,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFC800)),
               ),
             ),
           ],

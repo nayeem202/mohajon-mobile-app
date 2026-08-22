@@ -24,6 +24,10 @@ class AnimatedBottomNavBar extends StatefulWidget {
 }
 
 class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
+  static const _navBackground = Colors.white;
+  static const _navActive = Color(0xFFFFC800);
+  static const _navInactive = Color(0xFF77735F);
+
   void _onTap(int index) {
     if (index == widget.destinations.length - 1 && widget.onMoreTap != null) {
       widget.onMoreTap!();
@@ -55,14 +59,14 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
               height: NavBarTheme.height,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colors.surface.withValues(alpha: 0.98),
+                  color: _navBackground,
                   borderRadius: BorderRadius.circular(NavBarTheme.cornerRadius),
                   border: Border.all(
-                    color: colors.outlineVariant.withValues(alpha: 0.72),
+                    color: Colors.white.withValues(alpha: 0.12),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.shadow.withValues(alpha: 0.12),
+                      color: const Color(0xFF2F3028).withValues(alpha: 0.16),
                       blurRadius: 28,
                       offset: const Offset(0, 12),
                     ),
@@ -125,26 +129,17 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [
-                                    colors.primary,
-                                    Color.lerp(
-                                      colors.primary,
-                                      Colors.white,
-                                      0.12,
-                                    )!,
-                                  ],
+                                  colors: [_navActive, const Color(0xFFFFE36E)],
                                 ),
                                 borderRadius: const BorderRadius.all(
                                   Radius.circular(999),
                                 ),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.18),
+                                  color: Colors.white.withValues(alpha: 0.30),
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withValues(
-                                      alpha: 0.30,
-                                    ),
+                                    color: _navActive.withValues(alpha: 0.30),
                                     blurRadius: 14,
                                     offset: const Offset(0, 5),
                                   ),
@@ -171,9 +166,8 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
                                     widget.selectedIndex == index &&
                                     activeWidth >=
                                         NavBarTheme.minActiveWidth * 0.82,
-                                activeColor: colors.onPrimary,
-                                inactiveColor: colors.onSurfaceVariant
-                                    .withValues(alpha: 0.62),
+                                activeColor: const Color(0xFF2F3028),
+                                inactiveColor: _navInactive,
                                 onTap: () => _onTap(index),
                               ),
                             ),

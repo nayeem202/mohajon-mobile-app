@@ -32,50 +32,91 @@ class DashboardScreen extends ConsumerWidget {
     final summary = ref.watch(dashboardProvider);
     final sync = ref.watch(syncStateProvider);
     final profile = ref.watch(profileProvider);
-    return LoadingOverlay(
-      loading: sync.phase == SyncPhase.syncing,
-      label: 'Syncing data...',
-      child: Scaffold(
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: () => ref.read(syncStateProvider.notifier).syncNow(),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-              children: [
-                _HomeTopBar(
-                  profile: profile,
-                  onAvatarTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ProfileOverviewScreen(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _GreetingPanel(
-                  summary: summary,
-                  name: profile?.ownerName ?? '',
-                ),
-                const SizedBox(height: 20),
-                const HomeShortcutSection(),
-                const SizedBox(height: 20),
-                _OverviewStats(summary: summary),
-                const SizedBox(height: 20),
-                SalesChartCard(
-                  data: summary.dayWiseSales
-                      .map(
-                        (d) => WeeklySalesData(
-                          dayLabel: d.label,
-                          fullDayName: DateFormat('EEEE').format(d.date),
-                          sales: d.sales,
+    final theme = Theme.of(context);
+    final homeTheme = theme.copyWith(
+      colorScheme: theme.colorScheme.copyWith(
+        primary: const Color(0xFFFFC800),
+        onPrimary: Colors.white,
+        secondary: const Color(0xFF2F3028),
+        onSecondary: Colors.white,
+        tertiary: const Color(0xFFFFD83D),
+        onTertiary: Colors.white,
+        surface: const Color(0xFFFFFCF0),
+        onSurface: const Color(0xFF2F3028),
+        surfaceContainerHighest: const Color(0xFFFFF0A6),
+        onSurfaceVariant: const Color(0xFF77735F),
+        outline: const Color(0xFFF0DF9A),
+        outlineVariant: const Color(0xFFFFF0A6),
+      ),
+      scaffoldBackgroundColor: Colors.transparent,
+      appBarTheme: theme.appBarTheme.copyWith(
+        foregroundColor: const Color(0xFF2F3028),
+      ),
+    );
+
+    return Theme(
+      data: homeTheme,
+      child: LoadingOverlay(
+        loading: sync.phase == SyncPhase.syncing,
+        label: 'Syncing data...',
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.28, 0.47, 1.0],
+                colors: [
+                  Color(0xFFFFC800),
+                  Color(0xFFFFD83D),
+                  Color(0xFFFFF0A6),
+                  Color(0xFFFFFCF0),
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: () => ref.read(syncStateProvider.notifier).syncNow(),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                  children: [
+                    _HomeTopBar(
+                      profile: profile,
+                      onAvatarTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileOverviewScreen(),
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _GreetingPanel(
+                      summary: summary,
+                      name: profile?.ownerName ?? '',
+                    ),
+                    const SizedBox(height: 20),
+                    const HomeShortcutSection(),
+                    const SizedBox(height: 20),
+                    _OverviewStats(summary: summary),
+                    const SizedBox(height: 20),
+                    SalesChartCard(
+                      data: summary.dayWiseSales
+                          .map(
+                            (d) => WeeklySalesData(
+                              dayLabel: d.label,
+                              fullDayName: DateFormat('EEEE').format(d.date),
+                              sales: d.sales,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    _RecentSalesCard(sales: summary.recentSales),
+                    const SizedBox(height: 20),
+                    _LowStockAlert(products: summary.lowStock),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                _RecentSalesCard(sales: summary.recentSales),
-                const SizedBox(height: 20),
-                _LowStockAlert(products: summary.lowStock),
-              ],
+              ),
             ),
           ),
         ),
@@ -92,47 +133,75 @@ class _HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final name = profile?.ownerName ?? '';
     final imagePath = profile?.imagePath;
 
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.storefront_rounded,
-            color: Colors.white,
-            size: 17,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            AppConstants.appName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: colors.onSurface,
+    return IconTheme(
+      data: const IconThemeData(color: Color(0xFF2F3028)),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFC800), Color(0xFFFFE36E)],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFC800).withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.storefront_rounded,
+              color: Color(0xFF2F3028),
+              size: 17,
             ),
           ),
-        ),
-        const NotificationBell(),
-        const SizedBox(width: 14),
-        AppAvatar(
-          name: name,
-          imagePath: imagePath,
-          onTap: onAvatarTap,
-          radius: 17,
-        ),
-      ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Mohajon',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF2F3028),
+                  ),
+                ),
+                Text(
+                  'Smart shop management',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+          const SizedBox(width: 14),
+          AppAvatar(
+            name: name,
+            imagePath: imagePath,
+            onTap: onAvatarTap,
+            radius: 17,
+            backgroundColor: Color(0xFFFFFDF7),
+            textColor: Color(0xFF2F3028),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -151,18 +220,18 @@ class _GreetingPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: const [Color(0xFFFFFBF5), Color(0xFFFFE8D6)],
+          colors: const [
+            Color(0xFFFFFEF8),
+            Color(0xFFFFF9E9),
+            Color(0xFFFFF0C2),
+          ],
         ),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFC2410C).withValues(alpha: 0.42),
-          width: 1.4,
-        ),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF97316).withValues(alpha: 0.16),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: const Color(0xFFB58A24).withValues(alpha: 0.18),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -170,28 +239,28 @@ class _GreetingPanel extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            right: -46,
-            top: -66,
+            right: -54,
+            top: -76,
             child: Container(
-              width: 180,
-              height: 180,
+              width: 210,
+              height: 210,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFF97316).withValues(alpha: 0.07),
+                color: const Color(0xFFFFC800).withValues(alpha: 0.10),
               ),
             ),
           ),
           Positioned(
-            right: 42,
-            bottom: -94,
+            right: 20,
+            bottom: -110,
             child: Container(
-              width: 160,
-              height: 160,
+              width: 190,
+              height: 190,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFFF97316).withValues(alpha: 0.1),
-                  width: 22,
+                  color: const Color(0xFFFFC800).withValues(alpha: 0.18),
+                  width: 28,
                 ),
               ),
             ),
@@ -206,8 +275,8 @@ class _GreetingPanel extends StatelessWidget {
                     Expanded(
                       child: Text(
                         date,
-                        style: TextStyle(
-                          color: const Color(0xFF64748B),
+                        style: const TextStyle(
+                          color: Color(0xFF77735F),
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
@@ -220,12 +289,12 @@ class _GreetingPanel extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.72),
+                        color: const Color(0xFFFFC800).withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color: const Color(
-                            0xFFF97316,
-                          ).withValues(alpha: 0.14),
+                            0xFFFFC800,
+                          ).withValues(alpha: 0.35),
                         ),
                       ),
                       child: const Row(
@@ -233,14 +302,14 @@ class _GreetingPanel extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.wb_sunny_rounded,
-                            color: Color(0xFFEA580C),
+                            color: Color(0xFF5D4A00),
                             size: 14,
                           ),
                           SizedBox(width: 5),
                           Text(
                             'OPEN TODAY',
                             style: TextStyle(
-                              color: Color(0xFF9A3412),
+                              color: Color(0xFF5D4A00),
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.7,
@@ -257,8 +326,8 @@ class _GreetingPanel extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF172B4D),
-                    fontSize: 24,
+                    color: const Color(0xFF2F3028),
+                    fontSize: 25,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
                   ),
@@ -266,8 +335,8 @@ class _GreetingPanel extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   'Here is your shop at a glance.',
-                  style: TextStyle(
-                    color: Color(0xFF64748B),
+                  style: const TextStyle(
+                    color: Color(0xFF77735F),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -276,11 +345,9 @@ class _GreetingPanel extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.fromLTRB(15, 13, 15, 14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.72),
+                    color: const Color(0xFFFFC800).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFFF97316).withValues(alpha: 0.12),
-                    ),
+                    border: Border.all(color: const Color(0xFFEADFAE)),
                   ),
                   child: Row(
                     children: [
@@ -289,23 +356,23 @@ class _GreetingPanel extends StatelessWidget {
                           label: "Today's Sales",
                           value: money(summary.todaySales),
                           footnote: _salesChangeFootnote(summary),
-                          foregroundColor: const Color(0xFF172B4D),
-                          labelColor: const Color(0xFF64748B),
-                          footnoteColor: const Color(0xFF047857),
+                          foregroundColor: const Color(0xFF2F3028),
+                          labelColor: const Color(0xFF77735F),
+                          footnoteColor: const Color(0xFF8A6500),
                         ),
                       ),
                       Container(
                         height: 42,
                         width: 1,
-                        color: const Color(0xFFF97316).withValues(alpha: 0.16),
+                        color: const Color(0xFFEADFAE),
                       ),
                       Expanded(
                         child: _HeroMetric(
                           label: 'Transactions',
                           value: '${summary.todayTransactionCount}',
                           alignEnd: true,
-                          foregroundColor: const Color(0xFF172B4D),
-                          labelColor: const Color(0xFF64748B),
+                          foregroundColor: const Color(0xFF2F3028),
+                          labelColor: const Color(0xFF77735F),
                         ),
                       ),
                     ],
@@ -380,7 +447,7 @@ class _HeroMetric extends StatelessWidget {
           Text(
             footnote!,
             style: TextStyle(
-              color: footnoteColor ?? const Color(0xFF99F6E4),
+              color: footnoteColor ?? const Color(0xFF8A6500),
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -406,16 +473,16 @@ class _OverviewStats extends StatelessWidget {
         label: 'Stock',
         value: _formatQuantity(summary.totalStock),
         subtext: '${summary.lowStock.length} low',
-        color: const Color(0xFF2563EB),
-        background: const Color(0xFFEDF3FF),
+        color: const Color(0xFF5D5B45),
+        background: const Color(0xFFFFF4BF),
       ),
       _StatSpec(
         icon: Icons.people_alt_rounded,
         label: 'Clients',
         value: '${summary.customerCount}',
         subtext: '${summary.customerDueCount} with dues',
-        color: const Color(0xFF8B6F47),
-        background: const Color(0xFFF8F3EB),
+        color: const Color(0xFFFFA800),
+        background: const Color(0xFFFFF8DD),
       ),
       _StatSpec(
         icon: isAdvance
@@ -428,8 +495,8 @@ class _OverviewStats extends StatelessWidget {
             : '${summary.customerDueCount} clients',
         color: isAdvance ? const Color(0xFF047857) : const Color(0xFFEF4444),
         background: isAdvance
-            ? const Color(0xFFE9F8F1)
-            : const Color(0xFFFEF1F1),
+            ? const Color(0xFFEFF7E5)
+            : const Color(0xFFFFF0E2),
       ),
     ];
     return Row(
@@ -476,10 +543,10 @@ class _StatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [spec.background, Colors.white],
+          colors: [spec.background, const Color(0xFFFFFDF7)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        border: Border.all(color: const Color(0xFFEADFAE)),
         boxShadow: [
           BoxShadow(
             color: spec.color.withValues(alpha: 0.09),
@@ -692,12 +759,12 @@ class _LowStockAlert extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFF0DCC0)),
-        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: const Color(0xFFEADFAE)),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE98300).withValues(alpha: 0.08),
+            color: const Color(0xFF2F3028).withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -712,22 +779,22 @@ class _LowStockAlert extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFF97316), Color(0xFFE98300)],
+                colors: [Color(0xFFFFC800), Color(0xFFFFD83D)],
               ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
             ),
             child: Row(
               children: [
                 Container(
                   width: 30,
                   height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    shape: BoxShape.circle,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0A6),
+                  shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.white,
+                    color: Color(0xFF2F3028),
                     size: 17,
                   ),
                 ),
@@ -738,7 +805,7 @@ class _LowStockAlert extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF2F3028),
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
                     ),
@@ -750,13 +817,13 @@ class _LowStockAlert extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     '${products.length} items',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF2F3028),
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
@@ -778,7 +845,7 @@ class _LowStockAlert extends StatelessWidget {
                         Text(
                           'View all',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFF2F3028),
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
@@ -786,7 +853,7 @@ class _LowStockAlert extends StatelessWidget {
                         SizedBox(width: 2),
                         Icon(
                           Icons.chevron_right_rounded,
-                          color: Colors.white,
+                          color: Color(0xFF2F3028),
                           size: 16,
                         ),
                       ],
@@ -839,7 +906,7 @@ class _LowStockProductCard extends StatelessWidget {
         .toDouble();
 
     return Material(
-      color: const Color(0xFFFCFBF8),
+      color: const Color(0xFFFFF7E8),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -851,7 +918,7 @@ class _LowStockProductCard extends StatelessWidget {
         child: Container(
           width: 112,
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFECE7DF)),
+            border: Border.all(color: const Color(0xFFF3C96B)),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
@@ -911,7 +978,7 @@ class _LowStockProductCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF101828),
+                        color: Color(0xFF2F3028),
                         fontWeight: FontWeight.w900,
                         fontSize: 12,
                       ),
@@ -920,7 +987,7 @@ class _LowStockProductCard extends StatelessWidget {
                     Text(
                       'min ${product.lowStockAlert}',
                       style: const TextStyle(
-                        color: Color(0xFF98A2B3),
+                        color: Color(0xFF77735F),
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -930,7 +997,7 @@ class _LowStockProductCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
                         height: 5,
-                        color: const Color(0xFFF1E5D6),
+                        color: const Color(0xFFFFF0A6),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: level,
@@ -988,9 +1055,16 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFFFFFDF7),
+        border: Border.all(color: const Color(0xFFEADFAE)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6B5A2A).withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
@@ -1052,7 +1126,7 @@ class _InlineEmpty extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFCFBF8),
+        color: const Color(0xFFFFFDF7),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(

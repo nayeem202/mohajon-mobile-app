@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local testing: allow cleartext ONLY to localhost (adb reverse tunnels
+     to the dev machine's auth-service :8080 / haalkhata-service :8081).
+     Everything else stays HTTPS-only. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">104.207.92.108</domain>
+        <trust-anchors>
+            <certificates src="@raw/haalkhata_ca"/>
+            <certificates src="system"/>
+        </trust-anchors>
+    </domain-config>
+</network-security-config>
