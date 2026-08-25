@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/customer.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -61,141 +62,156 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final customers = ref.watch(customersProvider);
+    final customersAsync = ref.watch(customersProvider);
     final searchQuery = ref.watch(customerSearchQueryProvider);
     final sales = ref.watch(salesStreamProvider).value ?? const <dynamic>[];
 
-    return Scaffold(
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'search',
-            onPressed: () {
-              setState(() => _showSearch = !_showSearch);
-              if (!_showSearch) {
-                _searchController.clear();
-                ref.read(customerSearchQueryProvider.notifier).state = '';
-              }
-            },
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(),
-            child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'add',
-            onPressed: _openAddClient,
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add_rounded, size: 24),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: const NavBarAwareFabLocation(),
-      body: SafeArea(
-        child: customers.when(
-          data: (items) {
-            final customerStats = <String, _CustomerSummary>{};
-            for (final customer in items) {
-              final customerSales = sales
-                  .where((sale) => sale.customerId == customer.customerId)
-                  .toList();
-              final totalSpent = customerSales.fold<double>(
-                0,
-                (sum, sale) => sum + sale.totalAmount,
-              );
-              final lastVisit = customerSales.isEmpty
-                  ? null
-                  : customerSales
-                        .map((sale) => sale.createdAt)
-                        .reduce((a, b) => a.isAfter(b) ? a : b);
-              customerStats[customer.customerId] = _CustomerSummary(
-                totalSpent: totalSpent,
-                visitCount: customerSales.length,
-                lastVisit: lastVisit,
-              );
-            }
-            final dueByCustomer = {
-              for (final customer in items)
-                customer.customerId: ref.watch(
-                  customerDueProvider(customer.customerId),
-                ),
-            };
-            final filteredItems = _applyFilter(
-              ref.watch(filteredCustomersProvider),
-              dueByCustomer,
-              customerStats,
-            );
-            final totalDue = dueByCustomer.values.fold<double>(
-              0,
-              (sum, value) => sum + (value > 0 ? value : 0),
-            );
-            final dueCount = dueByCustomer.values
-                .where((due) => due > 0)
-                .length;
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 80),
-              children: [
-                 const _ClientsTopBar(),
-                const SizedBox(height: 18),
-                _ClientStats(
-                  totalClients: items.length,
-                  dueClients: dueCount,
-                  totalReceivable: totalDue,
-                ),
-                if (_showSearch) ...[
-                  const SizedBox(height: 18),
-                  _SearchAndFilters(
-                    controller: _searchController,
-                    searchQuery: searchQuery,
-                    selectedFilter: _filter,
-                    selectedSort: _sort,
-                    onSearchChanged: (value) =>
-                        ref.read(customerSearchQueryProvider.notifier).state =
-                            value,
-                    onClearSearch: () {
-                      _searchController.clear();
-                      ref.read(customerSearchQueryProvider.notifier).state = '';
-                    },
-                    onFilterChanged: (filter) => setState(() => _filter = filter),
-                    onSortChanged: (sort) => setState(() => _sort = sort),
-                  ),
-                ],
-                const SizedBox(height: 18),
-                if (items.isEmpty)
-                  const EmptyState(
-                    message: 'Add clients to track due payments.',
-                    icon: Icons.people_alt_outlined,
-                  )
-                else if (filteredItems.isEmpty)
-                  const EmptyState(
-                    message: 'No clients match your search.',
-                    icon: Icons.search_off_rounded,
-                  )
-                else
-                  _ClientList(
-                    customers: filteredItems,
-                    dueByCustomer: dueByCustomer,
-                    customerStats: customerStats,
-                    onCustomerTap: (customer) => _showCustomerSheet(
-                      context,
-                      customer: customer,
-                      due: dueByCustomer[customer.customerId] ?? 0,
-                      stats: customerStats[customer.customerId] ??
-                          const _CustomerSummary(),
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            child: customersAsync.when(
+              data: (items) {
+                final customerStats = <String, _CustomerSummary>{};
+                for (final customer in items) {
+                  final customerSales = sales
+                      .where((sale) => sale.customerId == customer.customerId)
+                      .toList();
+                  final totalSpent = customerSales.fold<double>(
+                    0,
+                    (sum, sale) => sum + sale.totalAmount,
+                  );
+                  final lastVisit = customerSales.isEmpty
+                      ? null
+                      : customerSales
+                            .map((sale) => sale.createdAt)
+                            .reduce((a, b) => a.isAfter(b) ? a : b);
+                  customerStats[customer.customerId] = _CustomerSummary(
+                    totalSpent: totalSpent,
+                    visitCount: customerSales.length,
+                    lastVisit: lastVisit,
+                  );
+                }
+                final dueByCustomer = {
+                  for (final customer in items)
+                    customer.customerId: ref.watch(
+                      customerDueProvider(customer.customerId),
                     ),
+                };
+                final filteredItems = _applyFilter(
+                  ref.watch(filteredCustomersProvider),
+                  dueByCustomer,
+                  customerStats,
+                );
+                final totalDue = dueByCustomer.values.fold<double>(
+                  0,
+                  (sum, value) => sum + (value > 0 ? value : 0),
+                );
+                final dueCount = dueByCustomer.values
+                    .where((due) => due > 0)
+                    .length;
+
+                return RefreshIndicator(
+                  color: MohajonWarm.goldText,
+                  onRefresh: () async {
+                    await ref.read(customersProvider.future);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
+                    children: [
+                      const _ClientsTopBar(),
+                      const SizedBox(height: 18),
+                      _ClientStats(
+                        totalClients: items.length,
+                        dueClients: dueCount,
+                        totalReceivable: totalDue,
+                      ),
+                      if (_showSearch) ...[
+                        const SizedBox(height: 16),
+                        _SearchAndFilters(
+                          controller: _searchController,
+                          searchQuery: searchQuery,
+                          selectedFilter: _filter,
+                          selectedSort: _sort,
+                          onSearchChanged: (value) =>
+                              ref.read(customerSearchQueryProvider.notifier).state =
+                                  value,
+                          onClearSearch: () {
+                            _searchController.clear();
+                            ref.read(customerSearchQueryProvider.notifier).state =
+                                '';
+                          },
+                          onFilterChanged: (filter) =>
+                              setState(() => _filter = filter),
+                          onSortChanged: (sort) => setState(() => _sort = sort),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _SectionTitle(count: filteredItems.length),
+                      const SizedBox(height: 12),
+                      if (items.isEmpty)
+                        const EmptyState(
+                          message: 'Add clients to track due payments.',
+                          icon: Icons.people_alt_outlined,
+                        )
+                      else if (filteredItems.isEmpty)
+                        const EmptyState(
+                          message: 'No clients match your search.',
+                          icon: Icons.search_off_rounded,
+                        )
+                      else
+                        _ClientList(
+                          customers: filteredItems,
+                          dueByCustomer: dueByCustomer,
+                          customerStats: customerStats,
+                          onCustomerTap: (customer) => _showCustomerSheet(
+                            context,
+                            customer: customer,
+                            due: dueByCustomer[customer.customerId] ?? 0,
+                            stats: customerStats[customer.customerId] ??
+                                const _CustomerSummary(),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            );
-          },
-          error: (error, _) => EmptyState(message: error.toString()),
-          loading: () => const Center(child: CircularProgressIndicator()),
+                );
+              },
+              error: (error, _) => EmptyState(message: error.toString()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: MohajonWarm.primary),
+              ),
+            ),
+          ),
         ),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton.small(
+              heroTag: 'search',
+              onPressed: () {
+                setState(() => _showSearch = !_showSearch);
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(customerSearchQueryProvider.notifier).state = '';
+                }
+              },
+              child: Icon(
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton(
+              heroTag: 'add',
+              onPressed: _openAddClient,
+              child: const Icon(Icons.add_rounded, size: 26),
+            ),
+          ],
+        ),
+        floatingActionButtonLocation: const NavBarAwareFabLocation(),
       ),
     );
   }
@@ -293,38 +309,111 @@ class _ClientsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    return IconTheme(
+      data: const IconThemeData(color: MohajonWarm.ink),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.groups_rounded,
+              color: MohajonWarm.ink,
+              size: 17,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Clients',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  'Customers & due ledger',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+          const SizedBox(width: 14),
+          const ShopAvatar(
+            radius: 17,
+            backgroundColor: Color(0xFFFFFDF7),
+            textColor: MohajonWarm.ink,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.storefront_rounded,
-            color: Colors.white,
-            size: 17,
-          ),
-        ),
-        const SizedBox(width: 10),
         const Expanded(
           child: Text(
-            'Clients',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            'All Clients',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              letterSpacing: -0.2,
+              color: MohajonWarm.ink,
             ),
           ),
         ),
-        const NotificationBell(),
-        const SizedBox(width: 14),
-        const ShopAvatar(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: MohajonWarm.primary.withValues(alpha: 0.22),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: MohajonWarm.primary.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Text(
+            '$count clients',
+            style: const TextStyle(
+              color: Color(0xFF5D4A00),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -344,32 +433,42 @@ class _ClientStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _ClientStatSpec(
+      _StatSpec(
         icon: Icons.people_alt_rounded,
-        label: 'Clients',
+        label: 'Total Clients',
         value: '$totalClients',
         subtext: 'All clients',
-        color: const Color(0xFFE98300),
-        background: const Color(0xFFFFF4E5),
+        color: MohajonWarm.goldText,
+        background: MohajonWarm.tintYellow,
       ),
-      _ClientStatSpec(
+      _StatSpec(
         icon: Icons.error_outline_rounded,
         label: 'With Dues',
         value: '$dueClients',
         subtext: 'Follow up',
-        color: const Color(0xFFEF4444),
-        background: const Color(0xFFFEF1F1),
+        color: MohajonWarm.red,
+        background: MohajonWarm.tintRed,
       ),
     ];
+
     return Column(
       children: [
-        Row(
-          children: [
-            for (var index = 0; index < cards.length; index++) ...[
-              Expanded(child: _ClientStatCard(spec: cards[index])),
-              if (index != cards.length - 1) const SizedBox(width: 12),
-            ],
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSingleColumn = constraints.maxWidth < 320;
+            final cardWidth = isSingleColumn
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 12) / 2;
+
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final card in cards)
+                  SizedBox(width: cardWidth, child: _StatCard(spec: card)),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 12),
         _ReceivableCard(
@@ -381,8 +480,8 @@ class _ClientStats extends StatelessWidget {
   }
 }
 
-class _ClientStatSpec {
-  const _ClientStatSpec({
+class _StatSpec {
+  const _StatSpec({
     required this.icon,
     required this.label,
     required this.value,
@@ -399,10 +498,11 @@ class _ClientStatSpec {
   final Color background;
 }
 
-class _ClientStatCard extends StatelessWidget {
-  const _ClientStatCard({required this.spec});
+/// Matches the Home / Stock screen stat card styling.
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.spec});
 
-  final _ClientStatSpec spec;
+  final _StatSpec spec;
 
   @override
   Widget build(BuildContext context) {
@@ -414,10 +514,10 @@ class _ClientStatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [spec.background, Colors.white],
+          colors: [spec.background, MohajonWarm.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
             color: spec.color.withValues(alpha: 0.09),
@@ -509,9 +609,6 @@ class _ReceivableCard extends StatelessWidget {
   final String value;
   final int dueClients;
 
-  static const _color = Color(0xFF0F766E);
-  static const _background = Color(0xFFE4F6F1);
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -519,16 +616,16 @@ class _ReceivableCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: const [_background, Colors.white],
+          colors: [MohajonWarm.tintGreen, MohajonWarm.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _color.withValues(alpha: 0.14)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: _color.withValues(alpha: 0.09),
+            color: MohajonWarm.green.withValues(alpha: 0.09),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -544,7 +641,7 @@ class _ReceivableCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(13),
               boxShadow: [
                 BoxShadow(
-                  color: _color.withValues(alpha: 0.18),
+                  color: MohajonWarm.green.withValues(alpha: 0.18),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -552,7 +649,7 @@ class _ReceivableCard extends StatelessWidget {
             ),
             child: const Icon(
               Icons.payments_rounded,
-              color: _color,
+              color: MohajonWarm.green,
               size: 19,
             ),
           ),
@@ -566,20 +663,22 @@ class _ReceivableCard extends StatelessWidget {
                     const Text(
                       'Total Receivable',
                       style: TextStyle(
-                        color: _color,
+                        color: MohajonWarm.green,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      'Across $dueClients clients',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        'Across $dueClients clients',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -631,11 +730,18 @@ class _SearchAndFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
-        borderRadius: BorderRadius.circular(14),
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -648,17 +754,23 @@ class _SearchAndFilters extends StatelessWidget {
                     controller: controller,
                     onChanged: onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: 'Search by name, phone',
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                      hintText: 'Search by name, phone...',
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        size: 20,
+                        color: MohajonWarm.muted,
+                      ),
                       suffixIcon: searchQuery.isEmpty
                           ? null
                           : IconButton(
                               onPressed: onClearSearch,
-                              icon: const Icon(Icons.clear_rounded),
+                              icon: const Icon(
+                                Icons.clear_rounded,
+                                color: MohajonWarm.muted,
+                              ),
                             ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                      ),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
                     ),
                   ),
                 ),
@@ -669,12 +781,23 @@ class _SearchAndFilters extends StatelessWidget {
                   height: 46,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFCFBF8),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE8E4DB)),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: MohajonWarm.goldBorder),
                   ),
                   child: DropdownButton<_ClientSort>(
                     value: selectedSort,
+                    borderRadius: BorderRadius.circular(14),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: MohajonWarm.muted,
+                    ),
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                     items: const [
                       DropdownMenuItem(
                         value: _ClientSort.lastVisit,
@@ -706,22 +829,22 @@ class _SearchAndFilters extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _ClientFilterChip(
+                _FilterChip(
                   label: 'All Clients',
                   selected: selectedFilter == _ClientFilter.all,
                   onTap: () => onFilterChanged(_ClientFilter.all),
                 ),
-                _ClientFilterChip(
+                _FilterChip(
                   label: 'With Dues',
                   selected: selectedFilter == _ClientFilter.dues,
                   onTap: () => onFilterChanged(_ClientFilter.dues),
                 ),
-                _ClientFilterChip(
+                _FilterChip(
                   label: 'VIP',
                   selected: selectedFilter == _ClientFilter.vip,
                   onTap: () => onFilterChanged(_ClientFilter.vip),
                 ),
-                _ClientFilterChip(
+                _FilterChip(
                   label: 'Recent',
                   selected: selectedFilter == _ClientFilter.recent,
                   onTap: () => onFilterChanged(_ClientFilter.recent),
@@ -735,8 +858,8 @@ class _SearchAndFilters extends StatelessWidget {
   }
 }
 
-class _ClientFilterChip extends StatelessWidget {
-  const _ClientFilterChip({
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -750,21 +873,29 @@ class _ClientFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
+      child: Material(
+        color: selected ? MohajonWarm.primary : Colors.white,
         borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFE98300) : const Color(0xFFF7F5F0),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF101828),
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? MohajonWarm.primary.withValues(alpha: 0.45)
+                    : MohajonWarm.goldBorder,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ),
@@ -820,42 +951,48 @@ class _ClientRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials = _initials(customer.name);
     final hasDue = due > 0;
+
+    final leading = customer.imagePath != null
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(13),
+            child: AppImage.file(
+              File(customer.imagePath!),
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _defaultLeading(hasDue),
+            ),
+          )
+        : _defaultLeading(hasDue);
+
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFECE7DF)),
-            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: MohajonWarm.goldBorder),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.ink.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              if (customer.imagePath != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: GestureDetector(
-                    onTap: onTap,
-                    child: AppImage.file(
-                      File(customer.imagePath!),
-                      width: 46,
-                      height: 46,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stk) => _ClientAvatar(initials: initials, hasDue: hasDue),
-                    ),
-                  ),
-                )
-              else
-                _ClientAvatar(initials: initials, hasDue: hasDue),
+              leading,
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
@@ -865,166 +1002,120 @@ class _ClientRow extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(0xFF101828),
+                              color: MohajonWarm.ink,
                               fontWeight: FontWeight.w900,
-                              fontSize: 15,
+                              fontSize: 14,
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Flexible(
-                          child: Consumer(
-                            builder: (context, ref, _) {
-                              final tag = ref.watch(customerTagProvider(customer.customerId));
-                              final displayTag = tag.isNotEmpty ? tag : (hasDue ? 'Has Dues' : '');
-                              if (displayTag.isEmpty) return const SizedBox.shrink();
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 4,
+                        Flexible(child: Consumer(
+                          builder: (context, ref, _) {
+                            final tag = ref.watch(
+                              customerTagProvider(customer.customerId),
+                            );
+                            final displayTag =
+                                tag.isNotEmpty ? tag : (hasDue ? 'Has Dues' : '');
+                            if (displayTag.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            final tagColor = displayTag == 'VIP'
+                                ? MohajonWarm.goldText
+                                : displayTag == 'Has Dues'
+                                    ? MohajonWarm.red
+                                    : MohajonWarm.green;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: tagColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                displayTag,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: tagColor,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: displayTag == 'VIP'
-                                      ? const Color(0xFFFFF7ED)
-                                      : displayTag == 'Has Dues'
-                                          ? const Color(0xFFFFF1F2)
-                                          : const Color(0xFFF0FDF4),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  displayTag,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    color: displayTag == 'VIP'
-                                        ? const Color(0xFFE98300)
-                                        : displayTag == 'Has Dues'
-                                            ? const Color(0xFFEF4444)
-                                            : const Color(0xFF047857),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                              ),
+                            );
+                          },
+                        )),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            customer.phone.isEmpty
-                                ? 'No phone number'
-                                : customer.phone,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF667085),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          stats.lastVisit == null
-                              ? 'No visits yet'
-                              : _formatRelativeDay(stats.lastVisit!),
-                          style: const TextStyle(
-                            color: Color(0xFF667085),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
-                      customer.address.isEmpty
-                          ? customer.notes.isEmpty
-                              ? 'No address saved'
-                              : customer.notes
-                          : customer.address,
+                      customer.phone.isEmpty
+                          ? 'No phone number'
+                          : customer.phone,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF98A2B3),
+                        color: MohajonWarm.muted,
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 10),
-              Flexible(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            money(stats.totalSpent),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF101828),
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            hasDue ? 'Due' : 'Clear',
-                            style: TextStyle(
-                              color: hasDue
-                                  ? const Color(0xFFE98300)
-                                  : const Color(0xFF047857),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    money(stats.totalSpent),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: hasDue
+                          ? MohajonWarm.tintRed
+                          : MohajonWarm.tintGreen,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      hasDue ? '${money(due)} due' : 'Clear',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: hasDue ? MohajonWarm.red : MohajonWarm.green,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            stats.lastVisit == null
-                                ? 'No visits'
-                                : _formatVisitTime(stats.lastVisit!),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF475467),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            '${stats.visitCount} visits',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF667085),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    stats.lastVisit == null
+                        ? 'No visits yet'
+                        : '${stats.visitCount} visits · ${_formatRelativeDay(stats.lastVisit!)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.muted,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right_rounded, color: Color(0xFF98A2B3)),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1032,6 +1123,26 @@ class _ClientRow extends StatelessWidget {
       ),
     );
   }
+
+  Widget _defaultLeading(bool hasDue) => Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: hasDue
+                ? const [Color(0xFFFFE3E3), Color(0xFFFCCFCF)]
+                : const [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+          ),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Icon(
+          Icons.person_rounded,
+          color: hasDue ? const Color(0xFFDC2626) : const Color(0xFFE98300),
+          size: 20,
+        ),
+      );
 }
 
 String _initials(String name) {
@@ -1042,49 +1153,6 @@ String _initials(String name) {
   if (parts.isEmpty) return 'CL';
   final value = parts.take(2).map((part) => part[0].toUpperCase()).join();
   return value.length == 1 ? '${value}U' : value;
-}
-
-class _ClientAvatar extends StatelessWidget {
-  const _ClientAvatar({required this.initials, required this.hasDue});
-
-  final String initials;
-  final bool hasDue;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: hasDue
-            ? const Color(0xFFFFF1F2)
-            : const Color(0xFFF6E7D1),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: TextStyle(
-            color: hasDue
-                ? const Color(0xFFE11D48)
-                : const Color(0xFFE98300),
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-String _formatVisitTime(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 60) {
-    return diff.inMinutes <= 1 ? 'Just now' : '${diff.inMinutes} min ago';
-  }
-  if (diff.inHours < 24) {
-    return diff.inHours == 1 ? '1 hour ago' : '${diff.inHours} hours ago';
-  }
-  return diff.inDays == 1 ? 'Yesterday' : '${diff.inDays} days ago';
 }
 
 String _formatRelativeDay(DateTime time) {
@@ -1125,7 +1193,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: MohajonWarm.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SingleChildScrollView(
@@ -1139,7 +1207,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E7EB),
+                      color: MohajonWarm.goldBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -1155,7 +1223,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                           width: 58,
                           height: 58,
                           fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stk) =>
+                          errorBuilder: (_, __, ___) =>
                               _DetailAvatar(initials: initials),
                         ),
                       )
@@ -1168,10 +1236,12 @@ class _CustomerDetailSheet extends ConsumerWidget {
                         children: [
                           Text(
                             customer.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFF101828),
+                              color: MohajonWarm.ink,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1183,16 +1253,17 @@ class _CustomerDetailSheet extends ConsumerWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: tag == 'VIP'
-                                    ? const Color(0xFFFFF7ED)
-                                    : const Color(0xFFF0FDF4),
+                                    ? MohajonWarm.tintYellow
+                                    : MohajonWarm.tintGreen,
                                 borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: MohajonWarm.goldBorder),
                               ),
                               child: Text(
                                 tag,
                                 style: TextStyle(
                                   color: tag == 'VIP'
-                                      ? const Color(0xFFE98300)
-                                      : const Color(0xFF047857),
+                                      ? MohajonWarm.goldText
+                                      : MohajonWarm.green,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -1203,7 +1274,10 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: MohajonWarm.muted,
+                      ),
                     ),
                   ],
                 ),
@@ -1214,8 +1288,8 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       child: _SummaryTile(
                         title: 'Total Spent',
                         value: money(stats.totalSpent),
-                        valueColor: const Color(0xFF101828),
-                        background: const Color(0xFFF7F7EF),
+                        valueColor: MohajonWarm.ink,
+                        background: MohajonWarm.tintYellow,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1224,47 +1298,64 @@ class _CustomerDetailSheet extends ConsumerWidget {
                         title: 'Outstanding Dues',
                         value: due > 0 ? money(due) : 'All Clear',
                         valueColor: due > 0
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF0F766E),
-                        background: const Color(0xFFE4F6F1),
+                            ? MohajonWarm.red
+                            : MohajonWarm.green,
+                        background: due > 0
+                            ? MohajonWarm.tintRed
+                            : MohajonWarm.tintGreen,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
-                _InfoLine(icon: Icons.phone_outlined, text: customer.phone.isEmpty
-                    ? '+880 1718-901234'
-                    : customer.phone),
-                _InfoLine(
-                  icon: Icons.email_outlined,
-                  text: customer.email.isEmpty
-                      ? '${customer.name.toLowerCase().replaceAll(' ', '.')}@gmail.com'
-                      : customer.email,
-                ),
-                _InfoLine(
-                  icon: Icons.location_on_outlined,
-                  text: customer.address.isEmpty
-                      ? 'Road 12, Uttara Sector 4, Dhaka'
-                      : customer.address,
-                ),
-                _InfoLine(
-                  icon: Icons.calendar_month_outlined,
-                  text: stats.lastVisit == null
-                      ? 'Last visit: no visits yet'
-                      : 'Last visit: ${_formatRelativeDay(stats.lastVisit!)}',
-                ),
-                _InfoLine(
-                  icon: Icons.history_outlined,
-                  text: '${stats.visitCount} total visits',
-                  showDivider: false,
+                Container(
+                  decoration: BoxDecoration(
+                    color: MohajonWarm.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: MohajonWarm.goldBorder),
+                  ),
+                  child: Column(
+                    children: [
+                      _InfoLine(
+                        icon: Icons.phone_outlined,
+                        text: customer.phone.isEmpty
+                            ? 'No phone added'
+                            : customer.phone,
+                      ),
+                      _InfoLine(
+                        icon: Icons.email_outlined,
+                        text: customer.email.isEmpty
+                            ? 'No email added'
+                            : customer.email,
+                      ),
+                      _InfoLine(
+                        icon: Icons.location_on_outlined,
+                        text: customer.address.isEmpty
+                            ? 'No address saved'
+                            : customer.address,
+                      ),
+                      _InfoLine(
+                        icon: Icons.calendar_month_outlined,
+                        text: stats.lastVisit == null
+                            ? 'Last visit: no visits yet'
+                            : 'Last visit: ${_formatRelativeDay(stats.lastVisit!)}',
+                      ),
+                      _InfoLine(
+                        icon: Icons.history_outlined,
+                        text: '${stats.visitCount} total visits',
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F6F1),
-                    borderRadius: BorderRadius.circular(14),
+                    color: MohajonWarm.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: MohajonWarm.goldBorder),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1272,18 +1363,19 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       const Text(
                         'Notes',
                         style: TextStyle(
-                          color: Color(0xFF667085),
+                          color: MohajonWarm.muted,
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         customer.notes.isEmpty
-                            ? 'VIP customer. Highest spending client. Gets priority delivery.'
+                            ? 'No notes saved for this client.'
                             : customer.notes,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF101828),
+                          color: MohajonWarm.ink,
                         ),
                       ),
                     ],
@@ -1298,7 +1390,8 @@ class _CustomerDetailSheet extends ConsumerWidget {
                           Navigator.of(context).pop();
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => CustomerFormScreen(customer: customer),
+                              builder: (_) =>
+                                  CustomerFormScreen(customer: customer),
                             ),
                           );
                         },
@@ -1322,7 +1415,8 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     Expanded(
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFE98300),
+                          backgroundColor: MohajonWarm.primary,
+                          foregroundColor: MohajonWarm.ink,
                         ),
                         onPressed: onCall,
                         icon: const Icon(Icons.call_rounded),
@@ -1333,7 +1427,8 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     Expanded(
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F766E),
+                          backgroundColor: MohajonWarm.green,
+                          foregroundColor: Colors.white,
                         ),
                         onPressed: onRecordPayment,
                         icon: const Icon(Icons.payments_outlined),
@@ -1342,7 +1437,6 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     ),
                   ],
                 ),
-
               ],
             ),
           ),
@@ -1363,7 +1457,11 @@ class _DetailAvatar extends StatelessWidget {
       width: 58,
       height: 58,
       decoration: BoxDecoration(
-        color: const Color(0xFFF6E7D1),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
@@ -1400,6 +1498,7 @@ class _SummaryTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1407,17 +1506,21 @@ class _SummaryTile extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFF667085),
+              color: MohajonWarm.muted,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: valueColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
@@ -1442,16 +1545,18 @@ class _InfoLine extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF667085)),
+              Icon(icon, size: 18, color: MohajonWarm.muted),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF101828),
+                    color: MohajonWarm.ink,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1459,7 +1564,8 @@ class _InfoLine extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider) const Divider(height: 1, color: Color(0xFFF0ECE4)),
+        if (showDivider)
+          const Divider(height: 1, indent: 14, endIndent: 14),
       ],
     );
   }

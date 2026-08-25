@@ -4,6 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/shortcut_providers.dart';
 import '../models/shortcut_model.dart';
 
+const _kAmber = Color(0xFFFFC800);
+const _kAmberLight = Color(0xFFFFD83D);
+const _kInk = Color(0xFF2F3028);
+const _kMuted = Color(0xFF77735F);
+const _kCard = Color(0xFFFFFDF7);
+const _kSheetBg = Color(0xFFFFFCF0);
+const _kBorder = Color(0xFFEADFAE);
+const _kSoftFill = Color(0xFFFFF4BF);
+const _kSelGradientLight = Color(0xFFFFDF57);
+const _kSelGradientDeep = Color(0xFFF3BC00);
+const _kBronzeText = Color(0xFF8A6500);
+
 class ShortcutBottomSheet extends ConsumerStatefulWidget {
   const ShortcutBottomSheet({super.key});
 
@@ -64,7 +76,7 @@ class _ShortcutBottomSheetState extends ConsumerState<ShortcutBottomSheet>
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: const Color(0xFF1C1917),
+        backgroundColor: _kInk,
         duration: const Duration(milliseconds: 1200),
       ),
     );
@@ -87,46 +99,85 @@ class _ShortcutBottomSheetState extends ConsumerState<ShortcutBottomSheet>
         child: Container(
           height: MediaQuery.sizeOf(context).height * 0.86,
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.26],
+              colors: [Color(0xFFFFF6D5), _kSheetBg],
+            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
           ),
-          child: FadeTransition(
-            opacity: _entryAnim,
-            child: Column(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            child: Stack(
               children: [
-                _DragHandle(),
-                if (!_reorderMode) ...[
-                  _Header(
-                    selectedCount: selectedIds.length,
-                    onReorderTap: () =>
-                        setState(() => _reorderMode = true),
-                    onClose: () => Navigator.of(context).pop(),
-                  ),
-                  if (selectedItems.isNotEmpty)
-                    _ActiveSelectionStrip(
-                      items: selectedItems,
-                      selectedIds: selectedIds,
-                      onRemove: (id) => _toggle(id),
-                    ),
-                  const SizedBox(height: 6),
-                  Expanded(
-                    child: _SelectorGrid(
-                      selectedIds: selectedIds,
-                      onToggle: _toggle,
+                Positioned(
+                  right: -46,
+                  top: -70,
+                  child: Container(
+                    width: 170,
+                    height: 170,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _kAmber.withValues(alpha: 0.09),
                     ),
                   ),
-                ] else ...[
-                  _ReorderHeader(
-                    count: selectedIds.length,
-                    onDone: () =>
-                        setState(() => _reorderMode = false),
-                    onClose: () => Navigator.of(context).pop(),
+                ),
+                Positioned(
+                  left: -60,
+                  top: -90,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _kAmber.withValues(alpha: 0.16),
+                        width: 24,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: _ReorderList(selectedIds: selectedIds),
+                ),
+                FadeTransition(
+                  opacity: _entryAnim,
+                  child: Column(
+                    children: [
+                      _DragHandle(),
+                      if (!_reorderMode) ...[
+                        _Header(
+                          selectedCount: selectedIds.length,
+                          onReorderTap: () =>
+                              setState(() => _reorderMode = true),
+                          onClose: () => Navigator.of(context).pop(),
+                        ),
+                        if (selectedItems.isNotEmpty)
+                          _ActiveSelectionStrip(
+                            items: selectedItems,
+                            selectedIds: selectedIds,
+                            onRemove: (id) => _toggle(id),
+                          ),
+                        const SizedBox(height: 6),
+                        Expanded(
+                          child: _SelectorGrid(
+                            selectedIds: selectedIds,
+                            onToggle: _toggle,
+                          ),
+                        ),
+                      ] else ...[
+                        _ReorderHeader(
+                          count: selectedIds.length,
+                          onDone: () =>
+                              setState(() => _reorderMode = false),
+                          onClose: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: _ReorderList(selectedIds: selectedIds),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -143,11 +194,121 @@ class _DragHandle extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10, bottom: 2),
       child: Center(
         child: Container(
-          width: 40,
-          height: 4,
+          width: 42,
+          height: 4.5,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.1),
+            gradient: const LinearGradient(
+              colors: [_kAmber, _kAmberLight],
+            ),
             borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandBadge extends StatelessWidget {
+  final IconData icon;
+
+  const _BrandBadge({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_kAmber, _kAmberLight],
+        ),
+        borderRadius: BorderRadius.circular(13),
+        boxShadow: [
+          BoxShadow(
+            color: _kAmber.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Icon(icon, size: 21, color: _kInk),
+    );
+  }
+}
+
+class _IconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool emphasized;
+
+  const _IconButton({
+    required this.icon,
+    required this.onTap,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: emphasized ? Colors.transparent : const Color(0xFFFFFBEC),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: emphasized
+          ? _EmphasizedButton(icon: icon, onTap: onTap)
+          : InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(9),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 20, color: _kMuted),
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _EmphasizedButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _EmphasizedButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_kAmber, _kAmberLight],
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: _kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: _kAmber.withValues(alpha: 0.32),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(9),
+            child: Icon(icon, size: 20, color: _kInk),
           ),
         ),
       ),
@@ -172,31 +333,32 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       child: Row(
         children: [
+          const _BrandBadge(icon: Icons.tune_rounded),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Quick Shortcuts',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: _kInk,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Text(
+                    const Text(
                       'Pick your favorites',
                       style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        color: _kMuted,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -206,19 +368,9 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          _IconButton(
-            icon: Icons.swap_vert_rounded,
-            onTap: onReorderTap,
-            color: const Color(0xFF667085),
-            bgColor: const Color(0xFFF5F2ED),
-          ),
+          _IconButton(icon: Icons.swap_vert_rounded, onTap: onReorderTap),
           const SizedBox(width: 8),
-          _IconButton(
-            icon: Icons.close_rounded,
-            onTap: onClose,
-            color: const Color(0xFF667085),
-            bgColor: const Color(0xFFF5F2ED),
-          ),
+          _IconButton(icon: Icons.close_rounded, onTap: onClose),
         ],
       ),
     );
@@ -242,47 +394,44 @@ class _ReorderHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       child: Row(
         children: [
+          const _BrandBadge(icon: Icons.swap_vert_rounded),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Rearrange',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: _kInk,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  'Drag to reorder shortcuts',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    const Text(
+                      'Drag to reorder shortcuts',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _kMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _CounterPill(count: count),
+                  ],
                 ),
               ],
             ),
           ),
-          _IconButton(
-            icon: Icons.check_rounded,
-            onTap: onDone,
-            color: Colors.white,
-            bgColor: const Color(0xFFF97316),
-          ),
+          _IconButton(icon: Icons.check_rounded, onTap: onDone, emphasized: true),
           const SizedBox(width: 8),
-          _IconButton(
-            icon: Icons.close_rounded,
-            onTap: onClose,
-            color: const Color(0xFF667085),
-            bgColor: const Color(0xFFF5F2ED),
-          ),
+          _IconButton(icon: Icons.close_rounded, onTap: onClose),
         ],
       ),
     );
@@ -296,52 +445,25 @@ class _CounterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMax = count == 8;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: count == 8
-            ? const Color(0xFFF97316)
-            : const Color(0xFFF5F2ED),
+        color: isMax ? const Color(0xFFEF4444) : _kSoftFill,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isMax
+              ? const Color(0xFFEF4444).withValues(alpha: 0.35)
+              : _kBorder,
+        ),
       ),
       child: Text(
         '$count/8',
         style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: count == 8 ? Colors.white : const Color(0xFF9A9488),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color color;
-  final Color bgColor;
-
-  const _IconButton({
-    required this.icon,
-    required this.onTap,
-    required this.color,
-    required this.bgColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: bgColor,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(9),
-          child: Icon(icon, size: 20, color: color),
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: isMax ? Colors.white : _kMuted,
         ),
       ),
     );
@@ -367,7 +489,7 @@ class _ActiveSelectionStrip extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final item = items[index];
           return _ActiveChip(
@@ -393,12 +515,16 @@ class _ActiveChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: item.color.withValues(alpha: 0.12),
+        color: _kCard,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: item.color.withValues(alpha: 0.25),
-          width: 1,
-        ),
+        border: Border.all(color: _kAmber.withValues(alpha: 0.45)),
+        boxShadow: [
+          BoxShadow(
+            color: _kAmber.withValues(alpha: 0.14),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -408,18 +534,18 @@ class _ActiveChip extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _kSoftFill,
               borderRadius: BorderRadius.circular(999),
             ),
-            child: Icon(item.icon, size: 15, color: item.color),
+            child: Icon(item.icon, size: 15, color: _kBronzeText),
           ),
           const SizedBox(width: 6),
           Text(
             item.title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: item.color,
+              fontWeight: FontWeight.w800,
+              color: _kInk,
             ),
           ),
           GestureDetector(
@@ -429,13 +555,13 @@ class _ActiveChip extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: item.color.withValues(alpha: 0.2),
+                color: _kAmber.withValues(alpha: 0.22),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.close_rounded,
                 size: 13,
-                color: item.color,
+                color: _kInk,
               ),
             ),
           ),
@@ -551,26 +677,33 @@ class _SelectionTileState extends State<_SelectionTile>
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: isSelected ? item.color : Colors.white,
+          gradient: isSelected
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_kSelGradientLight, _kSelGradientDeep],
+                )
+              : null,
+          color: isSelected ? null : _kCard,
           border: Border.all(
             color: isSelected
-                ? item.color
-                : const Color(0xFFEBE4DA),
+                ? Colors.transparent
+                : _kBorder,
             width: isSelected ? 0 : 1.2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: item.color.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: _kAmber.withValues(alpha: 0.38),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    color: _kInk.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
         ),
@@ -580,10 +713,10 @@ class _SelectionTileState extends State<_SelectionTile>
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: widget.onTap,
-            splashColor: (isSelected ? Colors.white : item.color)
-                .withValues(alpha: 0.15),
-            highlightColor: (isSelected ? Colors.white : item.color)
-                .withValues(alpha: 0.08),
+            splashColor: (isSelected ? _kInk : item.color)
+                .withValues(alpha: 0.12),
+            highlightColor: (isSelected ? _kInk : item.color)
+                .withValues(alpha: 0.06),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
@@ -594,14 +727,19 @@ class _SelectionTileState extends State<_SelectionTile>
                     height: 36,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.white.withValues(alpha: 0.2)
-                          : item.color.withValues(alpha: 0.1),
+                          ? Colors.white.withValues(alpha: 0.34)
+                          : item.color.withValues(alpha: 0.11),
                       borderRadius: BorderRadius.circular(12),
+                      border: isSelected
+                          ? Border.all(
+                              color: Colors.white.withValues(alpha: 0.45),
+                            )
+                          : null,
                     ),
                     child: Icon(
                       item.icon,
                       size: 18,
-                      color: isSelected ? Colors.white : item.color,
+                      color: isSelected ? _kInk : item.color,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -613,8 +751,8 @@ class _SelectionTileState extends State<_SelectionTile>
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w600,
-                        color: isSelected ? Colors.white : const Color(0xFF2D2921),
+                            isSelected ? FontWeight.w900 : FontWeight.w700,
+                        color: _kInk,
                       ),
                     ),
                   ),
@@ -627,14 +765,14 @@ class _SelectionTileState extends State<_SelectionTile>
                       height: 24,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.25)
+                            ? Colors.white
                             : Colors.transparent,
                         shape: BoxShape.circle,
                       ),
                       child: isSelected
                           ? const Icon(
                               Icons.check_rounded,
-                              color: Colors.white,
+                              color: _kInk,
                               size: 15,
                             )
                           : null,
@@ -668,8 +806,8 @@ class _ReorderList extends ConsumerWidget {
         child: Text(
           'No shortcuts selected',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFFB0A898),
+            fontWeight: FontWeight.w700,
+            color: _kMuted,
           ),
         ),
       );
@@ -687,7 +825,7 @@ class _ReorderList extends ConsumerWidget {
       proxyDecorator: (child, index, animation) {
         return Material(
           elevation: 4 + 6 * animation.value,
-          shadowColor: Colors.black.withValues(alpha: 0.12),
+          shadowColor: _kAmber.withValues(alpha: 0.25),
           borderRadius: BorderRadius.circular(18),
           child: Transform.scale(
             scale: 1.0 + 0.03 * animation.value,
@@ -722,19 +860,18 @@ class _ReorderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFEBE4DA)),
-          borderRadius: BorderRadius.circular(16),
+          color: _kCard,
+          border: Border.all(color: _kBorder),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+              color: _kInk.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -746,7 +883,7 @@ class _ReorderTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.1),
+                  color: item.color.withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(item.icon, color: item.color, size: 19),
@@ -756,16 +893,17 @@ class _ReorderTile extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  color: _kSoftFill,
+                  border: Border.all(color: _kBorder),
+                  borderRadius: BorderRadius.circular(7),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   '${index + 1}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: item.color,
+                    fontWeight: FontWeight.w900,
+                    color: _kMuted,
                   ),
                 ),
               ),
@@ -773,24 +911,49 @@ class _ReorderTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: colors.onSurface,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: _kInk,
                     fontSize: 14,
                   ),
                 ),
               ),
+              if (index == 0) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _kAmber.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: _kAmber.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Text(
+                    'TOP',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.7,
+                      color: _kInk,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
               Container(
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F2ED),
+                  color: _kSoftFill,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.drag_handle_rounded,
                   size: 18,
-                  color: const Color(0xFFB0A898),
+                  color: _kMuted,
                 ),
               ),
             ],

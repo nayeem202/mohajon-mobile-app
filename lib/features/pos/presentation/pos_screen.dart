@@ -15,6 +15,16 @@ import 'checkout_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 
+const _kAmber = Color(0xFFFFC800);
+const _kAmberLight = Color(0xFFFFD83D);
+const _kAmberSoft = Color(0xFFFFF0A6);
+const _kInk = Color(0xFF2F3028);
+const _kMuted = Color(0xFF77735F);
+const _kCard = Color(0xFFFFFDF7);
+const _kBorder = Color(0xFFEADFAE);
+const _kSoftFill = Color(0xFFFFF4BF);
+const _kBronzeText = Color(0xFF8A6500);
+
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
 
@@ -51,23 +61,27 @@ class _PosScreenState extends ConsumerState<PosScreen>
           horizontal: 14,
           vertical: 14,
         ),
+        hintStyle: TextStyle(
+          color: _kMuted.withValues(alpha: 0.75),
+          fontWeight: FontWeight.w600,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE9E1D8)),
+          borderSide: const BorderSide(color: _kBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE9E1D8)),
+          borderSide: const BorderSide(color: _kBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE98300), width: 1.4),
+          borderSide: const BorderSide(color: _kAmber, width: 1.6),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFE98300),
-          foregroundColor: Colors.white,
+          backgroundColor: _kAmber,
+          foregroundColor: _kInk,
           minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -81,57 +95,72 @@ class _PosScreenState extends ConsumerState<PosScreen>
       Theme(
         data: posTheme,
         child: Scaffold(
-          backgroundColor: const Color(0xFFF8F5EF),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TopBar(onAvatarTap: _openProfile),
-                      const SizedBox(height: 14),
-                      _SearchBar(
-                        controller: _searchController,
-                        onChanged: (value) => setState(() => _query = value),
-                      ),
-                      const SizedBox(height: 12),
-                      _CategoryStrip(
-                        categories: categories,
-                        selected: _selectedCategory,
-                        onSelected: (value) =>
-                            setState(() => _selectedCategory = value),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _ProductGrid(
-                      products: visibleProducts,
-                      enabled: !isBusy,
-                      onProductTap: cartController.addProduct,
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.16, 0.34, 1.0],
+                colors: [
+                  _kAmber,
+                  _kAmberLight,
+                  _kAmberSoft,
+                  Color(0xFFFFFCF0),
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TopBar(onAvatarTap: _openProfile),
+                        const SizedBox(height: 14),
+                        _SearchBar(
+                          controller: _searchController,
+                          onChanged: (value) => setState(() => _query = value),
+                        ),
+                        const SizedBox(height: 12),
+                        _CategoryStrip(
+                          categories: categories,
+                          selected: _selectedCategory,
+                          onSelected: (value) =>
+                              setState(() => _selectedCategory = value),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                if (cart.items.isNotEmpty)
-                  SafeArea(
-                    top: false,
+                  const SizedBox(height: 14),
+                  Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: _CheckoutBar(
-                        itemCount: cart.items.length,
-                        total: cart.total,
-                        onTap: isBusy
-                            ? null
-                            : () => _openCheckoutScreen(customers),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _ProductGrid(
+                        products: visibleProducts,
+                        enabled: !isBusy,
+                        onProductTap: cartController.addProduct,
                       ),
                     ),
                   ),
-              ],
+                  if (cart.items.isNotEmpty)
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: _CheckoutBar(
+                          itemCount: cart.items.length,
+                          total: cart.total,
+                          onTap: isBusy
+                              ? null
+                              : () => _openCheckoutScreen(customers),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -187,19 +216,29 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_kAmber, Color(0xFFFFE36E)],
+            ),
             borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: _kAmber.withValues(alpha: 0.32),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.storefront_rounded,
-            color: Colors.white,
+            color: _kInk,
             size: 17,
           ),
         ),
@@ -207,16 +246,23 @@ class _TopBar extends StatelessWidget {
         const Expanded(
           child: Text(
             'New Sale',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              color: _kInk,
             ),
           ),
         ),
         const NotificationBell(),
         const SizedBox(width: 14),
-        ShopAvatar(radius: 17, backgroundColor: const Color(0xFFF6E0C8), textColor: const Color(0xFFB45309), onTap: onAvatarTap),
+        ShopAvatar(
+          radius: 17,
+          backgroundColor: const Color(0xFFFFFDF7),
+          textColor: _kInk,
+          onTap: onAvatarTap,
+        ),
       ],
     );
   }
@@ -238,7 +284,7 @@ class _SearchBar extends StatelessWidget {
       onChanged: onChanged,
       decoration: const InputDecoration(
         hintText: 'Search products...',
-        prefixIcon: Icon(Icons.search_rounded, size: 20),
+        prefixIcon: Icon(Icons.search_rounded, size: 20, color: _kMuted),
       ),
     );
   }
@@ -291,19 +337,41 @@ class _CategoryChip extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFF8A00) : const Color(0xFFF1EAE0),
+          gradient: selected
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_kAmber, _kAmberLight],
+                )
+              : null,
+          color: selected ? null : _kCard,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? const Color(0xFFFF8A00) : const Color(0xFFE5D9C9),
-          ),
+          border: Border.all(color: _kBorder),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: _kAmber.withValues(alpha: 0.38),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: _kInk.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF9A5A1B),
+            color: selected ? _kInk : _kMuted,
             fontWeight: FontWeight.w800,
             fontSize: 12,
           ),
@@ -326,48 +394,40 @@ class _ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE9E1D8)),
+        color: _kCard,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _kBorder),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0B1F17).withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            color: const Color(0xFF6B5A2A).withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (products.isEmpty)
-            const Expanded(child: _CatalogEmptyState())
-          else
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 0.66,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  return _ProductCard(
-                    product: product,
-                    enabled: enabled && product.stockQty > 0,
-                    onTap: () => onProductTap(product),
-                  );
-                },
+      child: products.isEmpty
+          ? const _CatalogEmptyState()
+          : GridView.builder(
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 0.66,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
               ),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return _ProductCard(
+                  product: product,
+                  enabled: enabled && product.stockQty > 0,
+                  onTap: () => onProductTap(product),
+                );
+              },
             ),
-        ],
-      ),
     );
   }
 }
@@ -394,13 +454,24 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final accent = _accentForCategory(product.category);
-    return Card(
+    return Container(
       clipBehavior: Clip.antiAlias,
       margin: EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorder.withValues(alpha: 0.85)),
+        boxShadow: [
+          BoxShadow(
+            color: _kInk.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         onTap: enabled ? onTap : null,
         child: Padding(
           padding: const EdgeInsets.all(8),
@@ -410,8 +481,8 @@ class _ProductCard extends StatelessWidget {
               Container(
                 height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F1E7),
-                  borderRadius: BorderRadius.circular(10),
+                  color: _kSoftFill,
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
@@ -422,7 +493,7 @@ class _ProductCard extends StatelessWidget {
                         width: double.infinity,
                         height: 80,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _categoryIcon(accent),
+                        errorBuilder: (_, _, _) => _categoryIcon(accent),
                       )
                     else
                       _categoryIcon(accent),
@@ -430,15 +501,16 @@ class _ProductCard extends StatelessWidget {
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.62),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white.withValues(alpha: 0.66),
+                            borderRadius: BorderRadius.circular(11),
                           ),
                           child: const Center(
                             child: Text(
                               'Out of stock',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF667085),
+                                color: _kMuted,
+                                fontSize: 11,
                               ),
                             ),
                           ),
@@ -447,13 +519,13 @@ class _ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
               Text(
                 product.nameEn,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Color(0xFF7A2E00),
+                  color: _kInk,
                   fontWeight: FontWeight.w800,
                   fontSize: 11,
                   height: 1.15,
@@ -465,8 +537,9 @@ class _ProductCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Color(0xFFB48258),
+                  color: _kMuted,
                   fontSize: 10,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 4),
@@ -481,31 +554,50 @@ class _ProductCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF101828),
+                        color: _kInk,
                       ),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(999),
-                    onTap: enabled ? onTap : null,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF8A00),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
+                  _AddToCartButton(onTap: enabled ? onTap : null),
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddToCartButton extends StatelessWidget {
+  const _AddToCartButton({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_kAmber, _kAmberLight],
+          ),
+          shape: BoxShape.circle,
+          border: Border.all(color: _kBorder),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const Icon(
+            Icons.add_rounded,
+            color: _kInk,
+            size: 17,
           ),
         ),
       ),
@@ -529,17 +621,22 @@ class _CheckoutBar extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFFF8A00),
-            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_kAmber, _kAmberLight],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _kBorder),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF8A00).withValues(alpha: 0.28),
-                blurRadius: 14,
+                color: _kAmber.withValues(alpha: 0.42),
+                blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
             ],
@@ -547,16 +644,16 @@ class _CheckoutBar extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: const Icon(
                   Icons.shopping_cart_outlined,
-                  color: Colors.white,
-                  size: 18,
+                  color: _kInk,
+                  size: 19,
                 ),
               ),
               const SizedBox(width: 10),
@@ -566,32 +663,58 @@ class _CheckoutBar extends StatelessWidget {
                   Text(
                     '$itemCount items',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: _kInk,
                       fontWeight: FontWeight.w900,
                       fontSize: 13,
                     ),
                   ),
                   Text(
                     money(total),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
+                    style: const TextStyle(
+                      color: _kBronzeText,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
               const Spacer(),
-              const Text(
-                'Checkout',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: _kInk,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _kInk.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Checkout',
+                      style: TextStyle(
+                        color: Color(0xFFFFFCF0),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Color(0xFFFFC800),
+                      size: 16,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 16),
             ],
           ),
         ),
@@ -608,24 +731,26 @@ class _CatalogEmptyState extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFFCF6ED),
+        color: const Color(0xFFFFF6D5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9D8BD)),
+        border: Border.all(color: _kBorder),
       ),
       child: const Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.search_off_rounded,
-            color: Color(0xFFFF8A00),
-            size: 28,
+            color: _kBronzeText,
+            size: 30,
           ),
           SizedBox(height: 8),
           Text(
             'No matching products',
             style: TextStyle(
-              color: Color(0xFF9A5A1B),
-              fontWeight: FontWeight.w700,
+              color: _kMuted,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],

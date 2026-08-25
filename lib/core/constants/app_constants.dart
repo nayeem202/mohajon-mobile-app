@@ -1,7 +1,7 @@
 class AppConstants {
   const AppConstants._();
 
-  static const appName = 'Haalkhata';
+  static const appName = 'Mohajon';
   static const appTagline = 'Sales, stock, and due tracker';
   static const demoShopId = 'demo-shop';
   static const defaultCurrency = '৳';

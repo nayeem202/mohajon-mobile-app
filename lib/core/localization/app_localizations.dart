@@ -16,7 +16,7 @@ class AppLocalizations {
 
   static const _values = <String, Map<String, String>>{
     'en': {
-      'appName': 'Haalkhata',
+      'appName': 'Mohajon',
       'dashboard': 'Dashboard',
       'home': 'Home',
       'menu': 'Menu',

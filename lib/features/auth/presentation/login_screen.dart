@@ -61,60 +61,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       Theme(
         data: AuthBrand.theme(Theme.of(context)),
         child: Scaffold(
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxHeight < 720;
-                return SingleChildScrollView(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: EdgeInsets.fromLTRB(20, compact ? 12 : 20, 20, 24),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: FadeTransition(
-                        opacity: CurvedAnimation(
-                          parent: _entrance,
-                          curve: Curves.easeOut,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const _LanguageSelector(),
-                            SizedBox(height: compact ? 10 : 18),
-                            _HeroSection(compact: compact),
-                            SizedBox(height: compact ? 16 : 24),
-                            _LoginCard(
-                              formKey: _formKey,
-                              email: _email,
-                              password: _password,
-                              emailFocus: _emailFocus,
-                              passwordFocus: _passwordFocus,
-                              obscurePassword: _obscurePassword,
-                              rememberMe: _rememberMe,
-                              message: _message,
-                              messageIsError: _messageIsError,
-                              onTogglePassword: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
-                              onRememberChanged: (value) =>
-                                  setState(() => _rememberMe = value),
-                              onForgotPassword: _openForgotPassword,
-                              onSignIn: _signIn,
-                              onGoogleSignIn: _signInWithGoogle,
-                              onSignup: _openSignup,
-                              isBusy: isBusy,
+          body: Stack(
+            children: [
+              const Positioned.fill(child: _AuthBackdrop()),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxHeight < 720;
+                    return SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        compact ? 12 : 20,
+                        20,
+                        24,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: FadeTransition(
+                            opacity: CurvedAnimation(
+                              parent: _entrance,
+                              curve: Curves.easeOut,
                             ),
-                            SizedBox(height: compact ? 18 : 26),
-                            const _FeatureStrip(),
-                          ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                SizedBox(height: compact ? 2 : 10),
+                                _HeroSection(compact: compact),
+                                SizedBox(height: compact ? 14 : 20),
+                                _LoginCard(
+                                  formKey: _formKey,
+                                  email: _email,
+                                  password: _password,
+                                  emailFocus: _emailFocus,
+                                  passwordFocus: _passwordFocus,
+                                  obscurePassword: _obscurePassword,
+                                  rememberMe: _rememberMe,
+                                  message: _message,
+                                  messageIsError: _messageIsError,
+                                  onTogglePassword: () => setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
+                                  onRememberChanged: (value) =>
+                                      setState(() => _rememberMe = value),
+                                  onForgotPassword: _openForgotPassword,
+                                  onSignIn: _signIn,
+                                  onGoogleSignIn: _signInWithGoogle,
+                                  onSignup: _openSignup,
+                                  isBusy: isBusy,
+                                ),
+                                SizedBox(height: compact ? 18 : 26),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -311,7 +319,7 @@ class _HeroSection extends StatelessWidget {
         _CommerceIllustration(compact: compact),
         SizedBox(height: compact ? 8 : 14),
         Text(
-          AppConstants.appName,
+          'Login',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             color: AuthBrand.panelText,
@@ -322,7 +330,7 @@ class _HeroSection extends StatelessWidget {
         ),
         const SizedBox(height: 7),
         Text(
-          'Manage your shop, grow your business',
+          'Welcome to Mohajon',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: AuthBrand.panelMuted,
@@ -330,6 +338,58 @@ class _HeroSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AuthBackdrop extends StatelessWidget {
+  const _AuthBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -90,
+            child: Container(
+              width: 330,
+              height: 330,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFFC800), Color(0xFFFFE98A)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -110,
+            bottom: 80,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFFFE9B8),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 26,
+            bottom: 30,
+            child: Opacity(
+              opacity: 0.045,
+              child: Image.asset(
+                'assets/brand/mohajon.png',
+                width: 150,
+                height: 150,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -398,10 +458,7 @@ class _CommerceIllustration extends StatelessWidget {
                 ),
               ],
             ),
-            child: Image.asset(
-              'assets/brand/mohajon.png',
-              fit: BoxFit.contain,
-            ),
+            child: Image.asset('assets/brand/mohajon.png', fit: BoxFit.contain),
           ),
         ],
       ),
@@ -500,7 +557,7 @@ class _LoginCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Welcome Back! 👋',
+              'Let\'s Get Started',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: AuthBrand.panelText,
@@ -763,7 +820,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                         ),
                         SizedBox(width: 10),
                         Text(
-                          'Sign In',
+                          'Login',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,

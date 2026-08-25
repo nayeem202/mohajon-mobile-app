@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/app_image.dart';
@@ -57,117 +58,119 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       isOwner: isOwner,
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      body: SafeArea(
-        child: productsAsync.when(
-          data: (items) {
-            final filteredBySearch = ref.watch(filteredProductsProvider);
-            final visibleProducts = _applyFilter(filteredBySearch);
-    final totalValue = items.fold<double>(
-      0,
-      (sum, product) =>
-          sum + (product.stockQty * product.purchasePrice),
-    );
-            final lowStockCount = items
-                .where((product) => product.isLowStock)
-                .length;
-            final outStockCount = items
-                .where((product) => product.stockQty <= 0)
-                .length;
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            child: productsAsync.when(
+              data: (items) {
+                final filteredBySearch = ref.watch(filteredProductsProvider);
+                final visibleProducts = _applyFilter(filteredBySearch);
+                final totalValue = items.fold<double>(
+                  0,
+                  (sum, product) =>
+                      sum + (product.stockQty * product.purchasePrice),
+                );
+                final lowStockCount = items
+                    .where((product) => product.isLowStock)
+                    .length;
+                final outStockCount = items
+                    .where((product) => product.stockQty <= 0)
+                    .length;
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-              children: [
-                 const _StockTopBar(),
-                const SizedBox(height: 16),
-                _StockStats(
-                  totalProducts: items.length,
-                  stockValue: totalValue,
-                  lowStockCount: lowStockCount,
-                  outStockCount: outStockCount,
-                ),
-                if (_showSearch) ...[
-                  const SizedBox(height: 16),
-                  _SearchAndFilters(
-                    controller: _searchController,
-                    searchQuery: searchQuery,
-                    selectedFilter: _filter,
-                    onSearchChanged: (value) =>
-                        ref.read(productSearchQueryProvider.notifier).state =
-                            value,
-                    onClearSearch: () {
-                      _searchController.clear();
-                      ref.read(productSearchQueryProvider.notifier).state = '';
-                    },
-                    onFilterChanged: (filter) => setState(() => _filter = filter),
-                  ),
-                ],
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Text(
-                      'All Products (${visibleProducts.length})',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF101828),
+                return RefreshIndicator(
+                  color: MohajonWarm.goldText,
+                  onRefresh: () async {
+                    await ref.read(productsProvider.future);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
+                    children: [
+                      const _StockTopBar(),
+                      const SizedBox(height: 18),
+                      _StockStats(
+                        totalProducts: items.length,
+                        stockValue: totalValue,
+                        lowStockCount: lowStockCount,
+                        outStockCount: outStockCount,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                if (items.isEmpty)
-                  const EmptyState(
-                    message: 'Add products to start selling.',
-                    icon: Icons.inventory_2_outlined,
-                  )
-                else if (visibleProducts.isEmpty)
-                  const EmptyState(
-                    message: 'No products match your search.',
-                    icon: Icons.search_off_rounded,
-                  )
-                else
-                  _InventoryList(products: visibleProducts),
-              ],
-            );
-          },
-          error: (error, _) => EmptyState(message: error.toString()),
-          loading: () => const Center(child: CircularProgressIndicator()),
+                      if (_showSearch) ...[
+                        const SizedBox(height: 16),
+                        _SearchAndFilters(
+                          controller: _searchController,
+                          searchQuery: searchQuery,
+                          selectedFilter: _filter,
+                          onSearchChanged: (value) =>
+                              ref.read(productSearchQueryProvider.notifier).state =
+                                  value,
+                          onClearSearch: () {
+                            _searchController.clear();
+                            ref.read(productSearchQueryProvider.notifier).state =
+                                '';
+                          },
+                          onFilterChanged: (filter) =>
+                              setState(() => _filter = filter),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _SectionTitle(count: visibleProducts.length),
+                      const SizedBox(height: 12),
+                      if (items.isEmpty)
+                        const EmptyState(
+                          message: 'Add products to start selling.',
+                          icon: Icons.inventory_2_outlined,
+                        )
+                      else if (visibleProducts.isEmpty)
+                        const EmptyState(
+                          message: 'No products match your search.',
+                          icon: Icons.search_off_rounded,
+                        )
+                      else
+                        _InventoryList(products: visibleProducts),
+                    ],
+                  ),
+                );
+              },
+              error: (error, _) => EmptyState(message: error.toString()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: MohajonWarm.primary),
+              ),
+            ),
+          ),
         ),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton.small(
+              heroTag: 'search',
+              onPressed: () {
+                setState(() => _showSearch = !_showSearch);
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(productSearchQueryProvider.notifier).state = '';
+                }
+              },
+              child: Icon(
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (canAddProduct)
+              FloatingActionButton(
+                heroTag: 'add',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+                ),
+                child: const Icon(Icons.add_rounded, size: 26),
+              ),
+          ],
+        ),
+        floatingActionButtonLocation: const NavBarAwareFabLocation(),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'search',
-            onPressed: () {
-              setState(() => _showSearch = !_showSearch);
-              if (!_showSearch) {
-                _searchController.clear();
-                ref.read(productSearchQueryProvider.notifier).state = '';
-              }
-            },
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(),
-            child: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, size: 24),
-          ),
-          const SizedBox(height: 8),
-          if (canAddProduct) FloatingActionButton(
-            heroTag: 'add',
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const ProductFormScreen())),
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add_rounded, size: 24),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: const NavBarAwareFabLocation(),
     );
   }
 
@@ -187,37 +190,111 @@ class _StockTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return IconTheme(
+      data: const IconThemeData(color: MohajonWarm.ink),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.inventory_2_rounded,
+              color: MohajonWarm.ink,
+              size: 17,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Stock',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  'Products & inventory',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+          const SizedBox(width: 14),
+          const ShopAvatar(
+            radius: 17,
+            backgroundColor: Color(0xFFFFFDF7),
+            textColor: MohajonWarm.ink,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.storefront_rounded,
-            color: Colors.white,
-            size: 17,
-          ),
-        ),
-        const SizedBox(width: 10),
         const Expanded(
           child: Text(
-            'Stock',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            'All Products',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              letterSpacing: -0.2,
+              color: MohajonWarm.ink,
             ),
           ),
         ),
-        const NotificationBell(),
-        const SizedBox(width: 14),
-        const ShopAvatar(radius: 17, backgroundColor: Color(0xFFFCE7C8), textColor: Color(0xFF8A5A11)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: MohajonWarm.primary.withValues(alpha: 0.22),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: MohajonWarm.primary.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Text(
+            '$count items',
+            style: const TextStyle(
+              color: Color(0xFF5D4A00),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -239,37 +316,37 @@ class _StockStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _StockStatSpec(
+      _StatSpec(
         icon: Icons.inventory_2_rounded,
         label: 'Total Products',
         value: '$totalProducts',
         subtext: 'All products',
-        color: const Color(0xFF0F766E),
-        background: const Color(0xFFE4F6F1),
+        color: MohajonWarm.goldText,
+        background: MohajonWarm.tintYellow,
       ),
-      _StockStatSpec(
+      _StatSpec(
         icon: Icons.account_balance_wallet_rounded,
         label: 'Stock Value',
         value: money(stockValue),
         subtext: 'Inventory worth',
-        color: const Color(0xFF047857),
-        background: const Color(0xFFE9F8F1),
+        color: MohajonWarm.green,
+        background: MohajonWarm.tintGreen,
       ),
-      _StockStatSpec(
+      _StatSpec(
         icon: Icons.warning_amber_rounded,
         label: 'Low Stock',
         value: '$lowStockCount',
         subtext: 'Restock soon',
-        color: const Color(0xFFEA580C),
-        background: const Color(0xFFFFF4E5),
+        color: MohajonWarm.orange,
+        background: MohajonWarm.tintOrange,
       ),
-      _StockStatSpec(
+      _StatSpec(
         icon: Icons.remove_circle_outline_rounded,
         label: 'Out of Stock',
         value: '$outStockCount',
         subtext: 'Unavailable',
-        color: const Color(0xFFEF4444),
-        background: const Color(0xFFFEF1F1),
+        color: MohajonWarm.red,
+        background: MohajonWarm.tintRed,
       ),
     ];
 
@@ -285,7 +362,7 @@ class _StockStats extends StatelessWidget {
           runSpacing: 12,
           children: [
             for (final card in cards)
-              SizedBox(width: cardWidth, child: _StockStatCard(spec: card)),
+              SizedBox(width: cardWidth, child: _StatCard(spec: card)),
           ],
         );
       },
@@ -293,8 +370,8 @@ class _StockStats extends StatelessWidget {
   }
 }
 
-class _StockStatSpec {
-  const _StockStatSpec({
+class _StatSpec {
+  const _StatSpec({
     required this.icon,
     required this.label,
     required this.value,
@@ -311,10 +388,11 @@ class _StockStatSpec {
   final Color background;
 }
 
-class _StockStatCard extends StatelessWidget {
-  const _StockStatCard({required this.spec});
+/// Matches the Home screen stat card styling.
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.spec});
 
-  final _StockStatSpec spec;
+  final _StatSpec spec;
 
   @override
   Widget build(BuildContext context) {
@@ -326,10 +404,10 @@ class _StockStatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [spec.background, Colors.white],
+          colors: [spec.background, MohajonWarm.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
             color: spec.color.withValues(alpha: 0.09),
@@ -435,11 +513,18 @@ class _SearchAndFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE9DECF)),
-        borderRadius: BorderRadius.circular(14),
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -450,12 +535,19 @@ class _SearchAndFilters extends StatelessWidget {
               onChanged: onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Search products...',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: MohajonWarm.muted,
+                ),
                 suffixIcon: searchQuery.isEmpty
                     ? null
                     : IconButton(
                         onPressed: onClearSearch,
-                        icon: const Icon(Icons.clear_rounded),
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          color: MohajonWarm.muted,
+                        ),
                       ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
               ),
@@ -505,21 +597,29 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
+      child: Material(
+        color: selected ? MohajonWarm.primary : Colors.white,
         borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFF97316) : const Color(0xFFF8F1E6),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF101828),
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? MohajonWarm.primary.withValues(alpha: 0.45)
+                    : MohajonWarm.goldBorder,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ),
@@ -556,148 +656,171 @@ class _InventoryRow extends StatelessWidget {
     final isOut = product.stockQty <= 0;
     final isLow = product.isLowStock && !isOut;
     final statusColor = isOut
-        ? const Color(0xFFEF4444)
+        ? MohajonWarm.red
         : isLow
-        ? const Color(0xFFEA580C)
-        : const Color(0xFF16A34A);
+        ? MohajonWarm.orange
+        : MohajonWarm.green;
+    final statusBg = isOut
+        ? MohajonWarm.tintRed
+        : isLow
+        ? MohajonWarm.tintOrange
+        : MohajonWarm.tintGreen;
     final statusText = isOut
-        ? '0 out of stock'
+        ? 'Out of stock'
         : '${_quantity(product.stockQty)} in stock';
 
     final leading = product.imagePath != null
         ? ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(13),
             child: AppImage.file(
               File(product.imagePath!),
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _defaultLeading(),
             ),
           )
         : _defaultLeading();
 
-    final titleBlock = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          product.nameEn,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF101828),
-            fontWeight: FontWeight.w900,
-            fontSize: 14,
+    return Material(
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProductFormScreen(product: product),
           ),
         ),
-        const SizedBox(height: 3),
-        Text(
-          product.category.isEmpty ? 'General' : product.category,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF98A2B3),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-
-    final trailingBlock = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          money(product.sellingPrice),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF101828),
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          statusText,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: statusColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 340;
-
-        return Material(
-          color: const Color(0xFFFDF7EF),
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ProductFormScreen(product: product),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: MohajonWarm.goldBorder),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.ink.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDF7EF),
-                border: Border.all(color: const Color(0xFFE9DECF)),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: compact
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            leading,
-                            const SizedBox(width: 10),
-                            Expanded(child: titleBlock),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: trailingBlock,
-                        ),
-                      ],
-                    )
-                  : Row(
+            ],
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 340;
+              final titleBlock = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    product.nameEn,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    product.category.isEmpty ? 'General' : product.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              );
+
+              final trailingBlock = Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    money(product.sellingPrice),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      statusText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
                         leading,
-                        const SizedBox(width: 12),
-                        Expanded(child: titleBlock),
                         const SizedBox(width: 10),
-                        trailingBlock,
+                        Expanded(child: titleBlock),
                       ],
                     ),
-            ),
+                    const SizedBox(height: 10),
+                    Align(alignment: Alignment.centerRight, child: trailingBlock),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  leading,
+                  const SizedBox(width: 12),
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 10),
+                  trailingBlock,
+                ],
+              );
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   Widget _defaultLeading() => Container(
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     decoration: BoxDecoration(
-      color: const Color(0xFFFFE3B8),
-      borderRadius: BorderRadius.circular(12),
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+      ),
+      borderRadius: BorderRadius.circular(13),
     ),
     child: const Icon(
       Icons.inventory_2_rounded,
-      color: Color(0xFFF97316),
+      color: Color(0xFFE98300),
       size: 20,
     ),
   );
