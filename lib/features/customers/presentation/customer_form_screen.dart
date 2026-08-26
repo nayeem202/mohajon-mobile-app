@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/customer.dart';
@@ -439,20 +440,26 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
 
   Future<void> _saveCustomer() async {
     if (!_formKey.currentState!.validate()) return;
-    await runBusyAction(() async {
-      await ref
-          .read(customerServiceProvider)
-          .save(
-            customerId: widget.customer?.customerId,
-            name: _name.text.trim(),
-            phone: _phone.text.trim(),
-            email: _email.text.trim(),
-            address: _address.text.trim(),
-            notes: _notes.text.trim(),
-            imagePath: _imagePath,
-          );
-      if (mounted) Navigator.of(context).pop();
-    });
+    try {
+      await runBusyAction(() async {
+        await ref
+            .read(customerServiceProvider)
+            .save(
+              customerId: widget.customer?.customerId,
+              name: _name.text.trim(),
+              phone: _phone.text.trim(),
+              email: _email.text.trim(),
+              address: _address.text.trim(),
+              notes: _notes.text.trim(),
+              imagePath: _imagePath,
+            );
+        if (mounted) Navigator.of(context).pop();
+      });
+    } catch (error) {
+      if (mounted) {
+        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+      }
+    }
   }
 }
 

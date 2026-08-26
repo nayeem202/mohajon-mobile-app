@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
@@ -426,6 +427,21 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                           if (ctx.mounted) {
                                             Navigator.of(ctx).pop(true);
                                           }
+                                        } catch (error) {
+                                          if (ctx.mounted) {
+                                            ScaffoldMessenger.of(ctx)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  friendlyErrorMessage(
+                                                    error,
+                                                    fallback:
+                                                        'Could not delete vendor.',
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }
                                         } finally {
                                           if (ctx.mounted) {
                                             setDialogState(
@@ -617,6 +633,17 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     );
                                     if (sheetContext.mounted) {
                                       Navigator.of(sheetContext).pop();
+                                    }
+                                  } catch (error) {
+                                    if (sheetContext.mounted) {
+                                      ScaffoldMessenger.of(sheetContext)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            friendlyErrorMessage(error),
+                                          ),
+                                        ),
+                                      );
                                     }
                                   } finally {
                                     saving = false;
@@ -842,6 +869,17 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     );
                                     if (sheetContext.mounted) {
                                       Navigator.of(sheetContext).pop();
+                                    }
+                                  } catch (error) {
+                                    if (sheetContext.mounted) {
+                                      ScaffoldMessenger.of(sheetContext)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            friendlyErrorMessage(error),
+                                          ),
+                                        ),
+                                      );
                                     }
                                   } finally {
                                     saving = false;

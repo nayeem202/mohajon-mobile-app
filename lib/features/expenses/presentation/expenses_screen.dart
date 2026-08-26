@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -10,7 +11,7 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../models/expense.dart';
 import '../providers/expense_providers.dart';
-import 'add_expense_sheet.dart';
+import 'expense_form_screen.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -32,7 +33,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
       duration: const Duration(milliseconds: 420),
     )..forward();
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    Future.microtask(() => ref.read(expenseServiceProvider).seedDemoExpenses());
+    Future.microtask(
+      () => ref.read(expenseServiceProvider).seedDemoExpenses(),
+    );
   }
 
   @override
@@ -49,118 +52,134 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
     final selectedMonth = ref.watch(expenseMonthFilterProvider);
 
     return withLoadingOverlay(
-      Scaffold(
-        backgroundColor: const Color(0xFFFFF8F1),
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: isBusy ? null : () => Navigator.of(context).pop(),
-          ),
-        title: const Text(
-          'Expenses',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-        ),
-        actions: const [
-          NotificationBell(),
-          SizedBox(width: 4),
-          ShopAvatar(
-            radius: 16,
-            backgroundColor: Color(0xFFF97316),
-            textColor: Colors.white,
-          ),
-          SizedBox(width: 8),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fade,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            _SummaryCards(data: dashboard),
-            const SizedBox(height: 14),
-            _MonthSelector(
-              months: months,
-              selectedMonth: selectedMonth,
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(expenseMonthFilterProvider.notifier).state = value;
-                }
-              },
+      Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: MohajonWarm.pageGradient,
             ),
-            const SizedBox(height: 14),
-            _CategoryBreakdownCard(data: dashboard),
-            const SizedBox(height: 14),
-            _CategoryChips(
-              categories: categories,
-              selectedId: dashboard.selectedCategoryId,
-              onChanged: (value) {
-                ref.read(expenseCategoryFilterProvider.notifier).state = value;
-              },
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Expense List',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF101828),
+            child: SafeArea(
+              child: FadeTransition(
+                opacity: _fade,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                  children: [
+                    _ExpensesHeader(
+                      onBack: isBusy
+                          ? null
+                          : () => Navigator.of(context).pop(),
                     ),
-                  ),
-                ),
-                Text(
-                  '${dashboard.filteredEntries.length} items',
-                  style: const TextStyle(
-                    color: Color(0xFF667085),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            if (dashboard.filteredEntries.isEmpty)
-              const EmptyState(
-                message: 'No expenses found for this month and filter.',
-                icon: Remix.wallet_3_line,
-              )
-            else
-              ...dashboard.filteredEntries.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ExpenseItemCard(
-                    entry: entry,
-                    category: _categoryFor(categories, entry.categoryId),
-                    onEdit: () => _openEditSheet(entry),
-                    onDelete: () => _confirmDelete(entry),
-                  ),
+                    const SizedBox(height: 18),
+                    _SummaryCards(data: dashboard),
+                    const SizedBox(height: 14),
+                    _MonthSelector(
+                      months: months,
+                      selectedMonth: selectedMonth,
+                      onChanged: (value) {
+                        if (value != null) {
+                          ref
+                              .read(expenseMonthFilterProvider.notifier)
+                              .state = value;
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    _CategoryBreakdownCard(data: dashboard),
+                    const SizedBox(height: 14),
+                    _CategoryChips(
+                      categories: categories,
+                      selectedId: dashboard.selectedCategoryId,
+                      onChanged: (value) {
+                        ref
+                            .read(expenseCategoryFilterProvider.notifier)
+                            .state = value;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Expense List',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.2,
+                              color: MohajonWarm.ink,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MohajonWarm.primary.withValues(
+                              alpha: 0.22,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: MohajonWarm.primary.withValues(
+                                alpha: 0.35,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            '${dashboard.filteredEntries.length} items',
+                            style: const TextStyle(
+                              color: Color(0xFF5D4A00),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (dashboard.filteredEntries.isEmpty)
+                      const EmptyState(
+                        message:
+                            'No expenses found for this month and filter.',
+                        icon: Remix.wallet_3_line,
+                      )
+                    else
+                      ...dashboard.filteredEntries.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _ExpenseItemCard(
+                            entry: entry,
+                            category: _categoryFor(
+                              categories,
+                              entry.categoryId,
+                            ),
+                            onEdit: () => _openForm(entry),
+                            onDelete: () => _confirmDelete(entry),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _openForm(null),
+            child: const Icon(Icons.add_rounded, size: 26),
+          ),
+          bottomNavigationBar: _StickyTotalBar(
+            monthLabel: formatMonth(dashboard.selectedMonth),
+            categoryLabel: _filterLabel(
+              categories,
+              dashboard.selectedCategoryId,
+            ),
+            total: dashboard.filteredTotal,
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            useSafeArea: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => const AddExpenseSheet(),
-          );
-        },
-        backgroundColor: const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: const Icon(Icons.add_rounded, size: 28),
-      ),
-      bottomNavigationBar: _StickyTotalBar(
-        monthLabel: formatMonth(dashboard.selectedMonth),
-        categoryLabel: _filterLabel(categories, dashboard.selectedCategoryId),
-        total: dashboard.filteredTotal,
-      ),
       ),
       label: 'Deleting expense...',
     );
@@ -183,13 +202,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
         .label;
   }
 
-  void _openEditSheet(Expense expense) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => AddExpenseSheet(expense: expense),
+  void _openForm(Expense? expense) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ExpenseFormScreen(expense: expense)),
     );
   }
 
@@ -197,24 +212,109 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete expense?'),
-          content: Text(
-            'This will remove "${expense.description}" from the list.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+        return PopScope(
+          child: Material(
+            color: Colors.transparent,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 32),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFEBEE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.error_outline_rounded,
+                        color: Color(0xFFEF5350),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Delete Expense?',
+                      style: TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1C1917),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        '"${expense.description}" will be removed permanently. '
+                        'This action cannot be undone.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF98A2B3),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF0ECE6),
+                                foregroundColor: const Color(0xFF525252),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide.none,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: FilledButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFFEF5350),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              child: const Text('Delete'),
             ),
-          ],
+          ),
         );
       },
     );
@@ -222,6 +322,102 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
 
     await runBusyAction(
       () => ref.read(expenseServiceProvider).deleteExpense(expense.expenseId),
+    );
+  }
+}
+
+class _ExpensesHeader extends StatelessWidget {
+  const _ExpensesHeader({required this.onBack});
+
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconTheme(
+      data: const IconThemeData(color: MohajonWarm.ink),
+      child: Row(
+        children: [
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(11),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(11),
+              onTap: onBack,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: MohajonWarm.ink,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.wallet_rounded,
+              color: MohajonWarm.ink,
+              size: 17,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Expenses',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  'Track shop spending',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+          const SizedBox(width: 14),
+          const ShopAvatar(
+            radius: 17,
+            backgroundColor: Color(0xFFFFFDF7),
+            textColor: MohajonWarm.ink,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -253,15 +449,12 @@ class _SummaryCards extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF97316), Color(0xFFEA580C)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
+              color: MohajonWarm.card,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: MohajonWarm.goldBorder),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF97316).withValues(alpha: 0.22),
+                  color: MohajonWarm.primary.withValues(alpha: 0.20),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -270,30 +463,58 @@ class _SummaryCards extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  selectedLabel,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: MohajonWarm.tintYellow,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_month_rounded,
+                        color: MohajonWarm.goldText,
+                        size: 15,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text(
+                        selectedLabel.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: MohajonWarm.goldText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    money(data.selectedMonthTotal),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  money(data.selectedMonthTotal),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   'Selected period expenses',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.86),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -305,13 +526,18 @@ class _SummaryCards extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.tintYellow, MohajonWarm.card],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: MohajonWarm.goldBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  color: MohajonWarm.primary.withValues(alpha: 0.12),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -321,18 +547,23 @@ class _SummaryCards extends StatelessWidget {
                 Text(
                   previousLabel,
                   style: const TextStyle(
-                    color: Color(0xFF667085),
+                    color: MohajonWarm.muted,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  money(data.previousMonthTotal),
-                  style: const TextStyle(
-                    color: Color(0xFF101828),
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    money(data.previousMonthTotal),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -361,9 +592,14 @@ class _TrendChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (trend) {
-      _TrendDirection.up => const Color(0xFFDC2626),
-      _TrendDirection.down => const Color(0xFF047857),
-      _TrendDirection.flat => const Color(0xFF667085),
+      _TrendDirection.up => MohajonWarm.red,
+      _TrendDirection.down => MohajonWarm.green,
+      _TrendDirection.flat => MohajonWarm.muted,
+    };
+    final background = switch (trend) {
+      _TrendDirection.up => MohajonWarm.tintRed,
+      _TrendDirection.down => MohajonWarm.tintGreen,
+      _TrendDirection.flat => MohajonWarm.tintYellow,
     };
     final icon = switch (trend) {
       _TrendDirection.up => Remix.arrow_up_s_line,
@@ -379,20 +615,20 @@ class _TrendChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: background,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 16),
+          Icon(icon, color: color, size: 15),
           const SizedBox(width: 4),
           Text(
             '$label ${percent.toStringAsFixed(1)}%',
             style: TextStyle(
               color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -416,21 +652,57 @@ class _MonthSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<DateTime>(
-      value: selectedMonth,
-      decoration: const InputDecoration(
-        labelText: 'Month',
-        prefixIcon: Icon(Icons.date_range_rounded),
-      ),
-      items: months
-          .map(
-            (month) => DropdownMenuItem(
-              value: month,
-              child: Text(formatMonth(month)),
+    return DropdownButtonHideUnderline(
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: MohajonWarm.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: MohajonWarm.goldBorder),
+          boxShadow: [
+            BoxShadow(
+              color: MohajonWarm.ink.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          )
-          .toList(),
-      onChanged: onChanged,
+          ],
+        ),
+        child: DropdownButton<DateTime>(
+          value: selectedMonth,
+          isExpanded: true,
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: MohajonWarm.muted,
+          ),
+          dropdownColor: Colors.white,
+          style: const TextStyle(
+            color: MohajonWarm.ink,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          underline: const SizedBox.shrink(),
+          items: months
+              .map(
+                (month) => DropdownMenuItem(
+                  value: month,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_month_rounded,
+                        size: 18,
+                        color: MohajonWarm.muted,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(formatMonth(month)),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }
@@ -445,9 +717,16 @@ class _CategoryBreakdownCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        color: MohajonWarm.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,25 +734,30 @@ class _CategoryBreakdownCard extends StatelessWidget {
           const Text(
             'Category Breakdown',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              letterSpacing: -0.2,
+              color: MohajonWarm.ink,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          const Text(
             'Share of total expenses for the selected month',
-            style: const TextStyle(
-              color: Color(0xFF667085),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+            style: TextStyle(
+              color: MohajonWarm.muted,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 14),
           if (data.breakdown.isEmpty)
             const Text(
               'No category data available.',
-              style: TextStyle(color: Color(0xFF98A2B3)),
+              style: TextStyle(
+                color: MohajonWarm.muted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
             )
           else
             ...data.breakdown.map(
@@ -495,9 +779,8 @@ class _BreakdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final width = MediaQuery.sizeOf(context).width;
-    final barWidth = (width - 16 * 2 - 16 * 2 - 76) * (item.percent / 100);
+    final barWidth = (width - 18 * 2 - 16 * 2 - 76) * (item.percent / 100);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,14 +807,14 @@ class _BreakdownRow extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
-                  color: Color(0xFF101828),
+                  color: MohajonWarm.ink,
                 ),
               ),
             ),
             Text(
               '${item.percent.toStringAsFixed(0)}%',
-              style: TextStyle(
-                color: colors.onSurfaceVariant,
+              style: const TextStyle(
+                color: MohajonWarm.muted,
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
               ),
@@ -540,8 +823,8 @@ class _BreakdownRow extends StatelessWidget {
             Text(
               money(item.amount),
               style: const TextStyle(
-                color: Color(0xFF101828),
-                fontWeight: FontWeight.w800,
+                color: MohajonWarm.ink,
+                fontWeight: FontWeight.w900,
                 fontSize: 13,
               ),
             ),
@@ -553,7 +836,7 @@ class _BreakdownRow extends StatelessWidget {
             Container(
               height: 8,
               decoration: BoxDecoration(
-                color: const Color(0xFFF2E8DE),
+                color: const Color(0xFFFFF0A6),
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -586,7 +869,7 @@ class _CategoryChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
+      height: 36,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
@@ -610,6 +893,7 @@ class _CategoryChips extends StatelessWidget {
   }
 }
 
+/// Pill chip matching the Stock filter chips.
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
@@ -623,20 +907,31 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      backgroundColor: Colors.white,
-      selectedColor: colors.primary.withValues(alpha: 0.12),
-      labelStyle: TextStyle(
-        color: selected ? colors.primary : const Color(0xFF475467),
-        fontWeight: FontWeight.w700,
-        fontSize: 12,
-      ),
-      side: BorderSide(
-        color: selected ? colors.primary.withValues(alpha: 0.24) : const Color(0xFFE8DDD2),
+    return Material(
+      color: selected ? MohajonWarm.primary : Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? MohajonWarm.primary.withValues(alpha: 0.45)
+                  : MohajonWarm.goldBorder,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -657,130 +952,139 @@ class _ExpenseItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: category.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: MohajonWarm.goldBorder),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: MohajonWarm.ink.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(category.icon, color: category.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF101828),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  entry.categoryLabel.isNotEmpty ? entry.categoryLabel : category.label,
-                  style: TextStyle(
-                    color: category.color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Remix.calendar_2_line,
-                      size: 14,
-                      color: Color(0xFF98A2B3),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: category.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(category.icon, color: category.color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: MohajonWarm.ink,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      DateFormat('dd MMM yyyy').format(entry.date),
-                      style: const TextStyle(
-                        color: Color(0xFF98A2B3),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    entry.categoryLabel.isNotEmpty
+                        ? entry.categoryLabel
+                        : category.label,
+                    style: TextStyle(
+                      color: category.color,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
                     ),
-                    if (entry.notes.isNotEmpty) ...[
-                      const SizedBox(width: 10),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
                       const Icon(
-                        Remix.file_text_line,
+                        Remix.calendar_2_line,
                         size: 14,
-                        color: Color(0xFF98A2B3),
+                        color: MohajonWarm.muted,
                       ),
                       const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          entry.notes,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF98A2B3),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      Text(
+                        DateFormat('dd MMM yyyy').format(entry.date),
+                        style: const TextStyle(
+                          color: MohajonWarm.muted,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (entry.notes.isNotEmpty) ...[
+                        const SizedBox(width: 10),
+                        const Icon(
+                          Remix.file_text_line,
+                          size: 14,
+                          color: MohajonWarm.muted,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            entry.notes,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: MohajonWarm.muted,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert_rounded, size: 18),
-                onSelected: (value) {
-                  if (value == 'edit') onEdit();
-                  if (value == 'delete') onDelete();
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit'),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Text(
-                money(entry.amount),
-                style: const TextStyle(
-                  color: Color(0xFF101828),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    size: 18,
+                    color: MohajonWarm.muted,
+                  ),
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit();
+                    if (value == 'delete') onDelete();
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(height: 14),
+                Text(
+                  money(entry.amount),
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -804,13 +1108,15 @@ class _StickyTotalBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: const Color(0xFFE8DDD2))),
+          color: MohajonWarm.card,
+          border: const Border(
+            top: BorderSide(color: MohajonWarm.goldBorder),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: MohajonWarm.ink.withValues(alpha: 0.06),
               blurRadius: 16,
-              offset: const Offset(0, -4),
+              offset: const Offset(0, -6),
             ),
           ],
         ),
@@ -820,13 +1126,14 @@ class _StickyTotalBar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: MohajonWarm.goldBorder),
               ),
               child: const Icon(
                 Remix.wallet_3_line,
-                color: Color(0xFFF97316),
-                size: 20,
+                color: MohajonWarm.goldText,
+                size: 19,
               ),
             ),
             const SizedBox(width: 12),
@@ -838,8 +1145,8 @@ class _StickyTotalBar extends StatelessWidget {
                   Text(
                     '$monthLabel total',
                     style: const TextStyle(
-                      color: Color(0xFF667085),
-                      fontSize: 12,
+                      color: MohajonWarm.muted,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -849,9 +1156,9 @@ class _StickyTotalBar extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF101828),
+                      color: MohajonWarm.ink,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
@@ -861,7 +1168,7 @@ class _StickyTotalBar extends StatelessWidget {
             Text(
               money(total),
               style: const TextStyle(
-                color: Color(0xFFF97316),
+                color: MohajonWarm.goldText,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),

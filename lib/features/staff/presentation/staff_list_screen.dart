@@ -2,8 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 import '../models/staff_model.dart';
 import '../providers/staff_providers.dart';
 import '../services/staff_api_service.dart';
@@ -25,7 +29,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFFDC2626) : null,
+        backgroundColor: isError ? MohajonWarm.red : null,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -36,7 +40,9 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       MaterialPageRoute(builder: (_) => StaffFormScreen(staff: staff)),
     );
     if (saved == true && mounted) {
-      _showToast(staff == null ? 'Staff member added' : '${staff.name} updated');
+      _showToast(
+        staff == null ? 'Staff member added' : '${staff.name} updated',
+      );
     }
   }
 
@@ -57,7 +63,11 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       _showToast('${staff.name} removed');
     } catch (error) {
       if (!mounted) return;
-      _showToast('Could not remove staff. Please try again.', isError: true);
+      _showToast(
+        friendlyErrorMessage(error,
+            fallback: 'Could not remove staff. Please try again.'),
+        isError: true,
+      );
     }
   }
 
@@ -75,107 +85,152 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     final activeCount = staff.where((s) => s.active).length;
     final inactiveCount = staff.length - activeCount;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('Shop Staff'),
-      ),
-      body: Column(
-        children: [
-          if (_showSearch)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Search staff...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                  suffixIcon: _searchController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.clear_rounded),
-                        ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: MohajonWarm.pageGradient,
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                  child: _Header(
+                    onBack: () => Navigator.of(context).maybePop(),
                   ),
                 ),
-              ),
-            ),
-          if (staff.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.fromLTRB(20, _showSearch ? 4 : 4, 20, 12),
-              child: Text(
-                '${filtered.length} of ${staff.length} staff \u2014 $activeCount active'
-                '${inactiveCount > 0 ? ", $inactiveCount inactive" : ""}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF98A2B3),
-                ),
-              ),
-            ),
-          Expanded(
-            child: staffAsync.isLoading && staff.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : staffAsync.hasError && staff.isEmpty
-                    ? _errorState()
-                    : staff.isEmpty
-                        ? _emptyState()
-                        : filtered.isEmpty
-                            ? _emptySearchState()
-                            : ListView.builder(
-                                padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-                                itemCount: filtered.length,
-                                itemBuilder: (context, index) => _StaffCard(
-                                  staff: filtered[index],
-                                  onEdit: () => _openForm(staff: filtered[index]),
-                                  onDelete: () =>
-                                      _confirmDelete(filtered[index]),
+                if (_showSearch)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: MohajonWarm.card,
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: MohajonWarm.goldBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: MohajonWarm.ink.withValues(alpha: 0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'Search staff...',
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: MohajonWarm.muted,
+                          ),
+                          suffixIcon: _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {});
+                                  },
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    color: MohajonWarm.muted,
+                                  ),
                                 ),
-                              ),
-          ),
-        ],
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'search',
-            onPressed: () {
-              setState(() => _showSearch = !_showSearch);
-              if (!_showSearch) {
-                _searchController.clear();
-              }
-            },
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(),
-            child: Icon(
-              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
-              size: 24,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (staff.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+                    child: Text(
+                      '${filtered.length} of ${staff.length} staff \u2014 $activeCount active'
+                      '${inactiveCount > 0 ? ", $inactiveCount inactive" : ""}',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: MohajonWarm.muted,
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: staffAsync.isLoading && staff.isEmpty
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: MohajonWarm.primary,
+                          ),
+                        )
+                      : staffAsync.hasError && staff.isEmpty
+                          ? _errorState()
+                          : staff.isEmpty
+                              ? _emptyState()
+                              : filtered.isEmpty
+                                  ? _emptySearchState()
+                                  : ListView.builder(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        18,
+                                        4,
+                                        18,
+                                        100,
+                                      ),
+                                      itemCount: filtered.length,
+                                      itemBuilder: (context, index) =>
+                                          Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: _StaffCard(
+                                          staff: filtered[index],
+                                          onEdit: () => _openForm(
+                                            staff: filtered[index],
+                                          ),
+                                          onDelete: () => _confirmDelete(
+                                            filtered[index],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'add',
-            onPressed: () => _openForm(),
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add_rounded, size: 24),
-          ),
-        ],
+        ),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton.small(
+              heroTag: 'search',
+              onPressed: () {
+                setState(() => _showSearch = !_showSearch);
+                if (!_showSearch) {
+                  _searchController.clear();
+                }
+              },
+              child: Icon(
+                _showSearch
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton(
+              heroTag: 'add',
+              onPressed: () => _openForm(),
+              child: const Icon(Icons.add_rounded, size: 26),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -190,7 +245,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
             const Icon(
               Icons.cloud_off_rounded,
               size: 48,
-              color: Color(0xFFD4D4D4),
+              color: MohajonWarm.goldBorder,
             ),
             const SizedBox(height: 16),
             const Text(
@@ -198,13 +253,20 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF525252),
+                fontWeight: FontWeight.w800,
+                color: MohajonWarm.ink,
               ),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: () => ref.invalidate(staffListProvider),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: MohajonWarm.ink,
+                side: const BorderSide(color: MohajonWarm.goldBorder),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Retry'),
             ),
           ],
@@ -223,15 +285,15 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
             const Icon(
               Icons.search_off_rounded,
               size: 48,
-              color: Color(0xFFD4D4D4),
+              color: MohajonWarm.goldBorder,
             ),
             const SizedBox(height: 16),
             const Text(
               'No staff match your search',
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF525252),
+                fontWeight: FontWeight.w800,
+                color: MohajonWarm.ink,
               ),
             ),
           ],
@@ -250,14 +312,15 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
             Container(
               width: 64,
               height: 64,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0ECE6),
+              decoration: BoxDecoration(
+                color: Colors.white,
                 shape: BoxShape.circle,
+                border: Border.all(color: MohajonWarm.goldBorder),
               ),
               child: const Icon(
                 Icons.group_outlined,
                 size: 28,
-                color: Color(0xFFD4D4D4),
+                color: MohajonWarm.goldText,
               ),
             ),
             const SizedBox(height: 16),
@@ -265,8 +328,8 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               'No staff members yet',
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF525252),
+                fontWeight: FontWeight.w900,
+                color: MohajonWarm.ink,
               ),
             ),
             const SizedBox(height: 6),
@@ -275,13 +338,106 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF98A2B3),
+                color: MohajonWarm.muted,
                 height: 1.4,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(11),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(11),
+            onTap: onBack,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: MohajonWarm.goldBorder),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: MohajonWarm.ink,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.primary.withValues(alpha: 0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.group_rounded,
+            color: MohajonWarm.ink,
+            size: 17,
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Shop Staff',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: MohajonWarm.ink,
+                ),
+              ),
+              Text(
+                'Team & permissions',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF77735F),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const NotificationBell(),
+        const SizedBox(width: 14),
+        const ShopAvatar(
+          radius: 17,
+          backgroundColor: Color(0xFFFFFDF7),
+          textColor: MohajonWarm.ink,
+        ),
+      ],
     );
   }
 }
@@ -305,6 +461,14 @@ class _StaffCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: member.avatarColor,
         shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: member.avatarColor.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       alignment: Alignment.center,
       child: Text(
@@ -312,7 +476,7 @@ class _StaffCard extends StatelessWidget {
         style: const TextStyle(
           color: Colors.white,
           fontSize: 14,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -343,116 +507,152 @@ class _StaffCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0ECE6)),
-      ),
-      child: Row(
-        children: [
-          _staffAvatar(staff),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  staff.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1C1917),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  staff.role,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF98A2B3),
-                  ),
-                ),
-                if (staff.phone.isNotEmpty) ...[
-                  const SizedBox(height: 1),
+    return Material(
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: MohajonWarm.goldBorder),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: MohajonWarm.ink.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _staffAvatar(staff),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    staff.phone,
+                    staff.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF98A2B3),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: MohajonWarm.ink,
                     ),
                   ),
-                ],
-                if (staff.menuCodes.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: staff.menuCodes
-                        .take(3)
-                        .map((code) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF1E6),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                code,
-                                style: const TextStyle(
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFFF97316),
-                                ),
-                              ),
-                            ))
-                        .toList(),
+                  const SizedBox(height: 2),
+                  Text(
+                    staff.role,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: MohajonWarm.muted,
+                    ),
                   ),
+                  if (staff.phone.isNotEmpty) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      staff.phone,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: MohajonWarm.muted,
+                      ),
+                    ),
+                  ],
+                  if (staff.menuCodes.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: staff.menuCodes.take(3).map((code) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MohajonWarm.tintYellow,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: MohajonWarm.primary.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            code,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: MohajonWarm.goldText,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              children: [
+                _ActionTile(
+                  icon: Icons.edit_rounded,
+                  onTap: onEdit,
+                ),
+                const SizedBox(height: 8),
+                _ActionTile(
+                  icon: Icons.delete_outline_rounded,
+                  destructive: true,
+                  onTap: onDelete,
+                ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: destructive ? MohajonWarm.tintRed : Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: MohajonWarm.goldBorder),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onEdit,
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0ECE6),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.edit_rounded,
-                size: 16,
-                color: Color(0xFF525252),
-              ),
-            ),
+          child: Icon(
+            icon,
+            size: 15,
+            color: destructive ? MohajonWarm.red : MohajonWarm.ink,
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onDelete,
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.delete_outline_rounded,
-                size: 16,
-                color: Color(0xFFEF5350),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

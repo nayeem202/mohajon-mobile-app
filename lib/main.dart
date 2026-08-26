@@ -20,7 +20,7 @@ Future<void> main() async {
   } catch (_) {
     // Native Firebase files are added by `flutterfire configure`.
   }
-  runApp(const ProviderScope(child: PosInventoryApp()));
+  runApp(ProviderScope(child: PosInventoryApp()));
 }
 
 void _suppressKnownFrameworkAssertions() {

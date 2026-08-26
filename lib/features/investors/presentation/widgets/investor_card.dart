@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/mohajon_warm_theme.dart';
 import '../../../../core/utils/money.dart';
 import '../../models/investor.dart';
 import '../../providers/investor_providers.dart';
@@ -12,10 +13,12 @@ class InvestorCard extends ConsumerStatefulWidget {
     super.key,
     required this.investor,
     this.onTap,
+    this.onEdit,
   });
 
   final Investor investor;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
 
   @override
   ConsumerState<InvestorCard> createState() => _InvestorCardState();
@@ -32,13 +35,14 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MohajonWarm.card,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: MohajonWarm.ink.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -51,21 +55,44 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: colors.primary.withValues(alpha: 0.12),
-                    backgroundImage: inv.photoUrl.isNotEmpty
-                        ? NetworkImage(inv.photoUrl)
-                        : null,
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+                      ),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFE98300)
+                              .withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      image: inv.photoUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(inv.photoUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
                     child: inv.photoUrl.isEmpty
-                        ? Text(
-                            inv.name.isNotEmpty
-                                ? inv.name[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                                color: colors.primary,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 20))
+                        ? Center(
+                            child: Text(
+                              inv.name.isNotEmpty
+                                  ? inv.name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: Color(0xFFE98300),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 20),
+                            ),
+                          )
                         : null,
                   ),
                   const SizedBox(width: 12),
@@ -77,7 +104,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                                color: Color(0xFF101828),
+                                color: MohajonWarm.ink,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 15)),
                         const SizedBox(height: 4),
@@ -89,7 +116,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                               const SizedBox(width: 4),
                               Text(inv.phone,
                                   style: const TextStyle(
-                                      color: Color(0xFF667085),
+                                      color: MohajonWarm.muted,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500)),
                               const SizedBox(width: 8),
@@ -98,7 +125,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF0FDF4),
+                                color: MohajonWarm.tintGreen,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -116,18 +143,34 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                        horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      color: MohajonWarm.tintYellow,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: MohajonWarm.primary.withValues(alpha: 0.3),
+                      ),
                     ),
-                  child: Text('${financials.investmentCount}',
-                        style: TextStyle(
-                            color: colors.primary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.receipt_long_rounded,
+                            size: 12, color: MohajonWarm.goldText),
+                        const SizedBox(width: 4),
+                        Text('${financials.investmentCount}',
+                            style: const TextStyle(
+                                color: MohajonWarm.goldText,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12.5)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
+                  _CardAction(
+                    icon: Icons.edit_rounded,
+                    onTap: widget.onEdit,
+                  ),
+                  const SizedBox(width: 4),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
@@ -166,7 +209,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: const Color(0xFFF0ECE4)),
+          top: BorderSide(color: MohajonWarm.goldBorder),
         ),
       ),
       child: Column(
@@ -190,7 +233,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                         style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF475467))),
+                            color: Color(0xFF5D4A00))),
                     if (inv.email.isNotEmpty) const SizedBox(width: 16),
                   ],
                   if (inv.email.isNotEmpty) ...[
@@ -204,7 +247,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                           style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF475467))),
+                              color: Color(0xFF5D4A00))),
                     ),
                   ],
                 ],
@@ -250,14 +293,32 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor:
-                        colors.primary.withValues(alpha: 0.12),
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(colors.primary),
-                    minHeight: 6,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 10,
+                        color: MohajonWarm.tintYellow,
+                      ),
+                      FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: progress,
+                        child: Container(
+                          height: 10,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Color(0xFFE98300),
+                                MohajonWarm.primary,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -265,7 +326,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
               Text(
                   'Payout Progress ${(progress * 100).toStringAsFixed(0)}%',
                   style: const TextStyle(
-                      color: Color(0xFF667085),
+                      color: MohajonWarm.muted,
                       fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ],
@@ -274,7 +335,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
             const SizedBox(height: 14),
             const Text('INVESTMENT DETAILS',
                 style: TextStyle(
-                    color: Color(0xFF667085),
+                    color: MohajonWarm.muted,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5)),
@@ -302,25 +363,37 @@ class _EStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: MohajonWarm.goldBorder),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Text(value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    color: color)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value,
+                  maxLines: 1,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      color: color)),
+            ),
             const SizedBox(height: 2),
             Text(label,
-                style: TextStyle(
-                    fontSize: 10,
-                    color: color.withValues(alpha: 0.7),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 10.5,
+                    color: MohajonWarm.muted,
                     fontWeight: FontWeight.w600)),
           ],
         ),
@@ -348,7 +421,7 @@ class _InvestmentsList extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 8),
         child: Text('No active investments.',
             style: TextStyle(
-                color: Color(0xFF98A2B3), fontSize: 13)),
+                color: MohajonWarm.muted, fontSize: 13)),
       );
     }
 
@@ -416,13 +489,13 @@ class _InvestmentMiniCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF101828),
+                            color: MohajonWarm.ink,
                             fontSize: 13)),
                     const SizedBox(height: 2),
                     Text(
                       '${inv.categoryName as String? ?? ''} · ${inv.createdAt != null ? '${(inv.createdAt as dynamic).day}/${(inv.createdAt as dynamic).month}/${(inv.createdAt as dynamic).year}' : ''}',
                       style: const TextStyle(
-                          color: Color(0xFF667085),
+                          color: MohajonWarm.muted,
                           fontSize: 11,
                           fontWeight: FontWeight.w500),
                     ),
@@ -474,7 +547,7 @@ class _InvestmentMiniCard extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(Icons.info_outline_rounded,
-                    size: 14, color: Color(0xFFF97316)),
+                    size: 14, color: MohajonWarm.goldText,),
                 const SizedBox(width: 6),
                 Text(
                   'Share calculated by contribution.',
@@ -534,6 +607,35 @@ class _Mini extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: color ?? const Color(0xFF475467)),
+      ),
+    );
+  }
+}
+
+
+class _CardAction extends StatelessWidget {
+  const _CardAction({required this.icon, this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: MohajonWarm.goldBorder),
+          ),
+          child: Icon(icon, size: 15, color: MohajonWarm.ink),
+        ),
       ),
     );
   }

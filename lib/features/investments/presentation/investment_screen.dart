@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/shop_profile.dart';
@@ -198,7 +199,7 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
       showAppSnackBar(context, 'Owner investments updated');
     } catch (error) {
       if (!mounted) return;
-      showAppSnackBar(context, error.toString(), isError: true);
+      showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
     }
   }
 

@@ -18,7 +18,7 @@ class ApiException implements Exception {
   final String message;
 
   @override
-  String toString() => message;
+  String toString() => 'ApiException($statusCode, $code): $message';
 }
 
 /// HTTP client for the Haalkhata business service.
@@ -30,6 +30,11 @@ class ApiClient {
   ApiClient(this._db);
 
   final LocalDatabase _db;
+
+  /// Invoked when the stored session is wiped because the refresh token was
+  /// definitively rejected. The auth layer listens and signs the UI out with
+  /// a clear message instead of leaving random 403 errors on screen.
+  static void Function()? onSessionInvalidated;
 
   static const _kAccessToken = 'auth_access_token';
   static const _kRefreshToken = 'auth_refresh_token';
@@ -201,7 +206,19 @@ class ApiClient {
     return _decode(response, path);
   }
 
-  Future<bool> _tryRefresh() async {
+  /// Single-flight refresh: when many requests hit 401/403 at once (e.g.
+  /// parallel polling), they all await this ONE refresh instead of racing.
+  /// Racing causes the auth service's refresh-token rotation to revoke the
+  /// token mid-flight and wipe the session.
+  Future<bool>? _refreshFuture;
+
+  Future<bool> _tryRefresh() {
+    return _refreshFuture ??= _doRefresh().whenComplete(() {
+      _refreshFuture = null;
+    });
+  }
+
+  Future<bool> _doRefresh() async {
     final refreshToken = _settings.get(_kRefreshToken) as String?;
     if (refreshToken == null) return false;
     try {
@@ -214,7 +231,11 @@ class ApiClient {
           )
           .timeout(_timeout);
       if (response.statusCode != 200) {
-        await _clearTokens();
+        // Only wipe the session when the server definitively rejects the
+        // refresh token. Transient failures keep tokens so we can retry.
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          await _clearTokens();
+        }
         return false;
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -224,6 +245,7 @@ class ApiClient {
       await _settings.put(_kRefreshToken, refresh);
       return true;
     } catch (_) {
+      // Network/timeout error — keep tokens and let a later request retry.
       return false;
     }
   }
@@ -248,6 +270,7 @@ class ApiClient {
     await _settings.delete(_kAccessToken);
     await _settings.delete(_kRefreshToken);
     await _settings.delete(_kSession);
+    onSessionInvalidated?.call();
   }
 }
 

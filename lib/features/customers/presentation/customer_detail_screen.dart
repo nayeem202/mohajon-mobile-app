@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
@@ -346,7 +347,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(friendlyErrorMessage(error))),
       );
     }
   }

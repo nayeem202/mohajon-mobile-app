@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/snackbar.dart';
+import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
@@ -671,32 +673,46 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    await runBusyAction(() async {
-      await ref
-          .read(productServiceProvider)
-          .save(
-            productId: widget.product?.productId,
-            nameEn: _name.text.trim(),
-            nameBn: _name.text.trim(),
-            barcode: _barcode.text.trim(),
-            category: _selectedCategory,
-            unit: _selectedUnit,
-            imagePath: _imagePath,
-            buyingPrice: double.tryParse(_buyingPrice.text) ?? 0,
-            purchasePrice: double.tryParse(_buyingPrice.text) ?? 0,
-            sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
-            stockQty: int.tryParse(_stockQty.text) ?? 0,
-            lowStockAlert: int.tryParse(_lowStock.text) ?? 0,
-          );
-      if (mounted) Navigator.of(context).pop();
-    });
+    try {
+      await runBusyAction(() async {
+        await ref
+            .read(productServiceProvider)
+            .save(
+              productId: widget.product?.productId,
+              nameEn: _name.text.trim(),
+              nameBn: _name.text.trim(),
+              barcode: _barcode.text.trim(),
+              category: _selectedCategory,
+              unit: _selectedUnit,
+              imagePath: _imagePath,
+              buyingPrice: double.tryParse(_buyingPrice.text) ?? 0,
+              purchasePrice: double.tryParse(_buyingPrice.text) ?? 0,
+              sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
+              stockQty: int.tryParse(_stockQty.text) ?? 0,
+              lowStockAlert: int.tryParse(_lowStock.text) ?? 0,
+            );
+        if (mounted) Navigator.of(context).pop();
+      });
+    } catch (error) {
+      if (mounted) {
+        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+      }
+    }
   }
 
   Future<void> _deleteProduct() async {
-    await runBusyAction(() async {
-      await ref.read(productServiceProvider).delete(widget.product!.productId);
-      if (mounted) Navigator.of(context).pop();
-    });
+    try {
+      await runBusyAction(() async {
+        await ref
+            .read(productServiceProvider)
+            .delete(widget.product!.productId);
+        if (mounted) Navigator.of(context).pop();
+      });
+    } catch (error) {
+      if (mounted) {
+        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+      }
+    }
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/models/customer.dart';
@@ -1146,7 +1147,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         } catch (error) {
                                           messenger.showSnackBar(
                                             SnackBar(
-                                              content: Text(error.toString()),
+                                              content: Text(friendlyErrorMessage(error)),
                                             ),
                                           );
                                         } finally {

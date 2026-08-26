@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
@@ -302,7 +303,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      showAppSnackBar(context, error.toString(), isError: true);
+      showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
     }
   }
 

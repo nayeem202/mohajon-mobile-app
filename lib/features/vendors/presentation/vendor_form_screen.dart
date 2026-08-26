@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/snackbar.dart';
@@ -432,26 +433,32 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
       return;
     }
 
-    await runBusyAction(() async {
-      await ref.read(vendorServiceProvider).save(
-            vendorId: widget.vendor?.vendorId,
-            companyName: _companyCtrl.text.trim(),
-            contactPerson: _contactCtrl.text.trim(),
-            phone: _phoneCtrl.text.trim(),
-            email: _emailCtrl.text.trim(),
-            category: _category,
-            address: _addressCtrl.text.trim(),
-            products: _productsCtrl.text.trim(),
-            rating: _rating,
+    try {
+      await runBusyAction(() async {
+        await ref.read(vendorServiceProvider).save(
+              vendorId: widget.vendor?.vendorId,
+              companyName: _companyCtrl.text.trim(),
+              contactPerson: _contactCtrl.text.trim(),
+              phone: _phoneCtrl.text.trim(),
+              email: _emailCtrl.text.trim(),
+              category: _category,
+              address: _addressCtrl.text.trim(),
+              products: _productsCtrl.text.trim(),
+              rating: _rating,
+            );
+        if (mounted) {
+          Navigator.of(context).pop();
+          showAppSnackBar(
+            context,
+            widget.vendor != null ? 'Vendor updated' : 'Vendor added',
           );
+        }
+      });
+    } catch (error) {
       if (mounted) {
-        Navigator.of(context).pop();
-        showAppSnackBar(
-          context,
-          widget.vendor != null ? 'Vendor updated' : 'Vendor added',
-        );
+        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
       }
-    });
+    }
   }
 }
 

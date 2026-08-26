@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../auth/presentation/login_screen.dart';
@@ -267,7 +268,7 @@ class _ProfileOverviewScreenState
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(friendlyErrorMessage(error))),
       );
     }
   }

@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 
 import '../app/app_providers.dart';
 import '../config/app_config.dart';
+import 'api_client.dart';
 import 'auth_backend.dart';
 import 'device_session_service.dart';
 import 'secure_http.dart';
@@ -25,7 +26,11 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
 /// settings box. Automatically refreshes the access token when a request
 /// fails with 401 and retries it once.
 class CustomAuthBackend implements AuthBackend {
-  CustomAuthBackend(this._ref);
+  CustomAuthBackend(this._ref) {
+    // When the API client wipes the session (refresh token definitively
+    // rejected), broadcast it so the app routes back to the login screen.
+    ApiClient.onSessionInvalidated = () => _sessionController.add(null);
+  }
 
   final Ref _ref;
   final _deviceSessionService = DeviceSessionService();

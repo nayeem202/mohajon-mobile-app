@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -179,7 +180,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   ),
                 );
               },
-              error: (error, _) => EmptyState(message: error.toString()),
+              error: (error, _) => EmptyState(
+                  message: friendlyErrorMessage(error,
+                      fallback: 'Could not load clients.'),
+                ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: MohajonWarm.primary),
               ),
@@ -953,18 +957,12 @@ class _ClientRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDue = due > 0;
 
-    final leading = customer.imagePath != null
-        ? ClipRRect(
-            borderRadius: BorderRadius.circular(13),
-            child: AppImage.file(
-              File(customer.imagePath!),
-              width: 44,
-              height: 44,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _defaultLeading(hasDue),
-            ),
-          )
-        : _defaultLeading(hasDue);
+    final leading = _RoundAvatar(
+      size: 46,
+      initials: _initials(customer.name),
+      imagePath: customer.imagePath,
+      danger: hasDue,
+    );
 
     return Material(
       color: MohajonWarm.card,
@@ -1124,25 +1122,6 @@ class _ClientRow extends StatelessWidget {
     );
   }
 
-  Widget _defaultLeading(bool hasDue) => Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: hasDue
-                ? const [Color(0xFFFFE3E3), Color(0xFFFCCFCF)]
-                : const [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
-          ),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Icon(
-          Icons.person_rounded,
-          color: hasDue ? const Color(0xFFDC2626) : const Color(0xFFE98300),
-          size: 20,
-        ),
-      );
 }
 
 String _initials(String name) {
@@ -1215,20 +1194,11 @@ class _CustomerDetailSheet extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    if (customer.imagePath != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: AppImage.file(
-                          File(customer.imagePath!),
-                          width: 58,
-                          height: 58,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _DetailAvatar(initials: initials),
-                        ),
-                      )
-                    else
-                      _DetailAvatar(initials: initials),
+                    _RoundAvatar(
+                      size: 58,
+                      initials: initials,
+                      imagePath: customer.imagePath,
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -1446,30 +1416,67 @@ class _CustomerDetailSheet extends ConsumerWidget {
   }
 }
 
-class _DetailAvatar extends StatelessWidget {
-  const _DetailAvatar({required this.initials});
+/// Round avatar matching the Investors list: warm gradient, white ring,
+/// soft glow, initials fallback (red tint when the client has dues).
+class _RoundAvatar extends StatelessWidget {
+  const _RoundAvatar({
+    required this.size,
+    required this.initials,
+    this.imagePath,
+    this.danger = false,
+  });
 
+  final double size;
   final String initials;
+  final String? imagePath;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
+    final glow = danger ? const Color(0xFFDC2626) : const Color(0xFFE98300);
     return Container(
-      width: 58,
-      height: 58,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: glow.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: imagePath != null
+            ? AppImage.file(
+                File(imagePath!),
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _fallback(glow),
+              )
+            : _fallback(glow),
+      ),
+    );
+  }
+
+  Widget _fallback(Color glow) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
         ),
-        borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
         child: Text(
           initials,
-          style: const TextStyle(
-            color: Color(0xFFE98300),
-            fontSize: 20,
+          style: TextStyle(
+            color: glow,
+            fontSize: size * 0.34,
             fontWeight: FontWeight.w900,
           ),
         ),

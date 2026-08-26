@@ -3,18 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
-import '../../../core/app/app_providers.dart';
 import '../../../core/models/customer.dart';
-import '../../../core/models/payment.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
-import '../../customers/presentation/customer_form_screen.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import '../../settings/providers/shop_profile_providers.dart';
@@ -83,178 +81,137 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     final displaySales = filteredSales.take(_loadedCount).toList();
 
     return withLoadingOverlay(
-      Scaffold(
-        backgroundColor: const Color(0xFFF8F5EF),
-        floatingActionButton: Material(
-          shape: const CircleBorder(),
-          elevation: 4,
-          color: const Color(0xFFF97316),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
+      Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+            child: SafeArea(
+              child: RefreshIndicator(
+                color: MohajonWarm.goldText,
+                onRefresh: () async {
+                  await ref.read(salesStreamProvider.future);
+                },
+                child: ListView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
+                  children: [
+                    _TopBar(
+                      subtitle: activeCustomer == null
+                          ? 'Invoices & payments'
+                          : _activeCustomerLabel(activeCustomer),
+                    ),
+                    if (activeCustomer != null) ...[
+                      const SizedBox(height: 16),
+                      _ActiveCustomerChip(
+                        customer: activeCustomer,
+                        allClear: stats.allClear,
+                        onClear: () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (_) => const SalesHistoryScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    _SalesStats(stats: stats),
+                    if (_showSearch) ...[
+                      const SizedBox(height: 16),
+                      _SearchPanel(
+                        controller: _searchController,
+                        query: _searchQuery,
+                        timeFilter: _timeFilter,
+                        statusFilter: _statusFilter,
+                        onSearchChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                        onClearSearch: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        onTimeChanged: (value) =>
+                            setState(() => _timeFilter = value),
+                        onStatusChanged: (value) =>
+                            setState(() => _statusFilter = value),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    _SectionTitle(count: filteredSales.length),
+                    const SizedBox(height: 12),
+                    if (displaySales.isEmpty)
+                      EmptyState(
+                        message: _searchQuery.isEmpty &&
+                                _timeFilter == _SalesTimeFilter.allTime &&
+                                _statusFilter == _InvoiceStatusFilter.all
+                            ? 'No sales have been recorded yet.'
+                            : 'No invoices match your search.',
+                        icon: _searchQuery.isEmpty
+                            ? Icons.receipt_long_rounded
+                            : Icons.search_off_rounded,
+                      )
+                    else
+                      Column(
+                        children: [
+                          for (var index = 0;
+                              index < displaySales.length;
+                              index++) ...[
+                            if (index != 0) const SizedBox(height: 10),
+                            _InvoiceCard(
+                              sale: displaySales[index],
+                              customer:
+                                  customerById[displaySales[index].customerId],
+                              onTap: () => _openInvoiceSheet(
+                                context,
+                                sale: displaySales[index],
+                                customer:
+                                    customerById[displaySales[index].customerId],
+                                profile: shopProfile,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          if (displaySales.length < filteredSales.length)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: MohajonWarm.goldText,
+                                ),
+                              ),
+                            )
+                          else
+                            Text(
+                              'Showing all ${filteredSales.length} invoices',
+                              style: const TextStyle(
+                                color: MohajonWarm.muted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton.small(
+            heroTag: 'sales-search',
+            onPressed: () {
               setState(() => _showSearch = !_showSearch);
               if (!_showSearch) {
                 _searchController.clear();
                 _searchQuery = '';
               }
             },
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: Icon(
-                _showSearch
-                    ? Icons.search_off_rounded
-                    : Icons.search_rounded,
-                size: 22,
-                color: Colors.white,
-              ),
+            child: Icon(
+              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              size: 22,
             ),
           ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        body: SafeArea(
-        child: ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: [
-            _TopBar(
-              title: 'Sales History',
-              customerLabel: activeCustomer == null
-                  ? null
-                  : _activeCustomerLabel(activeCustomer),
-              clearLabel: stats.allClear ? 'All clear' : null,
-              onClearCustomer: activeCustomer == null
-                  ? null
-                  : () => Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (_) => const SalesHistoryScreen(),
-                        ),
-                      ),
-            ),
-            if (activeCustomer != null) ...[
-              const SizedBox(height: 14),
-              _ActiveCustomerChip(
-                customer: activeCustomer,
-                allClear: stats.allClear,
-                onClear: () => Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => const SalesHistoryScreen(),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            _SalesStats(stats: stats),
-            if (_showSearch) ...[
-              const SizedBox(height: 14),
-              _SearchPanel(
-                controller: _searchController,
-                query: _searchQuery,
-                timeFilter: _timeFilter,
-                onSearchChanged: (value) =>
-                    setState(() => _searchQuery = value),
-                onClearSearch: () {
-                  _searchController.clear();
-                  setState(() => _searchQuery = '');
-                },
-                onTimeChanged: (value) =>
-                    setState(() => _timeFilter = value),
-              ),
-            ],
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFE8E4DB)),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _PillChip(
-                        label: 'All',
-                        selected: _statusFilter == _InvoiceStatusFilter.all,
-                        dark: true,
-                        onTap: () => setState(
-                          () => _statusFilter = _InvoiceStatusFilter.all,
-                        ),
-                      ),
-                      _PillChip(
-                        label: 'Paid',
-                        selected: _statusFilter == _InvoiceStatusFilter.paid,
-                        dark: true,
-                        onTap: () => setState(
-                          () => _statusFilter = _InvoiceStatusFilter.paid,
-                        ),
-                      ),
-                      _PillChip(
-                        label: 'Due',
-                        selected: _statusFilter == _InvoiceStatusFilter.due,
-                        dark: true,
-                        onTap: () => setState(
-                          () => _statusFilter = _InvoiceStatusFilter.due,
-                        ),
-                      ),
-                      _PillChip(
-                        label: 'Partial',
-                        selected: _statusFilter == _InvoiceStatusFilter.partial,
-                        dark: true,
-                        onTap: () => setState(
-                          () => _statusFilter = _InvoiceStatusFilter.partial,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (displaySales.isEmpty)
-              const EmptyState(
-                message: 'No sales have been recorded yet.',
-                icon: Icons.receipt_long_rounded,
-              )
-            else
-              Column(
-                children: [
-                  for (var index = 0; index < displaySales.length; index++) ...[
-                    if (index != 0) const SizedBox(height: 10),
-                    _InvoiceCard(
-                      sale: displaySales[index],
-                      customer: customerById[displaySales[index].customerId],
-                      onTap: () => _openInvoiceSheet(
-                        context,
-                        sale: displaySales[index],
-                        customer: customerById[displaySales[index].customerId],
-                        profile: shopProfile,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  if (displaySales.length < filteredSales.length)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else
-                    Text(
-                      'Showing all ${filteredSales.length} invoices',
-                      style: const TextStyle(
-                        color: Color(0xFF667085),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-          ],
-        ),
-      ),
       ),
       label: 'Generating invoice...',
     );
@@ -326,6 +283,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return _InvoiceDetailSheet(
@@ -362,7 +320,9 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
   }
 
   String _activeCustomerLabel(Customer customer) {
-    return '${customer.name} • ${customer.phone.isEmpty ? 'No phone' : customer.phone}';
+    return customer.phone.isEmpty
+        ? customer.name
+        : '${customer.name} • ${customer.phone}';
   }
 }
 
@@ -387,53 +347,77 @@ class _SalesSummary {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.title,
-    this.customerLabel,
-    this.clearLabel,
-    this.onClearCustomer,
-  });
+  const _TopBar({required this.subtitle});
 
-  final String title;
-  final String? customerLabel;
-  final String? clearLabel;
-  final VoidCallback? onClearCustomer;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE98300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.storefront_rounded,
-            color: Colors.white,
-            size: 17,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+    return IconTheme(
+      data: const IconThemeData(color: MohajonWarm.ink),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: MohajonWarm.ink,
+              size: 17,
             ),
           ),
-        ),
-        const NotificationBell(),
-        const SizedBox(width: 14),
-        const ShopAvatar(radius: 16),
-      ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sales History',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+          const SizedBox(width: 14),
+          const ShopAvatar(
+            radius: 17,
+            backgroundColor: Color(0xFFFFFDF7),
+            textColor: MohajonWarm.ink,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -454,11 +438,11 @@ class _ActiveCustomerChip extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF6E7D1),
-            border: Border.all(color: const Color(0xFFE3C08D)),
-            borderRadius: BorderRadius.circular(14),
+            color: MohajonWarm.tintYellow,
+            border: Border.all(color: MohajonWarm.goldBorder),
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -469,34 +453,53 @@ class _ActiveCustomerChip extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFFE98300),
+                    color: Color(0xFF5D4A00),
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               InkWell(
+                borderRadius: BorderRadius.circular(999),
                 onTap: onClear,
                 child: Container(
                   width: 18,
                   height: 18,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE9D2A9),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
+                    border: Border.all(color: MohajonWarm.goldBorder),
                   ),
-                  child: const Icon(Icons.close_rounded, size: 12),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 12,
+                    color: MohajonWarm.muted,
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          allClear ? 'All clear' : 'Outstanding',
-          style: const TextStyle(
-            color: Color(0xFF667085),
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              allClear ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              size: 15,
+              color: allClear ? MohajonWarm.green : MohajonWarm.red,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              allClear ? 'All clear' : 'Outstanding dues',
+              style: TextStyle(
+                color: allClear ? MohajonWarm.green : MohajonWarm.red,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -508,87 +511,166 @@ class _SearchPanel extends StatelessWidget {
     required this.controller,
     required this.query,
     required this.timeFilter,
+    required this.statusFilter,
     required this.onSearchChanged,
     required this.onClearSearch,
     required this.onTimeChanged,
+    required this.onStatusChanged,
   });
 
   final TextEditingController controller;
   final String query;
   final _SalesTimeFilter timeFilter;
+  final _InvoiceStatusFilter statusFilter;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onClearSearch;
   final ValueChanged<_SalesTimeFilter> onTimeChanged;
+  final ValueChanged<_InvoiceStatusFilter> onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE8E4DB)),
-        borderRadius: BorderRadius.circular(16),
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: SizedBox(
-              height: 46,
-              child: TextField(
-                controller: controller,
-                onChanged: onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: 'Search invoice, phone, name...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                  suffixIcon: query.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: onClearSearch,
-                          icon: const Icon(Icons.clear_rounded),
-                        ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          SizedBox(
+            height: 46,
+            child: TextField(
+              controller: controller,
+              onChanged: onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Search invoice, phone, name...',
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: MohajonWarm.muted,
                 ),
+                suffixIcon: query.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: onClearSearch,
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          color: MohajonWarm.muted,
+                        ),
+                      ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          DropdownButtonHideUnderline(
-            child: Container(
-              height: 46,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFCFBF8),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE8E4DB)),
-              ),
-              child: DropdownButton<_SalesTimeFilter>(
-                value: timeFilter,
-                items: const [
-                  DropdownMenuItem(
-                    value: _SalesTimeFilter.allTime,
-                    child: Text('All Time'),
-                  ),
-                  DropdownMenuItem(
-                    value: _SalesTimeFilter.today,
-                    child: Text('Today'),
-                  ),
-                  DropdownMenuItem(
-                    value: _SalesTimeFilter.thisWeek,
-                    child: Text('This Week'),
-                  ),
-                  DropdownMenuItem(
-                    value: _SalesTimeFilter.thisMonth,
-                    child: Text('This Month'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) onTimeChanged(value);
-                },
-              ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: 'All Time',
+                  selected: timeFilter == _SalesTimeFilter.allTime,
+                  onTap: () => onTimeChanged(_SalesTimeFilter.allTime),
+                ),
+                _FilterChip(
+                  label: 'Today',
+                  selected: timeFilter == _SalesTimeFilter.today,
+                  onTap: () => onTimeChanged(_SalesTimeFilter.today),
+                ),
+                _FilterChip(
+                  label: 'This Week',
+                  selected: timeFilter == _SalesTimeFilter.thisWeek,
+                  onTap: () => onTimeChanged(_SalesTimeFilter.thisWeek),
+                ),
+                _FilterChip(
+                  label: 'This Month',
+                  selected: timeFilter == _SalesTimeFilter.thisMonth,
+                  onTap: () => onTimeChanged(_SalesTimeFilter.thisMonth),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: 'All Invoices',
+                  selected: statusFilter == _InvoiceStatusFilter.all,
+                  onTap: () => onStatusChanged(_InvoiceStatusFilter.all),
+                ),
+                _FilterChip(
+                  label: 'Paid',
+                  selected: statusFilter == _InvoiceStatusFilter.paid,
+                  onTap: () => onStatusChanged(_InvoiceStatusFilter.paid),
+                ),
+                _FilterChip(
+                  label: 'Due',
+                  selected: statusFilter == _InvoiceStatusFilter.due,
+                  onTap: () => onStatusChanged(_InvoiceStatusFilter.due),
+                ),
+                _FilterChip(
+                  label: 'Partial',
+                  selected: statusFilter == _InvoiceStatusFilter.partial,
+                  onTap: () => onStatusChanged(_InvoiceStatusFilter.partial),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'All Invoices',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
+              color: MohajonWarm.ink,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: MohajonWarm.primary.withValues(alpha: 0.22),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: MohajonWarm.primary.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Text(
+            '$count invoices',
+            style: const TextStyle(
+              color: Color(0xFF5D4A00),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -600,59 +682,220 @@ class _SalesStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
-      _SalesStatSpec(
-        icon: Icons.receipt_long_rounded,
-        label: 'Invoices',
-        value: '${stats.count}',
-        subtext: 'Filtered',
-        color: const Color(0xFF0F766E),
-        background: const Color(0xFFE4F6F1),
-      ),
-      _SalesStatSpec(
-        icon: Icons.trending_up_rounded,
-        label: 'Total Revenue',
-        value: money(stats.totalRevenue),
-        subtext: 'Filtered',
-        color: const Color(0xFF047857),
-        background: const Color(0xFFE9F8F1),
-      ),
-      _SalesStatSpec(
-        icon: Icons.payments_rounded,
-        label: 'Collected',
-        value: money(stats.collected),
-        subtext: '${stats.paidCount} paid',
-        color: const Color(0xFF0F766E),
-        background: const Color(0xFFE4F6F1),
-      ),
-      _SalesStatSpec(
-        icon: Icons.error_outline_rounded,
-        label: 'Outstanding',
-        value: money(stats.outstanding),
-        subtext: '${stats.dueCount} pending',
-        color: const Color(0xFFEF4444),
-        background: const Color(0xFFFEF1F1),
-      ),
-    ];
+    return Column(
+      children: [
+        _RevenueCard(stats: stats),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSingleColumn = constraints.maxWidth < 320;
+            final cardWidth = isSingleColumn
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 12) / 2;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = (constraints.maxWidth - 12) / 2;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (final card in cards)
-              SizedBox(width: cardWidth, child: _SalesStatCard(spec: card)),
-          ],
-        );
-      },
+            final cards = [
+              _StatSpec(
+                icon: Icons.receipt_long_rounded,
+                label: 'Invoices',
+                value: '${stats.count}',
+                subtext: '${stats.paidCount} paid in full',
+                color: MohajonWarm.goldText,
+                background: MohajonWarm.tintYellow,
+              ),
+              _StatSpec(
+                icon: Icons.error_outline_rounded,
+                label: 'Outstanding',
+                value: money(stats.outstanding),
+                subtext: '${stats.dueCount} pending',
+                color: MohajonWarm.red,
+                background: MohajonWarm.tintRed,
+              ),
+            ];
+
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final card in cards)
+                  SizedBox(width: cardWidth, child: _StatCard(spec: card)),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
-class _SalesStatSpec {
-  const _SalesStatSpec({
+class _RevenueCard extends StatelessWidget {
+  const _RevenueCard({required this.stats});
+
+  final _SalesSummary stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.tintGreen, MohajonWarm.card],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.green.withValues(alpha: 0.09),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(13),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.green.withValues(alpha: 0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.trending_up_rounded,
+              color: MohajonWarm.green,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Total Revenue',
+                      style: TextStyle(
+                        color: MohajonWarm.green,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Flexible(
+                      child: Text(
+                        'Across ${stats.count} invoices',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    money(stats.totalRevenue),
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    _MiniPill(
+                      icon: Icons.south_west_rounded,
+                      label: 'Collected ${money(stats.collected)}',
+                      color: MohajonWarm.green,
+                      background: MohajonWarm.tintGreen,
+                    ),
+                    const SizedBox(width: 6),
+                    if (!stats.allClear)
+                      _MiniPill(
+                        icon: Icons.north_east_rounded,
+                        label: 'Due ${money(stats.outstanding)}',
+                        color: MohajonWarm.red,
+                        background: MohajonWarm.tintRed,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniPill extends StatelessWidget {
+  const _MiniPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 11, color: color),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatSpec {
+  const _StatSpec({
     required this.icon,
     required this.label,
     required this.value,
@@ -669,10 +912,11 @@ class _SalesStatSpec {
   final Color background;
 }
 
-class _SalesStatCard extends StatelessWidget {
-  const _SalesStatCard({required this.spec});
+/// Matches the Home / Stock / Clients stat card styling.
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.spec});
 
-  final _SalesStatSpec spec;
+  final _StatSpec spec;
 
   @override
   Widget build(BuildContext context) {
@@ -684,10 +928,10 @@ class _SalesStatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [spec.background, Colors.white],
+          colors: [spec.background, MohajonWarm.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
             color: spec.color.withValues(alpha: 0.09),
@@ -773,38 +1017,45 @@ class _SalesStatCard extends StatelessWidget {
   }
 }
 
-class _PillChip extends StatelessWidget {
-  const _PillChip({
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
     required this.label,
     required this.selected,
     required this.onTap,
-    this.dark = false,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final bool dark;
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = dark ? const Color(0xFF101828) : const Color(0xFFE98300);
-    final unselectedColor = dark ? const Color(0xFFF3F0EA) : const Color(0xFFF7F5F0);
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? selectedColor : unselectedColor,
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? MohajonWarm.primary : Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
           borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF101828),
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? MohajonWarm.primary.withValues(alpha: 0.45)
+                    : MohajonWarm.goldBorder,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ),
@@ -825,95 +1076,158 @@ class _InvoiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = _statusLabel(sale.paymentStatus);
     final statusColor = _statusColor(sale.paymentStatus);
-    return Card(
+    final statusBg = _statusBackground(sale.paymentStatus);
+
+    return Material(
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F0EA),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  color: Color(0xFFE98300),
-                  size: 20,
-                ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: MohajonWarm.goldBorder),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.ink.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'INV-${sale.saleId.substring(0, sale.saleId.length < 5 ? sale.saleId.length : 5).toUpperCase()}',
-                      style: const TextStyle(
-                        color: Color(0xFF101828),
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      customer?.name ?? 'Walk-in customer',
-                      style: const TextStyle(
-                        color: Color(0xFF667085),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            ],
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 340;
+              final titleBlock = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    money(sale.totalAmount),
+                    _invoiceNumber(sale.saleId),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF101828),
+                      color: MohajonWarm.ink,
                       fontWeight: FontWeight.w900,
+                      fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${sale.items.length} items • ${_formatInvoiceTime(sale.createdAt)}',
+                    customer?.name ?? 'Walk-in customer',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF667085),
+                      color: MohajonWarm.muted,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+              );
+
+              final trailingBlock = Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    money(sale.totalAmount),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _statusLabel(sale.paymentStatus),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${sale.items.length} items • ${_formatInvoiceTime(sale.createdAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: MohajonWarm.muted,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _leadingIcon(),
+                        const SizedBox(width: 10),
+                        Expanded(child: titleBlock),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Align(alignment: Alignment.centerRight, child: trailingBlock),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  _leadingIcon(),
+                  const SizedBox(width: 12),
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 10),
+                  trailingBlock,
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  Widget _leadingIcon() => Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+          ),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: const Icon(
+          Icons.receipt_long_rounded,
+          color: Color(0xFFE98300),
+          size: 20,
+        ),
+      );
 }
 
 class _InvoiceDetailSheet extends StatelessWidget {
@@ -935,6 +1249,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = _statusLabel(sale.paymentStatus);
     final statusColor = _statusColor(sale.paymentStatus);
+    final statusBg = _statusBackground(sale.paymentStatus);
     final subtotal = sale.items.fold<double>(
       0,
       (sum, item) => sum + item.lineTotal,
@@ -947,7 +1262,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: MohajonWarm.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SingleChildScrollView(
@@ -958,10 +1273,10 @@ class _InvoiceDetailSheet extends StatelessWidget {
               children: [
                 Center(
                   child: Container(
-                    width: 42,
+                    width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E7EB),
+                      color: MohajonWarm.goldBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -974,16 +1289,20 @@ class _InvoiceDetailSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'INV-${sale.saleId.substring(0, sale.saleId.length < 5 ? sale.saleId.length : 5).toUpperCase()}',
+                            _invoiceNumber(sale.saleId),
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
+                              color: MohajonWarm.ink,
                             ),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             DateFormat('MMM d, y').format(sale.createdAt),
-                            style: const TextStyle(color: Color(0xFF667085)),
+                            style: const TextStyle(
+                              color: MohajonWarm.muted,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -991,11 +1310,14 @@ class _InvoiceDetailSheet extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
-                        vertical: 4,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.12),
+                        color: statusBg,
                         borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Text(
                         status,
@@ -1009,28 +1331,31 @@ class _InvoiceDetailSheet extends StatelessWidget {
                     const SizedBox(width: 6),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: MohajonWarm.muted,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
                       child: _SummaryTile(
                         title: 'Customer',
                         value: customer?.name ?? 'Walk-in customer',
-                        valueColor: const Color(0xFF101828),
-                        background: const Color(0xFFF7F7EF),
+                        valueColor: MohajonWarm.ink,
+                        background: MohajonWarm.tintYellow,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _SummaryTile(
                         title: 'Payment',
-                        value: sale.paymentStatus.name.toUpperCase(),
-                        valueColor: const Color(0xFF101828),
-                        background: const Color(0xFFF7F7EF),
+                        value: status.toUpperCase(),
+                        valueColor: statusColor,
+                        background: statusBg,
                       ),
                     ),
                   ],
@@ -1043,15 +1368,16 @@ class _InvoiceDetailSheet extends StatelessWidget {
                         'ITEMS (${sale.items.length})',
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF101828),
+                          color: MohajonWarm.ink,
                         ),
                       ),
                     ),
                     Text(
                       '${sale.items.length} total',
                       style: const TextStyle(
-                        color: Color(0xFF667085),
+                        color: MohajonWarm.muted,
                         fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -1062,8 +1388,9 @@ class _InvoiceDetailSheet extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F6F1),
+                      color: MohajonWarm.card,
                       borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: MohajonWarm.goldBorder),
                     ),
                     child: Row(
                       children: [
@@ -1075,15 +1402,16 @@ class _InvoiceDetailSheet extends StatelessWidget {
                                 item.name,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF101828),
+                                  color: MohajonWarm.ink,
                                 ),
                               ),
                               const SizedBox(height: 3),
                               Text(
                                 '${_formatQuantity(item.qty)} × ${money(item.unitPrice)}',
                                 style: const TextStyle(
-                                  color: Color(0xFF667085),
+                                  color: MohajonWarm.muted,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -1094,6 +1422,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
                           money(item.lineTotal),
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
+                            color: MohajonWarm.ink,
                           ),
                         ),
                       ],
@@ -1109,13 +1438,17 @@ class _InvoiceDetailSheet extends StatelessWidget {
                   value: money(sale.totalAmount),
                   bold: true,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFF97316),
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: MohajonWarm.ink,
+                          side: const BorderSide(color: MohajonWarm.goldBorder),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         onPressed: onPrint,
                         icon: const Icon(Icons.print_rounded),
@@ -1126,7 +1459,11 @@ class _InvoiceDetailSheet extends StatelessWidget {
                     Expanded(
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F766E),
+                          backgroundColor: MohajonWarm.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         onPressed: onRecordPayment,
                         icon: const Icon(Icons.payments_outlined),
@@ -1164,6 +1501,7 @@ class _SummaryTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1171,13 +1509,16 @@ class _SummaryTile extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFF667085),
+              color: MohajonWarm.muted,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: valueColor,
               fontWeight: FontWeight.w900,
@@ -1211,7 +1552,7 @@ class _AmountRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: bold ? const Color(0xFF101828) : const Color(0xFF667085),
+                color: bold ? MohajonWarm.ink : MohajonWarm.muted,
                 fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
@@ -1219,7 +1560,7 @@ class _AmountRow extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: bold ? const Color(0xFF101828) : const Color(0xFF667085),
+              color: bold ? MohajonWarm.ink : MohajonWarm.muted,
               fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
               fontSize: bold ? 18 : 14,
             ),
@@ -1228,6 +1569,11 @@ class _AmountRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _invoiceNumber(String saleId) {
+  final length = saleId.length < 5 ? saleId.length : 5;
+  return 'INV-${saleId.substring(0, length).toUpperCase()}';
 }
 
 String _statusLabel(PaymentStatus status) {
@@ -1240,9 +1586,17 @@ String _statusLabel(PaymentStatus status) {
 
 Color _statusColor(PaymentStatus status) {
   return switch (status) {
-    PaymentStatus.paid => const Color(0xFF0F766E),
-    PaymentStatus.partial => const Color(0xFFF97316),
-    PaymentStatus.due => const Color(0xFFEF4444),
+    PaymentStatus.paid => MohajonWarm.green,
+    PaymentStatus.partial => MohajonWarm.orange,
+    PaymentStatus.due => MohajonWarm.red,
+  };
+}
+
+Color _statusBackground(PaymentStatus status) {
+  return switch (status) {
+    PaymentStatus.paid => MohajonWarm.tintGreen,
+    PaymentStatus.partial => MohajonWarm.tintOrange,
+    PaymentStatus.due => MohajonWarm.tintRed,
   };
 }
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/product.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -134,7 +135,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   ),
                 );
               },
-              error: (error, _) => EmptyState(message: error.toString()),
+              error: (error, _) => EmptyState(
+                  message: friendlyErrorMessage(error,
+                      fallback: 'Could not load products.'),
+                ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: MohajonWarm.primary),
               ),
