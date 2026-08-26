@@ -98,7 +98,7 @@ class StaffMember {
         phone: (json['phone'] ?? '') as String,
         email: (json['email'] ?? '') as String,
         username: ((json['email'] ?? '') as String).split('@').first,
-        active: true,
+        active: (json['active'] as bool?) ?? true,
         createdAt: ((json['updatedAt'] ?? '') as String).substring(0, 10),
         menuCodes: ((json['menus'] as List?) ?? const [])
             .map((e) => e.toString())

@@ -4,10 +4,12 @@ import '../../../core/utils/app_error.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/shop_profile.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
+import '../../../core/widgets/premium_header.dart';
 import '../providers/investment_providers.dart';
 
 class InvestmentScreen extends ConsumerStatefulWidget {
@@ -45,68 +47,91 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
     );
 
     return withLoadingOverlay(
-      Scaffold(
-        appBar: AppBar(title: const Text('Investments')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: [
-            _OverviewCard(overview: overview),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Shop owners',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Add one or more owners. If there is one owner, that owner gets 100% of net profit. With multiple owners, profit is split by investment amount.',
-                    ),
-                    const SizedBox(height: 16),
-                    for (var index = 0; index < _ownerInputs.length; index++) ...[
-                      _OwnerEditorCard(
-                        index: index,
-                        totalOwners: _ownerInputs.length,
-                        input: _ownerInputs[index],
-                        onChanged: () => setState(() {}),
-                        onRemove: _ownerInputs.length == 1
-                            ? null
-                            : () {
-                                _removeOwner(index);
-                              },
+      Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: MohajonWarm.pageGradient,
+            ),
+            child: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                children: [
+                  PremiumHeader(
+                    title: 'Shop Owners',
+                    subtitle: 'Investment & profit share',
+                    icon: Icons.groups_rounded,
+                  ),
+                  const SizedBox(height: 18),
+                  _OverviewCard(overview: overview),
+                  const SizedBox(height: 14),
+                  SectionCard(
+                    icon: Icons.group_rounded,
+                    iconColor: MohajonWarm.goldText,
+                    iconBackground: MohajonWarm.tintYellow,
+                    title: 'Shop owners',
+                    children: [
+                      const Text(
+                        'Add one or more owners. If there is one owner, that owner gets 100% of net profit. With multiple owners, profit is split by investment amount.',
+                        style: TextStyle(
+                          color: MohajonWarm.muted,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      for (var index = 0;
+                          index < _ownerInputs.length;
+                          index++) ...[
+                        _OwnerEditorCard(
+                          index: index,
+                          totalOwners: _ownerInputs.length,
+                          input: _ownerInputs[index],
+                          onChanged: () => setState(() {}),
+                          onRemove: _ownerInputs.length == 1
+                              ? null
+                              : () {
+                                  _removeOwner(index);
+                                },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      OutlinedButton.icon(
+                        onPressed: _confirmAddOwner,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Add owner'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: MohajonWarm.ink,
+                          side:
+                              const BorderSide(color: MohajonWarm.goldBorder),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _SharePreviewCard(
+                        owners: draftOwners,
+                        totalInvestment: totalDraftInvestment,
+                        netProfit: overview.netProfit,
+                      ),
+                      const SizedBox(height: 16),
+                      ActionButton(
+                        onPressed: _saveOwners,
+                        isBusy: isBusy,
+                        icon: Icons.save_rounded,
+                        label: 'Save Owners',
+                        busyLabel: 'Saving...',
+                      ),
                     ],
-                    OutlinedButton.icon(
-                      onPressed: _confirmAddOwner,
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add owner'),
-                    ),
-                    const SizedBox(height: 16),
-                    _SharePreviewCard(
-                      owners: draftOwners,
-                      totalInvestment: totalDraftInvestment,
-                      netProfit: overview.netProfit,
-                    ),
-                    const SizedBox(height: 16),
-                    ActionButton(
-                      onPressed: _saveOwners,
-                      isBusy: isBusy,
-                      icon: Icons.save_rounded,
-                      label: 'Save Owners',
-                      busyLabel: 'Saving...',
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
       label: 'Saving owners...',
@@ -243,57 +268,67 @@ class _OverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: GridView(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 112,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.primary.withValues(alpha: 0.14),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _MiniMetric(
-              label: 'Owners',
-              value: '${overview.owners.length}',
-              icon: Icons.groups_rounded,
-              color: const Color(0xFF0F766E),
-            ),
-            _MiniMetric(
-              label: 'Total investment',
-              value: money(overview.totalInvestment),
-              icon: Icons.account_balance_wallet_rounded,
-              color: const Color(0xFF1D4ED8),
-            ),
-            _MiniMetric(
-              label: 'Gross profit',
-              value: money(overview.grossProfit),
-              icon: Icons.trending_up_rounded,
-              color: const Color(0xFF15803D),
-            ),
-            _MiniMetric(
-              label: 'Expenses',
-              value: money(overview.totalExpense),
-              icon: Icons.receipt_long_rounded,
-              color: const Color(0xFFB91C1C),
-            ),
-            _MiniMetric(
-              label: 'Net profit',
-              value: money(overview.netProfit),
-              icon: Icons.pie_chart_rounded,
-              color: const Color(0xFFB45309),
-            ),
-            _MiniMetric(
-              label: 'Sales count',
-              value: '${overview.totalSales}',
-              icon: Icons.receipt_long_rounded,
-              color: const Color(0xFF9A3412),
-            ),
-          ],
+        ],
+      ),
+      child: GridView(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: 112,
         ),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          _MiniMetric(
+            label: 'Owners',
+            value: '${overview.owners.length}',
+            icon: Icons.groups_rounded,
+            color: MohajonWarm.goldText,
+          ),
+          _MiniMetric(
+            label: 'Total investment',
+            value: money(overview.totalInvestment),
+            icon: Icons.account_balance_wallet_rounded,
+            color: MohajonWarm.orange,
+          ),
+          _MiniMetric(
+            label: 'Gross profit',
+            value: money(overview.grossProfit),
+            icon: Icons.trending_up_rounded,
+            color: MohajonWarm.green,
+          ),
+          _MiniMetric(
+            label: 'Expenses',
+            value: money(overview.totalExpense),
+            icon: Icons.receipt_long_rounded,
+            color: MohajonWarm.red,
+          ),
+          _MiniMetric(
+            label: 'Net profit',
+            value: money(overview.netProfit),
+            icon: Icons.pie_chart_rounded,
+            color: MohajonWarm.orange,
+          ),
+          _MiniMetric(
+            label: 'Sales count',
+            value: '${overview.totalSales}',
+            icon: Icons.receipt_long_rounded,
+            color: MohajonWarm.muted,
+          ),
+        ],
       ),
     );
   }
@@ -331,39 +366,36 @@ class _MiniMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 16),
-              ),
-            ],
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(height: 6),
           Text(
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                  height: 1.0,
-                ),
+            style: const TextStyle(
+              color: MohajonWarm.muted,
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                ),
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: color,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -391,8 +423,9 @@ class _OwnerEditorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: MohajonWarm.tintYellow,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Stack(
         children: [
@@ -411,7 +444,8 @@ class _OwnerEditorCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 TextField(
                   controller: input.investmentController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Investment amount',
                     hintText: totalOwners == 1
@@ -456,22 +490,25 @@ class _SharePreviewCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.08),
+        color: MohajonWarm.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Profit share preview',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: MohajonWarm.ink,
+            ),
           ),
           const SizedBox(height: 8),
           if (owners.length == 1)
             Text(
               '${owners.first.name.isEmpty ? 'Owner' : owners.first.name} receives 100% of ${money(netProfit)} net profit.',
+              style: const TextStyle(color: MohajonWarm.ink),
             )
           else if (totalInvestment <= 0)
             Text(
@@ -484,6 +521,7 @@ class _SharePreviewCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
                   '${owner.name.isEmpty ? 'Owner' : owner.name}: ${((owner.investmentAmount / totalInvestment) * 100).toStringAsFixed(2)}% -> ${money(netProfit * (owner.investmentAmount / totalInvestment))}',
+                  style: const TextStyle(color: MohajonWarm.ink),
                 ),
               ),
         ],
@@ -500,14 +538,14 @@ class _OwnerInput {
   });
 
   factory _OwnerInput.fromOwner(ShopOwner owner) => _OwnerInput(
-    ownerId: owner.ownerId,
-    nameController: TextEditingController(text: owner.name),
-    investmentController: TextEditingController(
-      text: owner.investmentAmount == 0
-          ? '0'
-          : owner.investmentAmount.toString(),
-    ),
-  );
+        ownerId: owner.ownerId,
+        nameController: TextEditingController(text: owner.name),
+        investmentController: TextEditingController(
+          text: owner.investmentAmount == 0
+              ? '0'
+              : owner.investmentAmount.toString(),
+        ),
+      );
 
   final String ownerId;
   final TextEditingController nameController;

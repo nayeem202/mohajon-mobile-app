@@ -105,6 +105,16 @@ class StaffApiService {
     await _api.delete('/api/v1/users/$userId');
   }
 
+  /// Toggles a staff member's active/inactive status. An inactive staff member
+  /// is blocked from signing in (the auth service rejects disabled accounts).
+  Future<StaffMember> updateStaffStatus({
+    required String userId,
+    required bool active,
+  }) async {
+    final json = await _api.patch('/api/v1/users/$userId', {'active': active});
+    return StaffMember.fromApi(json);
+  }
+
   /// Menu codes granted to the currently signed-in user. The owner gets all.
   Future<List<String>> myMenuCodes() async {
     final data = await _api.getJson('/api/v1/users/me/menus');

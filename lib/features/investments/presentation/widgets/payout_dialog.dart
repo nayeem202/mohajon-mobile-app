@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/mohajon_warm_theme.dart';
 import '../../../../core/utils/money.dart';
 import '../../../../core/utils/snackbar.dart';
 import '../../../../core/widgets/action_button.dart';
@@ -51,189 +52,190 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
     final remaining = member.remainingAmount
         .clamp(0.0, double.infinity)
         .toDouble();
-    final colors = Theme.of(context).colorScheme;
     final investor =
         ref.watch(memberInvestorProvider(member.investorId));
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
-                    child: Text('Record Payout',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 20,
-                            color: Color(0xFF101828))),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Record Payout',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                                color: MohajonWarm.ink)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded,
+                            color: MohajonWarm.ink),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.of(context).pop(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor:
+                            MohajonWarm.primary.withValues(alpha: 0.12),
+                        child: Text(
+                          investor != null && investor.name.isNotEmpty
+                              ? investor.name[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                              color: MohajonWarm.goldText,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(investor?.name ?? 'Unknown',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                    color: MohajonWarm.ink)),
+                            const Text('Investment return payout',
+                                style: TextStyle(
+                                    color: MohajonWarm.muted, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor:
-                        colors.primary.withValues(alpha: 0.12),
-                    child: Text(
-                      investor != null && investor.name.isNotEmpty
-                          ? investor.name[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                          color: colors.primary,
-                          fontWeight: FontWeight.w800),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _PStat(
+                          label: 'Total Due',
+                          value: money(totalDue),
+                          color: MohajonWarm.goldText),
+                      const SizedBox(width: 8),
+                      _PStat(
+                          label: 'Paid',
+                          value: money(member.paidAmount),
+                          color: MohajonWarm.green),
+                      const SizedBox(width: 8),
+                      _PStat(
+                          label: 'Remaining',
+                          value: money(remaining),
+                          color: remaining > 0
+                              ? MohajonWarm.red
+                              : MohajonWarm.green),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: _amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Payout Amount',
+                      hintText: 'Enter amount',
+                      prefixText: '৳ ',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Amount is required';
+                      }
+                      final amount = double.tryParse(value.trim());
+                      if (amount == null || amount <= 0) {
+                        return 'Enter a valid amount';
+                      }
+                      if (amount > remaining) {
+                        return 'Cannot exceed ${money(remaining)}';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: _pickDate,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Date',
+                        suffixIcon: Icon(Icons.calendar_month_rounded),
+                      ),
+                      child: Text(
+                        '${_date.day}/${_date.month}/${_date.year}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _noteCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Optional Note',
+                      hintText: 'e.g. Monthly payout',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: MohajonWarm.tintYellow,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: MohajonWarm.goldBorder),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(investor?.name ?? 'Unknown',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                color: Color(0xFF101828))),
-                        const Text('Investment return payout',
-                            style: TextStyle(
-                                color: Color(0xFF667085),
-                                fontSize: 12)),
+                        const Row(
+                          children: [
+                            Icon(Icons.info_outline_rounded,
+                                size: 16, color: MohajonWarm.orange),
+                            SizedBox(width: 6),
+                            Text('How Payouts Work',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: MohajonWarm.orange,
+                                    fontSize: 12)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          '• Reduces Outstanding Capital: The payout amount is subtracted from the investment outstanding balance.\n'
+                          '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.\n'
+                          '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
+                          style: TextStyle(
+                              color: MohajonWarm.goldText,
+                              fontSize: 11,
+                              height: 1.4),
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  ActionButton(
+                    onPressed: _submit,
+                    isBusy: isBusy,
+                    icon: Icons.save_rounded,
+                    label: 'Save Payout',
+                    busyLabel: 'Saving...',
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _PStat(
-                      label: 'Total Due',
-                      value: money(totalDue),
-                      color: colors.primary),
-                  const SizedBox(width: 8),
-                  _PStat(
-                      label: 'Paid',
-                      value: money(member.paidAmount),
-                      color: const Color(0xFF047857)),
-                  const SizedBox(width: 8),
-                  _PStat(
-                      label: 'Remaining',
-                      value: money(remaining),
-                      color: remaining > 0
-                          ? colors.error
-                          : const Color(0xFF047857)),
-                ],
-              ),
-              const SizedBox(height: 18),
-              TextFormField(
-                controller: _amountCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Payout Amount',
-                  hintText: 'Enter amount',
-                  prefixText: '৳ ',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Amount is required';
-                  }
-                  final amount = double.tryParse(value.trim());
-                  if (amount == null || amount <= 0) {
-                    return 'Enter a valid amount';
-                  }
-                  if (amount > remaining) {
-                    return 'Cannot exceed ${money(remaining)}';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: _pickDate,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Date',
-                    suffixIcon: Icon(Icons.calendar_month_rounded),
-                  ),
-                  child: Text(
-                    '${_date.day}/${_date.month}/${_date.year}',
-                    style:
-                        const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _noteCtrl,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Optional Note',
-                  hintText: 'e.g. Monthly payout',
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E5),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFCE7C8)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.info_outline_rounded,
-                            size: 16, color: Color(0xFFEA580C)),
-                        const SizedBox(width: 6),
-                        const Text('How Payouts Work',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF9A3412),
-                                fontSize: 12)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '• Reduces Outstanding Capital: The payout amount is subtracted from the investment outstanding balance.\n'
-                      '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.\n'
-                      '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
-                      style: TextStyle(
-                          color: Color(0xFF9A3412),
-                          fontSize: 11,
-                          height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              ActionButton(
-                onPressed: _submit,
-                isBusy: isBusy,
-                icon: Icons.save_rounded,
-                label: 'Save Payout',
-                busyLabel: 'Saving...',
-              ),
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -256,11 +258,11 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
     try {
       await runBusyAction(() async {
         await ref.read(investmentServiceProvider).recordPayout(
-          investmentId: widget.investmentId,
-          investorId: widget.member.investorId,
-          amount: amount,
-          note: _noteCtrl.text.trim(),
-        );
+              investmentId: widget.investmentId,
+              investorId: widget.member.investorId,
+              amount: amount,
+              note: _noteCtrl.text.trim(),
+            );
       });
       if (mounted) {
         Navigator.of(context).pop();

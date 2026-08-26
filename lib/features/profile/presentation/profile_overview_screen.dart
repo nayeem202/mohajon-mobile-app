@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_error.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../auth/presentation/login_screen.dart';
@@ -30,76 +31,106 @@ class _ProfileOverviewScreenState
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final colors = Theme.of(context).colorScheme;
 
     _seedProfile(profile);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('Profile'),
-        actions: [
-          const NotificationBell(),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          AnimatedSection(
-            child: _UserSection(
-              profile: profile,
-              imagePath: _imagePath,
-              onTapAvatar: _pickImage,
-            ),
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: MohajonWarm.pageGradient,
           ),
-          const SizedBox(height: 24),
-          AnimatedSection(
-            delay: const Duration(milliseconds: 80),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: colors.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  _MenuTile(
-                    icon: Icons.store_rounded,
-                    title: 'Store/Business Information',
-                    subtitle: 'View and edit store details',
-                    onTap: () => _openStoreInfo(profile),
-                  ),
-                  Divider(height: 1, indent: 16, endIndent: 16, color: colors.outlineVariant),
-                  _MenuTile(
-                    icon: Icons.settings_rounded,
-                    title: 'Settings',
-                    subtitle: 'App preferences & more',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SettingsScreen(),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _Header(onBack: () => Navigator.of(context).maybePop()),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      AnimatedSection(
+                        child: _UserSection(
+                          profile: profile,
+                          imagePath: _imagePath,
+                          onTapAvatar: _pickImage,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 80),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: MohajonWarm.card,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: MohajonWarm.goldBorder),
+                            boxShadow: [
+                              BoxShadow(
+                                color: MohajonWarm.ink.withValues(alpha: 0.06),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              _MenuTile(
+                                icon: Icons.store_rounded,
+                                title: 'Store/Business Information',
+                                subtitle: 'View and edit store details',
+                                onTap: () => _openStoreInfo(profile),
+                              ),
+                              Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: MohajonWarm.goldBorder),
+                              _MenuTile(
+                                icon: Icons.settings_rounded,
+                                title: 'Settings',
+                                subtitle: 'App preferences & more',
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const SettingsScreen(),
+                                  ),
+                                ),
+                              ),
+                              Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: MohajonWarm.goldBorder),
+                              _MenuTile(
+                                icon: Icons.help_outline_rounded,
+                                title: 'Help & Support',
+                                subtitle: 'FAQs and contact',
+                                onTap: () {},
+                              ),
+                              Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: MohajonWarm.goldBorder),
+                              _MenuTile(
+                                icon: Icons.logout_rounded,
+                                title: 'Sign Out',
+                                subtitle: 'Log out of your account',
+                                iconColor: MohajonWarm.red,
+                                titleColor: MohajonWarm.red,
+                                onTap: _confirmLogout,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Divider(height: 1, indent: 16, endIndent: 16, color: colors.outlineVariant),
-                  _MenuTile(
-                    icon: Icons.help_outline_rounded,
-                    title: 'Help & Support',
-                    subtitle: 'FAQs and contact',
-                    onTap: () {},
-                  ),
-                  Divider(height: 1, indent: 16, endIndent: 16, color: colors.outlineVariant),
-                  _MenuTile(
-                    icon: Icons.logout_rounded,
-                    title: 'Sign Out',
-                    subtitle: 'Log out of your account',
-                    iconColor: colors.error,
-                    titleColor: colors.error,
-                    onTap: _confirmLogout,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -274,6 +305,96 @@ class _ProfileOverviewScreenState
   }
 }
 
+class _Header extends StatelessWidget {
+  const _Header({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
+      child: Row(
+        children: [
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(11),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(11),
+              onTap: onBack,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: MohajonWarm.ink,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              color: MohajonWarm.ink,
+              size: 17,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'My Profile',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  'Account & preferences',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+        ],
+      ),
+    );
+  }
+}
+
 class _UserSection extends StatelessWidget {
   const _UserSection({
     required this.profile,
@@ -287,47 +408,110 @@ class _UserSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final name = (profile?.ownerName ?? '').isNotEmpty
         ? profile!.ownerName
         : 'Store Owner';
+    final store = profile?.storeName ?? '';
+    final email = profile?.email ?? '';
+    final phone = profile?.phone ?? '';
 
-    return Column(
-      children: [
-        ProfileAvatar(
-          name: name,
-          imagePath: imagePath,
-          size: 88,
-          fontSize: 32,
-          onTap: onTapAvatar,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.tintYellow, MohajonWarm.card],
         ),
-        const SizedBox(height: 14),
-        Text(
-          name,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.primary.withValues(alpha: 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Store Owner',
-          style: TextStyle(
-            fontSize: 14,
-            color: colors.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+        ],
+      ),
+      child: Column(
+        children: [
+          ProfileAvatar(
+            name: name,
+            imagePath: imagePath,
+            size: 96,
+            fontSize: 34,
+            onTap: onTapAvatar,
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'Joined June 2025',
-          style: TextStyle(
-            fontSize: 12,
-            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: 14),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: MohajonWarm.ink,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: MohajonWarm.goldText.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Store Owner',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: MohajonWarm.goldText,
+              ),
+            ),
+          ),
+          if (store.isNotEmpty || email.isNotEmpty || phone.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Divider(height: 1, color: MohajonWarm.goldBorder),
+            const SizedBox(height: 12),
+            if (store.isNotEmpty)
+              _InfoRow(icon: Icons.store_rounded, text: store),
+            if (email.isNotEmpty)
+              _InfoRow(icon: Icons.email_rounded, text: email),
+            if (phone.isNotEmpty)
+              _InfoRow(icon: Icons.phone_rounded, text: phone),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: MohajonWarm.goldText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: MohajonWarm.ink,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -351,22 +535,31 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final effectiveIconColor = iconColor ?? colors.primary;
-    final effectiveTitleColor = titleColor ?? colors.onSurface;
+    final effectiveIconColor = iconColor ?? MohajonWarm.primary;
+    final effectiveTitleColor = titleColor ?? MohajonWarm.ink;
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: effectiveIconColor.withValues(alpha: 0.12),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: effectiveIconColor.withValues(alpha: 0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: effectiveIconColor.withValues(alpha: 0.22),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Icon(icon, color: effectiveIconColor, size: 22),
             ),
@@ -386,9 +579,9 @@ class _MenuTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: colors.onSurfaceVariant,
+                      color: Color(0xFF7C7660),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -397,7 +590,7 @@ class _MenuTile extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+              color: MohajonWarm.goldText.withValues(alpha: 0.55),
               size: 22,
             ),
           ],

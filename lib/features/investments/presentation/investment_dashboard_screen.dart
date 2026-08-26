@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/notification_bell.dart';
-import '../../../core/widgets/shop_avatar.dart';
+import '../../../core/widgets/premium_header.dart';
 import '../providers/investment_providers.dart';
 import 'add_investment_sheet.dart';
 import 'widgets/category_chip.dart';
@@ -46,95 +46,91 @@ class _InvestmentDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final dashboard = ref.watch(investmentDashboardProvider);
     final filtered = ref.watch(filteredInvestmentsProvider);
     final query = ref.watch(investmentSearchQueryProvider);
     final selectedCat = ref.watch(investmentCategoryFilterProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Investments',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            color: colors.onSurface,
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: MohajonWarm.pageGradient,
           ),
-        ),
-        actions: [
-          const NotificationBell(),
-          const SizedBox(width: 4),
-          const ShopAvatar(radius: 16, backgroundColor: Color(0xFFF97316), textColor: Colors.white),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: RefreshIndicator(
-          onRefresh: () => Future.delayed(const Duration(milliseconds: 500)),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: [
-              _SummaryCards(data: dashboard),
-              const SizedBox(height: 14),
-              _OutstandingCard(data: dashboard),
-              const SizedBox(height: 14),
-              if (dashboard.categoryTotals.isNotEmpty)
-                _CategoryBreakdownCard(data: dashboard),
-              const SizedBox(height: 14),
-              _FilterChips(selectedCat: selectedCat, onChanged: (cat) =>
-                  ref.read(investmentCategoryFilterProvider.notifier).update(cat)),
-              const SizedBox(height: 12),
-              Text(
-                'All Investments (${filtered.length})',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: colors.onSurface,
+          child: SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: RefreshIndicator(
+                onRefresh: () => Future.delayed(const Duration(milliseconds: 500)),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                  children: [
+                    PremiumHeader(
+                      title: 'Investments',
+                      subtitle: 'Capital & returns',
+                      icon: Icons.account_balance_rounded,
+                    ),
+                    const SizedBox(height: 18),
+                    _SummaryCards(data: dashboard),
+                    const SizedBox(height: 14),
+                    _OutstandingCard(data: dashboard),
+                    const SizedBox(height: 14),
+                    if (dashboard.categoryTotals.isNotEmpty)
+                      _CategoryBreakdownCard(data: dashboard),
+                    const SizedBox(height: 14),
+                    _FilterChips(
+                      selectedCat: selectedCat,
+                      onChanged: (cat) => ref
+                          .read(investmentCategoryFilterProvider.notifier)
+                          .update(cat),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'All Investments (${filtered.length})',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: MohajonWarm.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (filtered.isEmpty && query.isEmpty)
+                      const EmptyState(
+                        message: 'Add investments to track your capital.',
+                        icon: Icons.account_balance_outlined,
+                      )
+                    else if (filtered.isEmpty)
+                      const EmptyState(
+                        message: 'No investments match your search.',
+                        icon: Icons.search_off_rounded,
+                      )
+                    else
+                      ...filtered.map(
+                        (inv) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: InvestmentCard(investment: inv),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              if (filtered.isEmpty && query.isEmpty)
-                const EmptyState(
-                  message: 'Add investments to track your capital.',
-                  icon: Icons.account_balance_outlined,
-                )
-              else if (filtered.isEmpty)
-                const EmptyState(
-                  message: 'No investments match your search.',
-                  icon: Icons.search_off_rounded,
-                )
-              else
-                ...filtered.map(
-                  (inv) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: InvestmentCard(investment: inv),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            useSafeArea: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => const AddInvestmentSheet(),
-          );
-        },
-        backgroundColor: const Color(0xFFF97316),
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: const Icon(Icons.add_rounded, size: 28),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              useSafeArea: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const AddInvestmentSheet(),
+            );
+          },
+          child: const Icon(Icons.add_rounded, size: 28),
+        ),
       ),
     );
   }
@@ -146,46 +142,99 @@ class _SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPos = data.roi >= 0;
     return Row(
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(16),
+            height: 130,
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFF97316), Color(0xFFEA580C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
+                colors: [MohajonWarm.tintYellow, MohajonWarm.card],
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: MohajonWarm.goldBorder),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF97316).withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: MohajonWarm.goldText.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Total Invested',
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                Text(money(data.totalInvested),
-                    style: const TextStyle(
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
                         color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900)),
+                        borderRadius: BorderRadius.circular(11),
+                        boxShadow: [
+                          BoxShadow(
+                            color: MohajonWarm.goldText.withValues(alpha: 0.18),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.account_balance_wallet_rounded,
+                          color: MohajonWarm.goldText, size: 16),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: MohajonWarm.goldText.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Total Invested',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: MohajonWarm.goldText,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    money(data.totalInvested),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      color: MohajonWarm.ink,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 4),
-                const Text('Capital deployed',
-                    style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
+                const Text(
+                  'Capital deployed',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: MohajonWarm.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -193,42 +242,93 @@ class _SummaryCards extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(16),
+            height: 130,
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.tintOrange, MohajonWarm.card],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: MohajonWarm.goldBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: MohajonWarm.orange.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Total Returns',
-                    style: TextStyle(
-                        color: Color(0xFF667085),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                Text(money(data.totalReturns),
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(11),
+                        boxShadow: [
+                          BoxShadow(
+                            color: MohajonWarm.orange.withValues(alpha: 0.18),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.trending_up_rounded,
+                          color: MohajonWarm.orange, size: 16),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: MohajonWarm.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Total Returns',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: MohajonWarm.orange,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    money(data.totalReturns),
+                    maxLines: 1,
                     style: const TextStyle(
-                        color: Color(0xFF101828),
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900)),
+                      fontSize: 22,
+                      color: MohajonWarm.ink,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   data.roi >= 0
                       ? 'ROI ${data.roi.toStringAsFixed(2)}%'
                       : 'Loss ${data.roi.toStringAsFixed(2)}%',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: data.roi >= 0
-                        ? const Color(0xFF047857)
-                        : const Color(0xFFDC2626),
-                    fontSize: 12,
+                    color: isPos ? MohajonWarm.green : MohajonWarm.red,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -251,19 +351,23 @@ class _OutstandingCard extends StatelessWidget {
         ? (data.totalReturns / data.totalInvested).clamp(0.0, 1.0)
         : 0.0;
     final isPos = data.roi >= 0;
-    final roiColor =
-        isPos ? const Color(0xFF047857) : const Color(0xFFDC2626);
+    final roiColor = isPos ? MohajonWarm.green : MohajonWarm.red;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [MohajonWarm.card, MohajonWarm.tintGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: MohajonWarm.ink.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -272,20 +376,23 @@ class _OutstandingCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              Icon(Icons.pie_chart_rounded,
+                  color: MohajonWarm.green, size: 16),
+              const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Outstanding Capital',
                         style: TextStyle(
-                            color: Color(0xFF667085),
+                            color: MohajonWarm.muted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
                     Text(
                       money(data.totalOutstanding),
                       style: const TextStyle(
-                          color: Color(0xFF101828),
+                          color: MohajonWarm.ink,
                           fontSize: 28,
                           fontWeight: FontWeight.w900),
                     ),
@@ -305,8 +412,7 @@ class _OutstandingCard extends StatelessWidget {
                         value: data.roi.abs().clamp(0, 100) / 100,
                         strokeWidth: 5,
                         backgroundColor: roiColor.withValues(alpha: 0.12),
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(roiColor),
+                        valueColor: AlwaysStoppedAnimation<Color>(roiColor),
                       ),
                     ),
                     Text(
@@ -327,9 +433,9 @@ class _OutstandingCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.12),
+              backgroundColor: MohajonWarm.primary.withValues(alpha: 0.12),
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+                  const AlwaysStoppedAnimation<Color>(MohajonWarm.primary),
               minHeight: 8,
             ),
           ),
@@ -337,7 +443,7 @@ class _OutstandingCard extends StatelessWidget {
           const Text(
             'Return on investment progress',
             style: TextStyle(
-                color: Color(0xFF98A2B3),
+                color: MohajonWarm.muted,
                 fontSize: 11,
                 fontWeight: FontWeight.w500),
           ),
@@ -359,13 +465,14 @@ class _CategoryBreakdownCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MohajonWarm.card,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -376,7 +483,7 @@ class _CategoryBreakdownCard extends StatelessWidget {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
-                  color: Color(0xFF101828))),
+                  color: MohajonWarm.ink)),
           const SizedBox(height: 16),
           ...sorted.map((e) {
             final pct = data.totalInvested > 0
@@ -393,7 +500,7 @@ class _CategoryBreakdownCard extends StatelessWidget {
                         style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF475467))),
+                            color: MohajonWarm.ink)),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -415,7 +522,7 @@ class _CategoryBreakdownCard extends StatelessWidget {
                         style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF101828))),
+                            color: MohajonWarm.ink)),
                   ),
                 ],
               ),
@@ -429,19 +536,19 @@ class _CategoryBreakdownCard extends StatelessWidget {
   Color _catColor(String id) {
     switch (id) {
       case 'setup':
-        return const Color(0xFFF97316);
+        return MohajonWarm.primary;
       case 'equipment':
         return const Color(0xFF0F766E);
       case 'technology':
-        return const Color(0xFF059669);
+        return MohajonWarm.green;
       case 'inventory':
-        return const Color(0xFFB45309);
+        return MohajonWarm.orange;
       case 'vehicle':
-        return const Color(0xFFDC2626);
+        return MohajonWarm.red;
       case 'marketing':
-        return const Color(0xFFF59E0B);
+        return const Color(0xFFB45309);
       default:
-        return const Color(0xFF98A2B3);
+        return MohajonWarm.muted;
     }
   }
 }
@@ -461,7 +568,7 @@ class _FilterChips extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: cats.length + 1,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
             if (i == 0) {
               return CategoryChip(

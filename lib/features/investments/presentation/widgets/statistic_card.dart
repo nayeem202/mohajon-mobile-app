@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/mohajon_warm_theme.dart';
+
 class StatisticCard extends StatelessWidget {
   const StatisticCard({
     super.key,
@@ -21,8 +23,8 @@ class StatisticCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFECE7DF)),
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -44,7 +46,7 @@ class StatisticCard extends StatelessWidget {
                 Text(
                   label,
                   style: const TextStyle(
-                    color: Color(0xFF667085),
+                    color: MohajonWarm.muted,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -55,7 +57,7 @@ class StatisticCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF101828),
+                    color: MohajonWarm.ink,
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
                   ),

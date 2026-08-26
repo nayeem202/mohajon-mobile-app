@@ -584,61 +584,41 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
       title: 'Menu Access',
       children: [
         const Text(
-          'Select which menus this staff member can see after login.',
+          'Grant access by section. Tap the box on the right to allow or remove the whole group, or expand a section to pick individual menus.',
           style: TextStyle(
             color: MohajonWarm.muted,
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
-        for (final entry in sections.entries) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 6),
-            child: Text(
-              _sectionLabel(entry.key).toUpperCase(),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-                color: MohajonWarm.goldText,
-              ),
-            ),
+        const SizedBox(height: 12),
+        for (final entry in sections.entries)
+          _MenuTypeSection(
+            key: ValueKey(entry.key),
+            label: _sectionLabel(entry.key),
+            menus: entry.value,
+            selectedCodes: _selectedMenus,
+            onMenuChanged: (code, checked) {
+              setState(() {
+                if (checked) {
+                  _selectedMenus.add(code);
+                } else {
+                  _selectedMenus.remove(code);
+                }
+              });
+            },
+            onToggleAll: (selectAll) {
+              setState(() {
+                for (final menu in entry.value) {
+                  if (selectAll) {
+                    _selectedMenus.add(menu.code);
+                  } else {
+                    _selectedMenus.remove(menu.code);
+                  }
+                }
+              });
+            },
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: MohajonWarm.goldBorder),
-            ),
-            child: Column(
-              children: [
-                for (var i = 0; i < entry.value.length; i++) ...[
-                  if (i > 0)
-                    const Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: Color(0xFFF3ECDA),
-                    ),
-                  _MenuCheckboxTile(
-                    menu: entry.value[i],
-                    checked: _selectedMenus.contains(entry.value[i].code),
-                    onChanged: (checked) {
-                      setState(() {
-                        if (checked) {
-                          _selectedMenus.add(entry.value[i].code);
-                        } else {
-                          _selectedMenus.remove(entry.value[i].code);
-                        }
-                      });
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -1012,6 +992,144 @@ class _SectionCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ...children,
+        ],
+      ),
+    );
+  }
+}
+
+/// Collapsible menu group. Shows a type-level select-all checkbox (tri-state)
+/// and, when expanded, the individual menu checkboxes for that section.
+class _MenuTypeSection extends StatefulWidget {
+  const _MenuTypeSection({
+    super.key,
+    required this.label,
+    required this.menus,
+    required this.selectedCodes,
+    required this.onMenuChanged,
+    required this.onToggleAll,
+  });
+
+  final String label;
+  final List<AppMenu> menus;
+  final Set<String> selectedCodes;
+  final void Function(String code, bool checked) onMenuChanged;
+  final void Function(bool selectAll) onToggleAll;
+
+  @override
+  State<_MenuTypeSection> createState() => _MenuTypeSectionState();
+}
+
+class _MenuTypeSectionState extends State<_MenuTypeSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final allSelected =
+        widget.menus.every((m) => widget.selectedCodes.contains(m.code));
+    final anySelected =
+        widget.menus.any((m) => widget.selectedCodes.contains(m.code));
+    final triValue = allSelected ? true : (anySelected ? null : false);
+    final selectedCount =
+        widget.menus.where((m) => widget.selectedCodes.contains(m.code)).length;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.label,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              color: MohajonWarm.ink,
+                            ),
+                          ),
+                        ),
+                        if (selectedCount > 0)
+                          Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: MohajonWarm.tintYellow,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: MohajonWarm.primary.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              '$selectedCount/${widget.menus.length}',
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                color: MohajonWarm.goldText,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _expanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: 20,
+                          color: MohajonWarm.muted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Checkbox(
+                tristate: true,
+                value: triValue,
+                activeColor: MohajonWarm.primary,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: (_) => widget.onToggleAll(!allSelected),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ),
+          if (_expanded)
+            Column(
+              children: [
+                const Divider(height: 1, color: Color(0xFFF3ECDA)),
+                for (var i = 0; i < widget.menus.length; i++) ...[
+                  if (i > 0)
+                    const Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Color(0xFFF3ECDA),
+                    ),
+                  _MenuCheckboxTile(
+                    menu: widget.menus[i],
+                    checked: widget.selectedCodes.contains(widget.menus[i].code),
+                    onChanged: (checked) =>
+                        widget.onMenuChanged(widget.menus[i].code, checked),
+                  ),
+                ],
+              ],
+            ),
         ],
       ),
     );

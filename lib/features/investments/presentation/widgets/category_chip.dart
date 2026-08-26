@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/mohajon_warm_theme.dart';
+
 class CategoryChip extends StatelessWidget {
   const CategoryChip({
     super.key,
@@ -20,13 +22,14 @@ class CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF97316) : const Color(0xFFF7F5F0),
+          color: selected ? MohajonWarm.primary : MohajonWarm.tintYellow,
           borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: MohajonWarm.goldBorder),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF101828),
+            color: selected ? MohajonWarm.ink : MohajonWarm.muted,
             fontSize: 12,
             fontWeight: FontWeight.w800,
           ),

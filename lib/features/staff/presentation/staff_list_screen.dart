@@ -46,8 +46,29 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     }
   }
 
-  Future<void> _confirmDelete(StaffMember staff) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _toggleActive(StaffMember staff, bool active) async {
+    if (staff.active == active) return;
+    try {
+      final api = ref.read(staffApiServiceProvider);
+      await api.updateStaffStatus(userId: staff.id, active: active);
+      ref.invalidate(staffListProvider);
+      if (!mounted) return;
+      _showToast(
+        active
+            ? '${staff.name} activated'
+            : '${staff.name} deactivated — they can no longer sign in',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _showToast(
+        friendlyErrorMessage(error,
+            fallback: 'Could not update status. Please try again.'),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _confirmDelete(StaffMember staff) async {    final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (_) => DeleteStaffDialog(
@@ -184,21 +205,24 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                                         100,
                                       ),
                                       itemCount: filtered.length,
-                                      itemBuilder: (context, index) =>
-                                          Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 10,
-                                        ),
-                                        child: _StaffCard(
-                                          staff: filtered[index],
-                                          onEdit: () => _openForm(
-                                            staff: filtered[index],
+                                      itemBuilder: (context, index) {
+                                        final item = filtered[index];
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 10,
                                           ),
-                                          onDelete: () => _confirmDelete(
-                                            filtered[index],
+                                          child: _StaffCard(
+                                            key: ValueKey(item.id),
+                                            staff: item,
+                                            onEdit: () =>
+                                                _openForm(staff: item),
+                                            onDelete: () =>
+                                                _confirmDelete(item),
+                                            onToggleActive: (active) =>
+                                                _toggleActive(item, active),
                                           ),
-                                        ),
-                                      ),
+                                        );
+                                      },
                                     ),
                 ),
               ],
@@ -444,14 +468,17 @@ class _Header extends StatelessWidget {
 
 class _StaffCard extends StatelessWidget {
   const _StaffCard({
+    super.key,
     required this.staff,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleActive,
   });
 
   final StaffMember staff;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final ValueChanged<bool> onToggleActive;
 
   Widget _staffAvatar(StaffMember member) {
     const size = 44.0;
@@ -523,99 +550,136 @@ class _StaffCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _staffAvatar(staff),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    staff.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: MohajonWarm.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    staff.role,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: MohajonWarm.muted,
-                    ),
-                  ),
-                  if (staff.phone.isNotEmpty) ...[
-                    const SizedBox(height: 1),
-                    Text(
-                      staff.phone,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: MohajonWarm.muted,
-                      ),
-                    ),
-                  ],
-                  if (staff.menuCodes.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
-                      children: staff.menuCodes.take(3).map((code) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: MohajonWarm.tintYellow,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: MohajonWarm.primary.withValues(
-                                alpha: 0.3,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            code,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              color: MohajonWarm.goldText,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ActionTile(
-                  icon: Icons.edit_rounded,
-                  onTap: onEdit,
+                _staffAvatar(staff),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        staff.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: MohajonWarm.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        staff.role,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: MohajonWarm.muted,
+                        ),
+                      ),
+                      if (staff.phone.isNotEmpty) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          staff.phone,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: MohajonWarm.muted,
+                          ),
+                        ),
+                      ],
+                      if (staff.menuCodes.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 5,
+                          runSpacing: 5,
+                          children:
+                              staff.menuCodes.take(3).map((code) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: MohajonWarm.tintYellow,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: MohajonWarm.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                code,
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: MohajonWarm.goldText,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                _ActionTile(
-                  icon: Icons.delete_outline_rounded,
-                  destructive: true,
-                  onTap: onDelete,
+                const SizedBox(width: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _StatusSwitch(
+                      active: staff.active,
+                      onChanged: onToggleActive,
+                    ),
+                    const SizedBox(width: 4),
+                    _ActionTile(
+                      icon: Icons.edit_rounded,
+                      onTap: onEdit,
+                    ),
+                    const SizedBox(width: 4),
+                    _ActionTile(
+                      icon: Icons.delete_outline_rounded,
+                      destructive: true,
+                      onTap: onDelete,
+                    ),
+                  ],
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StatusSwitch extends StatelessWidget {
+  const _StatusSwitch({
+    required this.active,
+    required this.onChanged,
+  });
+
+  final bool active;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.scale(
+      scale: 0.7,
+      child: Switch(
+        value: active,
+        onChanged: onChanged,
+        activeThumbColor: MohajonWarm.green,
+        inactiveThumbColor: Colors.white,
+        inactiveTrackColor: MohajonWarm.red.withValues(alpha: 0.45),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/mohajon_warm_theme.dart';
 import '../../../../core/utils/money.dart';
 import '../../models/investment.dart';
 import '../../models/investment_member.dart';
@@ -30,20 +31,21 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
     final payoutsAsync = ref.watch(payoutsStreamProvider(inv.id));
     final payouts = payoutsAsync.value ?? [];
     final colors = Theme.of(context).colorScheme;
-    final catColor = _categoryColor(inv.categoryName, colors);
+    final catColor = _categoryColor(inv.categoryName);
     final progress = inv.totalInvestment > 0
         ? (inv.totalPaid / inv.totalInvestment).clamp(0.0, 1.0)
         : 0.0;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MohajonWarm.card,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -103,8 +105,8 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                                       horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: inv.profitShareMethod == 'fixed'
-                                        ? const Color(0xFFFEF3C7)
-                                        : const Color(0xFFFFF4E5),
+                                        ? MohajonWarm.tintOrange
+                                        : MohajonWarm.tintYellow,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -113,8 +115,8 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                                         : 'Proportional',
                                     style: TextStyle(
                                       color: inv.profitShareMethod == 'fixed'
-                                          ? const Color(0xFFD97706)
-                                          : colors.tertiary,
+                                          ? MohajonWarm.orange
+                                          : MohajonWarm.goldText,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -147,7 +149,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                           duration: const Duration(milliseconds: 200),
                           child: Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: colors.outline),
+                              color: MohajonWarm.muted),
                         ),
                       ),
                     ],
@@ -158,9 +160,9 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                     child: LinearProgressIndicator(
                       value: progress,
                       backgroundColor:
-                          colors.primary.withValues(alpha: 0.12),
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(colors.primary),
+                          MohajonWarm.primary.withValues(alpha: 0.12),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          MohajonWarm.primary),
                       minHeight: 6,
                     ),
                   ),
@@ -190,9 +192,9 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(
-          top: BorderSide(color: const Color(0xFFF0ECE4)),
+          top: BorderSide(color: Color(0xFFF3ECDA)),
         ),
       ),
       child: Column(
@@ -204,78 +206,81 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
               _StatBox(
                   label: 'Investors',
                   value: '${members.length}',
-                  color: colors.primary),
+                  color: MohajonWarm.goldText),
               const SizedBox(width: 8),
               _StatBox(
                   label: 'Total Returns',
                   value: money(inv.totalProfit),
-                  color: const Color(0xFF047857)),
+                  color: MohajonWarm.green),
               const SizedBox(width: 8),
               _StatBox(
                   label: 'Outstanding',
                   value: money(inv.outstanding),
                   color: inv.outstanding > 0
-                      ? colors.error
-                      : const Color(0xFF047857)),
+                      ? MohajonWarm.red
+                      : MohajonWarm.green),
             ],
           ),
           const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: MohajonWarm.tintYellow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: MohajonWarm.goldBorder),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.payments_rounded,
+                    color: MohajonWarm.goldText, size: 20),
+                const SizedBox(width: 8),
+                Text('Total Paid Out',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: MohajonWarm.goldText,
+                        fontSize: 13)),
+                const Spacer(),
+                Tooltip(
+                  message:
+                      'Outstanding Capital = Total Investment + Profit - Total Paid Out',
+                  child: Text(money(totalPaid),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: MohajonWarm.goldText,
+                          fontSize: 15)),
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.payments_rounded,
-                        color: colors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Text('Total Paid Out',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
-                            fontSize: 13)),
-                    const Spacer(),
-                    Tooltip(
-                      message: 'Outstanding Capital = Total Investment + Profit - Total Paid Out',
-child: Text(money(totalPaid),
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: colors.primary,
-                                fontSize: 15)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: MohajonWarm.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Tooltip(
+                    message:
+                        'Percentage of total due (investment + profit) that has been paid out',
+                    child: Text(
+                      '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}% Cleared',
+                      style: TextStyle(
+                          color: MohajonWarm.goldText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Tooltip(
-                        message: 'Percentage of total due (investment + profit) that has been paid out',
-                        child: Text(
-                          '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}% Cleared',
-style: TextStyle(
-                                color: colors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
           const SizedBox(height: 14),
           Row(
             children: [
-Text('INVESTOR BREAKDOWN',
-                    style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5)),
+              Text('INVESTOR BREAKDOWN',
+                  style: TextStyle(
+                      color: MohajonWarm.muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5)),
               const Spacer(),
               GestureDetector(
                 onTap: () =>
@@ -283,11 +288,9 @@ Text('INVESTOR BREAKDOWN',
                 child: Row(
                   children: [
                     Text(
-                        _showHistory
-                            ? 'Hide History'
-                            : 'View Payout History',
+                        _showHistory ? 'Hide History' : 'View Payout History',
                         style: TextStyle(
-                            color: colors.primary,
+                            color: MohajonWarm.goldText,
                             fontSize: 12,
                             fontWeight: FontWeight.w700)),
                     Icon(
@@ -295,7 +298,7 @@ Text('INVESTOR BREAKDOWN',
                           ? Icons.expand_less_rounded
                           : Icons.expand_more_rounded,
                       size: 16,
-color: colors.primary,
+                      color: MohajonWarm.goldText,
                     ),
                   ],
                 ),
@@ -314,7 +317,7 @@ color: colors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text('No payouts recorded yet.',
                     style: TextStyle(
-                        color: colors.outline, fontSize: 13)),
+                        color: MohajonWarm.muted, fontSize: 13)),
               )
             else
               ...payouts.take(5).map(
@@ -333,22 +336,22 @@ color: colors.primary,
     );
   }
 
-  Color _categoryColor(String cat, ColorScheme colors) {
+  Color _categoryColor(String cat) {
     switch (cat) {
       case 'Setup':
-        return colors.primary;
+        return MohajonWarm.primary;
       case 'Equipment':
-        return colors.secondary;
+        return const Color(0xFF0F766E);
       case 'Technology':
-        return colors.tertiary;
+        return MohajonWarm.green;
       case 'Inventory':
-        return const Color(0xFFB45309);
+        return MohajonWarm.orange;
       case 'Vehicle':
-        return colors.error;
+        return MohajonWarm.red;
       case 'Marketing':
-        return const Color(0xFFF59E0B);
+        return const Color(0xFFB45309);
       default:
-        return colors.outline;
+        return MohajonWarm.muted;
     }
   }
 
@@ -439,9 +442,9 @@ class _MemberCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F5F0),
+        color: MohajonWarm.tintYellow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF0ECE4)),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Column(
         children: [
@@ -449,14 +452,13 @@ class _MemberCard extends ConsumerWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor:
-                    colors.primary.withValues(alpha: 0.12),
+                backgroundColor: MohajonWarm.primary.withValues(alpha: 0.12),
                 child: Text(
                   investor != null && investor.name.isNotEmpty
                       ? investor.name[0].toUpperCase()
                       : '?',
                   style: TextStyle(
-                      color: colors.primary,
+                      color: MohajonWarm.goldText,
                       fontWeight: FontWeight.w800,
                       fontSize: 14),
                 ),
@@ -475,12 +477,12 @@ class _MemberCard extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: netDue > 0 ? colors.primary : colors.outline,
+                    color: netDue > 0 ? MohajonWarm.primary : MohajonWarm.muted,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text('Record Payout',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: MohajonWarm.ink,
                           fontSize: 11,
                           fontWeight: FontWeight.w700)),
                 ),
@@ -493,28 +495,27 @@ class _MemberCard extends ConsumerWidget {
               _MiniStat(
                   label: 'Invested',
                   value: money(member.investmentAmount),
-                  color: colors.primary),
+                  color: MohajonWarm.goldText),
               const SizedBox(width: 6),
               _MiniStat(
                   label: 'Share',
                   value:
                       '${member.sharePercentage.toStringAsFixed(1)}%',
-                  color: colors.onSurfaceVariant),
+                  color: MohajonWarm.muted),
               const SizedBox(width: 6),
               _MiniStat(
                   label: member.profit < 0 ? 'Loss' : 'Profit',
                   value: money(member.profit.abs()),
                   color: member.profit < 0
-                      ? colors.error
-                      : const Color(0xFF047857)),
+                      ? MohajonWarm.red
+                      : MohajonWarm.green),
               const SizedBox(width: 6),
               _MiniStat(
                 label: 'Net Due',
                 value: money(netDue),
-                color: netDue > 0
-                    ? colors.error
-                    : const Color(0xFF047857),
-                tooltip: 'Net Due = Investment Amount + Profit - Paid Amount. Payouts reduce this balance.',
+                color: netDue > 0 ? MohajonWarm.red : MohajonWarm.green,
+                tooltip:
+                    'Net Due = Investment Amount + Profit - Paid Amount. Payouts reduce this balance.',
               ),
             ],
           ),
@@ -526,9 +527,10 @@ class _MemberCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: colors.primary.withValues(alpha: 0.12),
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(colors.primary),
+                    backgroundColor:
+                        MohajonWarm.primary.withValues(alpha: 0.12),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                        MohajonWarm.primary),
                     minHeight: 6,
                   ),
                 ),
@@ -538,13 +540,13 @@ class _MemberCard extends ConsumerWidget {
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: colors.onSurfaceVariant)),
+                      color: MohajonWarm.muted)),
               const SizedBox(width: 4),
               Text('Paid ${money(member.paidAmount)}',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: colors.primary)),
+                      color: MohajonWarm.goldText)),
             ],
           ),
         ],
@@ -605,33 +607,32 @@ class _PayoutHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           const Icon(Icons.check_circle_rounded,
-              size: 18, color: Color(0xFF047857)),
+              size: 18, color: MohajonWarm.green),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               payout.note.isNotEmpty ? payout.note : 'Payout',
               style: const TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF475467),
+                  color: MohajonWarm.ink,
                   fontSize: 13),
             ),
           ),
           Text(money(payout.amount),
               style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  color: colors.onSurface,
+                  color: MohajonWarm.ink,
                   fontSize: 13)),
           const SizedBox(width: 8),
           Text(
             '${payout.createdAt.day}/${payout.createdAt.month}',
             style: TextStyle(
-                color: colors.outline,
+                color: MohajonWarm.muted,
                 fontSize: 11,
                 fontWeight: FontWeight.w500),
           ),
