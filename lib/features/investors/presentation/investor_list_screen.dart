@@ -115,7 +115,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                           value: money(overview.totalInvestment),
                           color: MohajonWarm.goldText,
                           background: MohajonWarm.tintYellow,
-                          icon: Icons.handshake_rounded,
+                          icon: Icons.paid_rounded,
                         ),
                       ),
                       const SizedBox(width: 10),

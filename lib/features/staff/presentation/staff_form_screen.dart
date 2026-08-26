@@ -1,10 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/utils/app_error.dart';
+import '../../../core/widgets/action_button.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/widgets/shop_avatar.dart';
 import '../models/staff_model.dart';
 import '../models/staff_role.dart';
 import '../providers/staff_providers.dart';
@@ -61,11 +67,19 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     super.dispose();
   }
 
+  String get _initials {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return widget.staff?.initials ?? '?';
+    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final value = parts.take(2).map((p) => p[0].toUpperCase()).join();
+    return value.length == 1 ? '${value}N' : value;
+  }
+
   void _showToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFFDC2626) : null,
+        backgroundColor: isError ? MohajonWarm.red : null,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -74,8 +88,9 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
   Future<void> _pickImage() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
+      backgroundColor: MohajonWarm.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -88,26 +103,51 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: MohajonWarm.goldBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Text(
-                'Profile Photo',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+              const Text(
+                'Staff Photo',
+                style: TextStyle(
+                  color: MohajonWarm.ink,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take a photo'),
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: MohajonWarm.goldText,
+                ),
+                title: const Text(
+                  'Take a photo',
+                  style: TextStyle(
+                    color: MohajonWarm.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: MohajonWarm.goldText,
+                ),
+                title: const Text(
+                  'Choose from gallery',
+                  style: TextStyle(
+                    color: MohajonWarm.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
               ),
             ],
@@ -129,9 +169,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
         setState(() => _imagePath = picked.path);
       }
     } catch (_) {
-      if (mounted) {
-        _showToast('Could not pick image', isError: true);
-      }
+      if (mounted) _showToast('Could not pick image', isError: true);
     }
   }
 
@@ -139,6 +177,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedRole.isEmpty) {
       _showToast('Please select a role', isError: true);
+      return;
+    }
+    if (_selectedMenus.isEmpty) {
+      _showToast('Select at least one menu access', isError: true);
       return;
     }
     setState(() => _saving = true);
@@ -174,10 +216,12 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _saving = false);
+      debugPrint('APP_ERROR >>> ${error.runtimeType}: $error');
       _showToast(
         error is StaffApiException
             ? error.message
-            : 'Could not save staff member. Please try again.',
+            : friendlyErrorMessage(error,
+                fallback: 'Could not save staff member. Please try again.'),
         isError: true,
       );
     }
@@ -194,213 +238,283 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
       _selectedRole = roles.first.code;
     }
     final loading = rolesAsync.isLoading || menusAsync.isLoading;
-    final error =
-        rolesAsync.hasError || menusAsync.hasError;
+    final error = rolesAsync.hasError || menusAsync.hasError;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: Text(_isEditing ? 'Edit Staff Member' : 'Add Staff Member'),
-        actions: [
-          if (_isEditing)
-            TextButton(
-              onPressed: _saving ? null : _submit,
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFFF97316)),
-              child: const Text('Save'),
-            ),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : error
-              ? _errorState()
-              : Form(
-                  key: _formKey,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                    children: [
-                      _imagePickerSection(),
-                      const SizedBox(height: 20),
-                      _InputField(
-                        label: 'Full Name',
-                        controller: _nameCtrl,
-                        placeholder: 'e.g. Karim Uddin',
-                        required: true,
-                        validator: (v) =>
-                            v?.trim().isEmpty == true ? 'Name is required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      _InputField(
-                        label: 'Phone Number',
-                        controller: _phoneCtrl,
-                        placeholder: 'e.g. 01712-345678',
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 16),
-                      _InputField(
-                        label: 'Email',
-                        controller: _emailCtrl,
-                        placeholder: 'e.g. karim@hishabbondhu.com',
-                        keyboardType: TextInputType.emailAddress,
-                        enabled: !_isEditing,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return null;
-                          final emailRegex =
-                              RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-                          if (!emailRegex.hasMatch(v.trim())) {
-                            return 'Enter a valid email address';
-                          }
-                          return null;
-                        },
-                      ),
-                      if (!_isEditing) ...[
-                        const SizedBox(height: 16),
-                        _InputField(
-                          label: 'Password',
-                          controller: _passwordCtrl,
-                          placeholder: 'Minimum 6 characters',
-                          obscure: true,
-                          required: true,
-                          validator: (v) {
-                            if (v?.trim().isEmpty == true) {
-                              return 'Password is required';
-                            }
-                            if ((v?.length ?? 0) < 6) {
-                              return 'Password must be at least 6 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      _roleSection(roles),
-                      const SizedBox(height: 24),
-                      _menuSection(menus),
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: _saving ? null : _submit,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFF97316),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          child: _saving
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _isEditing
-                                          ? Icons.save_rounded
-                                          : Icons.person_add_rounded,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(_isEditing
-                                        ? 'Save Changes'
-                                        : 'Create Staff Member'),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -70,
+                right: -50,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 190,
+                    height: 190,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.16),
+                    ),
                   ),
                 ),
-    );
-  }
-
-  Widget _imagePickerSection() {
-    const size = 88.0;
-    return Center(
-      child: GestureDetector(
-        onTap: _saving ? null : _pickImage,
-        child: Stack(
-          children: [
-            Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFF0ECE6),
-                border: Border.all(color: const Color(0xFFE8DDD2), width: 2),
               ),
-              child: ClipOval(
-                child: _imagePath != null
-                    ? Image.file(
-                        File(_imagePath!),
-                        width: size,
-                        height: size,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            _initialsCircle(size),
+              Positioned(
+                top: 34,
+                right: 96,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.14),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 110,
+                left: -60,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: loading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: MohajonWarm.primary,
+                        ),
                       )
-                    : _photoUrl != null
-                        ? Image.network(
-                            '${AppConfig.apiBaseUrl}$_photoUrl',
-                            width: size,
-                            height: size,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                _initialsCircle(size),
-                          )
-                        : _initialsCircle(size),
+                    : error
+                        ? _errorState()
+                        : Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: ListView(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        18, 12, 18, 16),
+                                    children: [
+                                      _FormHeader(
+                                        title: _isEditing
+                                            ? 'Edit Staff Member'
+                                            : 'Add Staff Member',
+                                        subtitle: 'Team & permissions',
+                                        onBack: () =>
+                                            Navigator.of(context).maybePop(),
+                                      ),
+                                      const SizedBox(height: 18),
+                                      _StaffPhotoPicker(
+                                        initials: _initials,
+                                        imagePath: _imagePath,
+                                        photoUrl: _photoUrl,
+                                        onTap: _saving ? null : _pickImage,
+                                      ),
+                                      const SizedBox(height: 18),
+                                      _SectionCard(
+                                        icon: Icons.badge_outlined,
+                                        iconColor: MohajonWarm.goldText,
+                                        iconBackground: MohajonWarm.tintYellow,
+                                        title: 'Staff Details',
+                                        children: [
+                                          const _FieldLabel(
+                                            label: 'Full Name',
+                                            required: true,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _nameCtrl,
+                                            textCapitalization:
+                                                TextCapitalization.words,
+                                            onChanged: (_) => setState(() {}),
+                                            decoration: const InputDecoration(
+                                              prefixIcon: Icon(
+                                                Icons.person_outline_rounded,
+                                                size: 20,
+                                                color: MohajonWarm.muted,
+                                              ),
+                                              hintText: 'e.g. Karim Uddin',
+                                            ),
+                                            validator: (v) =>
+                                                v?.trim().isEmpty == true
+                                                    ? 'Name is required'
+                                                    : null,
+                                          ),
+                                          const SizedBox(height: 14),
+                                          const _FieldLabel(
+                                              label: 'Phone Number'),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _phoneCtrl,
+                                            keyboardType: TextInputType.phone,
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                              LengthLimitingTextInputFormatter(
+                                                  13),
+                                            ],
+                                            decoration: const InputDecoration(
+                                              prefixIcon: Icon(
+                                                Icons.phone_outlined,
+                                                size: 20,
+                                                color: MohajonWarm.muted,
+                                              ),
+                                              hintText: 'e.g. 01712-345678',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 14),
+                                      _SectionCard(
+                                        icon: Icons.lock_outline_rounded,
+                                        iconColor: MohajonWarm.green,
+                                        iconBackground: MohajonWarm.tintGreen,
+                                        title: 'Sign In Credentials',
+                                        children: [
+                                          const _FieldLabel(
+                                            label: 'Email',
+                                            required: true,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _emailCtrl,
+                                            keyboardType:
+                                                TextInputType.emailAddress,
+                                            enabled: !_isEditing,
+                                            autocorrect: false,
+                                            decoration: const InputDecoration(
+                                              prefixIcon: Icon(
+                                                Icons.email_outlined,
+                                                size: 20,
+                                                color: MohajonWarm.muted,
+                                              ),
+                                              hintText:
+                                                  'e.g. karim@hishabbondhu.com',
+                                            ),
+                                            validator: (v) {
+                                              final trimmed = v?.trim() ?? '';
+                                              if (!_isEditing &&
+                                                  trimmed.isEmpty) {
+                                                return 'Email is required — staff signs in with it';
+                                              }
+                                              if (trimmed.isNotEmpty) {
+                                                final emailRegex = RegExp(
+                                                    r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                                                if (!emailRegex
+                                                    .hasMatch(trimmed)) {
+                                                  return 'Enter a valid email address';
+                                                }
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          if (!_isEditing) ...[
+                                            const SizedBox(height: 14),
+                                            const _FieldLabel(
+                                              label: 'Password',
+                                              required: true,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextFormField(
+                                              controller: _passwordCtrl,
+                                              obscureText: true,
+                                              decoration:
+                                                  const InputDecoration(
+                                                prefixIcon: Icon(
+                                                  Icons.password_rounded,
+                                                  size: 20,
+                                                  color: MohajonWarm.muted,
+                                                ),
+                                                hintText:
+                                                    'Minimum 6 characters',
+                                              ),
+                                              validator: (v) {
+                                                if (v?.trim().isEmpty == true) {
+                                                  return 'Password is required';
+                                                }
+                                                if ((v?.length ?? 0) < 6) {
+                                                  return 'Password must be at least 6 characters';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ],
+                                          if (_isEditing) ...[
+                                            const SizedBox(height: 12),
+                                            const Text(
+                                              'Email and password stay unchanged while editing.',
+                                              style: TextStyle(
+                                                color: MohajonWarm.muted,
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 14),
+                                      _SectionCard(
+                                        icon:
+                                            Icons.admin_panel_settings_rounded,
+                                        iconColor: MohajonWarm.orange,
+                                        iconBackground: MohajonWarm.tintOrange,
+                                        title: 'Role',
+                                        children: [
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children: roles.map((role) {
+                                              final isSelected =
+                                                  role.code == _selectedRole;
+                                              return _PillChip(
+                                                label: role.name,
+                                                selected: isSelected,
+                                                onTap: () => setState(() =>
+                                                    _selectedRole = role.code),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 14),
+                                      _menuSection(menus),
+                                    ],
+                                  ),
+                                ),
+                                _SaveBar(
+                                  child: ActionButton(
+                                    onPressed: _saving ? null : _submit,
+                                    isBusy: _saving,
+                                    icon: _isEditing
+                                        ? Icons.save_rounded
+                                        : Icons.person_add_rounded,
+                                    label: _isEditing
+                                        ? 'Save Changes'
+                                        : 'Create Staff Member',
+                                    busyLabel: _isEditing
+                                        ? 'Updating...'
+                                        : 'Creating...',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
               ),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF97316),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  color: Colors.white,
-                  size: 15,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _initialsCircle(double size) {
-    final name = _nameCtrl.text.trim();
-    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    final initials = parts.length >= 2
-        ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
-        : name.isNotEmpty
-            ? name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase()
-            : (widget.staff?.initials ?? '?');
-    return Center(
-      child: Text(
-        initials,
-        style: TextStyle(
-          color: const Color(0xFF525252),
-          fontSize: size * 0.34,
-          fontWeight: FontWeight.w700,
+            ],
+          ),
         ),
       ),
     );
@@ -413,10 +527,19 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.cloud_off_rounded,
-              size: 48,
-              color: Color(0xFFD4D4D4),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: MohajonWarm.goldBorder),
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                size: 28,
+                color: MohajonWarm.goldText,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -424,8 +547,8 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF525252),
+                fontWeight: FontWeight.w800,
+                color: MohajonWarm.ink,
               ),
             ),
             const SizedBox(height: 16),
@@ -434,6 +557,13 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                 ref.invalidate(staffRolesProvider);
                 ref.invalidate(staffMenusProvider);
               },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: MohajonWarm.ink,
+                side: const BorderSide(color: MohajonWarm.goldBorder),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Retry'),
             ),
           ],
@@ -442,79 +572,44 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     );
   }
 
-  Widget _roleSection(List<StaffRole> roles) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionTitle('Role', required: true),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: roles.map((role) {
-            final isSelected = role.code == _selectedRole;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedRole = role.code),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFFF97316)
-                      : const Color(0xFFF0ECE6),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  role.name,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected
-                        ? Colors.white
-                        : const Color(0xFF525252),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
   Widget _menuSection(List<AppMenu> menus) {
     final sections = <String, List<AppMenu>>{};
     for (final menu in menus) {
       sections.putIfAbsent(menu.section, () => []).add(menu);
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _SectionCard(
+      icon: Icons.apps_rounded,
+      iconColor: MohajonWarm.red,
+      iconBackground: MohajonWarm.tintRed,
+      title: 'Menu Access',
       children: [
-        _sectionTitle('Menu Access'),
-        const SizedBox(height: 4),
         const Text(
           'Select which menus this staff member can see after login.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF98A2B3)),
+          style: TextStyle(
+            color: MohajonWarm.muted,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         for (final entry in sections.entries) ...[
           Padding(
-            padding: const EdgeInsets.only(top: 10, bottom: 4),
+            padding: const EdgeInsets.only(top: 12, bottom: 6),
             child: Text(
-              _sectionLabel(entry.key),
+              _sectionLabel(entry.key).toUpperCase(),
               style: const TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
-                color: Color(0xFFF97316),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: MohajonWarm.goldText,
               ),
             ),
           ),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF0ECE6)),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: MohajonWarm.goldBorder),
             ),
             child: Column(
               children: [
@@ -524,7 +619,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: Color(0xFFF0EAE2),
+                      color: Color(0xFFF3ECDA),
                     ),
                   _MenuCheckboxTile(
                     menu: entry.value[i],
@@ -548,26 +643,6 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
     );
   }
 
-  Widget _sectionTitle(String text, {bool required = false}) {
-    return Row(
-      children: [
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1917),
-          ),
-        ),
-        if (required)
-          const Text(
-            ' *',
-            style: TextStyle(fontSize: 13, color: Color(0xFFEF5350)),
-          ),
-      ],
-    );
-  }
-
   String _sectionLabel(String section) {
     return switch (section) {
       'MAIN' => 'Main Menu',
@@ -576,6 +651,414 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
       'APP' => 'App',
       _ => section,
     };
+  }
+}
+
+/// Round photo picker matching the Add Client profile photo.
+class _StaffPhotoPicker extends StatelessWidget {
+  const _StaffPhotoPicker({
+    required this.initials,
+    required this.imagePath,
+    required this.photoUrl,
+    required this.onTap,
+  });
+
+  final String initials;
+  final String? imagePath;
+  final String? photoUrl;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 96.0;
+    final hasPhoto = imagePath != null || (photoUrl?.isNotEmpty == true);
+
+    return Center(
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: size + 12,
+              height: size + 12,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: MohajonWarm.primary.withValues(alpha: 0.30),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    width: size,
+                    height: size,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    child: ClipOval(
+                      child: imagePath != null
+                          ? Image.file(
+                              File(imagePath!),
+                              width: size,
+                              height: size,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _fallback(),
+                            )
+                          : (photoUrl?.isNotEmpty == true)
+                              ? Image.network(
+                                  '${AppConfig.apiBaseUrl}$photoUrl',
+                                  width: size,
+                                  height: size,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => _fallback(),
+                                )
+                              : _fallback(),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: MohajonWarm.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: MohajonWarm.primary
+                                .withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.photo_camera_rounded,
+                        color: MohajonWarm.ink,
+                        size: 15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: MohajonWarm.tintYellow,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: MohajonWarm.goldBorder),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  hasPhoto
+                      ? Icons.check_circle_rounded
+                      : Icons.touch_app_rounded,
+                  size: 13,
+                  color: MohajonWarm.goldText,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  hasPhoto
+                      ? 'Photo added — tap to change'
+                      : 'Tap to add staff photo',
+                  style: const TextStyle(
+                    color: Color(0xFF5D4A00),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fallback() {
+    return Center(
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: MohajonWarm.goldText,
+          fontSize: 30,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+/// Pinned bottom bar so the save action is always reachable.
+class _SaveBar extends StatelessWidget {
+  const _SaveBar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        border: const Border(
+          top: BorderSide(color: MohajonWarm.goldBorder),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Custom warm header matching the Stock screen top bar.
+class _FormHeader extends StatelessWidget {
+  const _FormHeader({
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(11),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(11),
+            onTap: onBack,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: MohajonWarm.goldBorder),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: MohajonWarm.ink,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.primary.withValues(alpha: 0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.group_rounded,
+            color: MohajonWarm.ink,
+            size: 17,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: MohajonWarm.ink,
+                ),
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: MohajonWarm.muted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const NotificationBell(),
+        const SizedBox(width: 14),
+        const ShopAvatar(
+          radius: 17,
+          backgroundColor: Color(0xFFFFFDF7),
+          textColor: MohajonWarm.ink,
+        ),
+      ],
+    );
+  }
+}
+
+/// White card panel with gold border matching the Stock search panel.
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconColor.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: iconColor, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+/// Pill chip matching the Stock filter chips.
+class _PillChip extends StatelessWidget {
+  const _PillChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? MohajonWarm.primary : Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? MohajonWarm.primary.withValues(alpha: 0.45)
+                  : MohajonWarm.goldBorder,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -604,8 +1087,8 @@ class _MenuCheckboxTile extends StatelessWidget {
                   : Icons.check_box_outline_blank_rounded,
               size: 22,
               color: checked
-                  ? const Color(0xFFF97316)
-                  : const Color(0xFFD4D4D4),
+                  ? MohajonWarm.primary
+                  : MohajonWarm.goldBorder,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -613,8 +1096,8 @@ class _MenuCheckboxTile extends StatelessWidget {
                 menu.name,
                 style: const TextStyle(
                   fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1C1917),
+                  fontWeight: FontWeight.w700,
+                  color: MohajonWarm.ink,
                 ),
               ),
             ),
@@ -625,91 +1108,30 @@ class _MenuCheckboxTile extends StatelessWidget {
   }
 }
 
-class _InputField extends StatelessWidget {
-  const _InputField({
-    required this.label,
-    required this.controller,
-    required this.placeholder,
-    this.required = false,
-    this.obscure = false,
-    this.keyboardType,
-    this.validator,
-    this.enabled = true,
-  });
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label, this.required = false});
 
   final String label;
-  final TextEditingController controller;
-  final String placeholder;
   final bool required;
-  final bool obscure;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF525252),
-              ),
-            ),
-            if (required)
-              const Text(
-                ' *',
-                style: TextStyle(fontSize: 12, color: Color(0xFFEF5350)),
-              ),
-          ],
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          color: MohajonWarm.ink,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
-          enabled: enabled,
-          validator: validator,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF1C1917)),
-          decoration: InputDecoration(
-            hintText: placeholder,
-            hintStyle:
-                const TextStyle(fontSize: 13, color: Color(0xFFD4D4D4)),
-            filled: true,
-            fillColor: enabled
-                ? const Color(0xFFFFF8F1)
-                : const Color(0xFFF5F1EA),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
+        children: [
+          TextSpan(text: label),
+          if (required)
+            const TextSpan(
+              text: ' *',
+              style: TextStyle(color: MohajonWarm.red),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFFFFC089), width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFDC2626)),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
