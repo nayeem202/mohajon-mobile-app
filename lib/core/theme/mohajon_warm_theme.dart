@@ -37,6 +37,13 @@ class MohajonWarm {
 
   static ThemeData theme(ThemeData base) {
     return base.copyWith(
+      textTheme: base.textTheme.copyWith(
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: ink,
+        ),
+      ),
       colorScheme: base.colorScheme.copyWith(
         primary: primary,
         onPrimary: Colors.white,
@@ -64,7 +71,9 @@ class MohajonWarm {
         ),
         hintStyle: const TextStyle(
           color: muted,
-          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -77,6 +86,19 @@ class MohajonWarm {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: primary, width: 1.6),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: red, width: 1.4),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: red, width: 1.6),
+        ),
+        errorStyle: const TextStyle(
+          color: red,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
       floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(

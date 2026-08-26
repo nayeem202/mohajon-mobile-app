@@ -178,25 +178,49 @@ class SyncService {
 
   Future<void> _pullCollection(String name, String shopId) async {
     final collection = _collectionFor(name);
-    final lastPulledAt = _lastPulledAt(name, shopId);
-    final response = await _api.get(
-      '/api/v1/sync/pull',
-      query: {
-        'collection': name,
-        if (lastPulledAt != null) 'after': lastPulledAt.toIso8601String(),
-      },
-      timeout: _pullTimeout,
-    );
-    final documents = (response['documents'] as List?)
-            ?.cast<Map<String, dynamic>>() ??
-        const <Map<String, dynamic>>[];
-    for (final doc in documents) {
-      if (doc['shopId'] != shopId) continue;
-      await collection.mergeRemote(doc);
+    var after = _lastPulledAt(name, shopId);
+
+    // Chunked delta pull: the server caps each page when `limit` is sent and
+    // reports `hasMore`, so a huge backlog never arrives as one giant
+    // response. `after` advances to the newest updatedAt seen in each page;
+    // if a page makes no progress we nudge it forward to guarantee the loop
+    // always terminates.
+    while (true) {
+      final response = await _api.get(
+        '/api/v1/sync/pull',
+        query: {
+          'collection': name,
+          'limit': '500',
+          if (after != null) 'after': after.toIso8601String(),
+        },
+        timeout: _pullTimeout,
+      );
+      final documents = (response['documents'] as List?)
+          ?.cast<Map<String, dynamic>>() ??
+      const <Map<String, dynamic>>[];
+      var newest = after;
+      for (final doc in documents) {
+        if (doc['shopId'] != shopId) continue;
+        await collection.mergeRemote(doc);
+        final updated = DateTime.tryParse('${doc['updatedAt']}');
+        if (updated != null && (newest == null || updated.isAfter(newest))) {
+          newest = updated;
+        }
+      }
+      if (response['hasMore'] != true) {
+        after = DateTime.now();
+        break;
+      }
+      if (newest != null && (after == null || newest.isAfter(after))) {
+        after = newest;
+      } else {
+        after = (after ?? DateTime.now()).add(const Duration(milliseconds: 1));
+      }
     }
+
     await _db.settings.put(
       _lastPulledKey(name, shopId),
-      DateTime.now().toIso8601String(),
+      after.toIso8601String(),
     );
   }
 

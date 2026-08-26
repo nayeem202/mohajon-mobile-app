@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/models/product.dart';
 import '../../../core/services/sync_service.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_image.dart';
@@ -326,7 +326,7 @@ class _GreetingPanel extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: const Color(0xFF2F3028),
+                    color: Color(0xFF2F3028),
                     fontSize: 25,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
@@ -898,105 +898,128 @@ class _LowStockProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOut = product.stockQty <= 0;
-    final statusColor = isOut
-        ? const Color(0xFFEF4444)
-        : const Color(0xFFEA580C);
+    final statusColor = isOut ? const Color(0xFFEF4444) : const Color(0xFFEA580C);
     final level = (product.stockQty / (product.lowStockAlert * 2))
         .clamp(0.0, 1.0)
         .toDouble();
 
     return Material(
-      color: const Color(0xFFFFF7E8),
-      borderRadius: BorderRadius.circular(14),
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ProductFormScreen(product: product),
           ),
         ),
         child: Container(
-          width: 112,
+          width: 138,
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFF3C96B)),
-            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: MohajonWarm.goldBorder),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: statusColor.withValues(alpha: 0.10),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: product.imagePath != null
-                      ? AppImage.file(
-                          File(product.imagePath!),
-                          width: double.infinity,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _fallbackImage(),
-                        )
-                      : _fallbackImage(),
-                ),
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 76,
+                      child: product.imagePath != null
+                          ? AppImage.file(
+                              File(product.imagePath!),
+                              width: double.infinity,
+                              height: 76,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _fallbackImage(),
+                            )
+                          : _fallbackImage(),
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.94),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isOut ? 'Out' : '${product.stockQty} left',
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               Padding(
-                padding: const EdgeInsets.all(9),
+                padding: const EdgeInsets.fromLTRB(10, 9, 10, 11),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            isOut ? 'Out of stock' : '${product.stockQty} left',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
                     Text(
                       product.nameEn,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF2F3028),
+                        color: MohajonWarm.ink,
                         fontWeight: FontWeight.w900,
-                        fontSize: 12,
+                        fontSize: 12.5,
+                        height: 1.25,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
-                      'min ${product.lowStockAlert}',
+                      'Min ${product.lowStockAlert}',
                       style: const TextStyle(
-                        color: Color(0xFF77735F),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        color: MohajonWarm.muted,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 9),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
-                        height: 5,
+                        height: 6,
                         color: const Color(0xFFFFF0A6),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
@@ -1025,7 +1048,7 @@ class _LowStockProductCard extends StatelessWidget {
   Widget _fallbackImage() {
     return Container(
       width: double.infinity,
-      height: 44,
+      height: 76,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1033,11 +1056,26 @@ class _LowStockProductCard extends StatelessWidget {
           colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
         ),
       ),
-      child: const Center(
-        child: Icon(
-          Icons.inventory_2_rounded,
-          color: Color(0xFFE98300),
-          size: 20,
+      child: Center(
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE98300).withValues(alpha: 0.18),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.inventory_2_rounded,
+            color: Color(0xFFE98300),
+            size: 17,
+          ),
         ),
       ),
     );

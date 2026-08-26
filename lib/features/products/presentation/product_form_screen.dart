@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -82,234 +83,487 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     final isEditing = widget.product != null;
     final categories = _categoryOptions();
     return withLoadingOverlay(
-      Scaffold(
-        appBar: AppBar(
-          title: Text(isEditing ? 'Edit Product' : 'Add Product'),
-          actions: [
-            const NotificationBell(),
-            const SizedBox(width: 6),
-            const ShopAvatar(),
-            const SizedBox(width: 12),
-          ],
-        ),
-        body: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            children: [
-              const _FieldLabel(label: 'Product Image'),
-              const SizedBox(height: 8),
-              _ImagePlaceholder(
-                imagePath: _imagePath,
-                onTap: isBusy ? null : _pickImage,
-              ),
-              const SizedBox(height: 14),
-              const _FieldLabel(label: 'Product Name', required: true),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _name,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. Pran Tomato Sauce 200g',
-                ),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 14),
-              const _FieldLabel(label: 'Barcode'),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _barcode,
-                decoration: InputDecoration(
-                  hintText: 'Scan or type barcode',
-                  suffixIcon: IconButton(
-                    tooltip: 'Scan',
-                    icon: const Icon(Icons.qr_code_scanner_rounded),
-                    onPressed: isBusy ? null : _scanBarcode,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              const _FieldLabel(label: 'Category', required: true),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final category in categories)
-                    _ChoiceChip(
-                      label: category,
-                      selected: _selectedCategory == category,
-                      onTap: () => setState(() => _selectedCategory = category),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _FieldLabel(label: 'Buying Price (৳)', required: true),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _buyingPrice,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+      Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+            child: Stack(
+              children: [
+                ..._buildDecorativeCircles(),
+                SafeArea(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Form(
+                          key: _formKey,
+                          child: ListView(
+                            padding:
+                                const EdgeInsets.fromLTRB(18, 12, 18, 16),
+                            children: [
+                              _FormHeader(
+                                title: isEditing
+                                    ? 'Edit Product'
+                                    : 'Add Product',
+                                subtitle: 'Product details & pricing',
+                                onBack: () =>
+                                    Navigator.of(context).maybePop(),
+                              ),
+                              const SizedBox(height: 18),
+                              _ImagePickerCard(
+                                imagePath: _imagePath,
+                                onTap: isBusy ? null : _pickImage,
+                              ),
+                              const SizedBox(height: 14),
+                              _SectionCard(
+                                icon: Icons.shopping_bag_outlined,
+                                iconColor: MohajonWarm.goldText,
+                                iconBackground: MohajonWarm.tintYellow,
+                                title: 'Basic Information',
+                                children: [
+                                  const _FieldLabel(
+                                    label: 'Product Name',
+                                    required: true,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _name,
+                                    textCapitalization:
+                                        TextCapitalization.words,
+                                    decoration: const InputDecoration(
+                                      prefixIcon: Icon(
+                                        Icons.inventory_2_outlined,
+                                        size: 20,
+                                        color: MohajonWarm.muted,
+                                      ),
+                                      hintText: 'e.g. Pran Tomato Sauce 200g',
+                                    ),
+                                    validator: (value) =>
+                                        value == null ||
+                                            value.trim().isEmpty
+                                        ? 'Required'
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  const _FieldLabel(label: 'Barcode'),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _barcode,
+                                    decoration: InputDecoration(
+                                      hintText: 'Scan or type barcode',
+                                      prefixIcon: const Icon(
+                                        Icons.qr_code_rounded,
+                                        size: 20,
+                                        color: MohajonWarm.muted,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        tooltip: 'Scan',
+                                        highlightColor:
+                                            MohajonWarm.primary.withValues(
+                                          alpha: 0.25,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.qr_code_scanner_rounded,
+                                          color: MohajonWarm.goldText,
+                                        ),
+                                        onPressed: isBusy
+                                            ? null
+                                            : _scanBarcode,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              _SectionCard(
+                                icon: Icons.category_outlined,
+                                iconColor: MohajonWarm.green,
+                                iconBackground: MohajonWarm.tintGreen,
+                                title: 'Categorization',
+                                children: [
+                                  const _FieldLabel(
+                                    label: 'Category',
+                                    required: true,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      for (final category in categories)
+                                        _PillChip(
+                                          label: category,
+                                          selected:
+                                              _selectedCategory == category,
+                                          onTap: () => setState(() =>
+                                              _selectedCategory = category),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const _FieldLabel(label: 'Unit'),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      for (final unit in _units)
+                                        _PillChip(
+                                          label: unit,
+                                          selected: _selectedUnit == unit,
+                                          onTap: () => setState(
+                                              () => _selectedUnit = unit),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              _SectionCard(
+                                icon: Icons.payments_outlined,
+                                iconColor: MohajonWarm.orange,
+                                iconBackground: MohajonWarm.tintOrange,
+                                title: 'Pricing',
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const _FieldLabel(
+                                              label: 'Buying Price (৳)',
+                                              required: true,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextFormField(
+                                              controller: _buyingPrice,
+                                              keyboardType: const TextInputType
+                                                  .numberWithOptions(
+                                                decimal: true,
+                                              ),
+                                              decoration:
+                                                  const InputDecoration(
+                                                prefixIcon: Padding(
+                                                  padding: EdgeInsets.only(
+                                                    left: 14,
+                                                    right: 8,
+                                                  ),
+                                                  child: Text(
+                                                    '৳',
+                                                    style: TextStyle(
+                                                      color:
+                                                          MohajonWarm.muted,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
+                                                prefixIconConstraints:
+                                                    BoxConstraints(
+                                                  minWidth: 0,
+                                                  minHeight: 0,
+                                                ),
+                                                hintText: '0.00',
+                                              ),
+                                              validator: (value) =>
+                                                  value == null ||
+                                                      value.trim().isEmpty
+                                                  ? 'Required'
+                                                  : null,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const _FieldLabel(
+                                              label: 'Selling Price (৳)',
+                                              required: true,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextFormField(
+                                              controller: _sellingPrice,
+                                              keyboardType: const TextInputType
+                                                  .numberWithOptions(
+                                                decimal: true,
+                                              ),
+                                              decoration:
+                                                  const InputDecoration(
+                                                prefixIcon: Padding(
+                                                  padding: EdgeInsets.only(
+                                                    left: 14,
+                                                    right: 8,
+                                                  ),
+                                                  child: Text(
+                                                    '৳',
+                                                    style: TextStyle(
+                                                      color:
+                                                          MohajonWarm.muted,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
+                                                prefixIconConstraints:
+                                                    BoxConstraints(
+                                                  minWidth: 0,
+                                                  minHeight: 0,
+                                                ),
+                                                hintText: '0.00',
+                                              ),
+                                              validator: (value) =>
+                                                  value == null ||
+                                                      value.trim().isEmpty
+                                                  ? 'Required'
+                                                  : null,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              _SectionCard(
+                                icon: Icons.inventory_outlined,
+                                iconColor: MohajonWarm.red,
+                                iconBackground: MohajonWarm.tintRed,
+                                title: 'Stock Levels',
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const _FieldLabel(
+                                              label: 'Stock Qty',
+                                              required: true,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextFormField(
+                                              controller: _stockQty,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              decoration: const InputDecoration(
+                                                hintText: '0',
+                                              ),
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.trim().isEmpty) {
+                                                  return 'Required';
+                                                }
+                                                final parsed =
+                                                    int.tryParse(value.trim());
+                                                if (parsed == null ||
+                                                    parsed < 0) {
+                                                  return 'Enter a valid whole number';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const _FieldLabel(
+                                              label: 'Min Alert',
+                                              required: true,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextFormField(
+                                              controller: _lowStock,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              decoration: const InputDecoration(
+                                                hintText: '10',
+                                              ),
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.trim().isEmpty) {
+                                                  return 'Required';
+                                                }
+                                                final parsed =
+                                                    int.tryParse(value.trim());
+                                                if (parsed == null ||
+                                                    parsed < 0) {
+                                                  return 'Enter a valid whole number';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: MohajonWarm.tintOrange,
+                                      border: Border.all(
+                                        color: MohajonWarm.orange
+                                            .withValues(alpha: 0.25),
+                                      ),
+                                      borderRadius:
+                                          BorderRadius.circular(14),
+                                    ),
+                                    child: const Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.notifications_active_outlined,
+                                          size: 16,
+                                          color: MohajonWarm.orange,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'When stock falls below the minimum alert level, you will receive a low-stock notification on the Home dashboard.',
+                                            style: TextStyle(
+                                              color: Color(0xFF9A3412),
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w600,
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isEditing) ...[
+                                const SizedBox(height: 8),
+                                Center(
+                                  child: TextButton.icon(
+                                    onPressed: isBusy
+                                        ? null
+                                        : _deleteProduct,
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: MohajonWarm.red,
+                                      textStyle: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 18),
+                                    label: const Text('Delete'),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          decoration: const InputDecoration(hintText: '0.00'),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Required'
-                              : null,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _FieldLabel(label: 'Selling Price (৳)', required: true),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _sellingPrice,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(hintText: '0.00'),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Required'
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              const _FieldLabel(label: 'Unit'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final unit in _units)
-                    _ChoiceChip(
-                      label: unit,
-                      selected: _selectedUnit == unit,
-                      onTap: () =>
-                          setState(() => _selectedUnit = unit),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _FieldLabel(label: 'Stock Qty', required: true),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _stockQty,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(hintText: '0'),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) return 'Required';
-                            final parsed = int.tryParse(value.trim());
-                            if (parsed == null || parsed < 0) return 'Enter a valid whole number';
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _FieldLabel(label: 'Min Alert', required: true),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _lowStock,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(hintText: '10'),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) return 'Required';
-                            final parsed = int.tryParse(value.trim());
-                            if (parsed == null || parsed < 0) return 'Enter a valid whole number';
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E5),
-                  border: Border.all(color: const Color(0xFFFFD29C)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 18,
-                      color: Color(0xFFF97316),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'When stock falls below the minimum alert level, you will receive a low-stock notification on the Home dashboard.',
-                        style: TextStyle(color: Color(0xFFB45309)),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              ActionButton(
-                onPressed: _save,
-                isBusy: isBusy,
-                icon: Icons.save_outlined,
-                label: isEditing ? 'Update Product' : 'Save Product',
-                busyLabel: isEditing ? 'Updating...' : 'Saving...',
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 46,
-                child: OutlinedButton(
-                  onPressed: isBusy ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              if (isEditing) ...[
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: isBusy ? null : _deleteProduct,
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Delete'),
+                      _SaveBar(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: OutlinedButton(
+                                onPressed: isBusy
+                                    ? null
+                                    : () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 48),
+                                  backgroundColor: Colors.white,
+                                  side: const BorderSide(
+                                    color: MohajonWarm.goldBorder,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  foregroundColor: MohajonWarm.ink,
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                child: const Text('Cancel'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 2,
+                              child: ActionButton(
+                                onPressed: _save,
+                                isBusy: isBusy,
+                                icon: Icons.save_outlined,
+                                label: isEditing
+                                    ? 'Update Product'
+                                    : 'Save Product',
+                                busyLabel: isEditing
+                                    ? 'Updating...'
+                                    : 'Saving...',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
-      label: widget.product == null
-          ? 'Saving product...'
-          : 'Updating product...',
+      label:
+          widget.product == null ? 'Saving product...' : 'Updating product...',
+    );
+  }
+
+  List<Widget> _buildDecorativeCircles() {
+    return [
+      Positioned(
+        top: -70,
+        right: -50,
+        child: _circle(190, Colors.white.withValues(alpha: 0.16)),
+      ),
+      Positioned(
+        top: 34,
+        right: 96,
+        child: _circle(64, Colors.white.withValues(alpha: 0.14)),
+      ),
+      Positioned(
+        top: 110,
+        left: -60,
+        child: _circle(150, Colors.white.withValues(alpha: 0.10)),
+      ),
+    ];
+  }
+
+  Widget _circle(double size, Color color) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      ),
     );
   }
 
@@ -335,20 +589,70 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   Future<void> _pickImage() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Camera'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Gallery'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-          ],
+      backgroundColor: MohajonWarm.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: MohajonWarm.goldBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Product Image',
+                style: TextStyle(
+                  color: MohajonWarm.ink,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: MohajonWarm.goldText,
+                ),
+                title: const Text(
+                  'Take a photo',
+                  style: TextStyle(
+                    color: MohajonWarm.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: MohajonWarm.goldText,
+                ),
+                title: const Text(
+                  'Choose from gallery',
+                  style: TextStyle(
+                    color: MohajonWarm.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -396,8 +700,341 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   }
 }
 
-class _ChoiceChip extends StatelessWidget {
-  const _ChoiceChip({
+/// Pinned bottom bar so save/cancel actions are always reachable.
+class _SaveBar extends StatelessWidget {
+  const _SaveBar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        border: const Border(
+          top: BorderSide(color: MohajonWarm.goldBorder),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Custom warm header matching the Stock screen top bar.
+class _FormHeader extends StatelessWidget {
+  const _FormHeader({
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(11),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(11),
+            onTap: onBack,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: MohajonWarm.goldBorder),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: MohajonWarm.ink,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.primary.withValues(alpha: 0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.inventory_2_rounded,
+            color: MohajonWarm.ink,
+            size: 17,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: MohajonWarm.ink,
+                ),
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: MohajonWarm.muted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const NotificationBell(),
+        const SizedBox(width: 14),
+        const ShopAvatar(
+          radius: 17,
+          backgroundColor: Color(0xFFFFFDF7),
+          textColor: MohajonWarm.ink,
+        ),
+      ],
+    );
+  }
+}
+
+/// White card panel with gold border matching the Stock search panel.
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconColor.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: iconColor, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+/// Warm image picker panel matching the Stock card styling.
+class _ImagePickerCard extends StatelessWidget {
+  const _ImagePickerCard({required this.onTap, this.imagePath});
+
+  final VoidCallback? onTap;
+  final String? imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          height: 170,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: MohajonWarm.goldBorder),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.ink.withValues(alpha: 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: imagePath != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(19),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      AppImage.file(
+                        File(imagePath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _placeholder(),
+                      ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: MohajonWarm.primary,
+                            borderRadius: BorderRadius.circular(10),
+                            border:
+                                Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: MohajonWarm.primary
+                                    .withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            color: MohajonWarm.ink,
+                            size: 15,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : _placeholder(),
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+              ),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.add_photo_alternate_rounded,
+              color: Color(0xFFE98300),
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tap to upload image',
+            style: TextStyle(
+              color: MohajonWarm.ink,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'Clear photo helps identify products faster',
+            style: TextStyle(
+              color: MohajonWarm.muted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pill chip matching the Stock filter chips.
+class _PillChip extends StatelessWidget {
+  const _PillChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -409,24 +1046,29 @@ class _ChoiceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return Material(
+      color: selected ? MohajonWarm.primary : Colors.white,
       borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFE98300) : const Color(0xFFF7F5F0),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? const Color(0xFFE98300) : const Color(0xFFE8DECF),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? MohajonWarm.primary.withValues(alpha: 0.45)
+                  : MohajonWarm.goldBorder,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF475467),
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),
@@ -444,103 +1086,18 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return RichText(
       text: TextSpan(
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF101828),
-          fontWeight: FontWeight.w700,
+        style: const TextStyle(
+          color: MohajonWarm.ink,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
         ),
         children: [
           TextSpan(text: label),
           if (required)
             const TextSpan(
               text: ' *',
-              style: TextStyle(color: Color(0xFFEF4444)),
+              style: TextStyle(color: MohajonWarm.red),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ImagePlaceholder extends StatelessWidget {
-  const _ImagePlaceholder({required this.onTap, this.imagePath});
-
-  final VoidCallback? onTap;
-  final String? imagePath;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        height: 160,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFCFBF8),
-          border: Border.all(color: const Color(0xFFE8DECF)),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: imagePath != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    AppImage.file(
-                      File(imagePath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
-                    ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black45,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.edit_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : _placeholder(),
-      ),
-    );
-  }
-
-  Widget _placeholder() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE4BF),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Icon(
-              Icons.photo_camera_rounded,
-              color: Color(0xFFE98300),
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Tap to upload image',
-            style: TextStyle(
-              color: Color(0xFF98A2B3),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ],
       ),
     );

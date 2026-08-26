@@ -17,6 +17,7 @@ import '../../features/staff/providers/staff_providers.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
+import '../theme/mohajon_warm_theme.dart';
 import '../widgets/async_action_state.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/shop_avatar.dart';
@@ -30,18 +31,18 @@ class _MoreTopBar extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+              colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
             ),
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFF97316).withValues(alpha: 0.28),
+                color: MohajonWarm.primary.withValues(alpha: 0.28),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -49,11 +50,11 @@ class _MoreTopBar extends StatelessWidget {
           ),
           child: const Icon(
             Icons.grid_view_rounded,
-            color: Colors.white,
-            size: 19,
+            color: MohajonWarm.ink,
+            size: 17,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,9 +64,9 @@ class _MoreTopBar extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF101828),
+                  color: MohajonWarm.ink,
                 ),
               ),
               Text(
@@ -73,9 +74,9 @@ class _MoreTopBar extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF8A8A8A),
+                  color: MohajonWarm.muted,
                 ),
               ),
             ],
@@ -83,7 +84,11 @@ class _MoreTopBar extends StatelessWidget {
         ),
         const NotificationBell(),
         const SizedBox(width: 14),
-        const ShopAvatar(),
+        const ShopAvatar(
+          radius: 17,
+          backgroundColor: Color(0xFFFFFDF7),
+          textColor: MohajonWarm.ink,
+        ),
       ],
     );
   }
@@ -101,209 +106,278 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = Theme.of(context).colorScheme;
     final locale = ref.watch(localeProvider);
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
-    final isOwner = user?.roles.any(
+    final isOwner =
+        user?.roles.any(
           (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
-        ) ?? false;
+        ) ??
+        false;
     final displayName = user?.displayName;
     final themeMode = ref.watch(themeModeProvider);
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
 
     return withLoadingOverlay(
-      Scaffold(
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-            children: [
-              const _MoreTopBar(),
-              const SizedBox(height: 18),
-              _AccountHeader(
-                name: displayName?.isNotEmpty == true
-                    ? (displayName ?? 'Signed in account')
-                    : 'Signed in account',
-                email: user?.email ?? 'No email available',
-                sync: sync,
-              ),
-              const SizedBox(height: 22),
-              _FeatureSection(
-                title: l10n.t('sectionOperations'),
-                children: [
-                  _FeatureItem(
-                    icon: Icons.store_rounded,
-                    title: 'Vendors',
-                    subtitle: 'Manage suppliers and purchases',
-                    color: const Color(0xFFB45309),
-                    menu: MenuCodes.vendors,
-                    onTap: () => _open(const VendorListScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.payments_rounded,
-                    title: 'Expenses',
-                    subtitle: 'Track rent, salaries, and bills',
-                    color: const Color(0xFFF97316),
-                    menu: MenuCodes.expenses,
-                    onTap: () => _open(const ExpensesScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.people_alt_rounded,
-                    title: 'Investors',
-                    subtitle: 'Track investors and payouts',
-                    color: const Color(0xFF047857),
-                    menu: MenuCodes.investors,
-                    onTap: () => _open(const InvestorListScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.qr_code_scanner_rounded,
-                    title: 'Barcode scan',
-                    subtitle: 'Find code from camera',
-                    color: colors.primary,
-                    menu: MenuCodes.barcode,
-                    onTap: () => _open(const BarcodeScanScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.group_outlined,
-                    title: 'Staff',
-                    subtitle: 'Manage team members',
-                    color: const Color(0xFFB45309),
-                    menu: MenuCodes.staff,
-                    onTap: () => _open(const StaffListScreen()),
-                  ),
-                ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
-              ),
-              const SizedBox(height: 16),
-              _FeatureSection(
-                title: l10n.t('sectionFinance'),
-                children: [
-                  _FeatureItem(
-                    icon: Icons.account_balance_rounded,
-                    title: 'Investments',
-                    subtitle: 'Manage investments and ROI',
-                    color: const Color(0xFF0F766E),
-                    menu: MenuCodes.investments,
-                    onTap: () => _open(const InvestmentDashboardScreen()),
-                  ),
-                ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
-              ),
-              const SizedBox(height: 16),
-              _FeatureSection(
-                title: l10n.t('sectionApp'),
-                children: [
-                  _FeatureItem(
-                    icon: Icons.person_rounded,
-                    title: 'My Profile',
-                    subtitle: 'View and edit your profile',
-                    color: colors.primary,
-                    menu: MenuCodes.profile,
-                    onTap: () => _open(const ProfileOverviewScreen()),
-                  ),
-                  _FeatureItem(
-                    icon: Icons.cloud_sync_rounded,
-                    title: l10n.t('syncNow'),
-                    subtitle: _syncText(sync),
-                    color: _syncColor(context, sync.phase),
-                    onTap: _syncNow,
-                  ),
-                  _FeatureItem(
-                    icon: Icons.dark_mode_rounded,
-                    title: 'Theme',
-                    subtitle: _themeLabel(themeMode),
-                    color: colors.primary,
-                    trailing: SegmentedButton<ThemeMode>(
-                      style: _segmentStyle(),
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          icon: Icon(Icons.light_mode_outlined, size: 16),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          icon: Icon(Icons.settings_suggest_outlined, size: 16),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          icon: Icon(Icons.dark_mode_outlined, size: 16),
-                        ),
-                      ],
-                      selected: {themeMode},
-                      onSelectionChanged: (value) {
-                        final mode = value.first;
-                        ref.read(themeModeProvider.notifier).state = mode;
-                        ref
-                            .read(localDatabaseProvider)
-                            .settings
-                            .put('themeMode', mode.name);
-                      },
+      Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: MohajonWarm.pageGradient,
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -70,
+                  right: -50,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 190,
+                      height: 190,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.16),
+                      ),
                     ),
                   ),
-                  _FeatureItem(
-                    icon: Icons.translate_rounded,
-                    title: l10n.t('language'),
-                    subtitle: locale.languageCode == 'bn' ? 'Bangla' : 'English',
-                    color: colors.tertiary,
-                    trailing: SegmentedButton<String>(
-                      style: _segmentStyle(),
-                      segments: [
-                        ButtonSegment(
-                          value: 'en',
-                          label: Text(l10n.t('english')),
-                        ),
-                        ButtonSegment(value: 'bn', label: Text(l10n.t('bangla'))),
-                      ],
-                      selected: {locale.languageCode},
-                      onSelectionChanged: (value) {
-                        final code = value.first;
-                        ref
-                            .read(localDatabaseProvider)
-                            .settings
-                            .put('languageCode', code);
-                        ref.read(localeProvider.notifier).state = Locale(code);
-                      },
+                ),
+                Positioned(
+                  top: 34,
+                  right: 96,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.14),
+                      ),
                     ),
                   ),
-                  _FeatureItem(
-                    icon: Icons.lock_outline_rounded,
-                    title: l10n.t('accountSecurity'),
-                    subtitle: l10n.t('accountSecurityDesc'),
-                    color: colors.primary,
-                    menu: MenuCodes.security,
-                    onTap: () => _open(const AccountSecurityScreen()),
+                ),
+                Positioned(
+                  top: 110,
+                  left: -60,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
                   ),
-                  _FeatureItem(
-                    icon: Icons.privacy_tip_outlined,
-                    title: l10n.t('privacy'),
-                    subtitle: l10n.t('privacyDesc'),
-                    color: colors.tertiary,
-                    menu: MenuCodes.privacy,
-                    onTap: () => _open(const PrivacySettingsScreen()),
+                ),
+                SafeArea(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                    children: [
+                      const _MoreTopBar(),
+                      const SizedBox(height: 18),
+                      _AccountHeader(
+                        name: displayName?.isNotEmpty == true
+                            ? (displayName ?? 'Signed in account')
+                            : 'Signed in account',
+                        email: user?.email ?? 'No email available',
+                        sync: sync,
+                      ),
+                      const SizedBox(height: 22),
+                      _FeatureSection(
+                        title: l10n.t('sectionOperations'),
+                        children: [
+                          _FeatureItem(
+                            icon: Icons.store_rounded,
+                            title: 'Vendors',
+                            subtitle: 'Manage suppliers and purchases',
+                            color: MohajonWarm.goldText,
+                            background: MohajonWarm.tintYellow,
+                            menu: MenuCodes.vendors,
+                            onTap: () => _open(const VendorListScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.payments_rounded,
+                            title: 'Expenses',
+                            subtitle: 'Track rent, salaries, and bills',
+                            color: MohajonWarm.orange,
+                            background: MohajonWarm.tintOrange,
+                            menu: MenuCodes.expenses,
+                            onTap: () => _open(const ExpensesScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.people_alt_rounded,
+                            title: 'Investors',
+                            subtitle: 'Track investors and payouts',
+                            color: MohajonWarm.green,
+                            background: MohajonWarm.tintGreen,
+                            menu: MenuCodes.investors,
+                            onTap: () => _open(const InvestorListScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.qr_code_scanner_rounded,
+                            title: 'Barcode scan',
+                            subtitle: 'Find code from camera',
+                            color: MohajonWarm.red,
+                            background: MohajonWarm.tintRed,
+                            menu: MenuCodes.barcode,
+                            onTap: () => _open(const BarcodeScanScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.group_outlined,
+                            title: 'Staff',
+                            subtitle: 'Manage team members',
+                            color: MohajonWarm.goldText,
+                            background: MohajonWarm.tintYellow,
+                            menu: MenuCodes.staff,
+                            onTap: () => _open(const StaffListScreen()),
+                          ),
+                        ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      _FeatureSection(
+                        title: l10n.t('sectionFinance'),
+                        children: [
+                          _FeatureItem(
+                            icon: Icons.account_balance_rounded,
+                            title: 'Investments',
+                            subtitle: 'Manage investments and ROI',
+                            color: MohajonWarm.green,
+                            background: MohajonWarm.tintGreen,
+                            menu: MenuCodes.investments,
+                            onTap: () => _open(const InvestmentDashboardScreen()),
+                          ),
+                        ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      _FeatureSection(
+                        title: l10n.t('sectionApp'),
+                        children: [
+                          _FeatureItem(
+                            icon: Icons.person_rounded,
+                            title: 'My Profile',
+                            subtitle: 'View and edit your profile',
+                            color: MohajonWarm.goldText,
+                            background: MohajonWarm.tintYellow,
+                            menu: MenuCodes.profile,
+                            onTap: () => _open(const ProfileOverviewScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.cloud_sync_rounded,
+                            title: l10n.t('syncNow'),
+                            subtitle: _syncText(sync),
+                            color: _syncColor(context, sync.phase),
+                            onTap: _syncNow,
+                          ),
+                          _FeatureItem(
+                            icon: Icons.dark_mode_rounded,
+                            title: 'Theme',
+                            subtitle: _themeLabel(themeMode),
+                            color: MohajonWarm.goldText,
+                            background: MohajonWarm.tintYellow,
+                            trailing: SegmentedButton<ThemeMode>(
+                              style: _segmentStyle(),
+                              segments: const [
+                                ButtonSegment(
+                                  value: ThemeMode.light,
+                                  icon: Icon(Icons.light_mode_outlined, size: 16),
+                                ),
+                                ButtonSegment(
+                                  value: ThemeMode.system,
+                                  icon: Icon(Icons.settings_suggest_outlined, size: 16),
+                                ),
+                                ButtonSegment(
+                                  value: ThemeMode.dark,
+                                  icon: Icon(Icons.dark_mode_outlined, size: 16),
+                                ),
+                              ],
+                              selected: {themeMode},
+                              onSelectionChanged: (value) {
+                                final mode = value.first;
+                                ref.read(themeModeProvider.notifier).state = mode;
+                                ref
+                                    .read(localDatabaseProvider)
+                                    .settings
+                                    .put('themeMode', mode.name);
+                              },
+                            ),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.translate_rounded,
+                            title: l10n.t('language'),
+                            subtitle: locale.languageCode == 'bn' ? 'Bangla' : 'English',
+                            color: MohajonWarm.green,
+                            background: MohajonWarm.tintGreen,
+                            trailing: SegmentedButton<String>(
+                              style: _segmentStyle(),
+                              segments: [
+                                ButtonSegment(
+                                  value: 'en',
+                                  label: Text(l10n.t('english')),
+                                ),
+                                ButtonSegment(value: 'bn', label: Text(l10n.t('bangla'))),
+                              ],
+                              selected: {locale.languageCode},
+                              onSelectionChanged: (value) {
+                                final code = value.first;
+                                ref
+                                    .read(localDatabaseProvider)
+                                    .settings
+                                    .put('languageCode', code);
+                                ref.read(localeProvider.notifier).state = Locale(code);
+                              },
+                            ),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.lock_outline_rounded,
+                            title: l10n.t('accountSecurity'),
+                            subtitle: l10n.t('accountSecurityDesc'),
+                            color: MohajonWarm.red,
+                            background: MohajonWarm.tintRed,
+                            menu: MenuCodes.security,
+                            onTap: () => _open(const AccountSecurityScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.privacy_tip_outlined,
+                            title: l10n.t('privacy'),
+                            subtitle: l10n.t('privacyDesc'),
+                            color: MohajonWarm.orange,
+                            background: MohajonWarm.tintOrange,
+                            menu: MenuCodes.privacy,
+                            onTap: () => _open(const PrivacySettingsScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.settings_rounded,
+                            title: 'Settings',
+                            subtitle: 'App preferences & more',
+                            color: MohajonWarm.goldText,
+                            background: MohajonWarm.tintYellow,
+                            menu: MenuCodes.settings,
+                            onTap: () => _open(const SettingsScreen()),
+                          ),
+                        ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      _FeatureSection(
+                        title: 'Account',
+                        children: [
+                          _FeatureItem(
+                            icon: Icons.logout_rounded,
+                            title: l10n.t('signOut'),
+                            subtitle: l10n.t('signOutDesc'),
+                            color: MohajonWarm.red,
+                            background: MohajonWarm.tintRed,
+                            destructive: true,
+                            onTap: _signOut,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  _FeatureItem(
-                    icon: Icons.settings_rounded,
-                    title: 'Settings',
-                    subtitle: 'App preferences & more',
-                    color: colors.primary,
-                    menu: MenuCodes.settings,
-                    onTap: () => _open(const SettingsScreen()),
-                  ),
-                ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
-              ),
-              const SizedBox(height: 16),
-              _FeatureSection(
-                title: 'Account',
-                children: [
-                  _FeatureItem(
-                    icon: Icons.logout_rounded,
-                    title: l10n.t('signOut'),
-                    subtitle: l10n.t('signOutDesc'),
-                    color: colors.error,
-                    destructive: true,
-                    onTap: _signOut,
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -315,7 +389,16 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     return SegmentedButton.styleFrom(
       visualDensity: VisualDensity.compact,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      backgroundColor: Colors.white,
+      selectedBackgroundColor: MohajonWarm.primary,
+      selectedForegroundColor: const Color(0xFF5D4A00),
+      foregroundColor: MohajonWarm.muted,
+      side: const BorderSide(color: MohajonWarm.goldBorder),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      textStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 
@@ -324,13 +407,12 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
   }
 
   Color _syncColor(BuildContext context, SyncPhase phase) {
-    final colors = Theme.of(context).colorScheme;
     return switch (phase) {
-      SyncPhase.failed => colors.error,
-      SyncPhase.notSignedIn => colors.tertiary,
-      SyncPhase.offline => colors.onSurfaceVariant,
-      SyncPhase.syncing => colors.primary,
-      SyncPhase.idle => colors.secondary,
+      SyncPhase.failed => MohajonWarm.red,
+      SyncPhase.notSignedIn => MohajonWarm.orange,
+      SyncPhase.offline => MohajonWarm.muted,
+      SyncPhase.syncing => MohajonWarm.goldText,
+      SyncPhase.idle => MohajonWarm.green,
     };
   }
 
@@ -388,17 +470,17 @@ class _FeatureSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionTitle(label: title),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE8DDD2)),
+            color: MohajonWarm.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: MohajonWarm.goldBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.045),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: MohajonWarm.ink.withValues(alpha: 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -408,9 +490,9 @@ class _FeatureSection extends StatelessWidget {
                 if (i > 0)
                   const Divider(
                     height: 1,
-                    indent: 70,
+                    indent: 68,
                     endIndent: 14,
-                    color: Color(0xFFF0EAE2),
+                    color: Color(0xFFF3ECDA),
                   ),
                 _FeatureRow(item: children[i]),
               ],
@@ -428,6 +510,7 @@ class _FeatureItem {
     required this.title,
     required this.subtitle,
     required this.color,
+    this.background,
     this.menu,
     this.onTap,
     this.trailing,
@@ -438,6 +521,7 @@ class _FeatureItem {
   final String title;
   final String subtitle;
   final Color color;
+  final Color? background;
   final String? menu;
   final VoidCallback? onTap;
   final Widget? trailing;
@@ -451,12 +535,15 @@ class _FeatureRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final color = item.destructive ? colors.error : item.color;
+    final destructive = item.destructive;
+    final color = destructive ? MohajonWarm.red : item.color;
+    final background = destructive
+        ? MohajonWarm.tintRed
+        : (item.background ?? item.color.withValues(alpha: 0.12));
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         onTap: item.onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -466,10 +553,17 @@ class _FeatureRow extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: item.destructive ? 0.08 : 0.12),
+                  color: background,
                   borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.14),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Icon(item.icon, color: color, size: 22),
+                child: Icon(item.icon, color: color, size: 21),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -480,10 +574,10 @@ class _FeatureRow extends StatelessWidget {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: item.destructive ? colors.error : colors.onSurface,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w900,
+                        color: MohajonWarm.ink,
                       ),
                     ),
                     if (item.subtitle.isNotEmpty) ...[
@@ -494,8 +588,8 @@ class _FeatureRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF8A8A8A),
+                          fontWeight: FontWeight.w600,
+                          color: MohajonWarm.muted,
                         ),
                       ),
                     ],
@@ -509,7 +603,7 @@ class _FeatureRow extends StatelessWidget {
                 const Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
-                  color: Color(0xFFB8B0A6),
+                  color: MohajonWarm.muted,
                 ),
             ],
           ),
@@ -526,28 +620,58 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
-          width: 3,
-          height: 14,
+          width: 4,
+          height: 15,
           decoration: BoxDecoration(
-            color: colors.primary,
+            color: MohajonWarm.primary,
             borderRadius: BorderRadius.circular(999),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Text(
           label.toUpperCase(),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            letterSpacing: 0.3,
+            letterSpacing: 0.6,
             fontWeight: FontWeight.w900,
-            color: colors.onSurface,
+            color: MohajonWarm.ink,
           ),
         ),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: DashedLine(),
+        ),
       ],
+    );
+  }
+}
+
+class DashedLine extends StatelessWidget {
+  const DashedLine({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const dashWidth = 5.0;
+        const dashGap = 4.0;
+        final count =
+            (constraints.maxWidth / (dashWidth + dashGap)).floor();
+        return Row(
+          children: [
+            for (var i = 0; i < count; i++)
+              Container(
+                width: dashWidth,
+                height: 1.2,
+                margin: const EdgeInsets.only(right: dashGap),
+                color: MohajonWarm.goldBorder,
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -575,30 +699,26 @@ class _AccountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final statusColor = switch (sync.phase) {
-      SyncPhase.failed => colors.error,
-      SyncPhase.notSignedIn => colors.secondary,
-      SyncPhase.offline => colors.onSurfaceVariant,
-      SyncPhase.syncing => colors.tertiary,
-      SyncPhase.idle => colors.primary,
+      SyncPhase.failed => MohajonWarm.red,
+      SyncPhase.notSignedIn => MohajonWarm.orange,
+      SyncPhase.offline => MohajonWarm.muted,
+      SyncPhase.syncing => MohajonWarm.goldText,
+      SyncPhase.idle => MohajonWarm.green,
     };
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            colors.primary.withValues(alpha: 0.14),
-            Colors.white,
-          ],
+          colors: [MohajonWarm.tintYellow, MohajonWarm.card],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.16)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withValues(alpha: 0.08),
+            color: MohajonWarm.primary.withValues(alpha: 0.12),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -606,7 +726,7 @@ class _AccountHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const ShopAvatar(radius: 27),
+          const ShopAvatar(radius: 27, backgroundColor: Colors.white),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -618,7 +738,8 @@ class _AccountHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 16.5,
+                    fontSize: 15.5,
+                    color: MohajonWarm.ink,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -626,10 +747,10 @@ class _AccountHeader extends StatelessWidget {
                   email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
                     fontWeight: FontWeight.w600,
-                    fontSize: 12.5,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -637,22 +758,23 @@ class _AccountHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: statusColor.withValues(alpha: 0.25)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.cloud_done_rounded, size: 14, color: statusColor),
+                Icon(Icons.cloud_done_rounded, size: 13, color: statusColor),
                 const SizedBox(width: 4),
                 Text(
                   _syncLabel,
                   style: TextStyle(
                     color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],

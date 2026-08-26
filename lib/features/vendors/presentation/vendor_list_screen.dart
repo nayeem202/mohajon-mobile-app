@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../models/vendor.dart';
 import '../providers/vendor_providers.dart';
 import 'vendor_detail_screen.dart';
-import 'vendor_form_sheet.dart';
+import 'vendor_form_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 
@@ -40,163 +41,214 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
     final searchQuery = ref.watch(vendorSearchQueryProvider);
     final selectedCategory = ref.watch(vendorCategoryFilterProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: vendorsAsync.when(
-          data: (items) {
-            final filtered = ref.watch(filteredVendorsProvider);
-            final totalSpent = items.fold<double>(0, (s, v) => s + v.totalSpent);
-            final totalPending = items.fold<double>(0, (s, v) => s + v.pendingAmount);
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: MohajonWarm.pageGradient,
+          ),
+          child: SafeArea(
+            child: vendorsAsync.when(
+              data: (items) {
+                final filtered = ref.watch(filteredVendorsProvider);
+                final totalSpent = items.fold<double>(
+                  0,
+                  (s, v) => s + v.totalSpent,
+                );
+                final totalPending = items.fold<double>(
+                  0,
+                  (s, v) => s + v.pendingAmount,
+                );
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
-              children: [
-                 _VendorsTopBar(onAddVendor: _openAddVendor),
-                const SizedBox(height: 18),
-                _VendorStats(
-                  totalVendors: items.length,
-                  totalSpent: totalSpent,
-                  totalPending: totalPending,
+                return RefreshIndicator(
+                  color: MohajonWarm.goldText,
+                  onRefresh: () async {
+                    await ref.read(vendorsProvider.future);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
+                    children: [
+                      const _VendorsTopBar(),
+                      const SizedBox(height: 18),
+                      _VendorStats(
+                        totalVendors: items.length,
+                        totalSpent: totalSpent,
+                        totalPending: totalPending,
+                      ),
+                      if (_showSearch) ...[
+                        const SizedBox(height: 16),
+                        _SearchAndFilters(
+                          controller: _searchController,
+                          searchQuery: searchQuery,
+                          selectedSort: _sort,
+                          selectedCategory: selectedCategory,
+                          onSearchChanged: (value) =>
+                              ref
+                                  .read(vendorSearchQueryProvider.notifier)
+                                  .state = value,
+                          onClearSearch: () {
+                            _searchController.clear();
+                            ref
+                                .read(vendorSearchQueryProvider.notifier)
+                                .state = '';
+                          },
+                          onSortChanged: (sort) {
+                            setState(() => _sort = sort);
+                            ref.read(vendorSortProvider.notifier).state =
+                                sort;
+                          },
+                          onCategoryChanged: (cat) =>
+                              ref
+                                  .read(vendorCategoryFilterProvider.notifier)
+                                  .state = cat,
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      if (items.isEmpty)
+                        const EmptyState(
+                          message:
+                              'Add vendors to manage purchases and payments.',
+                          icon: Icons.store_outlined,
+                        )
+                      else if (filtered.isEmpty)
+                        const EmptyState(
+                          message: 'No vendors match your search.',
+                          icon: Icons.search_off_rounded,
+                        )
+                      else
+                        _VendorList(
+                          vendors: filtered,
+                          onVendorTap: (vendor) =>
+                              _openVendorDetail(vendor),
+                        ),
+                    ],
+                  ),
+                );
+              },
+              error: (error, _) => EmptyState(message: error.toString()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  color: MohajonWarm.primary,
                 ),
-                if (_showSearch) ...[
-                  const SizedBox(height: 18),
-                  _SearchAndFilters(
-                    controller: _searchController,
-                    searchQuery: searchQuery,
-                    selectedSort: _sort,
-                    selectedCategory: selectedCategory,
-                    onSearchChanged: (value) =>
-                        ref.read(vendorSearchQueryProvider.notifier).state = value,
-                    onClearSearch: () {
-                      _searchController.clear();
-                      ref.read(vendorSearchQueryProvider.notifier).state = '';
-                    },
-                    onSortChanged: (sort) {
-                      setState(() => _sort = sort);
-                      ref.read(vendorSortProvider.notifier).state = sort;
-                    },
-                    onCategoryChanged: (cat) =>
-                        ref.read(vendorCategoryFilterProvider.notifier).state = cat,
-                  ),
-                ],
-                const SizedBox(height: 18),
-                if (items.isEmpty)
-                  const EmptyState(
-                    message: 'Add vendors to manage purchases and payments.',
-                    icon: Icons.store_outlined,
-                  )
-                else if (filtered.isEmpty)
-                  const EmptyState(
-                    message: 'No vendors match your search.',
-                    icon: Icons.search_off_rounded,
-                  )
-                else
-                  _VendorList(
-                    vendors: filtered,
-                    onVendorTap: (vendor) => _openVendorDetail(vendor),
-                  ),
-              ],
-            );
-          },
-          error: (error, _) => EmptyState(message: error.toString()),
-          loading: () => const Center(child: CircularProgressIndicator()),
-        ),
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'vendorSearch',
-            onPressed: () {
-              setState(() => _showSearch = !_showSearch);
-              if (!_showSearch) {
-                _searchController.clear();
-                ref.read(vendorSearchQueryProvider.notifier).state = '';
-              }
-            },
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(),
-            child: Icon(
-              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
-              size: 24,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'vendorAdd',
-            onPressed: _openAddVendor,
-            backgroundColor: const Color(0xFFF97316),
-            foregroundColor: Colors.white,
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add_rounded, size: 28),
-          ),
-        ],
+        ),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton.small(
+              heroTag: 'vendorSearch',
+              onPressed: () {
+                setState(() => _showSearch = !_showSearch);
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(vendorSearchQueryProvider.notifier).state = '';
+                }
+              },
+              child: Icon(
+                _showSearch
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 8),
+            FloatingActionButton(
+              heroTag: 'vendorAdd',
+              onPressed: _openAddVendor,
+              child: const Icon(Icons.add_rounded, size: 26),
+            ),
+          ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   void _openAddVendor() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const VendorFormSheet(),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const VendorFormScreen()),
     );
   }
 
   void _openVendorDetail(Vendor vendor) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VendorDetailScreen(vendor: vendor),
-      ),
+      MaterialPageRoute(builder: (_) => VendorDetailScreen(vendor: vendor)),
     );
   }
 }
 
 class _VendorsTopBar extends StatelessWidget {
-  const _VendorsTopBar({required this.onAddVendor});
-  final VoidCallback onAddVendor;
+  const _VendorsTopBar();
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.store_rounded,
-            color: Colors.white,
-            size: 17,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            'Vendors',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: colors.onSurface,
+    return IconTheme(
+      data: const IconThemeData(color: MohajonWarm.ink),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.store_rounded,
+              color: MohajonWarm.ink,
+              size: 17,
             ),
           ),
-        ),
-        const NotificationBell(),
-        const SizedBox(width: 14),
-        const ShopAvatar(),
-      ],
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Vendors',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  'Suppliers & purchases',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const NotificationBell(),
+          const SizedBox(width: 14),
+          const ShopAvatar(
+            radius: 17,
+            backgroundColor: Color(0xFFFFFDF7),
+            textColor: MohajonWarm.ink,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -225,8 +277,8 @@ class _VendorStats extends StatelessWidget {
                   label: 'Vendors',
                   value: '$totalVendors',
                   subtext: 'Active suppliers',
-                  color: const Color(0xFFE98300),
-                  background: const Color(0xFFFFF4E5),
+                  color: MohajonWarm.goldText,
+                  background: MohajonWarm.tintYellow,
                 ),
               ),
             ),
@@ -238,8 +290,8 @@ class _VendorStats extends StatelessWidget {
                   label: 'Total Spent',
                   value: money(totalSpent),
                   subtext: 'Across all vendors',
-                  color: const Color(0xFF0F766E),
-                  background: const Color(0xFFE4F6F1),
+                  color: MohajonWarm.green,
+                  background: MohajonWarm.tintGreen,
                 ),
               ),
             ),
@@ -273,6 +325,7 @@ class _VendorStatSpec {
   final Color background;
 }
 
+/// Matches the Home screen stat card styling.
 class _VendorStatCard extends StatelessWidget {
   const _VendorStatCard({required this.spec});
 
@@ -280,7 +333,6 @@ class _VendorStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
       height: 130,
       padding: const EdgeInsets.all(14),
@@ -288,10 +340,10 @@ class _VendorStatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [spec.background, Colors.white],
+          colors: [spec.background, MohajonWarm.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: spec.color.withValues(alpha: 0.14)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
             color: spec.color.withValues(alpha: 0.09),
@@ -305,6 +357,23 @@ class _VendorStatCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: spec.color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(spec.icon, color: spec.color, size: 16),
+              ),
+              const SizedBox(width: 8),
               Flexible(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -327,23 +396,6 @@ class _VendorStatCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(11),
-                  boxShadow: [
-                    BoxShadow(
-                      color: spec.color.withValues(alpha: 0.18),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(spec.icon, color: spec.color, size: 16),
-              ),
             ],
           ),
           const Spacer(),
@@ -353,9 +405,9 @@ class _VendorStatCard extends StatelessWidget {
             child: Text(
               spec.value,
               maxLines: 1,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
-                color: colors.onSurface,
+                color: MohajonWarm.ink,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -365,9 +417,9 @@ class _VendorStatCard extends StatelessWidget {
             spec.subtext,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
-              color: colors.onSurfaceVariant,
+              color: MohajonWarm.muted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -383,16 +435,12 @@ class _PendingPaymentCard extends StatelessWidget {
   final String value;
   final bool hasPending;
 
-  static const _color = Color(0xFFDC2626);
-  static const _background = Color(0xFFFEF1F1);
-  static const _clearedColor = Color(0xFF047857);
-  static const _clearedBackground = Color(0xFFECFDF5);
-
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final color = hasPending ? _color : _clearedColor;
-    final background = hasPending ? _background : _clearedBackground;
+    final color = hasPending ? MohajonWarm.red : MohajonWarm.green;
+    final background = hasPending
+        ? MohajonWarm.tintRed
+        : MohajonWarm.tintGreen;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -400,10 +448,10 @@ class _PendingPaymentCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [background, Colors.white],
+          colors: [background, MohajonWarm.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.14)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.09),
@@ -433,8 +481,8 @@ class _PendingPaymentCard extends StatelessWidget {
                       hasPending ? 'Needs settlement' : 'No dues',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
+                      style: const TextStyle(
+                        color: MohajonWarm.muted,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -448,9 +496,9 @@ class _PendingPaymentCard extends StatelessWidget {
                   child: Text(
                     value,
                     maxLines: 1,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 22,
-                      color: colors.onSurface,
+                      color: MohajonWarm.ink,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -504,13 +552,19 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: colors.outlineVariant),
-        borderRadius: BorderRadius.circular(14),
+        color: MohajonWarm.card,
+        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -523,15 +577,23 @@ class _SearchAndFilters extends StatelessWidget {
                     controller: controller,
                     onChanged: onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: 'Search by company, person, phone...',
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                      hintText: 'Search company, person, phone...',
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        size: 20,
+                        color: MohajonWarm.muted,
+                      ),
                       suffixIcon: searchQuery.isEmpty
                           ? null
                           : IconButton(
                               onPressed: onClearSearch,
-                              icon: const Icon(Icons.close_rounded),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: MohajonWarm.muted,
+                              ),
                             ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
                     ),
                   ),
                 ),
@@ -543,19 +605,50 @@ class _SearchAndFilters extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: colors.outlineVariant),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: MohajonWarm.goldBorder),
                   ),
                   child: DropdownButton<VendorSort>(
                     value: selectedSort,
+                    underline: const SizedBox.shrink(),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: MohajonWarm.muted,
+                    ),
+                    style: const TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                     items: const [
-                      DropdownMenuItem(value: VendorSort.newest, child: Text('Newest')),
-                      DropdownMenuItem(value: VendorSort.oldest, child: Text('Oldest')),
-                      DropdownMenuItem(value: VendorSort.highestDue, child: Text('Highest Due')),
-                      DropdownMenuItem(value: VendorSort.lowestDue, child: Text('Lowest Due')),
-                      DropdownMenuItem(value: VendorSort.mostOrders, child: Text('Most Orders')),
-                      DropdownMenuItem(value: VendorSort.highestPurchase, child: Text('Highest Purchase')),
-                      DropdownMenuItem(value: VendorSort.alphabetical, child: Text('A-Z')),
+                      DropdownMenuItem(
+                        value: VendorSort.newest,
+                        child: Text('Newest'),
+                      ),
+                      DropdownMenuItem(
+                        value: VendorSort.oldest,
+                        child: Text('Oldest'),
+                      ),
+                      DropdownMenuItem(
+                        value: VendorSort.highestDue,
+                        child: Text('Highest Due'),
+                      ),
+                      DropdownMenuItem(
+                        value: VendorSort.lowestDue,
+                        child: Text('Lowest Due'),
+                      ),
+                      DropdownMenuItem(
+                        value: VendorSort.mostOrders,
+                        child: Text('Most Orders'),
+                      ),
+                      DropdownMenuItem(
+                        value: VendorSort.highestPurchase,
+                        child: Text('Highest Purchase'),
+                      ),
+                      DropdownMenuItem(
+                        value: VendorSort.alphabetical,
+                        child: Text('A-Z'),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) onSortChanged(value);
@@ -571,20 +664,21 @@ class _SearchAndFilters extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: vendorCategories.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  return _CategoryChip(
+                  return _FilterChip(
                     label: 'All',
                     selected: selectedCategory.isEmpty,
                     onTap: () => onCategoryChanged(''),
                   );
                 }
                 final cat = vendorCategories[index - 1];
-                return _CategoryChip(
+                return _FilterChip(
                   label: cat,
                   selected: selectedCategory == cat,
-                  onTap: () => onCategoryChanged(selectedCategory == cat ? '' : cat),
+                  onTap: () =>
+                      onCategoryChanged(selectedCategory == cat ? '' : cat),
                 );
               },
             ),
@@ -595,8 +689,9 @@ class _SearchAndFilters extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
+/// Pill chip matching the Stock filter chips.
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -608,23 +703,34 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? colors.primary : Colors.white,
-          border: Border.all(color: selected ? colors.primary : colors.outlineVariant),
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? MohajonWarm.primary : Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
           borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : colors.onSurface,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? MohajonWarm.primary.withValues(alpha: 0.45)
+                    : MohajonWarm.goldBorder,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? const Color(0xFF5D4A00)
+                    : MohajonWarm.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ),
@@ -676,40 +782,52 @@ class _VendorCardState extends ConsumerState<_VendorCard>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final vendor = widget.vendor;
     final initials = _initials(vendor.companyName);
     final hasDue = vendor.pendingAmount > 0;
 
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      color: MohajonWarm.card,
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             onTap: widget.onTap,
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: colors.outlineVariant),
-                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: MohajonWarm.goldBorder),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: MohajonWarm.ink.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 46,
                     height: 46,
-                    decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(13)),
                     ),
                     child: Center(
                       child: Text(
                         initials,
-                        style: TextStyle(
-                          color: colors.primary,
+                        style: const TextStyle(
+                          color: Color(0xFFE98300),
                           fontWeight: FontWeight.w900,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -726,8 +844,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                                 vendor.companyName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: colors.onSurface,
+                                style: const TextStyle(
+                                  color: MohajonWarm.ink,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
                                 ),
@@ -738,18 +856,18 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 7,
-                                  vertical: 4,
+                                  vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colors.error.withValues(alpha: 0.12),
+                                  color: MohajonWarm.tintRed,
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: const Text(
                                   'Due',
                                   style: TextStyle(
-                                    color: Color(0xFFDC2626),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
+                                    color: MohajonWarm.red,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
                               ),
@@ -760,23 +878,27 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                           vendor.contactPerson,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: colors.onSurfaceVariant,
-                            fontSize: 13,
+                          style: const TextStyle(
+                            color: MohajonWarm.muted,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 5),
                         Row(
                           children: [
                             _RatingStars(rating: vendor.rating),
                             const SizedBox(width: 6),
                             Text(
-                              '${vendor.rating.toStringAsFixed(1)}',
-                              style: const TextStyle(
-                                color: Color(0xFFF59E0B),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                              vendor.rating > 0
+                                  ? vendor.rating.toStringAsFixed(1)
+                                  : 'No rating',
+                              style: TextStyle(
+                                color: vendor.rating > 0
+                                    ? const Color(0xFFF59E0B)
+                                    : MohajonWarm.muted,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
@@ -792,44 +914,62 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                         money(vendor.totalSpent),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.onSurface,
+                        style: const TextStyle(
+                          color: MohajonWarm.ink,
                           fontWeight: FontWeight.w900,
+                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        hasDue ? 'Due ${money(vendor.pendingAmount)}' : 'Cleared',
-                        style: TextStyle(
+                      const SizedBox(height: 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
                           color: hasDue
-                              ? colors.primary
-                              : const Color(0xFF047857),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
+                              ? MohajonWarm.tintOrange
+                              : MohajonWarm.tintGreen,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          hasDue
+                              ? 'Due ${money(vendor.pendingAmount)}'
+                              : 'Cleared',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: hasDue
+                                ? MohajonWarm.orange
+                                : MohajonWarm.green,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 5),
                       Text(
                         vendor.lastPurchaseDate != null
                             ? _formatDate(vendor.lastPurchaseDate!)
                             : 'No purchases',
-                        style: TextStyle(
-                          color: colors.outline,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                        style: const TextStyle(
+                          color: MohajonWarm.muted,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => setState(() => _expanded = !_expanded),
+                    onTap: () =>
+                        setState(() => _expanded = !_expanded),
                     child: AnimatedRotation(
                       turns: _expanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
-                      child: Icon(
+                      child: const Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: colors.outline,
+                        color: MohajonWarm.muted,
                       ),
                     ),
                   ),
@@ -864,27 +1004,28 @@ class _VendorExpandedDetails extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final outstanding = ref.watch(vendorOutstandingProvider(vendor.vendorId));
-    final purchases = ref.watch(vendorPurchasesForVendorProvider(vendor.vendorId));
-    final colors = Theme.of(context).colorScheme;
+    final outstanding = ref.watch(
+      vendorOutstandingProvider(vendor.vendorId),
+    );
+    final purchases = ref.watch(
+      vendorPurchasesForVendorProvider(vendor.vendorId),
+    );
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(
-          left: BorderSide(color: colors.outlineVariant),
-          right: BorderSide(color: colors.outlineVariant),
-          bottom: BorderSide(color: colors.outlineVariant),
+          left: BorderSide(color: MohajonWarm.goldBorder),
+          right: BorderSide(color: MohajonWarm.goldBorder),
+          bottom: BorderSide(color: MohajonWarm.goldBorder),
         ),
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(14),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(height: 1, color: colors.outlineVariant),
+          const Divider(height: 1, color: Color(0xFFF3ECDA)),
           const SizedBox(height: 12),
           if (vendor.phone.isNotEmpty)
             _InfoRow(icon: Icons.phone_outlined, text: vendor.phone),
@@ -900,19 +1041,26 @@ class _VendorExpandedDetails extends ConsumerWidget {
               _MiniStat(
                 label: 'Orders',
                 value: '${purchases.length}',
-                color: colors.primary,
+                color: MohajonWarm.goldText,
+                background: MohajonWarm.tintYellow,
               ),
               const SizedBox(width: 8),
               _MiniStat(
                 label: 'Total Spent',
                 value: money(vendor.totalSpent),
-                color: colors.secondary,
+                color: MohajonWarm.green,
+                background: MohajonWarm.tintGreen,
               ),
               const SizedBox(width: 8),
               _MiniStat(
                 label: outstanding > 0 ? 'Due' : 'Cleared',
                 value: money(outstanding),
-                color: outstanding > 0 ? colors.error : const Color(0xFF047857),
+                color: outstanding > 0
+                    ? MohajonWarm.red
+                    : MohajonWarm.green,
+                background: outstanding > 0
+                    ? MohajonWarm.tintRed
+                    : MohajonWarm.tintGreen,
               ),
             ],
           ),
@@ -921,32 +1069,54 @@ class _VendorExpandedDetails extends ConsumerWidget {
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 36,
+                  height: 38,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.secondary,
+                      foregroundColor: MohajonWarm.ink,
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: MohajonWarm.goldBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () {
                       _launchPhone(context, vendor.phone);
                     },
                     icon: const Icon(Icons.call_rounded, size: 16),
-                    label: const Text('Call', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Call',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: SizedBox(
-                  height: 36,
+                  height: 38,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.primary,
+                      foregroundColor: MohajonWarm.ink,
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: MohajonWarm.goldBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () {
                       _launchEmail(context, vendor.email);
                     },
                     icon: const Icon(Icons.email_rounded, size: 16),
-                    label: const Text('Email', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Email',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -981,11 +1151,13 @@ class _MiniStat extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    required this.background,
   });
 
   final String label;
   final String value;
   final Color color;
+  final Color background;
 
   @override
   Widget build(BuildContext context) {
@@ -993,8 +1165,8 @@ class _MiniStat extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
+          color: background,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
           children: [
@@ -1011,7 +1183,7 @@ class _MiniStat extends StatelessWidget {
               style: TextStyle(
                 color: color,
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -1028,18 +1200,17 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: colors.onSurfaceVariant),
+          Icon(icon, size: 16, color: MohajonWarm.muted),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: colors.onSurfaceVariant,
+              style: const TextStyle(
+                color: MohajonWarm.muted,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -1057,18 +1228,29 @@ class _RatingStars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final fullStars = rating.floor();
     final hasHalf = rating - fullStars >= 0.5;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
         if (index < fullStars) {
-          return const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B));
+          return const Icon(
+            Icons.star_rounded,
+            size: 13,
+            color: Color(0xFFF59E0B),
+          );
         } else if (index == fullStars && hasHalf) {
-          return const Icon(Icons.star_half_rounded, size: 14, color: Color(0xFFF59E0B));
+          return const Icon(
+            Icons.star_half_rounded,
+            size: 13,
+            color: Color(0xFFF59E0B),
+          );
         }
-        return Icon(Icons.star_outline_rounded, size: 14, color: colors.outline);
+        return const Icon(
+          Icons.star_outline_rounded,
+          size: 13,
+          color: MohajonWarm.goldBorder,
+        );
       }),
     );
   }
