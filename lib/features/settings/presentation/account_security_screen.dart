@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
-import '../../auth/providers/auth_providers.dart';
 import '../../../core/app/app_providers.dart';
-import '../../../core/widgets/app_icon_asset.dart';
-import '../../../core/widgets/flaticon_icons.dart';
+import '../../auth/providers/auth_providers.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 
 class AccountSecurityScreen extends ConsumerStatefulWidget {
   const AccountSecurityScreen({super.key});
@@ -37,94 +36,163 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
   Widget build(BuildContext context) {
     final session = ref.watch(authStateProvider).value;
     final hasPassword = session == null || session.provider != 'google';
-    final colors = Theme.of(context).colorScheme;
 
-    return withLoadingOverlay(
-      Scaffold(
-        appBar: AppBar(title: const Text('Account security')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      hasPassword ? 'Change password' : 'Set password',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      hasPassword
-                          ? 'Enter your current password and choose a new one.'
-                          : 'Your account is signed in with Gmail. Set a password to also login with email and password.',
-                    ),
-                    const SizedBox(height: 16),
-                    if (hasPassword) ...[
-                      TextField(
-                        controller: _currentPassword,
-                        obscureText: _obscure,
-                        decoration: const InputDecoration(
-                          labelText: 'Previous password',
-                          prefixIcon: Padding(padding: EdgeInsets.all(12), child: AppIconAsset(assetPath: FlaticonIcons.lock_clock_outlined, size: 20, color: Color(0xFF98A2B3))),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    TextField(
-                      controller: _newPassword,
-                      obscureText: _obscure,
-                      decoration: InputDecoration(
-                        labelText: 'New password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                          icon: Icon(
-                            _obscure
-                                ? FlaticonIcons.eye
-                                : FlaticonIcons.eye,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _confirmPassword,
-                      obscureText: _obscure,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm password',
-                        prefixIcon: Padding(padding: EdgeInsets.all(12), child: AppIconAsset(assetPath: FlaticonIcons.lock_reset_outlined, size: 20, color: Color(0xFF98A2B3))),
-                      ),
-                    ),
-                    if (_message != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        _message!,
-                        style: TextStyle(
-                          color: _success ? colors.primary : colors.error,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    ActionButton(
-                      onPressed: hasPassword ? _changePassword : _setPasswordForGoogle,
-                      isBusy: isBusy,
-                      icon: FlaticonIcons.save,
-                      label: hasPassword ? 'Update password' : 'Set password',
-                      busyLabel: 'Saving...',
-                    ),
-                  ],
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _Header(
+                  onBack: () => Navigator.of(context).pop(),
+                  title: hasPassword ? 'Change Password' : 'Set Password',
+                  subtitle: 'Keep your account secure',
+                  icon: Icons.shield_outlined,
                 ),
-              ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: MohajonWarm.card,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: MohajonWarm.goldBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: MohajonWarm.ink.withValues(alpha: 0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              hasPassword
+                                  ? 'Update your password'
+                                  : 'Create a password',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: MohajonWarm.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              hasPassword
+                                  ? 'Enter your current password and choose a new one.'
+                                  : 'Your account uses Gmail. Set a password to also sign in with email and password.',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: MohajonWarm.muted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            if (hasPassword) ...[
+                              _Field(
+                                controller: _currentPassword,
+                                label: 'Current password',
+                                icon: Icons.lock_outline_rounded,
+                                obscure: _obscure,
+                                onToggle: () =>
+                                    setState(() => _obscure = !_obscure),
+                              ),
+                              const SizedBox(height: 14),
+                            ],
+                            _Field(
+                              controller: _newPassword,
+                              label: 'New password',
+                              icon: Icons.lock_rounded,
+                              obscure: _obscure,
+                              onToggle: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                            const SizedBox(height: 14),
+                            _Field(
+                              controller: _confirmPassword,
+                              label: 'Confirm password',
+                              icon: Icons.lock_reset_rounded,
+                              obscure: _obscure,
+                              onToggle: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                            if (_message != null) ...[
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: (_success
+                                          ? MohajonWarm.green
+                                          : Theme.of(context).colorScheme.error)
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _success
+                                          ? Icons.check_circle_rounded
+                                          : Icons.error_outline_rounded,
+                                      size: 18,
+                                      color: _success
+                                          ? MohajonWarm.green
+                                          : Theme.of(context).colorScheme.error,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _message!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: _success
+                                              ? MohajonWarm.green
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                            ActionButton(
+                              onPressed: () {
+                                if (hasPassword) {
+                                  _changePassword();
+                                } else {
+                                  _setPasswordForGoogle();
+                                }
+                              },
+                              isBusy: isBusy,
+                              icon: Icons.save_alt_rounded,
+                              label: hasPassword
+                                  ? 'Update password'
+                                  : 'Set password',
+                              busyLabel: 'Saving...',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-      label: 'Updating...',
     );
   }
 
@@ -196,5 +264,138 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
       _success = false;
       _message = message;
     });
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.onBack,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  final VoidCallback onBack;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
+      child: Row(
+        children: [
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(11),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(11),
+              onTap: onBack,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: MohajonWarm.ink,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: MohajonWarm.ink, size: 17),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Field extends StatelessWidget {
+  const _Field({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    required this.obscure,
+    required this.onToggle,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool obscure;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: MohajonWarm.ink,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: MohajonWarm.primary, size: 20),
+        suffixIcon: IconButton(
+          onPressed: onToggle,
+          icon: Icon(
+            obscure
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            color: MohajonWarm.muted,
+          ),
+        ),
+      ),
+    );
   }
 }

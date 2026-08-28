@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/app_feedback.dart';
+
 class ActionButton extends StatelessWidget {
   const ActionButton({
     super.key,
@@ -56,7 +58,12 @@ class ActionButton extends StatelessWidget {
     );
 
     return FilledButton(
-      onPressed: isBusy ? null : onPressed,
+      onPressed: isBusy
+          ? null
+          : () {
+              AppFeedback.tap();
+              onPressed?.call();
+            },
       style: style,
       child: child,
     );

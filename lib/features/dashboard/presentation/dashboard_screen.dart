@@ -759,14 +759,18 @@ class _LowStockAlert extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Color(0xFFFFF8E6)],
+        ),
         border: Border.all(color: const Color(0xFFEADFAE)),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2F3028).withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF6B5A2A).withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -898,31 +902,35 @@ class _LowStockProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOut = product.stockQty <= 0;
-    final statusColor = isOut ? const Color(0xFFEF4444) : const Color(0xFFEA580C);
+    final statusColor = isOut ? MohajonWarm.red : MohajonWarm.orange;
     final level = (product.stockQty / (product.lowStockAlert * 2))
         .clamp(0.0, 1.0)
         .toDouble();
+    // Match the New Sale (POS) product card width: (screenWidth - 76) / 3,
+    // where 76 = 2*16 (outer pad) + 2*12 (grid pad) + 2*10 (spacing).
+    final cardWidth =
+        ((MediaQuery.of(context).size.width - 76) / 3).clamp(96.0, 140.0);
 
     return Material(
-      color: MohajonWarm.card,
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ProductFormScreen(product: product),
           ),
         ),
         child: Container(
-          width: 138,
+          width: cardWidth,
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: MohajonWarm.goldBorder),
-            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: statusColor.withValues(alpha: 0.10),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: statusColor.withValues(alpha: 0.12),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -933,55 +941,78 @@ class _LowStockProductCard extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
+                      top: Radius.circular(17),
                     ),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 76,
+                      height: 60,
                       child: product.imagePath != null
                           ? AppImage.file(
                               File(product.imagePath!),
                               width: double.infinity,
-                              height: 76,
+                              height: 60,
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => _fallbackImage(),
                             )
                           : _fallbackImage(),
                     ),
                   ),
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(17),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              statusColor.withValues(alpha: 0.16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   Positioned(
-                    top: 6,
-                    right: 6,
+                    top: 7,
+                    left: 7,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
+                        horizontal: 8,
+                        vertical: 3.5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.94),
+                        color: statusColor,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: statusColor.withValues(alpha: 0.25),
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: statusColor.withValues(alpha: 0.35),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              shape: BoxShape.circle,
-                            ),
+                          Icon(
+                            isOut
+                                ? Icons.block_rounded
+                                : Icons.warning_amber_rounded,
+                            size: 11,
+                            color: Colors.white,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Text(
-                            isOut ? 'Out' : '${product.stockQty} left',
-                            style: TextStyle(
-                              color: statusColor,
+                            isOut ? 'Out' : 'Low',
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ],
@@ -991,43 +1022,67 @@ class _LowStockProductCard extends StatelessWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 9, 10, 11),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       product.nameEn,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: MohajonWarm.ink,
                         fontWeight: FontWeight.w900,
                         fontSize: 12.5,
-                        height: 1.25,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Min ${product.lowStockAlert}',
-                      style: const TextStyle(
-                        color: MohajonWarm.muted,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    const SizedBox(height: 7),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isOut ? '0 left' : '${product.stockQty} left',
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Min ${product.lowStockAlert}',
+                          style: const TextStyle(
+                            color: MohajonWarm.muted,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 9),
+                    const SizedBox(height: 8),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
-                        height: 6,
-                        color: const Color(0xFFFFF0A6),
+                        height: 5,
+                        color: MohajonWarm.tintYellow,
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: level,
                           child: Container(
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+                              gradient: LinearGradient(
+                                colors: [MohajonWarm.orange, statusColor],
                               ),
                               borderRadius: BorderRadius.circular(999),
                             ),
@@ -1048,21 +1103,21 @@ class _LowStockProductCard extends StatelessWidget {
   Widget _fallbackImage() {
     return Container(
       width: double.infinity,
-      height: 76,
+      height: 60,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFE9CF), Color(0xFFFCD9AE)],
+          colors: [Color(0xFFFFF0C2), Color(0xFFFCE3B4)],
         ),
       ),
       child: Center(
         child: Container(
-          width: 32,
-          height: 32,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(10),
+            color: Colors.white.withValues(alpha: 0.9),
+            shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFE98300).withValues(alpha: 0.18),
@@ -1074,7 +1129,7 @@ class _LowStockProductCard extends StatelessWidget {
           child: const Icon(
             Icons.inventory_2_rounded,
             color: Color(0xFFE98300),
-            size: 17,
+            size: 18,
           ),
         ),
       ),

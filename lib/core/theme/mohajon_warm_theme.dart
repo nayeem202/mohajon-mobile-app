@@ -60,7 +60,11 @@ class MohajonWarm {
       ),
       scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: base.appBarTheme.copyWith(
+        backgroundColor: primary,
         foregroundColor: ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       inputDecorationTheme: base.inputDecorationTheme.copyWith(
         filled: true,

@@ -1,20 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'dart:async';
 
-import '../../../core/app/app_providers.dart';
-import '../../../core/localization/app_localizations.dart';
-import '../../../core/services/admin_service.dart';
-import '../../../core/services/sync_service.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/services/notification_preferences.dart';
+import '../../../core/services/app_feedback.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../profile/presentation/widgets/animated_section.dart';
 import 'account_security_screen.dart';
-import 'customer_rules_settings_screen.dart';
-import 'privacy_settings_screen.dart';
+
+const String _termsText = '''
+Welcome to Mohajon. By using this application you agree to the following terms.
+
+1. Account
+You are responsible for keeping your login credentials safe. Do not share your password or PIN with anyone.
+
+2. Acceptable Use
+Use the app only for lawful business and accounting purposes. You may not misuse, resell, or attempt to reverse-engineer the service.
+
+3. Data Ownership
+All business records, ledgers, and customer data you enter remain your property. We act only as a processor to store and sync that data.
+
+4. Service Availability
+We strive to keep the service available at all times but do not guarantee uninterrupted access. Maintenance and updates may occur without prior notice.
+
+5. Changes
+We may update these terms from time to time. Continued use of the app after changes means you accept the revised terms.
+
+For questions about these terms, contact our support team from the Settings screen.
+''';
+
+const String _privacyText = '''
+Your privacy matters to us. This policy explains what we collect and how we use it.
+
+1. Information We Collect
+We collect the account details you provide (name, email, phone) and the business records you create inside the app, such as sales, purchases, and customer ledgers.
+
+2. How We Use Data
+Your data is used to power the features you use, to sync across your devices, and to send the notifications you enable. We do not sell your data.
+
+3. Notifications
+Push notifications are sent only for the categories you turn on in Settings. You can disable them at any time.
+
+4. Data Storage & Security
+Data is stored securely and protected in transit. You can request export or deletion of your data through the app.
+
+5. Contact
+If you have any privacy questions, reach out via the Contact Support option in Settings.
+''';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -97,69 +135,325 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
+  void _openLegal(String title, String body) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => _LegalScreen(title: title, body: body)),
+    );
+  }
+
+  void _openSupport() {
+    const email = 'mohajon.support@gmail.com';
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: MohajonWarm.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: MohajonWarm.muted.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: MohajonWarm.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.headset_mic_rounded,
+                    color: MohajonWarm.primary, size: 28),
+              ),
+              const SizedBox(height: 12),
+              const Text('Contact Support',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: MohajonWarm.ink)),
+              const SizedBox(height: 6),
+              const Text(
+                'We usually reply within 24 hours.',
+                style: TextStyle(fontSize: 12, color: MohajonWarm.muted),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.email_rounded,
+                        color: MohajonWarm.primary, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(email,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: MohajonWarm.ink)),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        Clipboard.setData(const ClipboardData(text: email));
+                        Navigator.of(ctx).pop();
+                        _showToast('Email copied to clipboard');
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 20),
+                      color: MohajonWarm.primary,
+                      tooltip: 'Copy',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(const ClipboardData(text: email));
+                    Navigator.of(ctx).pop();
+                    _showToast('Support email copied');
+                  },
+                  icon: const Icon(Icons.copy_rounded),
+                  label: const Text('Copy email address'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _Header(onBack: () => Navigator.of(context).pop()),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      AnimatedSection(
+                        child: _ExpandableSection(
+                          icon: Icons.notifications_outlined,
+                          title: 'Notifications',
+                          subtitle: 'Control what alerts you receive',
+                          accentColor: MohajonWarm.orange,
+                          initiallyExpanded: true,
+                          status: _StatusChip(
+                            _pushEnabled ? 'On' : 'Off',
+                            active: _pushEnabled,
+                          ),
+                          child: _NotifBody(
+                            pushEnabled: _pushEnabled,
+                            selectedTypes: _selectedTypes,
+                            onTogglePush: _togglePush,
+                            onToggleType: _toggleType,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 60),
+                        child: _ExpandableSection(
+                          icon: Icons.tune_rounded,
+                          title: 'App Preferences',
+                          subtitle: 'Customise your app experience',
+                          accentColor: MohajonWarm.primary,
+                          child: _AppPrefsBody(onToast: _showToast),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 120),
+                        child: _ExpandableSection(
+                          icon: Icons.smartphone_rounded,
+                          title: 'Sound & Display',
+                          subtitle: 'Adjust sound and visual feedback',
+                          accentColor: MohajonWarm.green,
+                          child: const _SoundDisplayBody(),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 180),
+                        child: _ExpandableSection(
+                          icon: Icons.shield_outlined,
+                          title: 'Security',
+                          subtitle: 'Protect your account and data',
+                          accentColor: const Color(0xFF0F766E),
+                          child: _SecurityBody(
+                            onNavigate: (screen) => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => screen),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 240),
+                        child: _ExpandableSection(
+                          icon: Icons.storage_rounded,
+                          title: 'Data & Backup',
+                          subtitle: 'Manage your data and storage',
+                          accentColor: const Color(0xFFB45309),
+                          child: _DataBackupBody(onToast: _showToast),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 300),
+                        child: _ExpandableSection(
+                          icon: Icons.info_outline_rounded,
+                          title: 'About',
+                          subtitle: 'App information and resources',
+                          accentColor: MohajonWarm.primary,
+                          child: _AboutBody(
+                            onTerms: () => _openLegal('Terms of Service', _termsText),
+                            onPrivacy: () => _openLegal('Privacy Policy', _privacyText),
+                            onSupport: () => _openSupport(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 420),
+                        child: _ExpandableSection(
+                          icon: Icons.warning_amber_rounded,
+                          title: 'Danger Zone',
+                          subtitle: 'Irreversible account actions',
+                          accentColor: Theme.of(context).colorScheme.error,
+                          child: _DangerBody(
+                            onSignOut: () async {
+                              await runBusyAction(() async {
+                                await ref.read(authServiceProvider).signOut();
+                                if (context.mounted) {
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                    (_) => false,
+                                  );
+                                }
+                              });
+                            },
+                            onToast: _showToast,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        title: const Text('Settings',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+    );
+  }
+}
+
+/* ========== Header ========== */
+
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.onBack,
+    this.title = 'Settings',
+  });
+
+  final VoidCallback onBack;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 20),
-            child: Text(
-              'Manage your app preferences and notifications',
-              style: TextStyle(
-                color: colors.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(11),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(11),
+              onTap: onBack,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: MohajonWarm.ink,
+                  size: 16,
+                ),
               ),
             ),
           ),
-          _NotifCard(
-            pushEnabled: _pushEnabled,
-            selectedTypes: _selectedTypes,
-            onTogglePush: _togglePush,
-            onToggleType: _toggleType,
-          ),
-          const SizedBox(height: 16),
-          _AppPrefsCard(onToast: _showToast),
-          const SizedBox(height: 16),
-          _SoundDisplayCard(),
-          const SizedBox(height: 16),
-          _SecurityCard(
-            onNavigate: (screen) => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => screen),
+          const SizedBox(width: 10),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
+            child: const Icon(Icons.settings_rounded, color: MohajonWarm.ink, size: 17),
           ),
-          const SizedBox(height: 16),
-          _DataBackupCard(onToast: _showToast),
-          const SizedBox(height: 16),
-          _AboutCard(onToast: _showToast),
-          const SizedBox(height: 16),
-          _DangerZoneCard(
-            onSignOut: () async {
-              await runBusyAction(() async {
-                await ref.read(authServiceProvider).signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (_) => false,
-                  );
-                }
-              });
-            },
-            onToast: _showToast,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                const Text(
+                  'App preferences & more',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF77735F),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -167,10 +461,186 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 }
 
-/* ========== Notifications Card ========== */
+/* ========== Expandable Section ========== */
 
-class _NotifCard extends StatelessWidget {
-  const _NotifCard({
+class _ExpandableSection extends StatefulWidget {
+  const _ExpandableSection({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.child,
+    this.initiallyExpanded = false,
+    this.status,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final Widget child;
+  final bool initiallyExpanded;
+  final Widget? status;
+
+  @override
+  State<_ExpandableSection> createState() => _ExpandableSectionState();
+}
+
+class _ExpandableSectionState extends State<_ExpandableSection>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _heightFactor;
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.initiallyExpanded;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _heightFactor = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    if (_expanded) _controller.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    if (_expanded) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: _toggle,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: widget.accentColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(widget.icon, color: widget.accentColor, size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.title,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                color: MohajonWarm.ink)),
+                        const SizedBox(height: 2),
+                        Text(widget.subtitle,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: MohajonWarm.muted,
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                  if (widget.status != null) ...[
+                    widget.status!,
+                    const SizedBox(width: 8),
+                  ],
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 320),
+                    child: Icon(Icons.keyboard_arrow_down_rounded,
+                        color: MohajonWarm.muted, size: 22),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _heightFactor,
+            builder: (context, child) => ClipRect(
+              child: Align(
+                heightFactor: _heightFactor.value,
+                child: child,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(height: 1, color: MohajonWarm.goldBorder),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+                  child: widget.child,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip(this.label, {this.active = true});
+
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? MohajonWarm.green : MohajonWarm.muted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+    );
+  }
+}
+
+/* ========== Notifications Body ========== */
+
+class _NotifBody extends StatelessWidget {
+  const _NotifBody({
     required this.pushEnabled,
     required this.selectedTypes,
     required this.onTogglePush,
@@ -184,46 +654,21 @@ class _NotifCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Control what alerts you receive',
-            iconColor: colors.primary,
-          ),
-          const SizedBox(height: 14),
-          _PushToggleRow(
-            enabled: pushEnabled,
-            onToggle: onTogglePush,
-          ),
-          const SizedBox(height: 14),
-          ..._notifTypes.map((t) => _NotifTypeRow(
-            type: t,
-            selected: selectedTypes.contains(t),
-            disabled: !pushEnabled,
-            onTap: () => onToggleType(t),
-          )),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _PushToggleRow(
+          enabled: pushEnabled,
+          onToggle: onTogglePush,
+        ),
+        const SizedBox(height: 14),
+        ..._notifTypes.map((t) => _NotifTypeRow(
+          type: t,
+          selected: selectedTypes.contains(t),
+          disabled: !pushEnabled,
+          onTap: () => onToggleType(t),
+        )),
+      ],
     );
   }
 }
@@ -250,8 +695,7 @@ class _PushToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final accent = const Color(0xFFF97316);
+    final accent = MohajonWarm.orange;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -279,12 +723,12 @@ class _PushToggleRow extends StatelessWidget {
                 Text('Push Notifications',
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w600,
-                        color: colors.onSurface)),
+                        color: MohajonWarm.ink)),
                 const SizedBox(height: 2),
                 Text(
                   enabled ? 'All alerts enabled' : 'All alerts silenced',
                   style: TextStyle(
-                    fontSize: 11, color: colors.onSurfaceVariant,
+                    fontSize: 11, color: MohajonWarm.muted,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -316,8 +760,7 @@ class _NotifTypeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final accent = const Color(0xFFF97316);
+    final accent = MohajonWarm.orange;
     final isActive = selected && !disabled;
 
     return Opacity(
@@ -339,12 +782,12 @@ class _NotifTypeRow extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: isActive ? accent : const Color(0xFFF2EFE9),
+                  color: isActive ? accent : const Color(0xFFF4EFE2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   _notifIcon(type),
-                  color: isActive ? Colors.white : colors.onSurfaceVariant,
+                  color: isActive ? Colors.white : MohajonWarm.muted,
                   size: 16,
                 ),
               ),
@@ -355,7 +798,7 @@ class _NotifTypeRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? colors.onSurface : colors.onSurfaceVariant,
+                    color: isActive ? MohajonWarm.ink : MohajonWarm.muted,
                   ),
                 ),
               ),
@@ -379,7 +822,7 @@ class _CheckCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFFF97316);
+    final accent = MohajonWarm.orange;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: 20,
@@ -390,7 +833,7 @@ class _CheckCircle extends StatelessWidget {
         border: Border.all(
           color: selected && !disabled
               ? accent
-              : const Color(0xFFD4C5B5),
+              : const Color(0xFFD8CBB2),
           width: 2,
         ),
       ),
@@ -401,61 +844,53 @@ class _CheckCircle extends StatelessWidget {
   }
 }
 
-/* ========== App Preferences Card ========== */
+/* ========== App Preferences Body ========== */
 
-class _AppPrefsCard extends StatelessWidget {
-  const _AppPrefsCard({required this.onToast});
+class _AppPrefsBody extends StatelessWidget {
+  const _AppPrefsBody({required this.onToast});
 
   final void Function(String) onToast;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return _SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.settings_rounded,
-            title: 'App Preferences',
-            subtitle: 'Customise your app experience',
-            iconColor: colors.tertiary,
-          ),
-          const SizedBox(height: 8),
-          _NavRow(
-            icon: Icons.language_rounded,
-            label: 'Language',
-            value: 'English',
-            onTap: () => onToast('Language settings coming soon'),
-          ),
-          _Divider(),
-          _NavRow(
-            icon: Icons.attach_money_rounded,
-            label: 'Currency',
-            value: 'BDT (৳)',
-            onTap: () => onToast('Currency settings coming soon'),
-          ),
-          _Divider(),
-          _NavRow(
-            icon: Icons.calendar_today_rounded,
-            label: 'Date Format',
-            value: 'DD/MM/YYYY',
-            onTap: () => onToast('Date format settings coming soon'),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _NavRow(
+          icon: Icons.language_rounded,
+          label: 'Language',
+          value: 'English',
+          onTap: () => onToast('Language settings coming soon'),
+        ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.attach_money_rounded,
+          label: 'Currency',
+          value: 'BDT (৳)',
+          onTap: () => onToast('Currency settings coming soon'),
+        ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.calendar_today_rounded,
+          label: 'Date Format',
+          value: 'DD/MM/YYYY',
+          onTap: () => onToast('Date format settings coming soon'),
+        ),
+      ],
     );
   }
 }
 
-/* ========== Sound & Display Card ========== */
+/* ========== Sound & Display Body ========== */
 
-class _SoundDisplayCard extends StatefulWidget {
+class _SoundDisplayBody extends StatefulWidget {
+  const _SoundDisplayBody();
+
   @override
-  State<_SoundDisplayCard> createState() => _SoundDisplayCardState();
+  State<_SoundDisplayBody> createState() => _SoundDisplayBodyState();
 }
 
-class _SoundDisplayCardState extends State<_SoundDisplayCard> {
+class _SoundDisplayBodyState extends State<_SoundDisplayBody> {
   late Box _box;
   bool _sound = true;
   bool _haptic = true;
@@ -470,76 +905,72 @@ class _SoundDisplayCardState extends State<_SoundDisplayCard> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return _SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.smartphone_rounded,
-            title: 'Sound & Display',
-            subtitle: 'Adjust sound and visual feedback',
-            iconColor: const Color(0xFF047857),
-          ),
-          const SizedBox(height: 8),
-          _ToggleRow(
-            icon: Icons.volume_up_rounded,
-            label: 'Sound Effects',
-            subtitle: 'Play sounds on key actions',
-            value: _sound,
-            onChanged: (v) {
-              setState(() => _sound = v);
-              _box.put('soundEffects', v);
-            },
-          ),
-          _Divider(),
-          _ToggleRow(
-            icon: Icons.vibration_rounded,
-            label: 'Haptic Feedback',
-            subtitle: 'Vibrate on interactions',
-            value: _haptic,
-            onChanged: (v) {
-              setState(() => _haptic = v);
-              _box.put('hapticFeedback', v);
-            },
-          ),
-        ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ToggleRow(
+          icon: Icons.volume_up_rounded,
+          label: 'Sound Effects',
+          subtitle: 'Play sounds on key actions',
+          value: _sound,
+          onChanged: (v) {
+            setState(() => _sound = v);
+            _box.put('soundEffects', v);
+            AppFeedback.tap();
+            _notify('Sound effects ${v ? 'on' : 'off'}');
+          },
+        ),
+        _Divider(),
+        _ToggleRow(
+          icon: Icons.vibration_rounded,
+          label: 'Haptic Feedback',
+          subtitle: 'Vibrate on interactions',
+          value: _haptic,
+          onChanged: (v) {
+            setState(() => _haptic = v);
+            _box.put('hapticFeedback', v);
+            AppFeedback.tap();
+            _notify('Haptic feedback ${v ? 'on' : 'off'}');
+          },
+        ),
+      ],
+    );
+  }
+
+  void _notify(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
 
-/* ========== Security Card ========== */
+/* ========== Security Body ========== */
 
-class _SecurityCard extends StatelessWidget {
-  const _SecurityCard({required this.onNavigate});
+class _SecurityBody extends StatelessWidget {
+  const _SecurityBody({required this.onNavigate});
 
   final void Function(Widget) onNavigate;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return _SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.shield_outlined,
-            title: 'Security',
-            subtitle: 'Protect your account and data',
-            iconColor: const Color(0xFF0F766E),
-          ),
-          const SizedBox(height: 8),
-          _NavRow(
-            icon: Icons.lock_outline_rounded,
-            label: 'Change Password',
-            value: '',
-            onTap: () => onNavigate(const AccountSecurityScreen()),
-          ),
-          _Divider(),
-          _AppLockRow(),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _NavRow(
+          icon: Icons.lock_outline_rounded,
+          label: 'Change Password',
+          value: '',
+          onTap: () => onNavigate(const AccountSecurityScreen()),
+        ),
+        _Divider(),
+        _AppLockRow(),
+      ],
     );
   }
 }
@@ -562,16 +993,15 @@ class _AppLockRowState extends State<_AppLockRow> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return _RowBase(
       leading: Container(
         width: 32, height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFFF2EFE9),
+          color: const Color(0xFFF4EFE2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(Icons.lock_outline_rounded,
-            color: colors.onSurfaceVariant, size: 16),
+            color: MohajonWarm.muted, size: 16),
       ),
       child: Row(
         children: [
@@ -582,11 +1012,11 @@ class _AppLockRowState extends State<_AppLockRow> {
                 Text('App Lock',
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w500,
-                        color: colors.onSurface)),
+                        color: MohajonWarm.ink)),
                 const SizedBox(height: 2),
                 Text('Require PIN to open app',
                     style: TextStyle(
-                        fontSize: 11, color: colors.onSurfaceVariant)),
+                        fontSize: 11, color: MohajonWarm.muted)),
               ],
             ),
           ),
@@ -603,109 +1033,171 @@ class _AppLockRowState extends State<_AppLockRow> {
   }
 }
 
-/* ========== Data & Backup Card ========== */
+/* ========== Data & Backup Body ========== */
 
-class _DataBackupCard extends StatelessWidget {
-  const _DataBackupCard({required this.onToast});
-
-  final void Function(String) onToast;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return _SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.storage_rounded,
-            title: 'Data & Backup',
-            subtitle: 'Manage your data and storage',
-            iconColor: const Color(0xFFB45309),
-          ),
-          const SizedBox(height: 8),
-          _NavRow(
-            icon: Icons.file_download_outlined,
-            label: 'Export Data',
-            value: '',
-            onTap: () => onToast('Data export started'),
-          ),
-          _Divider(),
-          _NavRow(
-            icon: Icons.cleaning_services_outlined,
-            label: 'Clear Cache',
-            value: '',
-            onTap: () => onToast('Cache cleared successfully'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ========== About Card ========== */
-
-class _AboutCard extends StatelessWidget {
-  const _AboutCard({required this.onToast});
+class _DataBackupBody extends StatelessWidget {
+  const _DataBackupBody({required this.onToast});
 
   final void Function(String) onToast;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return _SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.info_outline_rounded,
-            title: 'About',
-            subtitle: 'App information and resources',
-            iconColor: colors.primary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _NavRow(
+          icon: Icons.file_download_outlined,
+          label: 'Export Data',
+          value: '',
+          onTap: () => onToast('Data export started'),
+        ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.cleaning_services_outlined,
+          label: 'Clear Cache',
+          value: '',
+          onTap: () => onToast('Cache cleared successfully'),
+        ),
+      ],
+    );
+  }
+}
+
+/* ========== About Body ========== */
+
+class _AboutBody extends StatelessWidget {
+  const _AboutBody({
+    required this.onTerms,
+    required this.onPrivacy,
+    required this.onSupport,
+  });
+
+  final VoidCallback onTerms;
+  final VoidCallback onPrivacy;
+  final VoidCallback onSupport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _NavRow(
+          icon: Icons.smartphone_rounded,
+          label: 'App Version',
+          value: '1.0.0',
+          trailing: Text('1.0.0',
+              style: TextStyle(
+                  fontSize: 12, color: MohajonWarm.muted,
+                  fontWeight: FontWeight.w500)),
+          readOnly: true,
+          onTap: null,
+        ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.description_outlined,
+          label: 'Terms of Service',
+          value: '',
+          onTap: onTerms,
+        ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.privacy_tip_outlined,
+          label: 'Privacy Policy',
+          value: '',
+          onTap: onPrivacy,
+        ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.headset_mic_outlined,
+          label: 'Contact Support',
+          value: '',
+          onTap: onSupport,
+        ),
+      ],
+    );
+  }
+}
+
+/* ========== Legal Screen ========== */
+
+class _LegalScreen extends StatelessWidget {
+  const _LegalScreen({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final paragraphs = body
+        .split('\n\n')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _Header(onBack: () => Navigator.of(context).pop(), title: title),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: MohajonWarm.card,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: MohajonWarm.goldBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: MohajonWarm.ink.withValues(alpha: 0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: paragraphs
+                              .map((p) => Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 14),
+                                    child: Text(
+                                      p,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        height: 1.6,
+                                        color: MohajonWarm.ink,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          _NavRow(
-            icon: Icons.smartphone_rounded,
-            label: 'App Version',
-            value: '1.0.0',
-            trailing: Text('1.0.0',
-                style: TextStyle(
-                    fontSize: 12, color: colors.onSurfaceVariant,
-                    fontWeight: FontWeight.w500)),
-            readOnly: true,
-            onTap: null,
-          ),
-          _Divider(),
-          _NavRow(
-            icon: Icons.description_outlined,
-            label: 'Terms of Service',
-            value: '',
-            onTap: () => onToast('Opening Terms of Service...'),
-          ),
-          _Divider(),
-          _NavRow(
-            icon: Icons.privacy_tip_outlined,
-            label: 'Privacy Policy',
-            value: '',
-            onTap: () => onToast('Opening Privacy Policy...'),
-          ),
-          _Divider(),
-          _NavRow(
-            icon: Icons.headset_mic_outlined,
-            label: 'Contact Support',
-            value: '',
-            onTap: () => onToast('Opening support...'),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/* ========== Danger Zone Card ========== */
+/* ========== Danger Zone Body ========== */
 
-class _DangerZoneCard extends StatelessWidget {
-  const _DangerZoneCard({
+class _DangerBody extends StatelessWidget {
+  const _DangerBody({
     required this.onSignOut,
     required this.onToast,
   });
@@ -716,136 +1208,43 @@ class _DangerZoneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.error.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(
-            icon: Icons.warning_amber_rounded,
-            title: 'Danger Zone',
-            subtitle: 'Irreversible account actions',
-            iconColor: colors.error,
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: onSignOut,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(
-                      color: colors.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.logout_rounded,
-                        color: colors.error, size: 16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: onSignOut,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: colors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text('Sign Out',
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600,
-                            color: colors.error)),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: colors.error, size: 20),
-                ],
-              ),
+                  child: Icon(Icons.logout_rounded,
+                      color: colors.error, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Sign Out',
+                      style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: colors.error)),
+                ),
+                Icon(Icons.chevron_right_rounded,
+                    color: colors.error, size: 20),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ========== Shared Widgets ========== */
-
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.iconColor,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: iconColor, size: 15),
-        ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700)),
-            Text(subtitle,
-                style: TextStyle(
-                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          ],
         ),
       ],
     );
   }
 }
+
+/* ========== Shared Widgets ========== */
 
 class _NavRow extends StatelessWidget {
   const _NavRow({
@@ -866,15 +1265,14 @@ class _NavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return _RowBase(
       leading: Container(
         width: 32, height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFFF2EFE9),
+          color: const Color(0xFFF4EFE2),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: colors.onSurfaceVariant, size: 16),
+        child: Icon(icon, color: MohajonWarm.muted, size: 16),
       ),
       onTap: onTap,
       child: Row(
@@ -886,18 +1284,18 @@ class _NavRow extends StatelessWidget {
                 Text(label,
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w500,
-                        color: colors.onSurface)),
+                        color: MohajonWarm.ink)),
                 if (value.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(value,
-                      style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant)),
+                      style: TextStyle(fontSize: 11, color: MohajonWarm.muted)),
                 ],
               ],
             ),
           ),
           trailing ??
               Icon(Icons.chevron_right_rounded,
-                  color: colors.onSurfaceVariant.withValues(alpha: 0.5), size: 20),
+                  color: MohajonWarm.muted.withValues(alpha: 0.5), size: 20),
         ],
       ),
     );
@@ -921,15 +1319,14 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return _RowBase(
       leading: Container(
         width: 32, height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFFF2EFE9),
+          color: const Color(0xFFF4EFE2),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: colors.onSurfaceVariant, size: 16),
+        child: Icon(icon, color: MohajonWarm.muted, size: 16),
       ),
       child: Row(
         children: [
@@ -940,10 +1337,10 @@ class _ToggleRow extends StatelessWidget {
                 Text(label,
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w500,
-                        color: colors.onSurface)),
+                        color: MohajonWarm.ink)),
                 const SizedBox(height: 2),
                 Text(subtitle,
-                    style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant)),
+                    style: TextStyle(fontSize: 11, color: MohajonWarm.muted)),
               ],
             ),
           ),
@@ -1001,8 +1398,8 @@ class _Switch extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(13),
             color: value
-                ? const Color(0xFFF97316)
-                : const Color(0xFFD4C5B5),
+                ? MohajonWarm.orange
+                : const Color(0xFFD8CBB2),
           ),
           child: AnimatedAlign(
             duration: const Duration(milliseconds: 300),
@@ -1036,7 +1433,7 @@ class _Divider extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 1,
-      color: const Color(0xFFF0ECE4),
+      color: const Color(0xFFF0E8D6),
     );
   }
 }

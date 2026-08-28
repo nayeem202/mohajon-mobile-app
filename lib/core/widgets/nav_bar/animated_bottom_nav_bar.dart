@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/app_feedback.dart';
 import 'nav_destination.dart';
 import 'nav_bar_theme.dart';
 
@@ -249,7 +250,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
   }
 
   void _onTap() {
-    HapticFeedback.selectionClick();
+    AppFeedback.tap();
     _bounceController
       ..value = 0.0
       ..forward();

@@ -1098,8 +1098,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   ),
                                 ),
                                 onPressed: canCheckout
-                                    ? null
-                                    : () async {
+                                    ? () async {
                                         setState(() => _isCheckingOut = true);
                                         final navigator = Navigator.of(context);
                                         final messenger = ScaffoldMessenger.of(
@@ -1157,7 +1156,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             );
                                           }
                                         }
-                                      },
+                                      } : null,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [

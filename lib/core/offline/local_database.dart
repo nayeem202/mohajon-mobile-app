@@ -106,7 +106,6 @@ class LocalDatabase {
       vendorPurchases.clear(),
       vendorPayments.clear(),
       expenses.clear(),
-      notifications.clear(),
       users.clear(),
     ]);
     final keys = settings.keys

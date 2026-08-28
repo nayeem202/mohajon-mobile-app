@@ -56,6 +56,7 @@ dependencies:
   fl_chart: ^0.70.0
   remixicon: ^4.9.3
   speech_to_text: ^7.3.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +86,7 @@ flutter:
     - assets/brand/
     - assets/fonts/
     - assets/certs/
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

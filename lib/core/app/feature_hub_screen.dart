@@ -12,6 +12,7 @@ import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_list_screen.dart';
+import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/staff/models/menu_codes.dart';
 import '../../features/staff/providers/staff_providers.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
@@ -232,6 +233,15 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.staff,
                             onTap: () => _open(const StaffListScreen()),
+                          ),
+                          _FeatureItem(
+                            icon: Icons.pie_chart_outline_rounded,
+                            title: 'Reports',
+                            subtitle: 'Sales, profit & business insights',
+                            color: MohajonWarm.goldText,
+                            background: MohajonWarm.tintYellow,
+                            menu: MenuCodes.reports,
+                            onTap: () => _open(const ReportsScreen()),
                           ),
                         ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
                       ),
