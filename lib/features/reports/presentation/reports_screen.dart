@@ -176,7 +176,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 1.42,
+                  childAspectRatio: 1.32,
                   children: [
                     for (final item in _allItems)
                       _ReportGridCard(
@@ -526,115 +526,148 @@ class _ReportGridCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Ink(
           decoration: BoxDecoration(
-            color: MohajonWarm.card,
-            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+            ),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: MohajonWarm.goldBorder),
             boxShadow: [
               BoxShadow(
-                color: MohajonWarm.ink.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
+                color: MohajonWarm.ink.withValues(alpha: 0.07),
+                blurRadius: 16,
+                offset: const Offset(0, 7),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Stack(
+            children: [
+              Positioned(
+                top: -22,
+                right: -22,
+                child: Container(
+                  width: 92,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: item.startColor.withValues(alpha: available ? 0.09 : 0.05),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: available
-                            ? const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [_warmStart, _warmEnd],
-                              )
-                            : null,
-                        color: available ? null : MohajonWarm.tintYellow,
-                        borderRadius: BorderRadius.circular(13),
-                        boxShadow: available
-                            ? [
-                                BoxShadow(
-                                  color: _warmStart.withValues(alpha: 0.28),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Icon(
-                        item.icon,
-                        color: available ? Colors.white : _warmStart,
-                        size: 21,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (!available)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: MohajonWarm.tintYellow,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          'SOON',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.6,
-                            color: MohajonWarm.goldText,
+                    Row(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            gradient: available
+                                ? const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [_warmStart, _warmEnd],
+                                  )
+                                : null,
+                            color: available ? null : MohajonWarm.tintYellow,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: available
+                                ? [
+                                    BoxShadow(
+                                      color: _warmStart.withValues(alpha: 0.32),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Icon(
+                            item.icon,
+                            color: available ? Colors.white : _warmStart,
+                            size: 23,
                           ),
                         ),
-                      )
-                    else
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 16,
-                        color: MohajonWarm.goldText,
+                        const Spacer(),
+                        if (!available)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: MohajonWarm.tintYellow,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'SOON',
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.6,
+                                color: MohajonWarm.goldText,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: MohajonWarm.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: Text(
+                        item.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.35,
+                          color: MohajonWarm.muted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (available)
+                      Row(
+                        children: [
+                          Text(
+                            'Open report',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: MohajonWarm.goldText,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 13,
+                            color: MohajonWarm.goldText,
+                          ),
+                        ],
                       ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w900,
-                    color: MohajonWarm.ink,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Expanded(
-                  child: Text(
-                    item.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      height: 1.35,
-                      color: MohajonWarm.muted,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
