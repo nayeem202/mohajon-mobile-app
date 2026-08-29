@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_error.dart';
+import '../../../core/utils/snackbar.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/models/customer.dart';
@@ -1101,9 +1102,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     ? () async {
                                         setState(() => _isCheckingOut = true);
                                         final navigator = Navigator.of(context);
-                                        final messenger = ScaffoldMessenger.of(
-                                          context,
-                                        );
                                         try {
                                           final controller = ref.read(
                                             cartProvider.notifier,
@@ -1127,28 +1125,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           }
                                           final sale = await controller
                                               .checkout();
-                                          navigator.pop();
                                           final bytes = await InvoiceService()
                                               .buildSaleInvoice(
                                                 sale,
                                                 customerName:
                                                     selectedCustomer?.name ??
-                                                    '',
+                                                        '',
                                                 customerPhone:
                                                     selectedCustomer?.phone ??
-                                                    '',
+                                                        '',
                                               );
-                                          await Printing.sharePdf(
-                                            bytes: bytes,
-                                            filename:
-                                                'invoice-${sale.saleId}.pdf',
-                                          );
+                                          if (mounted) {
+                                            await Printing.sharePdf(
+                                              bytes: bytes,
+                                              filename:
+                                                  'invoice-${sale.saleId}.pdf',
+                                            );
+                                          }
+                                          if (mounted) navigator.pop();
                                         } catch (error) {
-                                          messenger.showSnackBar(
-                                            SnackBar(
-                                              content: Text(friendlyErrorMessage(error)),
-                                            ),
-                                          );
+                                          if (mounted) {
+                                            showAppSnackBar(
+                                              context,
+                                              friendlyErrorMessage(error),
+                                              isError: true,
+                                            );
+                                          }
                                         } finally {
                                           if (mounted) {
                                             setState(
