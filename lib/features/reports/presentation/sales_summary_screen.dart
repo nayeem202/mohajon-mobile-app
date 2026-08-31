@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/models/sale.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../models/daily_sales.dart';
@@ -10,6 +12,15 @@ import '../services/sales_summary_excel_service.dart';
 import '../services/sales_summary_pdf_service.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
+
+const _dailyBarPalette = <Color>[
+  Color(0xFFF5B731), // gold
+  Color(0xFF047857), // green
+  Color(0xFFEA580C), // orange
+  Color(0xFF0D9488), // teal
+  Color(0xFF6366F1), // indigo
+  Color(0xFFE11D48), // rose
+];
 
 class SalesSummaryScreen extends ConsumerStatefulWidget {
   const SalesSummaryScreen({super.key});
@@ -64,7 +75,8 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     }
 
     final days = <DailySales>[];
-    for (final day in dayKeys) {
+    for (var i = 0; i < dayKeys.length; i++) {
+      final day = dayKeys[i];
       final daySales = byDay[day]!;
       final amount =
           daySales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
@@ -75,6 +87,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
           amount: amount,
           transactionCount: daySales.length,
           maxAmount: maxAmount,
+          color: _dailyBarPalette[i % _dailyBarPalette.length],
         ),
       );
     }
@@ -157,83 +170,98 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     final rangeLabel =
         '${DateFormat('dd MMM yyyy').format(_range.start)} – ${DateFormat('dd MMM yyyy').format(_range.end)}';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sales Summary'),
-        actions: [
-          const NotificationBell(),
-          const SizedBox(width: 6),
-          const ShopAvatar(),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-        children: [
-          Row(
-            children: [
-              Text(
-                rangeLabel,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF667085),
-                ),
-              ),
-              const Spacer(),
-              _ExportButton(
-                label: 'XLSX',
-                icon: Icons.table_chart_outlined,
-                color: const Color(0xFF059669),
-                isBusy: _exporting,
-                onTap: _exportXlsx,
-              ),
-              const SizedBox(width: 8),
-              _ExportButton(
-                label: 'PDF',
-                icon: Icons.picture_as_pdf_rounded,
-                color: const Color(0xFFF97316),
-                isBusy: _exporting,
-                onTap: _exportPdf,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              for (var i = 0; i < summaryCards.length; i++) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Expanded(child: _SummaryCard(data: summaryCards[i])),
-              ],
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Daily Sales',
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            'Sales Summary',
             style: TextStyle(
-              fontSize: 16,
+              color: MohajonWarm.ink,
+              fontSize: 19,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 12),
-          for (final day in data.days) ...[
-            _DailySalesRow(day: day),
-            const SizedBox(height: 8),
+          backgroundColor: MohajonWarm.primary,
+          foregroundColor: MohajonWarm.ink,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: MohajonWarm.primary,
+            statusBarIconBrightness: Brightness.dark,
+          ),
+          actions: const [
+            NotificationBell(),
+            SizedBox(width: 6),
+            ShopAvatar(),
           ],
-          if (data.days.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  'No sales in the last 10 days',
-                  style: TextStyle(
-                    color: Color(0xFF98A2B3),
-                    fontWeight: FontWeight.w600,
-                  ),
+        ),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _RangePill(label: rangeLabel),
+                    ),
+                    const SizedBox(width: 8),
+                    _ExportButton(
+                      label: 'XLSX',
+                      icon: Icons.table_chart_outlined,
+                      color: MohajonWarm.green,
+                      isBusy: _exporting,
+                      onTap: _exportXlsx,
+                    ),
+                    const SizedBox(width: 8),
+                    _ExportButton(
+                      label: 'PDF',
+                      icon: Icons.picture_as_pdf_rounded,
+                      color: MohajonWarm.orange,
+                      isBusy: _exporting,
+                      onTap: _exportPdf,
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    for (var i = 0; i < summaryCards.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 10),
+                      Expanded(child: _SummaryCard(data: summaryCards[i])),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 22),
+                const _SectionLabel(label: 'Daily Sales'),
+                const SizedBox(height: 14),
+                for (final day in data.days) ...[
+                  _DailySalesRow(day: day),
+                  const SizedBox(height: 8),
+                ],
+                if (data.days.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No sales in the last 10 days',
+                        style: TextStyle(
+                          color: Color(0xFF98A2B3),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -308,40 +336,186 @@ class _SummaryCard extends StatelessWidget {
 
   final _SummaryCardData data;
 
+  (Color, IconData) _accent() {
+    switch (data.label) {
+      case 'Transactions':
+        return (MohajonWarm.green, Icons.receipt_long_rounded);
+      case 'Average Order':
+        return (MohajonWarm.orange, Icons.shopping_cart_rounded);
+      default:
+        return (MohajonWarm.goldText, Icons.trending_up_rounded);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final formatted = data.label == 'Transactions'
         ? '${data.amount.toInt()}'
         : money(data.amount);
+    final (accent, icon) = _accent();
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            data.label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF98A2B3),
-              fontWeight: FontWeight.w600,
-            ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
-          const SizedBox(height: 6),
-          Text(
-            formatted,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(17),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -18,
+              right: -18,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [accent, accent.withValues(alpha: 0.65)],
+                      ),
+                      borderRadius: BorderRadius.circular(11),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    data.label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: MohajonWarm.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    formatted,
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: accent,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RangePill extends StatelessWidget {
+  const _RangePill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.calendar_month_rounded,
+            size: 16,
+            color: MohajonWarm.goldText,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: MohajonWarm.ink,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          child: const Icon(
+            Icons.bar_chart_rounded,
+            size: 15,
+            color: MohajonWarm.ink,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.9,
+            color: MohajonWarm.ink.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -356,9 +530,13 @@ class _DailySalesRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Row(
         children: [
@@ -372,7 +550,7 @@ class _DailySalesRow extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    color: Color(0xFF101828),
+                    color: MohajonWarm.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -380,7 +558,7 @@ class _DailySalesRow extends StatelessWidget {
                   '${day.transactionCount} txns',
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF98A2B3),
+                    color: MohajonWarm.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -397,7 +575,7 @@ class _DailySalesRow extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    color: Color(0xFF101828),
+                    color: MohajonWarm.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -405,7 +583,7 @@ class _DailySalesRow extends StatelessWidget {
                   'Avg ${money(day.average)}',
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF98A2B3),
+                    color: MohajonWarm.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -416,12 +594,12 @@ class _DailySalesRow extends StatelessWidget {
           SizedBox(
             width: 72,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
                 value: day.fraction,
                 minHeight: 8,
-                backgroundColor: const Color(0xFFFFE4BF),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+                backgroundColor: day.color.withValues(alpha: 0.14),
+                valueColor: AlwaysStoppedAnimation<Color>(day.color),
               ),
             ),
           ),

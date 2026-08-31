@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
-import '../../../core/models/sale.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -19,9 +18,6 @@ import 'profit_loss_screen.dart';
 import 'sales_summary_screen.dart';
 import 'vat_report_screen.dart';
 
-const _warmStart = MohajonWarm.primary;
-const _warmEnd = MohajonWarm.primarySoft;
-
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -35,78 +31,78 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       icon: Icons.bar_chart_rounded,
       title: 'Sales Summary',
       description: 'Daily, weekly & monthly sales overview',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFFD4930D),
+      endColor: Color(0xFFF5B731),
     ),
     ReportItem(
       icon: Icons.receipt_long_rounded,
       title: 'Customer Ledger',
       description: 'Customer-wise due & payment history',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF0D9488),
+      endColor: Color(0xFF2DD4BF),
     ),
     ReportItem(
       icon: Icons.inventory_2_rounded,
       title: 'Inventory Report',
       description: 'Stock levels, low stock & valuation',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF6366F1),
+      endColor: Color(0xFFA5B4FC),
     ),
     ReportItem(
       icon: Icons.payments_rounded,
       title: 'Expense Report',
       description: 'Date range expenses with PDF & XLSX export',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFFE11D48),
+      endColor: Color(0xFFFDA4AF),
     ),
     ReportItem(
       icon: Icons.trending_up_rounded,
       title: 'Profit & Loss',
       description: 'Revenue, cost & net profit summary',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF059669),
+      endColor: Color(0xFF6EE7B7),
     ),
     ReportItem(
       icon: Icons.shopping_bag_rounded,
       title: 'Product-wise Sales',
       description: 'Quantity & revenue per product',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFFD97706),
+      endColor: Color(0xFFFCD34D),
     ),
     ReportItem(
       icon: Icons.receipt_rounded,
       title: 'Daily Transactions',
       description: 'All transactions recorded per day',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF2563EB),
+      endColor: Color(0xFF93C5FD),
     ),
     ReportItem(
       icon: Icons.payment_rounded,
       title: 'Payment Methods',
       description: 'Cash, bKash, Nagad & card breakdown',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF9333EA),
+      endColor: Color(0xFFD8B4FE),
     ),
     ReportItem(
       icon: Icons.warning_amber_rounded,
       title: 'Due Payments',
       description: 'Overdue and pending payment list',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFFDC2626),
+      endColor: Color(0xFFFCA5A5),
     ),
     ReportItem(
       icon: Icons.calculate_rounded,
       title: 'VAT Report',
       description: 'VAT collected summaries',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF0891B2),
+      endColor: Color(0xFF67E8F9),
     ),
     ReportItem(
       icon: Icons.people_rounded,
       title: 'Staff Performance',
       description: 'Sales & transactions by staff',
-      startColor: _warmStart,
-      endColor: _warmEnd,
+      startColor: Color(0xFF64748B),
+      endColor: Color(0xFFCBD5E1),
       available: false,
     ),
   ];
@@ -258,34 +254,80 @@ class _StatsHero extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: MohajonWarm.card,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFF8EB), Color(0xFFFFFBEF)],
+        ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: MohajonWarm.ink.withValues(alpha: 0.07),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
+            color: MohajonWarm.primary.withValues(alpha: 0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -30,
+            right: -30,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MohajonWarm.primary.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -20,
+            left: -20,
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MohajonWarm.primarySoft.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: MohajonWarm.tintYellow,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+                    ),
                     borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: MohajonWarm.primary.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Text(
+                  child: const Text(
                     'REPORT CENTER',
                     style: TextStyle(
-                      color: MohajonWarm.goldText,
+                      color: MohajonWarm.ink,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.1,
@@ -296,11 +338,18 @@ class _StatsHero extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: 8,
+                      height: 8,
                       decoration: const BoxDecoration(
                         color: Color(0xFF22C55E),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x5522C55E),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -320,7 +369,11 @@ class _StatsHero extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _HeroRing(value: margin, amount: _compact(totalSales)),
+                _HeroRing(
+                  value: margin,
+                  amount: _compact(totalSales),
+                  pct: (margin * 100).round(),
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -346,51 +399,74 @@ class _StatsHero extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _HeroChip(label: 'Profit', value: _compact(totalProfit)),
+                      _HeroChip(
+                        label: 'Profit',
+                        value: _compact(totalProfit),
+                        color: const Color(0xFF059669),
+                      ),
                       const SizedBox(height: 8),
-                      _HeroChip(label: 'Expenses', value: _compact(totalExpenses)),
+                      _HeroChip(
+                        label: 'Expenses',
+                        value: _compact(totalExpenses),
+                        color: const Color(0xFFD97706),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ],    // Column children
+        ),      // Column
+      ),        // Padding
+        ],      // Stack children
+      ),        // Stack
     );
   }
 }
 
 class _HeroRing extends StatelessWidget {
-  const _HeroRing({required this.value, required this.amount});
+  const _HeroRing({
+    required this.value,
+    required this.amount,
+    required this.pct,
+  });
 
   final double value;
   final String amount;
+  final int pct;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 116,
-      height: 116,
+      width: 124,
+      height: 124,
       child: Stack(
         alignment: Alignment.center,
         children: [
           Container(
-            width: 116,
-            height: 116,
+            width: 124,
+            height: 124,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: MohajonWarm.tintYellow,
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.primary.withValues(alpha: 0.2),
+                  blurRadius: 22,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
           ),
           SizedBox(
-            width: 116,
-            height: 116,
+            width: 124,
+            height: 124,
             child: CircularProgressIndicator(
               value: value,
-              strokeWidth: 12,
+              strokeWidth: 11,
+              strokeCap: StrokeCap.round,
               color: MohajonWarm.primary,
-              backgroundColor: Colors.transparent,
+              backgroundColor: MohajonWarm.primary.withValues(alpha: 0.12),
             ),
           ),
           Column(
@@ -398,20 +474,40 @@ class _HeroRing extends StatelessWidget {
             children: [
               Text(
                 amount,
-                style: const TextStyle(
+                style: TextStyle(
                   color: MohajonWarm.ink,
-                  fontSize: 20,
+                  fontSize: 21,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 'Total Sales',
                 style: TextStyle(
                   color: MohajonWarm.muted,
-                  fontSize: 10,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$pct% margin',
+                  style: TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -423,10 +519,15 @@ class _HeroRing extends StatelessWidget {
 }
 
 class _HeroChip extends StatelessWidget {
-  const _HeroChip({required this.label, required this.value});
+  const _HeroChip({
+    required this.label,
+    required this.value,
+    this.color = MohajonWarm.primary,
+  });
 
   final String label;
   final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -434,9 +535,16 @@ class _HeroChip extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: MohajonWarm.surface,
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MohajonWarm.goldBorder),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -444,7 +552,7 @@ class _HeroChip extends StatelessWidget {
             width: 4,
             height: 22,
             decoration: BoxDecoration(
-              color: MohajonWarm.primary,
+              color: color,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -462,7 +570,7 @@ class _HeroChip extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: MohajonWarm.ink,
+              color: color,
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),
@@ -573,10 +681,10 @@ class _ReportGridCard extends StatelessWidget {
                           height: 46,
                           decoration: BoxDecoration(
                             gradient: available
-                                ? const LinearGradient(
+                                ? LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
-                                    colors: [_warmStart, _warmEnd],
+                                    colors: [item.startColor, item.endColor],
                                   )
                                 : null,
                             color: available ? null : MohajonWarm.tintYellow,
@@ -584,7 +692,7 @@ class _ReportGridCard extends StatelessWidget {
                             boxShadow: available
                                 ? [
                                     BoxShadow(
-                                      color: _warmStart.withValues(alpha: 0.32),
+                                      color: item.startColor.withValues(alpha: 0.32),
                                       blurRadius: 12,
                                       offset: const Offset(0, 5),
                                     ),
@@ -593,7 +701,7 @@ class _ReportGridCard extends StatelessWidget {
                           ),
                           child: Icon(
                             item.icon,
-                            color: available ? Colors.white : _warmStart,
+                            color: available ? Colors.white : item.startColor,
                             size: 23,
                           ),
                         ),

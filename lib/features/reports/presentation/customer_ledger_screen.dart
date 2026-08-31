@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../models/customer_ledger.dart';
 import '../providers/report_providers.dart';
@@ -68,16 +70,40 @@ class _CustomerLedgerScreenState
     final totalPaid = all.fold<double>(0, (s, c) => s + c.credit);
     final withDues = all.where((c) => c.hasDue).length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Customer Ledger'),
-        actions: [
-          const NotificationBell(),
-          const SizedBox(width: 6),
-          const ShopAvatar(),
-        ],
-      ),
-      body: ListView(
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            'Customer Ledger',
+            style: TextStyle(
+              color: MohajonWarm.ink,
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
+            ),
+          ),
+          backgroundColor: MohajonWarm.primary,
+          foregroundColor: MohajonWarm.ink,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: MohajonWarm.primary,
+            statusBarIconBrightness: Brightness.dark,
+          ),
+          actions: const [
+            NotificationBell(),
+            SizedBox(width: 6),
+            ShopAvatar(),
+          ],
+        ),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            top: false,
+            child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           Row(
@@ -189,6 +215,9 @@ class _CustomerLedgerScreenState
                   ),
                 )),
         ],
+        ),
+        ),
+        ),
       ),
     );
   }
@@ -210,9 +239,13 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +254,7 @@ class _SummaryCard extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF98A2B3),
+              color: MohajonWarm.muted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -289,9 +322,13 @@ class _CustomerCard extends StatelessWidget {
     final settled = !customer.hasDue;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -304,13 +341,13 @@ class _CustomerCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: const Color(0xFFF6E7D1),
+                    backgroundColor: MohajonWarm.tintYellow,
                     child: Text(
                       customer.name[0].toUpperCase(),
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
-                        color: Color(0xFFE98300),
+                        color: MohajonWarm.goldText,
                       ),
                     ),
                   ),

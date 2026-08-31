@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/product.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../providers/report_providers.dart';
 import '../services/inventory_excel_service.dart';
@@ -84,22 +86,46 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
                 p.category.toLowerCase().contains(q);
           }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventory Report'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            'Inventory Report',
+            style: TextStyle(
+              color: MohajonWarm.ink,
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
             ),
-            onPressed: _toggleSearch,
           ),
-          const NotificationBell(),
-          const SizedBox(width: 6),
-          const ShopAvatar(),
-        ],
-      ),
-      body: RefreshIndicator(
+          backgroundColor: MohajonWarm.primary,
+          foregroundColor: MohajonWarm.ink,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: MohajonWarm.primary,
+            statusBarIconBrightness: Brightness.dark,
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              ),
+              onPressed: _toggleSearch,
+            ),
+            const NotificationBell(),
+            const SizedBox(width: 6),
+            const ShopAvatar(),
+          ],
+        ),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            top: false,
+            child: RefreshIndicator(
         onRefresh: () async => _animCtrl.forward(from: 0),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -153,9 +179,12 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
             ),
           ],
         ),
+        ),
+        ),
       ),
       floatingActionButton: _FloatingSearchButton(onTap: _toggleSearch),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ),
     );
   }
 }

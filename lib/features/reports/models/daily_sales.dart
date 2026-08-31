@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class DailySales {
   const DailySales({
     required this.date,
@@ -5,6 +7,7 @@ class DailySales {
     required this.amount,
     required this.transactionCount,
     required this.maxAmount,
+    this.color = const Color(0xFFF5B731),
   });
 
   final DateTime date;
@@ -12,6 +15,7 @@ class DailySales {
   final double amount;
   final int transactionCount;
   final double maxAmount;
+  final Color color;
 
   double get fraction => maxAmount > 0 ? amount / maxAmount : 0.0;
 

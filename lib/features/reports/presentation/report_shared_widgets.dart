@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/mohajon_warm_theme.dart';
+
 mixin ReportExportMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   bool _exporting = false;
 
@@ -54,6 +56,19 @@ DateTimeRange reportLast30DaysRange(DateTime value) {
 String reportRangeLabel(DateTimeRange range) =>
     '${DateFormat('dd MMM yyyy').format(range.start)} - ${DateFormat('dd MMM yyyy').format(range.end)}';
 
+/// Shared premium card background: warm cream gradient + gold border.
+BoxDecoration reportCardDecoration({double radius = 14}) {
+  return BoxDecoration(
+    gradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+    ),
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: MohajonWarm.goldBorder),
+  );
+}
+
 class ReportSummaryCard extends StatelessWidget {
   const ReportSummaryCard({
     required this.label,
@@ -69,11 +84,7 @@ class ReportSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-      ),
+      decoration: reportCardDecoration(radius: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -81,8 +92,8 @@ class ReportSummaryCard extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF98A2B3),
-              fontWeight: FontWeight.w600,
+              color: MohajonWarm.muted,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
@@ -94,6 +105,7 @@ class ReportSummaryCard extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w900,
               color: valueColor,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -121,37 +133,48 @@ class ReportRangeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: reportCardDecoration(radius: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                child: const Icon(
+                  Icons.date_range_rounded,
+                  size: 15,
+                  color: MohajonWarm.ink,
+                ),
+              ),
+              const SizedBox(width: 9),
               const Expanded(
                 child: Text(
                   'Date Range',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF101828),
+                    color: MohajonWarm.ink,
                   ),
                 ),
               ),
               TextButton.icon(
                 onPressed: onPickRange,
-                icon: const Icon(Icons.date_range_rounded, size: 18),
+                icon: const Icon(Icons.calendar_month_rounded, size: 18),
                 label: const Text('Change'),
+                style: TextButton.styleFrom(
+                  foregroundColor: MohajonWarm.goldText,
+                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
             ],
           ),
@@ -159,7 +182,7 @@ class ReportRangeSelector extends StatelessWidget {
           Text(
             reportRangeLabel(range),
             style: const TextStyle(
-              color: Color(0xFF667085),
+              color: MohajonWarm.muted,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -209,8 +232,9 @@ class _PresetChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF2E7),
+          color: MohajonWarm.tintYellow,
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: MohajonWarm.primary.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,
@@ -218,7 +242,7 @@ class _PresetChip extends StatelessWidget {
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: Color(0xFFF97316),
+            color: MohajonWarm.goldText,
           ),
         ),
       ),
@@ -249,8 +273,12 @@ class ReportExportButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: isBusy ? null : onTap,
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -306,11 +334,7 @@ class ReportRowTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
-      ),
+      decoration: reportCardDecoration(radius: 14),
       child: Row(
         children: [
           if (icon != null) ...[
@@ -318,7 +342,7 @@ class ReportRowTile extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
+                color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, size: 20, color: iconColor),
@@ -346,7 +370,7 @@ class ReportRowTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF98A2B3),
+                    color: MohajonWarm.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -359,7 +383,7 @@ class ReportRowTile extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
+              color: MohajonWarm.ink,
             ),
           ),
         ],

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/sale.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -120,25 +122,40 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
   Widget build(BuildContext context) {
     final data = _compute();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
-      appBar: AppBar(
-        title: const Text(
-          'Product-wise Sales',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-        ),
-        actions: [
-          const NotificationBell(),
-          const SizedBox(width: 4),
-          const ShopAvatar(
-            radius: 16,
-            backgroundColor: Color(0xFFF97316),
-            textColor: Colors.white,
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            'Product-wise Sales',
+            style: TextStyle(
+              color: MohajonWarm.ink,
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
+            ),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: ListView(
+          backgroundColor: MohajonWarm.primary,
+          foregroundColor: MohajonWarm.ink,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: MohajonWarm.primary,
+            statusBarIconBrightness: Brightness.dark,
+          ),
+          actions: const [
+            NotificationBell(),
+            SizedBox(width: 6),
+            ShopAvatar(),
+          ],
+        ),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+          child: SafeArea(
+            top: false,
+            child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Row(
@@ -260,7 +277,10 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
                 ),
               ),
             ),
-        ],
+          ],
+        ),
+        ),
+        ),
       ),
     );
   }
