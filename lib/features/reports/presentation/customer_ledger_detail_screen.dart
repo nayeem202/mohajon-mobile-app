@@ -97,7 +97,7 @@ class CustomerLedgerDetailScreen extends ConsumerWidget {
                 child: _MiniCard(
                   label: 'Opening',
                   value: money(0),
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
               const SizedBox(width: 8),
@@ -154,14 +154,7 @@ class CustomerLedgerDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Debit / Credit Ledger',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF101828),
-            ),
-          ),
+          const _LedgerSectionHeader(),
           const SizedBox(height: 10),
           if (entries.isEmpty)
             const Padding(
@@ -211,11 +204,13 @@ class CustomerLedgerDetailScreen extends ConsumerWidget {
 
   Widget _headerRow() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: const BoxDecoration(
-        color: Color(0xFFF9F5EF),
+        gradient: LinearGradient(
+          colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+        ),
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE8DDD2)),
+          bottom: BorderSide(color: MohajonWarm.goldBorder),
         ),
       ),
       child: const Row(
@@ -300,11 +295,11 @@ class CustomerLedgerDetailScreen extends ConsumerWidget {
 
   Widget _totalRow(double debit, double credit, double balance) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: const BoxDecoration(
-        color: Color(0xFFF9F5EF),
+        color: MohajonWarm.tintYellow,
         border: Border(
-          top: BorderSide(color: Color(0xFFE8DDD2)),
+          top: BorderSide(color: MohajonWarm.goldBorder),
         ),
       ),
       child: Row(
@@ -362,8 +357,47 @@ class CustomerLedgerDetailScreen extends ConsumerWidget {
 const _headerText = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.w800,
-  color: Color(0xFF667085),
+  color: MohajonWarm.ink,
 );
+
+class _LedgerSectionHeader extends StatelessWidget {
+  const _LedgerSectionHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          child: const Icon(
+            Icons.receipt_long_rounded,
+            size: 15,
+            color: MohajonWarm.ink,
+          ),
+        ),
+        const SizedBox(width: 9),
+        const Text(
+          'DEBIT / CREDIT LEDGER',
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.9,
+            color: MohajonWarm.ink,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _MiniCard extends StatelessWidget {
   const _MiniCard({
@@ -378,42 +412,107 @@ class _MiniCard extends StatelessWidget {
   final Color valueColor;
   final Color? borderColor;
 
+  (IconData, Color) _accent() {
+    switch (label) {
+      case 'Opening':
+        return (Icons.calendar_view_day_rounded, MohajonWarm.goldText);
+      case 'Debit':
+        return (Icons.arrow_upward_rounded, const Color(0xFFF97316));
+      case 'Credit':
+        return (Icons.arrow_downward_rounded, const Color(0xFF059669));
+      case 'Balance':
+        return (Icons.account_balance_wallet_rounded, const Color(0xFF059669));
+      default:
+        return (Icons.receipt_long_rounded, MohajonWarm.goldText);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final (icon, accent) = _accent();
+    final border = borderColor ?? MohajonWarm.goldBorder;
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
         ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: borderColor ?? MohajonWarm.goldBorder,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: MohajonWarm.muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: valueColor,
-            ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(17),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -18,
+              right: -18,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [accent, accent.withValues(alpha: 0.65)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.28),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 17, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: MohajonWarm.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: valueColor,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

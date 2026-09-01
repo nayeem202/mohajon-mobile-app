@@ -120,7 +120,7 @@ class _CustomerLedgerScreenState
                 child: _SummaryCard(
                   label: 'Customers',
                   value: '${all.length}',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
             ],
@@ -140,7 +140,7 @@ class _CustomerLedgerScreenState
                 child: _SummaryCard(
                   label: 'With Dues',
                   value: '$withDues',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
             ],
@@ -154,10 +154,34 @@ class _CustomerLedgerScreenState
                   child: TextField(
                     controller: _searchController,
                     onChanged: (v) => setState(() => _query = v),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Search customer name',
-                      prefixIcon: Icon(Icons.search_rounded, size: 20),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                      hintStyle: const TextStyle(
+                        color: MohajonWarm.muted,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        size: 20,
+                        color: MohajonWarm.goldText,
+                      ),
+                      filled: true,
+                      fillColor: MohajonWarm.card.withValues(alpha: 0.7),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: MohajonWarm.goldBorder,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: MohajonWarm.goldText,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -181,8 +205,8 @@ class _CustomerLedgerScreenState
             '${customers.length} of ${all.length} customers',
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF98A2B3),
-              fontWeight: FontWeight.w500,
+              color: MohajonWarm.muted,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
@@ -234,40 +258,104 @@ class _SummaryCard extends StatelessWidget {
   final String value;
   final Color valueColor;
 
+  (IconData, Color) _accent() {
+    switch (label) {
+      case 'Outstanding':
+        return (Icons.account_balance_wallet_rounded, const Color(0xFFF97316));
+      case 'Customers':
+        return (Icons.people_alt_rounded, MohajonWarm.goldText);
+      case 'Total Paid':
+        return (Icons.payments_rounded, const Color(0xFF059669));
+      default:
+        return (Icons.warning_amber_rounded, const Color(0xFFEF4444));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final (icon, accent) = _accent();
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: MohajonWarm.goldBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: MohajonWarm.muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: valueColor,
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(17),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -18,
+              right: -18,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [accent, accent.withValues(alpha: 0.65)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.28),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 17, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: MohajonWarm.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: valueColor,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -327,11 +415,18 @@ class _CustomerCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -339,15 +434,34 @@ class _CustomerCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: MohajonWarm.tintYellow,
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          MohajonWarm.primary,
+                          MohajonWarm.primarySoft,
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: MohajonWarm.goldText.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
                       customer.name[0].toUpperCase(),
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
-                        color: MohajonWarm.goldText,
+                        color: MohajonWarm.ink,
                       ),
                     ),
                   ),
@@ -361,7 +475,7 @@ class _CustomerCard extends StatelessWidget {
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 15,
-                            color: Color(0xFF101828),
+                            color: MohajonWarm.ink,
                           ),
                         ),
                         const SizedBox(height: 2),

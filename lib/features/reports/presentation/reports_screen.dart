@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -26,89 +27,92 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  static const List<ReportItem> _allItems = [
+  List<ReportItem> _allItems(AppLocalizations l10n) {
+    return [
     ReportItem(
       icon: Icons.bar_chart_rounded,
       title: 'Sales Summary',
-      description: 'Daily, weekly & monthly sales overview',
+      description: l10n.t('salesSummaryDesc'),
       startColor: Color(0xFFD4930D),
       endColor: Color(0xFFF5B731),
     ),
     ReportItem(
       icon: Icons.receipt_long_rounded,
       title: 'Customer Ledger',
-      description: 'Customer-wise due & payment history',
+      description: l10n.t('customerLedgerDesc'),
       startColor: Color(0xFF0D9488),
       endColor: Color(0xFF2DD4BF),
     ),
     ReportItem(
       icon: Icons.inventory_2_rounded,
       title: 'Inventory Report',
-      description: 'Stock levels, low stock & valuation',
+      description: l10n.t('inventoryReportDesc'),
       startColor: Color(0xFF6366F1),
       endColor: Color(0xFFA5B4FC),
     ),
     ReportItem(
       icon: Icons.payments_rounded,
       title: 'Expense Report',
-      description: 'Date range expenses with PDF & XLSX export',
+      description: l10n.t('expenseReportDesc'),
       startColor: Color(0xFFE11D48),
       endColor: Color(0xFFFDA4AF),
     ),
     ReportItem(
       icon: Icons.trending_up_rounded,
       title: 'Profit & Loss',
-      description: 'Revenue, cost & net profit summary',
+      description: l10n.t('profitLossDesc'),
       startColor: Color(0xFF059669),
       endColor: Color(0xFF6EE7B7),
     ),
     ReportItem(
       icon: Icons.shopping_bag_rounded,
       title: 'Product-wise Sales',
-      description: 'Quantity & revenue per product',
+      description: l10n.t('productSalesDesc'),
       startColor: Color(0xFFD97706),
       endColor: Color(0xFFFCD34D),
     ),
     ReportItem(
       icon: Icons.receipt_rounded,
       title: 'Daily Transactions',
-      description: 'All transactions recorded per day',
+      description: l10n.t('dailyTransactionsDesc'),
       startColor: Color(0xFF2563EB),
       endColor: Color(0xFF93C5FD),
     ),
     ReportItem(
       icon: Icons.payment_rounded,
       title: 'Payment Methods',
-      description: 'Cash, bKash, Nagad & card breakdown',
+      description: l10n.t('paymentMethodsDesc'),
       startColor: Color(0xFF9333EA),
       endColor: Color(0xFFD8B4FE),
     ),
     ReportItem(
       icon: Icons.warning_amber_rounded,
       title: 'Due Payments',
-      description: 'Overdue and pending payment list',
+      description: l10n.t('duePaymentsDesc'),
       startColor: Color(0xFFDC2626),
       endColor: Color(0xFFFCA5A5),
     ),
     ReportItem(
       icon: Icons.calculate_rounded,
       title: 'VAT Report',
-      description: 'VAT collected summaries',
+      description: l10n.t('vatReportDesc'),
       startColor: Color(0xFF0891B2),
       endColor: Color(0xFF67E8F9),
     ),
     ReportItem(
       icon: Icons.people_rounded,
       title: 'Staff Performance',
-      description: 'Sales & transactions by staff',
+      description: l10n.t('staffPerformanceDesc'),
       startColor: Color(0xFF64748B),
       endColor: Color(0xFFCBD5E1),
       available: false,
     ),
   ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final db = ref.watch(localDatabaseProvider);
 
     final sales = db.sales.values();
@@ -127,9 +131,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Reports',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reports'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -164,7 +168,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   totalExpenses: totalExpenses,
                 ),
                 const SizedBox(height: 22),
-                _SectionLabel(label: 'All Reports'),
+                _SectionLabel(label: l10n.t('allReports')),
                 const SizedBox(height: 14),
                 GridView.count(
                   crossAxisCount: 2,
@@ -174,7 +178,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   crossAxisSpacing: 12,
                   childAspectRatio: 1.32,
                   children: [
-                    for (final item in _allItems)
+                    for (final item in _allItems(l10n))
                       _ReportGridCard(
                         item: item,
                         onTap: () => _open(item, context),
@@ -190,12 +194,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   void _open(ReportItem item, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (!item.available) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('${item.title} is coming soon'),
+            content: Text(l10n.tP('comingSoon', {'title': item.title})),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             shape: RoundedRectangleBorder(
@@ -248,6 +253,7 @@ class _StatsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final margin = totalSales > 0
         ? (totalProfit / totalSales).clamp(0.0, 1.0)
         : 0.0;
@@ -324,9 +330,9 @@ class _StatsHero extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Text(
-                    'REPORT CENTER',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.t('reportCenter').toUpperCase(),
+                    style: const TextStyle(
                       color: MohajonWarm.ink,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
@@ -354,7 +360,7 @@ class _StatsHero extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Live',
+                      l10n.t('live'),
                       style: TextStyle(
                         color: MohajonWarm.muted,
                         fontSize: 11,
@@ -379,9 +385,9 @@ class _StatsHero extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Business at a glance',
-                        style: TextStyle(
+                      Text(
+                        l10n.t('businessAtGlance'),
+                        style: const TextStyle(
                           color: MohajonWarm.ink,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
@@ -390,7 +396,7 @@ class _StatsHero extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Live insights from your sales, expenses & inventory.',
+                        l10n.t('reportsHeroSub'),
                         style: TextStyle(
                           color: MohajonWarm.muted,
                           fontSize: 11.5,
@@ -400,13 +406,13 @@ class _StatsHero extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       _HeroChip(
-                        label: 'Profit',
+                        label: l10n.t('profit'),
                         value: _compact(totalProfit),
                         color: const Color(0xFF059669),
                       ),
                       const SizedBox(height: 8),
                       _HeroChip(
-                        label: 'Expenses',
+                        label: l10n.t('expenses'),
                         value: _compact(totalExpenses),
                         color: const Color(0xFFD97706),
                       ),
@@ -437,6 +443,7 @@ class _HeroRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: 124,
       height: 124,
@@ -483,7 +490,7 @@ class _HeroRing extends StatelessWidget {
               ),
               const SizedBox(height: 1),
               Text(
-                'Total Sales',
+                l10n.t('totalSales'),
                 style: TextStyle(
                   color: MohajonWarm.muted,
                   fontSize: 9.5,
@@ -502,7 +509,7 @@ class _HeroRing extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$pct% margin',
+                  l10n.tP('margin', {'pct': '$pct'}),
                   style: TextStyle(
                     color: MohajonWarm.ink,
                     fontSize: 8.5,
@@ -630,6 +637,7 @@ class _ReportGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final available = item.available;
 
     return Material(
@@ -717,7 +725,7 @@ class _ReportGridCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              'SOON',
+                              l10n.t('soon'),
                               style: TextStyle(
                                 fontSize: 8,
                                 fontWeight: FontWeight.w900,
@@ -757,7 +765,7 @@ class _ReportGridCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'Open report',
+                            l10n.t('openReport'),
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,

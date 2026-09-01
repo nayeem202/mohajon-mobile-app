@@ -52,6 +52,78 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         !value.isAfter(DateTime(end.year, end.month, end.day, 23, 59, 59));
   }
 
+  Future<void> _pickRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _range,
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+      helpText: 'Select Date Range',
+      confirmText: 'Apply',
+      builder: (context, child) => Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: child!,
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _range = DateTimeRange(
+          start: DateTime(
+            picked.start.year,
+            picked.start.month,
+            picked.start.day,
+          ),
+          end: DateTime(
+            picked.end.year,
+            picked.end.month,
+            picked.end.day,
+            23,
+            59,
+            59,
+          ),
+        );
+      });
+    }
+  }
+
+  void _thisMonth() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1);
+    final end = now;
+    setState(() => _range = DateTimeRange(start: start, end: end));
+  }
+
+  void _lastMonth() {
+    final now = DateTime.now();
+    final lastOfLast =
+        DateTime(now.year, now.month, 1).subtract(const Duration(days: 1));
+    setState(() {
+      _range = DateTimeRange(
+        start: DateTime(lastOfLast.year, lastOfLast.month, 1),
+        end: DateTime(
+          lastOfLast.year,
+          lastOfLast.month,
+          lastOfLast.day,
+          23,
+          59,
+          59,
+        ),
+      );
+    });
+  }
+
+  void _last30Days() {
+    final now = DateTime.now();
+    setState(() {
+      _range = DateTimeRange(
+        start: DateTime(now.year, now.month, now.day)
+            .subtract(const Duration(days: 29)),
+        end: now,
+      );
+    });
+  }
+
   ({List<DailySales> days, double totalSales, int transactions,
       double averageOrder}) _compute() {
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
@@ -209,7 +281,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _RangePill(label: rangeLabel),
+                      child: _RangePill(label: rangeLabel, onTap: _pickRange),
                     ),
                     const SizedBox(width: 8),
                     _ExportButton(
@@ -226,6 +298,28 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
                       color: MohajonWarm.orange,
                       isBusy: _exporting,
                       onTap: _exportPdf,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _PresetChip(
+                      label: 'This Month',
+                      icon: Icons.calendar_today_rounded,
+                      onTap: _thisMonth,
+                    ),
+                    const SizedBox(width: 8),
+                    _PresetChip(
+                      label: 'Last Month',
+                      icon: Icons.calendar_view_month_rounded,
+                      onTap: _lastMonth,
+                    ),
+                    const SizedBox(width: 8),
+                    _PresetChip(
+                      label: 'Last 30 Days',
+                      icon: Icons.date_range_rounded,
+                      onTap: _last30Days,
                     ),
                   ],
                 ),
@@ -441,39 +535,96 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _RangePill extends StatelessWidget {
-  const _RangePill({required this.label});
+  const _RangePill({required this.label, required this.onTap});
 
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: MohajonWarm.card.withValues(alpha: 0.9),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: MohajonWarm.goldBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.calendar_month_rounded,
-            size: 16,
-            color: MohajonWarm.goldText,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: MohajonWarm.card.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: MohajonWarm.goldBorder),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_month_rounded,
+                size: 16,
+                color: MohajonWarm.goldText,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.expand_more_rounded,
+                size: 18,
+                color: MohajonWarm.goldText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PresetChip extends StatelessWidget {
+  const _PresetChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: MohajonWarm.tintYellow,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: MohajonWarm.goldBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: MohajonWarm.goldText),
+            const SizedBox(width: 6),
+            Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w800,
-                color: MohajonWarm.ink,
+                color: MohajonWarm.goldText,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

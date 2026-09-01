@@ -206,7 +206,7 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
                 child: ReportSummaryCard(
                   label: 'Transactions',
                   value: '${data.transactionCount}',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
               const SizedBox(width: 8),

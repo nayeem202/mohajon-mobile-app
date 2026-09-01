@@ -194,7 +194,7 @@ class _VatReportScreenState extends ConsumerState<VatReportScreen>
                 child: ReportSummaryCard(
                   label: 'VATable Sales',
                   value: '${data.vatSaleCount}',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
             ],

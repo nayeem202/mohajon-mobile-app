@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/product.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/app_image.dart';
@@ -14,6 +15,7 @@ import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
+import '../../products/presentation/barcode_scan_screen.dart';
 
 const _kAmber = Color(0xFFFFC800);
 const _kAmberLight = Color(0xFFFFD83D);
@@ -46,6 +48,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final products = ref.watch(productsProvider).value ?? const <Product>[];
     final customers = ref.watch(customersProvider).value ?? const <Customer>[];
     final cart = ref.watch(cartProvider);
@@ -123,6 +126,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
                         _SearchBar(
                           controller: _searchController,
                           onChanged: (value) => setState(() => _query = value),
+                          onScan: _scanBarcode,
                         ),
                         const SizedBox(height: 12),
                         _CategoryStrip(
@@ -165,7 +169,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
           ),
         ),
       ),
-      label: 'Processing sale...',
+      label: l10n.t('processing'),
     );
   }
 
@@ -207,6 +211,32 @@ class _PosScreenState extends ConsumerState<PosScreen>
     );
   }
 
+  Future<void> _scanBarcode() async {
+    final l10n = AppLocalizations.of(context);
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScanScreen()),
+    );
+    if (code == null || code.isEmpty) return;
+    final normalized = code.trim().toLowerCase();
+    final products = (ref.read(productsProvider).value ?? const <Product>[])
+        .where((p) => p.barcode.toLowerCase() == normalized)
+        .toList();
+    if (products.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.tP('noProductsFoundBarcode', {'code': code}))),
+        );
+      }
+      return;
+    }
+    ref.read(cartProvider.notifier).addProduct(products.first);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.tP('addedToCart', {'name': products.first.nameEn}))),
+      );
+    }
+  }
+
 }
 
 class _TopBar extends StatelessWidget {
@@ -216,6 +246,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Container(
@@ -243,9 +274,9 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
-            'New Sale',
+            l10n.t('newSale'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -272,19 +303,27 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.controller,
     required this.onChanged,
+    required this.onScan,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final VoidCallback onScan;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      decoration: const InputDecoration(
-        hintText: 'Search products...',
-        prefixIcon: Icon(Icons.search_rounded, size: 20, color: _kMuted),
+      decoration: InputDecoration(
+        hintText: l10n.t('searchProductsHint'),
+        prefixIcon: const Icon(Icons.search_rounded, size: 20, color: _kMuted),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.qr_code_scanner_rounded, size: 22, color: _kMuted),
+          tooltip: l10n.t('scanBarcode'),
+          onPressed: onScan,
+        ),
       ),
     );
   }
@@ -454,6 +493,7 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final accent = _accentForCategory(product.category);
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -504,9 +544,9 @@ class _ProductCard extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.66),
                             borderRadius: BorderRadius.circular(11),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              'Out of stock',
+                              l10n.t('outOfStock'),
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: _kMuted,
@@ -618,6 +658,7 @@ class _CheckoutBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -661,7 +702,7 @@ class _CheckoutBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '$itemCount items',
+                    '$itemCount ${l10n.t('items')}',
                     style: const TextStyle(
                       color: _kInk,
                       fontWeight: FontWeight.w900,
@@ -695,11 +736,11 @@ class _CheckoutBar extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Checkout',
+                      l10n.t('checkout'),
                       style: TextStyle(
                         color: Color(0xFFFFFCF0),
                         fontWeight: FontWeight.w900,
@@ -728,6 +769,7 @@ class _CatalogEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -737,18 +779,18 @@ class _CatalogEmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _kBorder),
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.search_off_rounded,
             color: _kBronzeText,
             size: 30,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'No matching products',
-            style: TextStyle(
+            l10n.t('noMatchingProducts'),
+            style: const TextStyle(
               color: _kMuted,
               fontWeight: FontWeight.w800,
             ),

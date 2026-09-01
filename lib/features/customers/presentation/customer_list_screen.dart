@@ -6,6 +6,7 @@ import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -63,6 +64,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final customersAsync = ref.watch(customersProvider);
     final searchQuery = ref.watch(customerSearchQueryProvider);
     final sales = ref.watch(salesStreamProvider).value ?? const <dynamic>[];
@@ -154,13 +156,13 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                       _SectionTitle(count: filteredItems.length),
                       const SizedBox(height: 12),
                       if (items.isEmpty)
-                        const EmptyState(
-                          message: 'Add clients to track due payments.',
+                        EmptyState(
+                          message: l10n.t('addClientsToTrack'),
                           icon: Icons.people_alt_outlined,
                         )
                       else if (filteredItems.isEmpty)
-                        const EmptyState(
-                          message: 'No clients match your search.',
+                        EmptyState(
+                          message: l10n.t('noClientsMatch'),
                           icon: Icons.search_off_rounded,
                         )
                       else
@@ -182,7 +184,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
               },
               error: (error, _) => EmptyState(
                   message: friendlyErrorMessage(error,
-                      fallback: 'Could not load clients.'),
+                      fallback: l10n.t('couldNotLoadClients')),
                 ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: MohajonWarm.primary),
@@ -264,6 +266,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     required double due,
     required _CustomerSummary stats,
   }) {
+    final l10n = AppLocalizations.of(context);
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -276,7 +279,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           stats: stats,
           onCall: () {
             Navigator.of(sheetContext).pop();
-            showAppSnackBar(context, 'Call ${customer.phone}');
+            showAppSnackBar(context, '${l10n.t('call')} ${customer.phone}');
           },
           onViewProfile: () {
             Navigator.of(sheetContext).pop();
@@ -313,6 +316,7 @@ class _ClientsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return IconTheme(
       data: const IconThemeData(color: MohajonWarm.ink),
       child: Row(
@@ -342,23 +346,25 @@ class _ClientsTopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Clients',
+                  l10n.t('clients'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
                   ),
                 ),
                 Text(
-                  'Customers & due ledger',
-                  style: TextStyle(
+                  l10n.t('customersDueLedger'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF77735F),
@@ -387,12 +393,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
-            'All Clients',
-            style: TextStyle(
+            l10n.t('allClients'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.2,
@@ -410,7 +417,7 @@ class _SectionTitle extends StatelessWidget {
             ),
           ),
           child: Text(
-            '$count clients',
+            l10n.tP('clientsCount', {'n': '$count'}),
             style: const TextStyle(
               color: Color(0xFF5D4A00),
               fontSize: 11,
@@ -436,20 +443,21 @@ class _ClientStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cards = [
       _StatSpec(
         icon: Icons.people_alt_rounded,
-        label: 'Total Clients',
+        label: l10n.t('totalClients'),
         value: '$totalClients',
-        subtext: 'All clients',
+        subtext: l10n.t('allClientsShort'),
         color: MohajonWarm.goldText,
         background: MohajonWarm.tintYellow,
       ),
       _StatSpec(
         icon: Icons.error_outline_rounded,
-        label: 'With Dues',
+        label: l10n.t('withDuesStat'),
         value: '$dueClients',
-        subtext: 'Follow up',
+        subtext: l10n.t('followUp'),
         color: MohajonWarm.red,
         background: MohajonWarm.tintRed,
       ),
@@ -616,6 +624,7 @@ class _ReceivableCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -664,9 +673,9 @@ class _ReceivableCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'Total Receivable',
-                      style: TextStyle(
+                    Text(
+                      l10n.t('totalReceivable'),
+                      style: const TextStyle(
                         color: MohajonWarm.green,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -675,7 +684,7 @@ class _ReceivableCard extends StatelessWidget {
                     const Spacer(),
                     Flexible(
                       child: Text(
-                        'Across $dueClients clients',
+                        l10n.tP('acrossClients', {'n': '$dueClients'}),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -733,6 +742,7 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -758,7 +768,7 @@ class _SearchAndFilters extends StatelessWidget {
                     controller: controller,
                     onChanged: onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: 'Search by name, phone...',
+                      hintText: l10n.t('searchByNamePhone'),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
                         size: 20,
@@ -802,22 +812,22 @@ class _SearchAndFilters extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: _ClientSort.lastVisit,
-                        child: Text('Last Visit'),
+                        child: Text(l10n.t('lastVisit')),
                       ),
                       DropdownMenuItem(
                         value: _ClientSort.name,
-                        child: Text('Name'),
+                        child: Text(l10n.t('name')),
                       ),
                       DropdownMenuItem(
                         value: _ClientSort.totalSpent,
-                        child: Text('Total Spent'),
+                        child: Text(l10n.t('totalSpent')),
                       ),
                       DropdownMenuItem(
                         value: _ClientSort.dues,
-                        child: Text('Dues'),
+                        child: Text(l10n.t('due')),
                       ),
                     ],
                     onChanged: (value) {
@@ -834,22 +844,22 @@ class _SearchAndFilters extends StatelessWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'All Clients',
+                  label: l10n.t('allClients'),
                   selected: selectedFilter == _ClientFilter.all,
                   onTap: () => onFilterChanged(_ClientFilter.all),
                 ),
                 _FilterChip(
-                  label: 'With Dues',
+                  label: l10n.t('withDuesStat'),
                   selected: selectedFilter == _ClientFilter.dues,
                   onTap: () => onFilterChanged(_ClientFilter.dues),
                 ),
                 _FilterChip(
-                  label: 'VIP',
+                  label: l10n.t('vip'),
                   selected: selectedFilter == _ClientFilter.vip,
                   onTap: () => onFilterChanged(_ClientFilter.vip),
                 ),
                 _FilterChip(
-                  label: 'Recent',
+                  label: l10n.t('recent'),
                   selected: selectedFilter == _ClientFilter.recent,
                   onTap: () => onFilterChanged(_ClientFilter.recent),
                 ),
@@ -955,6 +965,7 @@ class _ClientRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasDue = due > 0;
 
     final leading = _RoundAvatar(
@@ -1012,14 +1023,15 @@ class _ClientRow extends StatelessWidget {
                             final tag = ref.watch(
                               customerTagProvider(customer.customerId),
                             );
-                            final displayTag =
-                                tag.isNotEmpty ? tag : (hasDue ? 'Has Dues' : '');
+                            final displayTag = tag.isNotEmpty
+                                ? tag
+                                : (hasDue ? l10n.t('hasDues') : '');
                             if (displayTag.isEmpty) {
                               return const SizedBox.shrink();
                             }
                             final tagColor = displayTag == 'VIP'
                                 ? MohajonWarm.goldText
-                                : displayTag == 'Has Dues'
+                                : displayTag == l10n.t('hasDues')
                                     ? MohajonWarm.red
                                     : MohajonWarm.green;
                             return Container(
@@ -1049,7 +1061,7 @@ class _ClientRow extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       customer.phone.isEmpty
-                          ? 'No phone number'
+                          ? l10n.t('noPhoneNumber')
                           : customer.phone,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1090,7 +1102,7 @@ class _ClientRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      hasDue ? '${money(due)} due' : 'Clear',
+                      hasDue ? l10n.tP('dueAmount', {'amount': money(due)}) : l10n.t('clear'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1162,6 +1174,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final initials = _initials(customer.name);
     final tag = ref.watch(customerTagProvider(customer.customerId));
     return DraggableScrollableSheet(
@@ -1265,8 +1278,8 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _SummaryTile(
-                        title: 'Outstanding Dues',
-                        value: due > 0 ? money(due) : 'All Clear',
+                        title: l10n.t('outstandingDues'),
+                        value: due > 0 ? money(due) : l10n.t('allClear'),
                         valueColor: due > 0
                             ? MohajonWarm.red
                             : MohajonWarm.green,
@@ -1289,30 +1302,34 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       _InfoLine(
                         icon: Icons.phone_outlined,
                         text: customer.phone.isEmpty
-                            ? 'No phone added'
+                            ? l10n.t('noPhoneAdded')
                             : customer.phone,
                       ),
                       _InfoLine(
                         icon: Icons.email_outlined,
                         text: customer.email.isEmpty
-                            ? 'No email added'
+                            ? l10n.t('noEmailAdded')
                             : customer.email,
                       ),
                       _InfoLine(
                         icon: Icons.location_on_outlined,
                         text: customer.address.isEmpty
-                            ? 'No address saved'
+                            ? l10n.t('noAddressSaved')
                             : customer.address,
                       ),
                       _InfoLine(
                         icon: Icons.calendar_month_outlined,
                         text: stats.lastVisit == null
-                            ? 'Last visit: no visits yet'
-                            : 'Last visit: ${_formatRelativeDay(stats.lastVisit!)}',
+                            ? l10n.t('lastVisitNoVisits')
+                            : l10n.tP('lastVisitTime', {
+                                'time': _formatRelativeDay(stats.lastVisit!),
+                              }),
                       ),
                       _InfoLine(
                         icon: Icons.history_outlined,
-                        text: '${stats.visitCount} total visits',
+                        text: l10n.tP('totalVisits', {
+                          'n': '${stats.visitCount}',
+                        }),
                         showDivider: false,
                       ),
                     ],
@@ -1330,9 +1347,9 @@ class _CustomerDetailSheet extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Notes',
-                        style: TextStyle(
+                      Text(
+                        l10n.t('notes'),
+                        style: const TextStyle(
                           color: MohajonWarm.muted,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1341,7 +1358,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         customer.notes.isEmpty
-                            ? 'No notes saved for this client.'
+                            ? l10n.t('noNotesForClient')
                             : customer.notes,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
@@ -1366,7 +1383,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                           );
                         },
                         icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Profile'),
+                        label: Text(l10n.t('profile')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1374,7 +1391,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       child: OutlinedButton.icon(
                         onPressed: onViewInvoices,
                         icon: const Icon(Icons.receipt_long_rounded),
-                        label: const Text('Invoices'),
+                        label: Text(l10n.t('invoices')),
                       ),
                     ),
                   ],
@@ -1390,7 +1407,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                         ),
                         onPressed: onCall,
                         icon: const Icon(Icons.call_rounded),
-                        label: const Text('Call'),
+                        label: Text(l10n.t('call')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1402,7 +1419,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                         ),
                         onPressed: onRecordPayment,
                         icon: const Icon(Icons.payments_outlined),
-                        label: const Text('Record Payment'),
+                        label: Text(l10n.t('recordPayment')),
                       ),
                     ),
                   ],

@@ -2,15 +2,18 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/product.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/nav_bar/nav_bar_aware_fab_location.dart';
 import '../providers/product_providers.dart';
+import '../services/barcode_label_service.dart';
 import 'product_form_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -46,6 +49,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final productsAsync = ref.watch(productsProvider);
     final searchQuery = ref.watch(productSearchQueryProvider);
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
@@ -120,13 +124,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       _SectionTitle(count: visibleProducts.length),
                       const SizedBox(height: 12),
                       if (items.isEmpty)
-                        const EmptyState(
-                          message: 'Add products to start selling.',
+                        EmptyState(
+                          message: l10n.t('addProductsToStart'),
                           icon: Icons.inventory_2_outlined,
                         )
                       else if (visibleProducts.isEmpty)
-                        const EmptyState(
-                          message: 'No products match your search.',
+                        EmptyState(
+                          message: l10n.t('noProductsMatch'),
                           icon: Icons.search_off_rounded,
                         )
                       else
@@ -137,7 +141,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               },
               error: (error, _) => EmptyState(
                   message: friendlyErrorMessage(error,
-                      fallback: 'Could not load products.'),
+                      fallback: l10n.t('couldNotLoadProducts')),
                 ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: MohajonWarm.primary),
@@ -194,6 +198,7 @@ class _StockTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return IconTheme(
       data: const IconThemeData(color: MohajonWarm.ink),
       child: Row(
@@ -223,23 +228,23 @@ class _StockTopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Stock',
+                  l10n.t('stock'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
                   ),
                 ),
                 Text(
-                  'Products & inventory',
-                  style: TextStyle(
+                  l10n.t('productsInventory'),
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF77735F),
@@ -268,12 +273,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
-            'All Products',
-            style: TextStyle(
+            l10n.t('allProducts'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.2,
@@ -291,7 +297,7 @@ class _SectionTitle extends StatelessWidget {
             ),
           ),
           child: Text(
-            '$count items',
+            '$count ${l10n.t('items')}',
             style: const TextStyle(
               color: Color(0xFF5D4A00),
               fontSize: 11,
@@ -319,36 +325,37 @@ class _StockStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cards = [
       _StatSpec(
         icon: Icons.inventory_2_rounded,
-        label: 'Total Products',
+        label: l10n.t('totalProducts'),
         value: '$totalProducts',
-        subtext: 'All products',
+        subtext: l10n.t('allProductsShort'),
         color: MohajonWarm.goldText,
         background: MohajonWarm.tintYellow,
       ),
       _StatSpec(
         icon: Icons.account_balance_wallet_rounded,
-        label: 'Stock Value',
+        label: l10n.t('stockValue'),
         value: money(stockValue),
-        subtext: 'Inventory worth',
+        subtext: l10n.t('inventoryWorth'),
         color: MohajonWarm.green,
         background: MohajonWarm.tintGreen,
       ),
       _StatSpec(
         icon: Icons.warning_amber_rounded,
-        label: 'Low Stock',
+        label: l10n.t('lowStockStat'),
         value: '$lowStockCount',
-        subtext: 'Restock soon',
+        subtext: l10n.t('restockSoon'),
         color: MohajonWarm.orange,
         background: MohajonWarm.tintOrange,
       ),
       _StatSpec(
         icon: Icons.remove_circle_outline_rounded,
-        label: 'Out of Stock',
+        label: l10n.t('outOfStock'),
         value: '$outStockCount',
-        subtext: 'Unavailable',
+        subtext: l10n.t('unavailable'),
         color: MohajonWarm.red,
         background: MohajonWarm.tintRed,
       ),
@@ -516,6 +523,7 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -538,7 +546,7 @@ class _SearchAndFilters extends StatelessWidget {
               controller: controller,
               onChanged: onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search products...',
+                hintText: l10n.t('searchProductsHint'),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
                   size: 20,
@@ -563,17 +571,17 @@ class _SearchAndFilters extends StatelessWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'All Products',
+                  label: l10n.t('allProducts'),
                   selected: selectedFilter == _StockFilter.all,
                   onTap: () => onFilterChanged(_StockFilter.all),
                 ),
                 _FilterChip(
-                  label: 'Low Stock',
+                  label: l10n.t('lowStockStat'),
                   selected: selectedFilter == _StockFilter.low,
                   onTap: () => onFilterChanged(_StockFilter.low),
                 ),
                 _FilterChip(
-                  label: 'Out of Stock',
+                  label: l10n.t('outOfStock'),
                   selected: selectedFilter == _StockFilter.out,
                   onTap: () => onFilterChanged(_StockFilter.out),
                 ),
@@ -657,6 +665,7 @@ class _InventoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isOut = product.stockQty <= 0;
     final isLow = product.isLowStock && !isOut;
     final statusColor = isOut
@@ -670,8 +679,8 @@ class _InventoryRow extends StatelessWidget {
         ? MohajonWarm.tintOrange
         : MohajonWarm.tintGreen;
     final statusText = isOut
-        ? 'Out of stock'
-        : '${_quantity(product.stockQty)} in stock';
+        ? l10n.t('outOfStockNow')
+        : l10n.tP('qtyInStock', {'qty': _quantity(product.stockQty)});
 
     final leading = product.imagePath != null
         ? ClipRRect(
@@ -681,7 +690,7 @@ class _InventoryRow extends StatelessWidget {
               width: 44,
               height: 44,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _defaultLeading(),
+              errorBuilder: (_, _, _) => _defaultLeading(),
             ),
           )
         : _defaultLeading();
@@ -728,7 +737,7 @@ class _InventoryRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    product.category.isEmpty ? 'General' : product.category,
+                    product.category.isEmpty ? l10n.t('general') : product.category,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -778,6 +787,28 @@ class _InventoryRow extends StatelessWidget {
                 ],
               );
 
+              final hasBarcode = product.barcode.trim().isNotEmpty;
+              final trailing = hasBarcode
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        trailingBlock,
+                        const SizedBox(width: 2),
+                        IconButton(
+                          tooltip: 'Print barcode label',
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(
+                            Icons.print_outlined,
+                            size: 19,
+                            color: MohajonWarm.muted,
+                          ),
+                          onPressed: () => _printLabel(context, product),
+                        ),
+                      ],
+                    )
+                  : trailingBlock;
+
               if (compact) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,7 +821,7 @@ class _InventoryRow extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Align(alignment: Alignment.centerRight, child: trailingBlock),
+                    Align(alignment: Alignment.centerRight, child: trailing),
                   ],
                 );
               }
@@ -801,7 +832,7 @@ class _InventoryRow extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(child: titleBlock),
                   const SizedBox(width: 10),
-                  trailingBlock,
+                  trailing,
                 ],
               );
             },
@@ -828,6 +859,37 @@ class _InventoryRow extends StatelessWidget {
       size: 20,
     ),
   );
+
+  Future<void> _printLabel(BuildContext context, Product product) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await Printing.layoutPdf(
+        name: 'barcode-${product.barcode}',
+        onLayout: (format) => BarcodeLabelService().buildLabels(
+          [
+            BarcodeLabel(
+              code: product.barcode,
+              name: product.nameEn,
+              price: product.sellingPrice,
+            ),
+          ],
+          format: format,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to print barcode: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
 }
 
 String _quantity(int value) {

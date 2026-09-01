@@ -55,7 +55,7 @@ class PosInventoryApp extends ConsumerWidget {
       navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       title: AppConstants.appName,
-      theme: AppTheme.light(),
+      theme: AppTheme.light(locale),
       themeMode: themeMode,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,

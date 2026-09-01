@@ -52,13 +52,13 @@ class _AppShellState extends ConsumerState<AppShell> {
         false;
     final tabs = _buildTabs(l10n, grantedMenus, isOwner);
     if (tabs.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         body: SafeArea(
           child: Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Text(
-                'No app features have been assigned to this account.\nPlease contact the shop owner.',
+                l10n.t('noFeaturesAssigned'),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -154,12 +154,12 @@ class _AppShellState extends ConsumerState<AppShell> {
             screen: const CustomerListScreen(),
             menu: MenuCodes.clients,
           ),
-          const _Tab(
+          _Tab(
             destination: NavDestination(
               icon: Icons.more_horiz_rounded,
-              label: 'More',
+              label: l10n.t('more'),
             ),
-            screen: FeatureHubScreen(),
+            screen: const FeatureHubScreen(),
             menu: null,
           ),
         ]
@@ -193,6 +193,7 @@ class _SideNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: 244,
       margin: const EdgeInsets.all(18),
@@ -293,10 +294,10 @@ class _SideNav extends StatelessWidget {
               children: [
                 Icon(Icons.cloud_done_rounded, color: Color(0xFF2F3028)),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Offline first, cloud ready',
-                    style: TextStyle(
+                    l10n.t('offlineFirstCloud'),
+                    style: const TextStyle(
                       color: Color(0xFF5D5B45),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,

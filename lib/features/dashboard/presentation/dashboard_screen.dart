@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/product.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -32,6 +33,7 @@ class DashboardScreen extends ConsumerWidget {
     final summary = ref.watch(dashboardProvider);
     final sync = ref.watch(syncStateProvider);
     final profile = ref.watch(profileProvider);
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final homeTheme = theme.copyWith(
       colorScheme: theme.colorScheme.copyWith(
@@ -58,7 +60,7 @@ class DashboardScreen extends ConsumerWidget {
       data: homeTheme,
       child: LoadingOverlay(
         loading: sync.phase == SyncPhase.syncing,
-        label: 'Syncing data...',
+        label: l10n.t('syncingData'),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
@@ -133,6 +135,7 @@ class _HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final name = profile?.ownerName ?? '';
     final imagePath = profile?.imagePath;
 
@@ -180,8 +183,8 @@ class _HomeTopBar extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Smart shop management',
-                  style: TextStyle(
+                  l10n.t('appTagline'),
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF77735F),
@@ -214,6 +217,7 @@ class _GreetingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final date = DateFormat('EEEE, MMMM d, y').format(DateTime.now());
     return Container(
       decoration: BoxDecoration(
@@ -297,18 +301,18 @@ class _GreetingPanel extends StatelessWidget {
                           ).withValues(alpha: 0.35),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.wb_sunny_rounded,
                             color: Color(0xFF5D4A00),
                             size: 14,
                           ),
-                          SizedBox(width: 5),
+                          const SizedBox(width: 5),
                           Text(
-                            'OPEN TODAY',
-                            style: TextStyle(
+                            l10n.t('openToday'),
+                            style: const TextStyle(
                               color: Color(0xFF5D4A00),
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
@@ -322,7 +326,7 @@ class _GreetingPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Good day, $name!',
+                  l10n.tP('goodDay', {'name': name}),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -334,7 +338,7 @@ class _GreetingPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  'Here is your shop at a glance.',
+                  l10n.t('shopAtGlance'),
                   style: const TextStyle(
                     color: Color(0xFF77735F),
                     fontSize: 13,
@@ -353,9 +357,9 @@ class _GreetingPanel extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _HeroMetric(
-                          label: "Today's Sales",
+                          label: l10n.t('todaysSales'),
                           value: money(summary.todaySales),
-                          footnote: _salesChangeFootnote(summary),
+                          footnote: _salesChangeFootnote(l10n, summary),
                           foregroundColor: const Color(0xFF2F3028),
                           labelColor: const Color(0xFF77735F),
                           footnoteColor: const Color(0xFF8A6500),
@@ -368,7 +372,7 @@ class _GreetingPanel extends StatelessWidget {
                       ),
                       Expanded(
                         child: _HeroMetric(
-                          label: 'Transactions',
+                          label: l10n.t('transactionsCount'),
                           value: '${summary.todayTransactionCount}',
                           alignEnd: true,
                           foregroundColor: const Color(0xFF2F3028),
@@ -386,14 +390,17 @@ class _GreetingPanel extends StatelessWidget {
     );
   }
 
-  String _salesChangeFootnote(DashboardSummary summary) {
+  String _salesChangeFootnote(AppLocalizations l10n, DashboardSummary summary) {
     final yesterday = summary.yesterdaySales;
     final today = summary.todaySales;
-    if (yesterday == 0 && today == 0) return '0% vs yesterday';
-    if (yesterday == 0) return '↗ 100% vs yesterday';
+    if (yesterday == 0 && today == 0) return l10n.t('vsYesterday');
+    if (yesterday == 0) return l10n.t('vsYesterday100');
     final pct = ((today - yesterday) / yesterday) * 100;
     final arrow = pct >= 0 ? '↗' : '↘';
-    return '$arrow ${pct.abs().toStringAsFixed(1)}% vs yesterday';
+    return l10n.tP('pctVsYesterday', {
+      'arrow': arrow,
+      'pct': pct.abs().toStringAsFixed(1),
+    });
   }
 }
 
@@ -465,22 +472,23 @@ class _OverviewStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final totalDue = summary.totalDue;
     final isAdvance = totalDue < 0;
     final stats = [
       _StatSpec(
         icon: Icons.inventory_2_rounded,
-        label: 'Stock',
+        label: l10n.t('stockStat'),
         value: _formatQuantity(summary.totalStock),
-        subtext: '${summary.lowStock.length} low',
+        subtext: '${summary.lowStock.length} ${l10n.t('low')}',
         color: const Color(0xFF5D5B45),
         background: const Color(0xFFFFF4BF),
       ),
       _StatSpec(
         icon: Icons.people_alt_rounded,
-        label: 'Clients',
+        label: l10n.t('clients'),
         value: '${summary.customerCount}',
-        subtext: '${summary.customerDueCount} with dues',
+        subtext: l10n.tP('withDues', {'n': '${summary.customerDueCount}'}),
         color: const Color(0xFFFFA800),
         background: const Color(0xFFFFF8DD),
       ),
@@ -488,11 +496,11 @@ class _OverviewStats extends StatelessWidget {
         icon: isAdvance
             ? Icons.account_balance_wallet_rounded
             : Icons.payments_rounded,
-        label: isAdvance ? 'Advance' : 'Dues',
+        label: isAdvance ? l10n.t('advance') : l10n.t('due'),
         value: money(totalDue.abs()),
         subtext: isAdvance
-            ? 'Received in advance'
-            : '${summary.customerDueCount} clients',
+            ? l10n.t('receivedInAdvance')
+            : '${summary.customerDueCount} ${l10n.t('clients')}',
         color: isAdvance ? const Color(0xFF047857) : const Color(0xFFEF4444),
         background: isAdvance
             ? const Color(0xFFEFF7E5)
@@ -639,19 +647,20 @@ class _RecentSalesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _SectionCard(
       child: Column(
         children: [
           _SectionHeader(
-            title: 'Recent Sales',
-            action: 'See all',
+            title: l10n.t('recentSales'),
+            action: l10n.t('seeAll'),
             onAction: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SalesHistoryScreen()),
             ),
           ),
           const SizedBox(height: 14),
           if (sales.isEmpty)
-            const _InlineEmpty(message: 'No sales yet')
+            _InlineEmpty(message: l10n.t('noSalesYet'))
           else
             for (var index = 0; index < sales.length; index++) ...[
               if (index != 0)
@@ -672,6 +681,7 @@ class _RecentSaleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final paid = sale.isPaid;
     final statusColor = paid
         ? const Color(0xFF047857)
@@ -707,7 +717,7 @@ class _RecentSaleRow extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                '${sale.invoiceNo} • ${sale.itemCount} items • ${_relativeTime(sale.createdAt)}',
+                '${sale.invoiceNo} • ${sale.itemCount} ${l10n.t('items')} • ${_relativeTime(l10n, sale.createdAt)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -734,7 +744,7 @@ class _RecentSaleRow extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             Text(
-              paid ? 'Paid' : 'Due',
+              paid ? l10n.t('paid') : l10n.t('due'),
               style: TextStyle(
                 color: statusColor,
                 fontSize: 12,
@@ -755,6 +765,7 @@ class _LowStockAlert extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final visible = products.take(4).toList();
     return Container(
       width: double.infinity,
@@ -803,64 +814,76 @@ class _LowStockAlert extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Low Stock Alert',
+                    l10n.t('lowStockAlert'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Color(0xFF2F3028),
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '${products.length} items',
-                    style: const TextStyle(
-                      color: Color(0xFF2F3028),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${products.length} ${l10n.t('items')}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF2F3028),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
-                InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          LowStockProductsScreen(products: products),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            LowStockProductsScreen(products: products),
+                      ),
                     ),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                    child: Row(
-                      children: [
-                        Text(
-                          'View all',
-                          style: TextStyle(
-                            color: Color(0xFF2F3028),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              l10n.t('viewAll'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF2F3028),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: Color(0xFF2F3028),
-                          size: 16,
-                        ),
-                      ],
+                          const SizedBox(width: 2),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFF2F3028),
+                            size: 16,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -870,7 +893,7 @@ class _LowStockAlert extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
             child: visible.isEmpty
-                ? const _InlineEmpty(message: 'No low stock products right now')
+                ? _InlineEmpty(message: l10n.t('noLowStockNow'))
                 : SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -901,6 +924,7 @@ class _LowStockProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isOut = product.stockQty <= 0;
     final statusColor = isOut ? MohajonWarm.red : MohajonWarm.orange;
     final level = (product.stockQty / (product.lowStockAlert * 2))
@@ -1007,7 +1031,7 @@ class _LowStockProductCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            isOut ? 'Out' : 'Low',
+                            isOut ? l10n.t('out') : l10n.t('low'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9.5,
@@ -1038,37 +1062,48 @@ class _LowStockProductCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 7),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isOut ? '0 left' : '${product.stockQty} left',
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
+                    SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                isOut
+                                    ? '0 ${l10n.t('remaining')}'
+                                    : '${product.stockQty} ${l10n.t('remaining')}',
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Min ${product.lowStockAlert}',
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: MohajonWarm.muted,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        Text(
-                          'Min ${product.lowStockAlert}',
-                          style: const TextStyle(
-                            color: MohajonWarm.muted,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ClipRRect(
@@ -1238,12 +1273,12 @@ String _formatQuantity(num value) {
   return (value is double ? value.toInt() : value).toString();
 }
 
-String _relativeTime(DateTime value) {
+String _relativeTime(AppLocalizations l10n, DateTime value) {
   final diff = DateTime.now().difference(value);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inMinutes < 1) return l10n.t('justNow');
+  if (diff.inMinutes < 60) return l10n.tP('minAgo', {'n': '${diff.inMinutes}'});
   if (diff.inHours < 24) {
-    return diff.inHours == 1 ? '1 hour ago' : '${diff.inHours} hours ago';
+    return l10n.tP('hoursAgo', {'n': '${diff.inHours}'});
   }
-  return diff.inDays == 1 ? '1 day ago' : '${diff.inDays} days ago';
+  return l10n.tP('daysAgo', {'n': '${diff.inDays}'});
 }

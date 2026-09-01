@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../providers/shortcut_providers.dart';
 import '../models/shortcut_model.dart';
 import 'shortcut_bottom_sheet.dart';
@@ -60,6 +61,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -68,7 +70,7 @@ class _SectionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Quick actions',
+                l10n.t('quickActions'),
                 style: TextStyle(
                   color: colors.onSurface,
                   fontSize: 17,
@@ -78,7 +80,7 @@ class _SectionHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Your most-used tools',
+                l10n.t('quickActionsSubtitle'),
                 style: TextStyle(
                   color: colors.onSurfaceVariant.withValues(alpha: 0.72),
                   fontSize: 12,
@@ -99,16 +101,16 @@ class _SectionHeader extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.tune_rounded,
                     size: 15,
-                    color: const Color(0xFF2F3028),
+                    color: Color(0xFF2F3028),
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    'Customize',
-                    style: TextStyle(
-                      color: const Color(0xFF2F3028),
+                    l10n.t('customize'),
+                    style: const TextStyle(
+                      color: Color(0xFF2F3028),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                     ),
@@ -180,6 +182,7 @@ class _ShortcutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
@@ -205,7 +208,7 @@ class _ShortcutCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                item.title,
+                _shortcutLabel(l10n, item),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -224,6 +227,28 @@ class _ShortcutCard extends StatelessWidget {
   }
 }
 
+String _shortcutLabel(AppLocalizations l10n, ShortcutItem item) {
+  final key = switch (item.id) {
+    'new_sale' => 'newSale',
+    'add_product' => 'addProductItem',
+    'add_client' => 'addClient',
+    'pos' => 'pos',
+    'stock' => 'stock',
+    'clients' => 'clients',
+    'expenses' => 'expenses',
+    'vendors' => 'vendors',
+    'investors' => 'investors',
+    'reports' => 'reports',
+    'staff' => 'staff',
+    'settings' => 'settings',
+    'purchase' => 'purchase',
+    'sales_history' => 'salesHistory',
+    'investments' => 'investments',
+    _ => item.id,
+  };
+  return l10n.t(key);
+}
+
 class _EmptyShortcuts extends StatelessWidget {
   const _EmptyShortcuts({super.key, required this.onTap});
 
@@ -232,6 +257,7 @@ class _EmptyShortcuts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -256,7 +282,7 @@ class _EmptyShortcuts extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Add your first quick action',
+              l10n.t('addFirstQuickAction'),
               style: TextStyle(
                 color: colors.onSurface,
                 fontWeight: FontWeight.w800,

@@ -152,7 +152,7 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                   child: _SummaryCard(
                     label: 'Entries',
                     value: '${selectedExpenses.length}',
-                    valueColor: const Color(0xFF101828),
+                    valueColor: MohajonWarm.goldText,
                   ),
                 ),
               ],
@@ -172,7 +172,7 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                   child: _SummaryCard(
                     label: 'Categories',
                     value: '$categoryCount',
-                    valueColor: const Color(0xFF101828),
+                    valueColor: MohajonWarm.goldText,
                   ),
                 ),
               ],
@@ -189,9 +189,9 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
             Text(
               'Top category: $highestCategory',
               style: const TextStyle(
-                color: Color(0xFF667085),
+                color: MohajonWarm.goldText,
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 14),
@@ -365,9 +365,20 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,8 +387,8 @@ class _SummaryCard extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF98A2B3),
-              fontWeight: FontWeight.w600,
+              color: MohajonWarm.muted,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
@@ -415,14 +426,18 @@ class _RangeSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -437,14 +452,18 @@ class _RangeSelector extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF101828),
+                    color: MohajonWarm.ink,
                   ),
                 ),
               ),
               TextButton.icon(
                 onPressed: onPickRange,
-                icon: const Icon(Icons.date_range_rounded, size: 18),
-                label: const Text('Change'),
+                icon: const Icon(Icons.date_range_rounded,
+                    size: 18, color: MohajonWarm.goldText),
+                label: const Text('Change',
+                    style: TextStyle(
+                        color: MohajonWarm.goldText,
+                        fontWeight: FontWeight.w800)),
               ),
             ],
           ),
@@ -452,7 +471,7 @@ class _RangeSelector extends StatelessWidget {
           Text(
             '${DateFormat('dd MMM yyyy').format(range.start)}  -  ${DateFormat('dd MMM yyyy').format(range.end)}',
             style: const TextStyle(
-              color: Color(0xFF667085),
+              color: MohajonWarm.muted,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -494,8 +513,15 @@ class _RangeChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-      backgroundColor: const Color(0xFFFFF4EB),
-      side: const BorderSide(color: Color(0xFFFBCB9C)),
+      backgroundColor: MohajonWarm.tintYellow,
+      side: const BorderSide(color: MohajonWarm.goldBorder),
+      labelStyle: const TextStyle(
+        color: MohajonWarm.goldText,
+        fontWeight: FontWeight.w800,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
     );
   }
 }
@@ -515,14 +541,18 @@ class _ExpenseCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -533,10 +563,21 @@ class _ExpenseCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: category.color.withValues(alpha: 0.12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [category.color, category.color.withValues(alpha: 0.6)],
+              ),
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: category.color.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            child: Icon(category.icon, color: category.color, size: 20),
+            child: Icon(category.icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -609,7 +650,7 @@ class _ExpenseCard extends StatelessWidget {
           Text(
             money(expense.amount),
             style: const TextStyle(
-              color: Color(0xFF101828),
+              color: MohajonWarm.goldText,
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),
@@ -681,9 +722,13 @@ class _ListFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F5EF),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8DDD2)),
+        border: Border.all(color: MohajonWarm.goldBorder),
       ),
       child: Row(
         children: [

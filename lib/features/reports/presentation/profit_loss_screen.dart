@@ -167,7 +167,7 @@ class _ProfitLossScreenState extends ConsumerState<ProfitLossScreen>
                 child: ReportSummaryCard(
                   label: 'Revenue',
                   value: money(data.revenue),
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
               const SizedBox(width: 8),

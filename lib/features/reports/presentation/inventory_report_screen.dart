@@ -304,7 +304,7 @@ class _SummaryCardsRow extends StatelessWidget {
           child: _SummaryCard(
             label: 'Stock Value',
             value: money(report.totalStockValue),
-            valueColor: const Color(0xFF101828),
+            valueColor: MohajonWarm.goldText,
             delay: 0.1,
             animCtrl: animCtrl,
           ),
@@ -356,14 +356,18 @@ class _SummaryCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+            ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE8DDD2)),
+            border: Border.all(color: MohajonWarm.goldBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: MohajonWarm.ink.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -374,8 +378,8 @@ class _SummaryCard extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF98A2B3),
-                  fontWeight: FontWeight.w600,
+                  color: MohajonWarm.muted,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
@@ -511,7 +515,7 @@ class _InventoryItemCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF101828),
+                            color: MohajonWarm.ink,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -519,8 +523,8 @@ class _InventoryItemCard extends StatelessWidget {
                           'Stock Value: ${money(product.purchasePrice * product.stockQty)}',
                           style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F766E),
+                            fontWeight: FontWeight.w700,
+                            color: MohajonWarm.goldText,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -612,14 +616,18 @@ class _CardWithRippleState extends State<_CardWithRipple>
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+          ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE8DDD2)),
+          border: Border.all(color: MohajonWarm.goldBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: MohajonWarm.ink.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),

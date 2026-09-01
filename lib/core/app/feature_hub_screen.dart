@@ -6,7 +6,6 @@ import '../../features/auth/providers/auth_providers.dart';
 import '../../features/investments/presentation/investment_dashboard_screen.dart';
 import '../../features/expenses/presentation/expenses_screen.dart';
 import '../../features/profile/presentation/profile_overview_screen.dart';
-import '../../features/products/presentation/barcode_scan_screen.dart';
 import '../../features/investors/presentation/investor_list_screen.dart';
 import '../../features/settings/presentation/account_security_screen.dart';
 import '../../features/settings/presentation/privacy_settings_screen.dart';
@@ -29,6 +28,7 @@ class _MoreTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Container(
@@ -56,25 +56,25 @@ class _MoreTopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'More',
+                l10n.t('more'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: MohajonWarm.ink,
                 ),
               ),
               Text(
-                'Everything in one place',
+                l10n.t('moreDesc'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: MohajonWarm.muted,
@@ -179,10 +179,10 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                       const _MoreTopBar(),
                       const SizedBox(height: 18),
                       _AccountHeader(
-                        name: displayName?.isNotEmpty == true
-                            ? (displayName ?? 'Signed in account')
-                            : 'Signed in account',
-                        email: user?.email ?? 'No email available',
+                name: displayName?.isNotEmpty == true
+                    ? (displayName ?? l10n.t('signedInAccount'))
+                    : l10n.t('signedInAccount'),
+                email: user?.email ?? l10n.t('noEmailAvailable'),
                         sync: sync,
                       ),
                       const SizedBox(height: 22),
@@ -191,8 +191,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                         children: [
                           _FeatureItem(
                             icon: Icons.store_rounded,
-                            title: 'Vendors',
-                            subtitle: 'Manage suppliers and purchases',
+                            title: l10n.t('vendors'),
+                            subtitle: l10n.t('vendorsSubtitle'),
                             color: MohajonWarm.goldText,
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.vendors,
@@ -200,8 +200,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                           ),
                           _FeatureItem(
                             icon: Icons.payments_rounded,
-                            title: 'Expenses',
-                            subtitle: 'Track rent, salaries, and bills',
+                            title: l10n.t('expenses'),
+                            subtitle: l10n.t('expensesSubtitle'),
                             color: MohajonWarm.orange,
                             background: MohajonWarm.tintOrange,
                             menu: MenuCodes.expenses,
@@ -209,26 +209,17 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                           ),
                           _FeatureItem(
                             icon: Icons.people_alt_rounded,
-                            title: 'Investors',
-                            subtitle: 'Track investors and payouts',
+                            title: l10n.t('investors'),
+                            subtitle: l10n.t('investorsSubtitle'),
                             color: MohajonWarm.green,
                             background: MohajonWarm.tintGreen,
                             menu: MenuCodes.investors,
                             onTap: () => _open(const InvestorListScreen()),
                           ),
                           _FeatureItem(
-                            icon: Icons.qr_code_scanner_rounded,
-                            title: 'Barcode scan',
-                            subtitle: 'Find code from camera',
-                            color: MohajonWarm.red,
-                            background: MohajonWarm.tintRed,
-                            menu: MenuCodes.barcode,
-                            onTap: () => _open(const BarcodeScanScreen()),
-                          ),
-                          _FeatureItem(
                             icon: Icons.group_outlined,
-                            title: 'Staff',
-                            subtitle: 'Manage team members',
+                            title: l10n.t('staff'),
+                            subtitle: l10n.t('staffSubtitle'),
                             color: MohajonWarm.goldText,
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.staff,
@@ -236,8 +227,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                           ),
                           _FeatureItem(
                             icon: Icons.pie_chart_outline_rounded,
-                            title: 'Reports',
-                            subtitle: 'Sales, profit & business insights',
+                            title: l10n.t('reports'),
+                            subtitle: l10n.t('reportsSubtitle'),
                             color: MohajonWarm.goldText,
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.reports,
@@ -251,8 +242,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                         children: [
                           _FeatureItem(
                             icon: Icons.account_balance_rounded,
-                            title: 'Investments',
-                            subtitle: 'Manage investments and ROI',
+                            title: l10n.t('investments'),
+                            subtitle: l10n.t('investmentsSubtitle'),
                             color: MohajonWarm.green,
                             background: MohajonWarm.tintGreen,
                             menu: MenuCodes.investments,
@@ -266,8 +257,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                         children: [
                           _FeatureItem(
                             icon: Icons.person_rounded,
-                            title: 'My Profile',
-                            subtitle: 'View and edit your profile',
+                            title: l10n.t('myProfile'),
+                            subtitle: l10n.t('myProfileSubtitle'),
                             color: MohajonWarm.goldText,
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.profile,
@@ -276,14 +267,14 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                           _FeatureItem(
                             icon: Icons.cloud_sync_rounded,
                             title: l10n.t('syncNow'),
-                            subtitle: _syncText(sync),
+                            subtitle: _syncText(l10n, sync),
                             color: _syncColor(context, sync.phase),
                             onTap: _syncNow,
                           ),
                           _FeatureItem(
                             icon: Icons.dark_mode_rounded,
                             title: 'Theme',
-                            subtitle: _themeLabel(themeMode),
+                            subtitle: _themeLabel(l10n, themeMode),
                             color: MohajonWarm.goldText,
                             background: MohajonWarm.tintYellow,
                             trailing: SegmentedButton<ThemeMode>(
@@ -359,8 +350,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                           ),
                           _FeatureItem(
                             icon: Icons.settings_rounded,
-                            title: 'Settings',
-                            subtitle: 'App preferences & more',
+                            title: l10n.t('settings'),
+                            subtitle: l10n.t('appPreferencesMore'),
                             color: MohajonWarm.goldText,
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.settings,
@@ -370,7 +361,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                       ),
                       const SizedBox(height: 16),
                       _FeatureSection(
-                        title: 'Account',
+                        title: l10n.t('account'),
                         children: [
                           _FeatureItem(
                             icon: Icons.logout_rounded,
@@ -391,7 +382,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
           ),
         ),
       ),
-      label: 'Processing...',
+      label: l10n.t('processing'),
     );
   }
 
@@ -426,25 +417,27 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     };
   }
 
-  String _syncText(SyncState sync) {
+  String _syncText(AppLocalizations l10n, SyncState sync) {
     if (sync.phase == SyncPhase.notSignedIn) {
-      return 'Sign in to sync';
+      return l10n.t('signInToSync');
     }
     if (sync.phase == SyncPhase.offline) {
-      return 'Offline • ${sync.pendingCount} pending';
+      return l10n.tP('offlinePending', {'count': '${sync.pendingCount}'});
     }
     if (sync.phase == SyncPhase.failed) {
-      return sync.message.isEmpty ? 'Sync failed' : sync.message;
+      return sync.message.isEmpty ? l10n.t('syncFailed') : sync.message;
     }
-    if (sync.phase == SyncPhase.syncing) return 'Syncing...';
-    return sync.message.isEmpty ? '${sync.pendingCount} pending' : sync.message;
+    if (sync.phase == SyncPhase.syncing) return l10n.t('syncing');
+    return sync.message.isEmpty
+        ? l10n.tP('pendingCount', {'count': '${sync.pendingCount}'})
+        : sync.message;
   }
 
-  String _themeLabel(ThemeMode mode) {
+  String _themeLabel(AppLocalizations l10n, ThemeMode mode) {
     return switch (mode) {
-      ThemeMode.light => 'Light mode',
-      ThemeMode.dark => 'Dark mode',
-      ThemeMode.system => 'System theme',
+      ThemeMode.light => l10n.t('lightMode'),
+      ThemeMode.dark => l10n.t('darkMode'),
+      ThemeMode.system => l10n.t('systemTheme'),
     };
   }
 
@@ -697,18 +690,19 @@ class _AccountHeader extends StatelessWidget {
   final String email;
   final SyncState sync;
 
-  String get _syncLabel {
+  String _syncLabel(AppLocalizations l10n) {
     return switch (sync.phase) {
-      SyncPhase.failed => 'Sync failed',
-      SyncPhase.notSignedIn => 'Sign in to sync',
+      SyncPhase.failed => l10n.t('syncFailed'),
+      SyncPhase.notSignedIn => l10n.t('signInToSync'),
       SyncPhase.offline => 'Offline • ${sync.pendingCount}',
-      SyncPhase.syncing => 'Syncing',
+      SyncPhase.syncing => l10n.t('syncing'),
       SyncPhase.idle => 'Synced',
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final statusColor = switch (sync.phase) {
       SyncPhase.failed => MohajonWarm.red,
       SyncPhase.notSignedIn => MohajonWarm.orange,
@@ -780,7 +774,7 @@ class _AccountHeader extends StatelessWidget {
                 Icon(Icons.cloud_done_rounded, size: 13, color: statusColor),
                 const SizedBox(width: 4),
                 Text(
-                  _syncLabel,
+                  _syncLabel(l10n),
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 10.5,

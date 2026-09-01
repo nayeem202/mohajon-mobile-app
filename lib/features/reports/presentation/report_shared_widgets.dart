@@ -80,35 +80,113 @@ class ReportSummaryCard extends StatelessWidget {
   final String value;
   final Color valueColor;
 
+  IconData _icon() {
+    final l = label.toLowerCase();
+    if (l.contains('profit')) return Icons.trending_up_rounded;
+    if (l.contains('revenue') ||
+        l.contains('sales') ||
+        l.contains('vatable'))
+      return Icons.attach_money_rounded;
+    if (l.contains('expense')) return Icons.receipt_long_rounded;
+    if (l.contains('pay')) return Icons.payments_rounded;
+    if (l.contains('receive')) return Icons.call_received_rounded;
+    if (l.contains('method') ||
+        l.contains('transaction') ||
+        l.contains('active'))
+      return Icons.bolt_rounded;
+    if (l.contains('due') || l.contains('rate')) return Icons.percent_rounded;
+    if (l.contains('vat') || l.contains('total')) return Icons.calculate_rounded;
+    return Icons.bar_chart_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final icon = _icon();
+    final accent = valueColor;
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: reportCardDecoration(radius: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: MohajonWarm.muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: valueColor,
-              letterSpacing: -0.2,
-            ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(17),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -18,
+              right: -18,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [accent, accent.withValues(alpha: 0.65)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.28),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 17, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: MohajonWarm.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: valueColor,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -133,7 +211,22 @@ class ReportRangeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: reportCardDecoration(radius: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -334,7 +427,22 @@ class ReportRowTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: reportCardDecoration(radius: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           if (icon != null) ...[
@@ -342,10 +450,21 @@ class ReportRowTile extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [iconColor, iconColor.withValues(alpha: 0.6)],
+                ),
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: iconColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 20, color: iconColor),
+              child: Icon(icon, size: 20, color: Colors.white),
             ),
             const SizedBox(width: 12),
           ],

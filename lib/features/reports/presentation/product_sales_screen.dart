@@ -164,7 +164,7 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
                 child: ReportSummaryCard(
                   label: 'Products Sold',
                   value: '${data.productCount}',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
               const SizedBox(width: 8),

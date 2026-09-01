@@ -233,7 +233,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
                 child: ReportSummaryCard(
                   label: 'Payments',
                   value: '${data.paymentCount}',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
               const SizedBox(width: 8),

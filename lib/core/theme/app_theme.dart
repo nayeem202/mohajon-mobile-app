@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  static ThemeData light() {
+  /// Kalpurush for Bangla; Roboto (Android standard) for English and others.
+  static String fontFamilyFor(Locale? locale) {
+    final code = locale?.languageCode ?? 'en';
+    return code == 'bn' ? 'Kalpurush' : 'Roboto';
+  }
+
+  static ThemeData light([Locale? locale]) {
+    final fontFamily = fontFamilyFor(locale);
     const scheme = ColorScheme(
       brightness: Brightness.light,
       primary: Color(0xFF0B5BD0),
@@ -28,6 +35,7 @@ class AppTheme {
     );
     final base = ThemeData(
       colorScheme: scheme,
+      fontFamily: fontFamily,
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFF7FBFF),
       visualDensity: VisualDensity.standard,
@@ -94,6 +102,7 @@ class AppTheme {
       textTheme: base.textTheme.apply(
         bodyColor: scheme.onSurface,
         displayColor: scheme.onSurface,
+        fontFamily: fontFamily,
       ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,

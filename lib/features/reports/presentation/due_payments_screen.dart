@@ -187,7 +187,7 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
                 child: ReportSummaryCard(
                   label: 'Customers with Due',
                   value: '${data.customerCount}',
-                  valueColor: const Color(0xFF101828),
+                  valueColor: MohajonWarm.goldText,
                 ),
               ),
             ],

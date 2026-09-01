@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,6 +15,7 @@ import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../providers/product_providers.dart';
+import '../services/barcode_label_service.dart';
 import 'barcode_scan_screen.dart';
 
 class ProductFormScreen extends ConsumerStatefulWidget {
@@ -159,19 +161,39 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      suffixIcon: IconButton(
-                                        tooltip: 'Scan',
-                                        highlightColor:
-                                            MohajonWarm.primary.withValues(
-                                          alpha: 0.25,
-                                        ),
-                                        icon: const Icon(
-                                          Icons.qr_code_scanner_rounded,
-                                          color: MohajonWarm.goldText,
-                                        ),
-                                        onPressed: isBusy
-                                            ? null
-                                            : _scanBarcode,
+                                      suffixIcon: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            tooltip: 'Print barcode label',
+                                            highlightColor: MohajonWarm
+                                                .primary
+                                                .withValues(alpha: 0.25),
+                                            icon: Icon(
+                                              Icons.print_outlined,
+                                              color: _barcode.text.trim().isEmpty
+                                                  ? MohajonWarm.muted
+                                                  : MohajonWarm.goldText,
+                                            ),
+                                            onPressed: isBusy ||
+                                                    _barcode.text.trim().isEmpty
+                                                ? null
+                                                : _printBarcodeLabel,
+                                          ),
+                                          IconButton(
+                                            tooltip: 'Scan',
+                                            highlightColor: MohajonWarm
+                                                .primary
+                                                .withValues(alpha: 0.25),
+                                            icon: const Icon(
+                                              Icons.qr_code_scanner_rounded,
+                                              color: MohajonWarm.goldText,
+                                            ),
+                                            onPressed: isBusy
+                                                ? null
+                                                : _scanBarcode,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -585,6 +607,28 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     );
     if (code != null && code.isNotEmpty) {
       setState(() => _barcode.text = code);
+    }
+  }
+
+  Future<void> _printBarcodeLabel() async {
+    final code = _barcode.text.trim();
+    if (code.isEmpty) return;
+    final name = _name.text.trim().isEmpty ? 'Product' : _name.text.trim();
+    final price = double.tryParse(_sellingPrice.text.trim()) ?? 0;
+    try {
+      await Printing.layoutPdf(
+        name: 'barcode-$code',
+        onLayout: (format) => BarcodeLabelService().buildLabels(
+          [
+            BarcodeLabel(code: code, name: name, price: price),
+          ],
+          format: format,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        showAppSnackBar(context, 'Failed to print barcode: $e', isError: true);
+      }
     }
   }
 
