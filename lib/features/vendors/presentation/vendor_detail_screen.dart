@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/app_error.dart';
 
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -23,6 +24,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
     with AsyncActionState<VendorDetailScreen> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final vendor = widget.vendor;
     final outstanding = ref.watch(vendorOutstandingProvider(vendor.vendorId));
     final purchases = ref.watch(
@@ -51,7 +53,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                 children: [
                   _DetailHeader(
                     title: vendor.companyName,
-                    subtitle: 'Vendor profile',
+                    subtitle: l10n.t('vendorProfile'),
                     onBack: () => Navigator.of(context).maybePop(),
                     onEdit: () => _openEditVendor(vendor),
                     onDelete: () => _confirmDelete(vendor),
@@ -68,31 +70,31 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                     icon: Icons.store_rounded,
                     iconColor: MohajonWarm.goldText,
                     iconBackground: MohajonWarm.tintYellow,
-                    title: 'Company Information',
+                    title: l10n.t('companyInformation'),
                     children: [
-                      _DetailRow(label: 'Phone', value: vendor.phone),
+                      _DetailRow(label: l10n.t('phone'), value: vendor.phone),
                       _DetailRow(
-                        label: 'Email',
+                        label: l10n.t('email'),
                         value: vendor.email.isEmpty
-                            ? 'Not provided'
+                            ? l10n.t('notProvided')
                             : vendor.email,
                       ),
                       _DetailRow(
-                        label: 'Category',
+                        label: l10n.t('category'),
                         value: vendor.category.isEmpty
-                            ? 'General'
+                            ? l10n.t('general')
                             : vendor.category,
                       ),
                       _DetailRow(
-                        label: 'Address',
+                        label: l10n.t('address'),
                         value: vendor.address.isEmpty
-                            ? 'Not provided'
+                            ? l10n.t('notProvided')
                             : vendor.address,
                       ),
                       _DetailRow(
-                        label: 'Products',
+                        label: l10n.t('products'),
                         value: vendor.products.isEmpty
-                            ? 'Not specified'
+                            ? l10n.t('notSpecified')
                             : vendor.products,
                         showDivider: false,
                       ),
@@ -103,24 +105,24 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                     icon: Icons.receipt_long_rounded,
                     iconColor: MohajonWarm.orange,
                     iconBackground: MohajonWarm.tintOrange,
-                    title: 'Vendor Ledger',
+                    title: l10n.t('vendorLedger'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _PillButton(
                           icon: Icons.shopping_cart_rounded,
-                          label: 'Purchase',
+                          label: l10n.t('purchase'),
                           onTap: () => _showRecordPurchaseSheet(vendor),
                         ),
                         const SizedBox(width: 8),
                         _PillButton(
                           icon: Icons.payments_rounded,
-                          label: 'Payment',
+                          label: l10n.t('payment'),
                           onTap: () => _showRecordPaymentSheet(vendor),
                         ),
                       ],
                     ),
-                    children: _buildLedger(ledger),
+                    children: _buildLedger(ledger, l10n),
                   ),
                   const SizedBox(height: 14),
                   _PanelSection(
@@ -131,13 +133,13 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                     iconBackground: outstanding > 0
                         ? MohajonWarm.tintRed
                         : MohajonWarm.tintGreen,
-                    title: 'Outstanding Balance',
+                    title: l10n.t('outstandingBalance'),
                     children: [
                       Row(
                         children: [
                           Expanded(
                             child: _BalanceTile(
-                              label: 'Total Purchases',
+                              label: l10n.t('totalPurchases'),
                               value: money(totalPurchased),
                               color: MohajonWarm.red,
                               background: MohajonWarm.tintRed,
@@ -146,7 +148,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                           const SizedBox(width: 10),
                           Expanded(
                             child: _BalanceTile(
-                              label: 'Total Paid',
+                              label: l10n.t('totalPaid'),
                               value: money(totalPaid),
                               color: MohajonWarm.green,
                               background: MohajonWarm.tintGreen,
@@ -174,8 +176,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                           children: [
                             Text(
                               outstanding > 0
-                                  ? 'Remaining Balance'
-                                  : 'All Cleared',
+                                  ? l10n.t('remainingBalance')
+                                  : l10n.t('allCleared'),
                               style: TextStyle(
                                 color: outstanding > 0
                                     ? MohajonWarm.red
@@ -206,7 +208,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       icon: Icons.inventory_2_outlined,
                       iconColor: MohajonWarm.goldText,
                       iconBackground: MohajonWarm.tintYellow,
-                      title: 'Products Supplied',
+                      title: l10n.t('productsSupplied'),
                       children: [
                         Wrap(
                           spacing: 8,
@@ -243,7 +245,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                     icon: Icons.notes_outlined,
                     iconColor: MohajonWarm.green,
                     iconBackground: MohajonWarm.tintGreen,
-                    title: 'Notes',
+                    title: l10n.t('notes'),
                     children: [
                       Container(
                         width: double.infinity,
@@ -255,8 +257,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                         ),
                         child: Text(
                           vendor.products.isNotEmpty
-                              ? 'Supplies: ${vendor.products}'
-                              : 'No notes added.',
+                              ? l10n.tP('suppliesX', {'n': vendor.products})
+                              : l10n.t('noNotes'),
                           style: const TextStyle(
                             color: Color(0xFF5D4A00),
                             fontWeight: FontWeight.w600,
@@ -272,18 +274,19 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
           ),
         ),
       ),
-      label: 'Processing...',
+      label: l10n.t('processing'),
     );
   }
 
-  List<Widget> _buildLedger(List<VendorLedgerEntry> ledger) {
+  List<Widget> _buildLedger(
+      List<VendorLedgerEntry> ledger, AppLocalizations l10n) {
     if (ledger.isEmpty) {
-      return const [
+      return [
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'No transactions recorded yet.',
-            style: TextStyle(
+            l10n.t('noTransactionsYet'),
+            style: const TextStyle(
               color: MohajonWarm.muted,
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
@@ -315,6 +318,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _confirmDelete(Vendor vendor) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -349,9 +353,9 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Delete Vendor?',
-                        style: TextStyle(
+                      Text(
+                        l10n.t('deleteVendorQuestion'),
+                        style: const TextStyle(
                           fontSize: 16.5,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF1C1917),
@@ -361,8 +365,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          '${vendor.companyName} will be removed permanently. '
-                          'This action cannot be undone.',
+                          l10n.tP('deleteVendorConfirm',
+                              {'name': vendor.companyName}),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 13,
@@ -393,7 +397,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                child: const Text('Cancel'),
+                                child: Text(l10n.t('cancel')),
                               ),
                             ),
                           ),
@@ -436,7 +440,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                                   friendlyErrorMessage(
                                                     error,
                                                     fallback:
-                                                        'Could not delete vendor.',
+                                                        l10n.t('couldNotDeleteVendor'),
                                                   ),
                                                 ),
                                               ),
@@ -459,7 +463,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                           color: Colors.white,
                                         ),
                                       )
-                                    : const Text('Delete'),
+                                    : Text(l10n.t('delete')),
                               ),
                             ),
                           ),
@@ -480,6 +484,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPurchaseSheet(Vendor vendor) async {
+    final l10n = AppLocalizations.of(context);
     final warmTheme = MohajonWarm.theme(Theme.of(context));
     final amountCtrl = TextEditingController();
     final itemsCtrl = TextEditingController();
@@ -542,9 +547,9 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Record Purchase',
-                                  style: TextStyle(
+                                Text(
+                                  l10n.t('recordPurchaseSheet'),
+                                  style: const TextStyle(
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w900,
                                     color: MohajonWarm.ink,
@@ -577,24 +582,24 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                             RegExp(r'[0-9.]'),
                           ),
                         ],
-                        decoration: const InputDecoration(
-                          labelText: 'Amount *',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('amountStar'),
                           prefixText: '৳ ',
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: itemsCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Items Supplied',
-                          hintText: 'e.g. Rice 50kg, Oil 10L',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('itemsSupplied'),
+                          hintText: l10n.t('itemsSuppliedHint'),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: noteCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Notes',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('notes'),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -660,7 +665,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Save Purchase'),
+                              : Text(l10n.t('savePurchase')),
                         ),
                       ),
                     ],
@@ -675,6 +680,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPaymentSheet(Vendor vendor) async {
+    final l10n = AppLocalizations.of(context);
     final warmTheme = MohajonWarm.theme(Theme.of(context));
     final amountCtrl = TextEditingController();
     final refCtrl = TextEditingController();
@@ -738,9 +744,9 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Record Payment',
-                                  style: TextStyle(
+                                Text(
+                                  l10n.t('recordPaymentSheet'),
+                                  style: const TextStyle(
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w900,
                                     color: MohajonWarm.ink,
@@ -773,8 +779,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                             RegExp(r'[0-9.]'),
                           ),
                         ],
-                        decoration: const InputDecoration(
-                          labelText: 'Amount *',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('amountStar'),
                           prefixText: '৳ ',
                         ),
                       ),
@@ -787,33 +793,33 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                           fontWeight: FontWeight.w600,
                         ),
                         dropdownColor: Colors.white,
-                        decoration: const InputDecoration(
-                          labelText: 'Payment Method',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('paymentMethod'),
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
                             value: 'cash',
-                            child: Text('Cash'),
+                            child: Text(l10n.t('cash')),
                           ),
                           DropdownMenuItem(
                             value: 'bkash',
-                            child: Text('bKash'),
+                            child: Text(l10n.t('bKash')),
                           ),
                           DropdownMenuItem(
                             value: 'nagad',
-                            child: Text('Nagad'),
+                            child: Text(l10n.t('nagad')),
                           ),
                           DropdownMenuItem(
                             value: 'bank',
-                            child: Text('Bank'),
+                            child: Text(l10n.t('bank')),
                           ),
                           DropdownMenuItem(
                             value: 'check',
-                            child: Text('Check'),
+                            child: Text(l10n.t('check')),
                           ),
                           DropdownMenuItem(
                             value: 'other',
-                            child: Text('Other'),
+                            child: Text(l10n.t('other')),
                           ),
                         ],
                         onChanged: (v) =>
@@ -822,15 +828,15 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       const SizedBox(height: 12),
                       TextField(
                         controller: refCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Reference',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('reference'),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: noteCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Notes',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('notes'),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -896,7 +902,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Save Payment'),
+                              : Text(l10n.t('savePayment')),
                         ),
                       ),
                     ],
@@ -1068,6 +1074,7 @@ class _VendorHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDue = outstanding > 0;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1150,7 +1157,7 @@ class _VendorHeroCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _MiniMetric(
-                  label: 'Orders',
+                  label: l10n.t('orders'),
                   value: '$orders',
                   icon: Icons.receipt_long_rounded,
                   color: MohajonWarm.goldText,
@@ -1160,7 +1167,7 @@ class _VendorHeroCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniMetric(
-                  label: 'Total Spent',
+                  label: l10n.t('totalSpent'),
                   value: money(totalSpent),
                   icon: Icons.payments_rounded,
                   color: MohajonWarm.green,
@@ -1170,7 +1177,7 @@ class _VendorHeroCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniMetric(
-                  label: 'Balance',
+                  label: l10n.t('balance'),
                   value: money(outstanding),
                   icon: Icons.account_balance_wallet_rounded,
                   color: isDue ? MohajonWarm.red : MohajonWarm.green,

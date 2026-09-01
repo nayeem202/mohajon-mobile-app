@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -50,6 +51,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
     final months = ref.watch(expenseMonthsProvider);
     final categories = ref.watch(expenseCategoriesProvider);
     final selectedMonth = ref.watch(expenseMonthFilterProvider);
+    final l10n = AppLocalizations.of(context);
 
     return withLoadingOverlay(
       Theme(
@@ -100,12 +102,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Expanded(
+                        SizedBox(
                           child: Text(
-                            'Expense List',
+                            l10n.t('expenseList'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.2,
@@ -130,7 +132,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                             ),
                           ),
                           child: Text(
-                            '${dashboard.filteredEntries.length} items',
+                            l10n.tP(
+                              'expenseItems',
+                              {'n': dashboard.filteredEntries.length.toString()},
+                            ),
                             style: const TextStyle(
                               color: Color(0xFF5D4A00),
                               fontSize: 11,
@@ -142,9 +147,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                     ),
                     const SizedBox(height: 12),
                     if (dashboard.filteredEntries.isEmpty)
-                      const EmptyState(
-                        message:
-                            'No expenses found for this month and filter.',
+                      EmptyState(
+                        message: l10n.t('noExpensesFound'),
                         icon: Remix.wallet_3_line,
                       )
                     else
@@ -176,12 +180,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
             categoryLabel: _filterLabel(
               categories,
               dashboard.selectedCategoryId,
+              l10n,
             ),
             total: dashboard.filteredTotal,
           ),
         ),
       ),
-      label: 'Deleting expense...',
+      label: l10n.t('deletingExpense'),
     );
   }
 
@@ -192,14 +197,21 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
     );
   }
 
-  String _filterLabel(List<ExpenseCategory> categories, String categoryId) {
-    if (categoryId.isEmpty) return 'All categories';
-    return categories
-        .firstWhere(
-          (category) => category.id == categoryId,
-          orElse: () => categories.first,
-        )
-        .label;
+  String _filterLabel(
+    List<ExpenseCategory> categories,
+    String categoryId,
+    AppLocalizations l10n,
+  ) {
+    if (categoryId.isEmpty) return l10n.t('allCategories');
+    return _expenseCategoryLabel(
+      categories
+          .firstWhere(
+            (category) => category.id == categoryId,
+            orElse: () => categories.first,
+          )
+          .label,
+      l10n,
+    );
   }
 
   void _openForm(Expense? expense) {
@@ -209,6 +221,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
   }
 
   Future<void> _confirmDelete(Expense expense) async {
+    final dl10n = AppLocalizations.of(context);
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -240,9 +253,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Delete Expense?',
-                      style: TextStyle(
+                    Text(
+                      dl10n.t('deleteExpenseQuestion'),
+                      style: const TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF1C1917),
@@ -252,8 +265,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        '"${expense.description}" will be removed permanently. '
-                        'This action cannot be undone.',
+                        dl10n.tP('deleteExpenseConfirm', {
+                          'desc': expense.description,
+                        }),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 13,
@@ -283,7 +297,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              child: const Text('Cancel'),
+                              child: Text(dl10n.t('cancel')),
                             ),
                           ),
                         ),
@@ -304,7 +318,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              child: const Text('Delete'),
+                              child: Text(dl10n.t('delete')),
                             ),
                           ),
                         ),
@@ -333,6 +347,7 @@ class _ExpensesHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return IconTheme(
       data: const IconThemeData(color: MohajonWarm.ink),
       child: Row(
@@ -384,23 +399,23 @@ class _ExpensesHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Expenses',
+                  l10n.t('expenses'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
                   ),
                 ),
                 Text(
-                  'Track shop spending',
-                  style: TextStyle(
+                  l10n.t('trackShopSpending'),
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF77735F),
@@ -429,12 +444,13 @@ class _SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isCurrentMonth = _isCurrentMonth(data.selectedMonth);
     final selectedLabel = isCurrentMonth
-        ? 'This Month'
+        ? l10n.t('thisMonth')
         : DateFormat('MMM yyyy').format(data.selectedMonth);
     final previousLabel = isCurrentMonth
-        ? 'Last Month'
+        ? l10n.t('lastMonth')
         : DateFormat('MMM yyyy').format(data.previousMonth);
     final trend = data.selectedMonthTotal == data.previousMonthTotal
         ? _TrendDirection.flat
@@ -510,7 +526,7 @@ class _SummaryCards extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Selected period expenses',
+                  l10n.t('selectedPeriodExpenses'),
                   style: const TextStyle(
                     color: MohajonWarm.muted,
                     fontSize: 11,
@@ -591,6 +607,7 @@ class _TrendChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = switch (trend) {
       _TrendDirection.up => MohajonWarm.red,
       _TrendDirection.down => MohajonWarm.green,
@@ -607,9 +624,9 @@ class _TrendChip extends StatelessWidget {
       _TrendDirection.flat => Remix.subtract_line,
     };
     final label = switch (trend) {
-      _TrendDirection.up => 'Up',
-      _TrendDirection.down => 'Down',
-      _TrendDirection.flat => 'Flat',
+      _TrendDirection.up => l10n.t('up'),
+      _TrendDirection.down => l10n.t('down'),
+      _TrendDirection.flat => l10n.t('flat'),
     };
 
     return Container(
@@ -714,6 +731,7 @@ class _CategoryBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -731,9 +749,9 @@ class _CategoryBreakdownCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Category Breakdown',
-            style: TextStyle(
+          Text(
+            l10n.t('categoryBreakdown'),
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.2,
@@ -741,9 +759,9 @@ class _CategoryBreakdownCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Share of total expenses for the selected month',
-            style: TextStyle(
+          Text(
+            l10n.t('categoryBreakdownSubtitle'),
+            style: const TextStyle(
               color: MohajonWarm.muted,
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
@@ -751,9 +769,9 @@ class _CategoryBreakdownCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (data.breakdown.isEmpty)
-            const Text(
-              'No category data available.',
-              style: TextStyle(
+            Text(
+              l10n.t('noCategoryData'),
+              style: const TextStyle(
                 color: MohajonWarm.muted,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -763,7 +781,7 @@ class _CategoryBreakdownCard extends StatelessWidget {
             ...data.breakdown.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _BreakdownRow(item: item),
+                child: _BreakdownRow(item: item, l10n: l10n),
               ),
             ),
         ],
@@ -773,9 +791,10 @@ class _CategoryBreakdownCard extends StatelessWidget {
 }
 
 class _BreakdownRow extends StatelessWidget {
-  const _BreakdownRow({required this.item});
+  const _BreakdownRow({required this.item, required this.l10n});
 
   final ExpenseCategoryBreakdown item;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -803,7 +822,7 @@ class _BreakdownRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                item.category.label,
+                _expenseCategoryLabel(item.category.label, l10n),
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
@@ -868,20 +887,21 @@ class _CategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 36,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           _FilterChip(
-            label: 'All',
+            label: l10n.t('all'),
             selected: selectedId.isEmpty,
             onTap: () => onChanged(''),
           ),
           const SizedBox(width: 8),
           for (final category in categories) ...[
             _FilterChip(
-              label: category.label,
+              label: _expenseCategoryLabel(category.label, l10n),
               selected: selectedId == category.id,
               onTap: () => onChanged(category.id),
             ),
@@ -952,6 +972,7 @@ class _ExpenseItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: MohajonWarm.card,
       borderRadius: BorderRadius.circular(16),
@@ -995,9 +1016,12 @@ class _ExpenseItemCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    entry.categoryLabel.isNotEmpty
-                        ? entry.categoryLabel
-                        : category.label,
+                    _expenseCategoryLabel(
+                      entry.categoryLabel.isNotEmpty
+                          ? entry.categoryLabel
+                          : category.label,
+                      l10n,
+                    ),
                     style: TextStyle(
                       color: category.color,
                       fontSize: 11.5,
@@ -1061,14 +1085,14 @@ class _ExpenseItemCard extends StatelessWidget {
                     if (value == 'edit') onEdit();
                     if (value == 'delete') onDelete();
                   },
-                  itemBuilder: (context) => const [
+                  itemBuilder: (context) => [
                     PopupMenuItem(
                       value: 'edit',
-                      child: Text('Edit'),
+                      child: Text(l10n.t('edit')),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete'),
+                      child: Text(l10n.t('delete')),
                     ),
                   ],
                 ),
@@ -1103,6 +1127,7 @@ class _StickyTotalBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -1143,7 +1168,7 @@ class _StickyTotalBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '$monthLabel total',
+                    l10n.tP('monthTotal', {'month': monthLabel}),
                     style: const TextStyle(
                       color: MohajonWarm.muted,
                       fontSize: 11.5,
@@ -1183,4 +1208,16 @@ class _StickyTotalBar extends StatelessWidget {
 bool _isCurrentMonth(DateTime value) {
   final now = DateTime.now();
   return value.year == now.year && value.month == now.month;
+}
+
+String _expenseCategoryLabel(String label, AppLocalizations l10n) {
+  return switch (label) {
+    'Rent' => l10n.t('catRent'),
+    'Electricity' => l10n.t('catElectricity'),
+    'Salaries' => l10n.t('catSalaries'),
+    'Transport' => l10n.t('catTransport'),
+    'Maintenance' => l10n.t('catMaintenance'),
+    'Miscellaneous' => l10n.t('catMisc'),
+    _ => label,
+  };
 }

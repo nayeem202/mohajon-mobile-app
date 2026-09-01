@@ -5,6 +5,7 @@ import '../../../core/utils/snackbar.dart';
 import '../../../core/utils/app_error.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -64,6 +65,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
       _categoryId = categories.first.id;
     }
     final isEditing = widget.expense != null;
+    final l10n = AppLocalizations.of(context);
 
     return withLoadingOverlay(
       Theme(
@@ -134,9 +136,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                             children: [
                               _FormHeader(
                                 title: isEditing
-                                    ? 'Edit Expense'
-                                    : 'Add Expense',
-                                subtitle: 'Record shop spending',
+                                    ? l10n.t('editExpense')
+                                    : l10n.t('addExpense'),
+                                subtitle: l10n.t('recordShopSpending'),
                                 onBack: () =>
                                     Navigator.of(context).maybePop(),
                               ),
@@ -145,10 +147,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                 icon: Icons.receipt_long_rounded,
                                 iconColor: MohajonWarm.goldText,
                                 iconBackground: MohajonWarm.tintYellow,
-                                title: 'Expense Details',
+                                title: l10n.t('expenseDetails'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Description',
+                                  _FieldLabel(
+                                    label: l10n.t('description'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -157,25 +159,27 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                     textCapitalization:
                                         TextCapitalization.sentences,
                                     textInputAction: TextInputAction.next,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.edit_note_rounded,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Electricity bill',
+                                      hintText: l10n.t('expenseDescHint'),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
                                           value.trim().isEmpty) {
-                                        return 'Enter a short description';
+                                        return l10n.t(
+                                          'enterShortDescription',
+                                        );
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(
-                                    label: 'Amount',
+                                  _FieldLabel(
+                                    label: l10n.t('amount'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -190,8 +194,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                     ],
                                     onChanged: (_) => setState(() {}),
                                     textInputAction: TextInputAction.next,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Padding(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Padding(
                                         padding: EdgeInsets.only(
                                           left: 14,
                                           right: 8,
@@ -206,17 +210,17 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                         ),
                                       ),
                                       prefixIconConstraints:
-                                          BoxConstraints(
+                                          const BoxConstraints(
                                         minWidth: 0,
                                         minHeight: 0,
                                       ),
-                                      hintText: '0.00',
+                                      hintText: l10n.t('amountHint'),
                                     ),
                                     validator: (value) {
                                       final amount =
                                           double.tryParse(value ?? '');
                                       if (amount == null || amount <= 0) {
-                                        return 'Enter a valid amount';
+                                        return l10n.t('enterValidAmount');
                                       }
                                       return null;
                                     },
@@ -228,10 +232,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                 icon: Icons.category_outlined,
                                 iconColor: MohajonWarm.green,
                                 iconBackground: MohajonWarm.tintGreen,
-                                title: 'Category & Date',
+                                title: l10n.t('categoryAndDate'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Category',
+                                  _FieldLabel(
+                                    label: l10n.t('category'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -254,7 +258,12 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                         .map(
                                           (category) => DropdownMenuItem(
                                             value: category.id,
-                                            child: Text(category.label),
+                                            child: Text(
+                                              _expenseCategoryLabel(
+                                                category.label,
+                                                l10n,
+                                              ),
+                                            ),
                                           ),
                                         )
                                         .toList(),
@@ -266,13 +275,13 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                     validator: (value) {
                                       if (value == null ||
                                           value.isEmpty) {
-                                        return 'Choose a category';
+                                        return l10n.t('chooseCategory');
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(label: 'Date'),
+                                  _FieldLabel(label: l10n.t('date')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     readOnly: true,
@@ -314,7 +323,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                 icon: Icons.notes_outlined,
                                 iconColor: MohajonWarm.orange,
                                 iconBackground: MohajonWarm.tintOrange,
-                                title: 'Notes',
+                                title: l10n.t('notes'),
                                 children: [
                                   TextFormField(
                                     controller: _notesController,
@@ -322,9 +331,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                     maxLines: 5,
                                     textCapitalization:
                                         TextCapitalization.sentences,
-                                    decoration: const InputDecoration(
-                                      hintText:
-                                          'Any extra details about this expense...',
+                                    decoration: InputDecoration(
+                                      hintText: l10n.t('notesHint'),
                                     ),
                                   ),
                                 ],
@@ -344,7 +352,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                 bottom: 8,
                               ),
                               child: Text(
-                                'Preview: ${_previewAmount <= 0 ? '—' : '৳${_previewAmount.toStringAsFixed(2)}'}',
+                                '${l10n.t('preview')}${_previewAmount <= 0 ? '—' : '৳${_previewAmount.toStringAsFixed(2)}'}',
                                 style: const TextStyle(
                                   color: MohajonWarm.muted,
                                   fontSize: 11.5,
@@ -357,11 +365,11 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                               isBusy: isBusy,
                               icon: Icons.save_outlined,
                               label: isEditing
-                                  ? 'Update Expense'
-                                  : 'Save Expense',
+                                  ? l10n.t('updateExpense')
+                                  : l10n.t('saveExpense'),
                               busyLabel: isEditing
-                                  ? 'Updating...'
-                                  : 'Saving...',
+                                  ? l10n.t('updating')
+                                  : l10n.t('saving'),
                             ),
                           ],
                         ),
@@ -374,7 +382,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
           ),
         ),
       ),
-      label: 'Saving expense...',
+      label: l10n.t('savingExpense'),
     );
   }
 
@@ -657,4 +665,16 @@ class _FieldLabel extends StatelessWidget {
       ),
     );
   }
+}
+
+String _expenseCategoryLabel(String label, AppLocalizations l10n) {
+  return switch (label) {
+    'Rent' => l10n.t('catRent'),
+    'Electricity' => l10n.t('catElectricity'),
+    'Salaries' => l10n.t('catSalaries'),
+    'Transport' => l10n.t('catTransport'),
+    'Maintenance' => l10n.t('catMaintenance'),
+    'Miscellaneous' => l10n.t('catMisc'),
+    _ => label,
+  };
 }

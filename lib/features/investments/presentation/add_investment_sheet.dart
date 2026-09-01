@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
@@ -40,6 +41,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final catsAsync = ref.watch(investmentCategoriesStreamProvider);
     final loaded = catsAsync.value;
     final categories =

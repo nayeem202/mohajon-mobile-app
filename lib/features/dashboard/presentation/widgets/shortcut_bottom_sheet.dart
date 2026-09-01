@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../providers/shortcut_providers.dart';
 import '../models/shortcut_model.dart';
 
@@ -15,6 +16,28 @@ const _kSoftFill = Color(0xFFFFF4BF);
 const _kSelGradientLight = Color(0xFFFFDF57);
 const _kSelGradientDeep = Color(0xFFF3BC00);
 const _kBronzeText = Color(0xFF8A6500);
+
+String shortcutTitle(AppLocalizations l10n, ShortcutItem item) {
+  final key = switch (item.id) {
+    'new_sale' => 'newSale',
+    'add_product' => 'addProductItem',
+    'add_client' => 'addClient',
+    'pos' => 'pos',
+    'stock' => 'stock',
+    'clients' => 'clients',
+    'expenses' => 'expenses',
+    'vendors' => 'vendors',
+    'investors' => 'investors',
+    'reports' => 'reports',
+    'staff' => 'staff',
+    'settings' => 'settings',
+    'purchase' => 'purchase',
+    'sales_history' => 'salesHistory',
+    'investments' => 'investments',
+    _ => item.id,
+  };
+  return l10n.t(key);
+}
 
 class ShortcutBottomSheet extends ConsumerStatefulWidget {
   const ShortcutBottomSheet({super.key});
@@ -53,16 +76,17 @@ class _ShortcutBottomSheetState extends ConsumerState<ShortcutBottomSheet>
   void _toggle(String id) {
     final notifier = ref.read(selectedShortcutIdsProvider.notifier);
     final current = ref.read(selectedShortcutIdsProvider);
+    final l10n = AppLocalizations.of(context);
 
     if (current.contains(id)) {
       if (current.length <= 1) {
-        _showSnackBar('Keep at least 1 shortcut');
+        _showSnackBar(l10n.t('keepMinShortcut'));
         return;
       }
       notifier.toggle(id);
     } else {
       if (current.length >= 8) {
-        _showSnackBar('Max 8 shortcuts allowed');
+        _showSnackBar(l10n.t('maxShortcuts'));
         return;
       }
       notifier.toggle(id);
@@ -329,6 +353,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       child: Row(
@@ -339,11 +364,11 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Quick Shortcuts',
+                Text(
+                  l10n.t('quickShortcuts'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 21,
                     fontWeight: FontWeight.w900,
                     color: _kInk,
@@ -353,9 +378,9 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    const Text(
-                      'Pick your favorites',
-                      style: TextStyle(
+                    Text(
+                      l10n.t('pickFavorites'),
+                      style: const TextStyle(
                         fontSize: 12,
                         color: _kMuted,
                         fontWeight: FontWeight.w600,
@@ -390,6 +415,7 @@ class _ReorderHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       child: Row(
@@ -400,11 +426,11 @@ class _ReorderHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Rearrange',
+                Text(
+                  l10n.t('rearrange'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 21,
                     fontWeight: FontWeight.w900,
                     color: _kInk,
@@ -414,9 +440,9 @@ class _ReorderHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    const Text(
-                      'Drag to reorder shortcuts',
-                      style: TextStyle(
+                    Text(
+                      l10n.t('dragToReorder'),
+                      style: const TextStyle(
                         fontSize: 12,
                         color: _kMuted,
                         fontWeight: FontWeight.w600,
@@ -513,6 +539,7 @@ class _ActiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: _kCard,
@@ -541,7 +568,7 @@ class _ActiveChip extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            item.title,
+            shortcutTitle(l10n, item),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -667,6 +694,7 @@ class _SelectionTileState extends State<_SelectionTile>
   Widget build(BuildContext context) {
     final item = widget.item;
     final isSelected = widget.isSelected;
+    final l10n = AppLocalizations.of(context);
 
     return AnimatedScale(
       scale: isSelected ? 1.0 : 0.97,
@@ -745,7 +773,7 @@ class _SelectionTileState extends State<_SelectionTile>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      item.title,
+                      shortcutTitle(l10n, item),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -802,10 +830,10 @@ class _ReorderList extends ConsumerWidget {
     ];
 
     if (selected.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No shortcuts selected',
-          style: TextStyle(
+          AppLocalizations.of(context).t('noShortcutsSelected'),
+          style: const TextStyle(
             fontWeight: FontWeight.w700,
             color: _kMuted,
           ),
@@ -860,6 +888,7 @@ class _ReorderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -910,7 +939,7 @@ class _ReorderTile extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  item.title,
+                  shortcutTitle(l10n, item),
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     color: _kInk,
@@ -931,9 +960,9 @@ class _ReorderTile extends StatelessWidget {
                       color: _kAmber.withValues(alpha: 0.4),
                     ),
                   ),
-                  child: const Text(
-                    'TOP',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.t('top'),
+                    style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.7,

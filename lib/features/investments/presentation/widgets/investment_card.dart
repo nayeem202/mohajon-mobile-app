@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/mohajon_warm_theme.dart';
 import '../../../../core/utils/money.dart';
 import '../../models/investment.dart';
@@ -26,6 +27,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final inv = widget.investment;
     final members = ref.watch(investmentMembersProvider(inv.id));
     final payoutsAsync = ref.watch(payoutsStreamProvider(inv.id));
@@ -111,8 +113,8 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                                   ),
                                   child: Text(
                                     inv.profitShareMethod == 'fixed'
-                                        ? 'Fixed %'
-                                        : 'Proportional',
+                                        ? l10n.t('fixedPct')
+                                        : l10n.t('proportional'),
                                     style: TextStyle(
                                       color: inv.profitShareMethod == 'fixed'
                                           ? MohajonWarm.orange
@@ -186,6 +188,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
 
   Widget _buildExpanded(Investment inv, List<InvestmentMember> members,
       List<Payout> payouts, ColorScheme colors, Color catColor) {
+    final l10n = AppLocalizations.of(context);
     final totalDue =
         members.fold<double>(0, (s, m) => s + m.investmentAmount + m.profit);
     final totalPaid = members.fold<double>(0, (s, m) => s + m.paidAmount);
@@ -204,17 +207,17 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
           Row(
             children: [
               _StatBox(
-                  label: 'Investors',
+                  label: l10n.t('investors'),
                   value: '${members.length}',
                   color: MohajonWarm.goldText),
               const SizedBox(width: 8),
               _StatBox(
-                  label: 'Total Returns',
+                  label: l10n.t('totalReturns'),
                   value: money(inv.totalProfit),
                   color: MohajonWarm.green),
               const SizedBox(width: 8),
               _StatBox(
-                  label: 'Outstanding',
+                  label: l10n.t('outstanding'),
                   value: money(inv.outstanding),
                   color: inv.outstanding > 0
                       ? MohajonWarm.red
@@ -234,15 +237,14 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                 Icon(Icons.payments_rounded,
                     color: MohajonWarm.goldText, size: 20),
                 const SizedBox(width: 8),
-                Text('Total Paid Out',
+                Text(l10n.t('totalPaidOut'),
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: MohajonWarm.goldText,
                         fontSize: 13)),
                 const Spacer(),
                 Tooltip(
-                  message:
-                      'Outstanding Capital = Total Investment + Profit - Total Paid Out',
+                  message: l10n.t('outstandingCapitalTooltip'),
                   child: Text(money(totalPaid),
                       style: TextStyle(
                           fontWeight: FontWeight.w900,
@@ -258,10 +260,10 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Tooltip(
-                    message:
-                        'Percentage of total due (investment + profit) that has been paid out',
+                    message: l10n.t('paidOutPctTooltip'),
                     child: Text(
-                      '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}% Cleared',
+                      l10n.tP('clearedPct',
+                          {'n': '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}'}),
                       style: TextStyle(
                           color: MohajonWarm.goldText,
                           fontSize: 11,
@@ -275,7 +277,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
           const SizedBox(height: 14),
           Row(
             children: [
-              Text('INVESTOR BREAKDOWN',
+              Text(l10n.t('investorBreakdown'),
                   style: TextStyle(
                       color: MohajonWarm.muted,
                       fontSize: 11,
@@ -288,7 +290,9 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                 child: Row(
                   children: [
                     Text(
-                        _showHistory ? 'Hide History' : 'View Payout History',
+                        _showHistory
+                            ? l10n.t('hideHistory')
+                            : l10n.t('viewPayoutHistory'),
                         style: TextStyle(
                             color: MohajonWarm.goldText,
                             fontSize: 12,
@@ -315,7 +319,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
             if (payouts.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text('No payouts recorded yet.',
+                child: Text(l10n.t('noPayoutsYet'),
                     style: TextStyle(
                         color: MohajonWarm.muted, fontSize: 13)),
               )
@@ -425,6 +429,7 @@ class _MemberCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final investor =
         ref.watch(memberInvestorProvider(member.investorId));
     final totalDue = (member.investmentAmount + member.profit)
@@ -465,7 +470,7 @@ class _MemberCard extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(investor?.name ?? 'Unknown',
+                child: Text(investor?.name ?? l10n.t('unknown'),
                     style: TextStyle(
                         fontWeight: FontWeight.w800,
                         color: colors.onSurface,
@@ -480,7 +485,7 @@ class _MemberCard extends ConsumerWidget {
                     color: netDue > 0 ? MohajonWarm.primary : MohajonWarm.muted,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text('Record Payout',
+                  child: Text(l10n.t('recordPayout'),
                       style: TextStyle(
                           color: MohajonWarm.ink,
                           fontSize: 11,
@@ -493,29 +498,28 @@ class _MemberCard extends ConsumerWidget {
           Row(
             children: [
               _MiniStat(
-                  label: 'Invested',
+                  label: l10n.t('invested'),
                   value: money(member.investmentAmount),
                   color: MohajonWarm.goldText),
               const SizedBox(width: 6),
               _MiniStat(
-                  label: 'Share',
+                  label: l10n.t('share'),
                   value:
                       '${member.sharePercentage.toStringAsFixed(1)}%',
                   color: MohajonWarm.muted),
               const SizedBox(width: 6),
               _MiniStat(
-                  label: member.profit < 0 ? 'Loss' : 'Profit',
+                  label: member.profit < 0 ? l10n.t('loss') : l10n.t('profit'),
                   value: money(member.profit.abs()),
                   color: member.profit < 0
                       ? MohajonWarm.red
                       : MohajonWarm.green),
               const SizedBox(width: 6),
               _MiniStat(
-                label: 'Net Due',
+                label: l10n.t('netDue'),
                 value: money(netDue),
                 color: netDue > 0 ? MohajonWarm.red : MohajonWarm.green,
-                tooltip:
-                    'Net Due = Investment Amount + Profit - Paid Amount. Payouts reduce this balance.',
+                tooltip: l10n.t('netDueTooltip'),
               ),
             ],
           ),
@@ -536,13 +540,13 @@ class _MemberCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('Total Due ${money(totalDue)}',
+              Text(l10n.tP('cardTotalDue', {'n': money(totalDue)}),
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: MohajonWarm.muted)),
               const SizedBox(width: 4),
-              Text('Paid ${money(member.paidAmount)}',
+              Text(l10n.tP('cardPaid', {'n': money(member.paidAmount)}),
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -607,6 +611,7 @@ class _PayoutHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -616,7 +621,7 @@ class _PayoutHistoryItem extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              payout.note.isNotEmpty ? payout.note : 'Payout',
+              payout.note.isNotEmpty ? payout.note : l10n.t('payout'),
               style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: MohajonWarm.ink,

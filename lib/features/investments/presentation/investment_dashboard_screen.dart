@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -46,6 +47,7 @@ class _InvestmentDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final dashboard = ref.watch(investmentDashboardProvider);
     final filtered = ref.watch(filteredInvestmentsProvider);
     final query = ref.watch(investmentSearchQueryProvider);
@@ -68,8 +70,8 @@ class _InvestmentDashboardScreenState
                   padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
                   children: [
                     PremiumHeader(
-                      title: 'Investments',
-                      subtitle: 'Capital & returns',
+                      title: l10n.t('investmentsHeader'),
+                      subtitle: l10n.t('capitalReturns'),
                       icon: Icons.account_balance_rounded,
                     ),
                     const SizedBox(height: 18),
@@ -88,7 +90,7 @@ class _InvestmentDashboardScreenState
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'All Investments (${filtered.length})',
+                      l10n.tP('allInvestments', {'n': '${filtered.length}'}),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -97,13 +99,13 @@ class _InvestmentDashboardScreenState
                     ),
                     const SizedBox(height: 8),
                     if (filtered.isEmpty && query.isEmpty)
-                      const EmptyState(
-                        message: 'Add investments to track your capital.',
+                      EmptyState(
+                        message: l10n.t('addInvestmentsToTrack'),
                         icon: Icons.account_balance_outlined,
                       )
                     else if (filtered.isEmpty)
-                      const EmptyState(
-                        message: 'No investments match your search.',
+                      EmptyState(
+                        message: l10n.t('noInvestmentsMatch'),
                         icon: Icons.search_off_rounded,
                       )
                     else
@@ -142,6 +144,7 @@ class _SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isPos = data.roi >= 0;
     return Row(
       children: [
@@ -196,11 +199,11 @@ class _SummaryCards extends StatelessWidget {
                           color: MohajonWarm.goldText.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'Total Invested',
+                        child: Text(
+                          l10n.t('totalInvested'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: MohajonWarm.goldText,
                             fontSize: 9.5,
                             fontWeight: FontWeight.w800,
@@ -225,11 +228,11 @@ class _SummaryCards extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Capital deployed',
+                Text(
+                  l10n.t('capitalDeployed'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
                     color: MohajonWarm.muted,
                     fontWeight: FontWeight.w600,
@@ -291,11 +294,11 @@ class _SummaryCards extends StatelessWidget {
                           color: MohajonWarm.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'Total Returns',
+                        child: Text(
+                          l10n.t('totalReturns'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: MohajonWarm.orange,
                             fontSize: 9.5,
                             fontWeight: FontWeight.w800,
@@ -322,8 +325,10 @@ class _SummaryCards extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   data.roi >= 0
-                      ? 'ROI ${data.roi.toStringAsFixed(2)}%'
-                      : 'Loss ${data.roi.toStringAsFixed(2)}%',
+                      ? l10n.tP('roiPct',
+                          {'pct': data.roi.toStringAsFixed(2)})
+                      : l10n.tP('lossPct',
+                          {'pct': data.roi.toStringAsFixed(2)}),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -347,6 +352,7 @@ class _OutstandingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final progress = data.totalInvested > 0
         ? (data.totalReturns / data.totalInvested).clamp(0.0, 1.0)
         : 0.0;
@@ -383,8 +389,8 @@ class _OutstandingCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Outstanding Capital',
-                        style: TextStyle(
+                    Text(l10n.t('outstandingCapital'),
+                        style: const TextStyle(
                             color: MohajonWarm.muted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600)),
@@ -440,9 +446,9 @@ class _OutstandingCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Return on investment progress',
-            style: TextStyle(
+          Text(
+            l10n.t('roiProgress'),
+            style: const TextStyle(
                 color: MohajonWarm.muted,
                 fontSize: 11,
                 fontWeight: FontWeight.w500),
@@ -459,6 +465,7 @@ class _CategoryBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final sorted = data.categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -479,8 +486,8 @@ class _CategoryBreakdownCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Investment by Category',
-              style: TextStyle(
+          Text(l10n.t('investmentByCategory'),
+              style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
                   color: MohajonWarm.ink)),
@@ -562,6 +569,7 @@ class _FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
+      final l10n = AppLocalizations.of(context);
       final cats = ref.watch(investmentCategoriesStreamProvider).value ?? [];
       return SizedBox(
         height: 38,
@@ -572,7 +580,7 @@ class _FilterChips extends StatelessWidget {
           itemBuilder: (_, i) {
             if (i == 0) {
               return CategoryChip(
-                  label: 'All',
+                  label: l10n.t('all'),
                   selected: selectedCat.isEmpty,
                   onTap: () => onChanged(''));
             }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -37,6 +38,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final vendorsAsync = ref.watch(vendorsProvider);
     final searchQuery = ref.watch(vendorSearchQueryProvider);
     final selectedCategory = ref.watch(vendorCategoryFilterProvider);
@@ -107,14 +109,13 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
                       ],
                       const SizedBox(height: 18),
                       if (items.isEmpty)
-                        const EmptyState(
-                          message:
-                              'Add vendors to manage purchases and payments.',
+                        EmptyState(
+                          message: l10n.t('addVendorsEmpty'),
                           icon: Icons.store_outlined,
                         )
                       else if (filtered.isEmpty)
-                        const EmptyState(
-                          message: 'No vendors match your search.',
+                        EmptyState(
+                          message: l10n.t('noVendorsMatch'),
                           icon: Icons.search_off_rounded,
                         )
                       else
@@ -186,6 +187,7 @@ class _VendorsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return IconTheme(
       data: const IconThemeData(color: MohajonWarm.ink),
       child: Row(
@@ -215,23 +217,23 @@ class _VendorsTopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Vendors',
+                  l10n.t('vendors'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
                   ),
                 ),
                 Text(
-                  'Suppliers & purchases',
-                  style: TextStyle(
+                  l10n.t('suppliersAndPurchases'),
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF77735F),
@@ -266,6 +268,7 @@ class _VendorStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
@@ -274,9 +277,9 @@ class _VendorStats extends StatelessWidget {
               child: _VendorStatCard(
                 spec: _VendorStatSpec(
                   icon: Icons.storefront_rounded,
-                  label: 'Vendors',
+                  label: l10n.t('vendors'),
                   value: '$totalVendors',
-                  subtext: 'Active suppliers',
+                  subtext: l10n.t('activeSuppliers'),
                   color: MohajonWarm.goldText,
                   background: MohajonWarm.tintYellow,
                 ),
@@ -287,9 +290,9 @@ class _VendorStats extends StatelessWidget {
               child: _VendorStatCard(
                 spec: _VendorStatSpec(
                   icon: Icons.shopping_cart_rounded,
-                  label: 'Total Spent',
+                  label: l10n.t('totalSpent'),
                   value: money(totalSpent),
-                  subtext: 'Across all vendors',
+                  subtext: l10n.t('acrossAllVendors'),
                   color: MohajonWarm.green,
                   background: MohajonWarm.tintGreen,
                 ),
@@ -437,6 +440,7 @@ class _PendingPaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = hasPending ? MohajonWarm.red : MohajonWarm.green;
     final background = hasPending
         ? MohajonWarm.tintRed
@@ -469,7 +473,9 @@ class _PendingPaymentCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      hasPending ? 'Pending Payment' : 'All Cleared',
+                      hasPending
+                          ? l10n.t('pendingPayment')
+                          : l10n.t('allCleared'),
                       style: TextStyle(
                         color: color,
                         fontSize: 11,
@@ -478,7 +484,9 @@ class _PendingPaymentCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      hasPending ? 'Needs settlement' : 'No dues',
+                      hasPending
+                          ? l10n.t('needsSettlement')
+                          : l10n.t('noDues'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -552,6 +560,7 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -577,7 +586,7 @@ class _SearchAndFilters extends StatelessWidget {
                     controller: controller,
                     onChanged: onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: 'Search company, person, phone...',
+                      hintText: l10n.t('searchCompany'),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
                         size: 20,
@@ -620,34 +629,34 @@ class _SearchAndFilters extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: VendorSort.newest,
-                        child: Text('Newest'),
+                        child: Text(l10n.t('newest')),
                       ),
                       DropdownMenuItem(
                         value: VendorSort.oldest,
-                        child: Text('Oldest'),
+                        child: Text(l10n.t('oldest')),
                       ),
                       DropdownMenuItem(
                         value: VendorSort.highestDue,
-                        child: Text('Highest Due'),
+                        child: Text(l10n.t('highestDue')),
                       ),
                       DropdownMenuItem(
                         value: VendorSort.lowestDue,
-                        child: Text('Lowest Due'),
+                        child: Text(l10n.t('lowestDue')),
                       ),
                       DropdownMenuItem(
                         value: VendorSort.mostOrders,
-                        child: Text('Most Orders'),
+                        child: Text(l10n.t('mostOrders')),
                       ),
                       DropdownMenuItem(
                         value: VendorSort.highestPurchase,
-                        child: Text('Highest Purchase'),
+                        child: Text(l10n.t('highestPurchase')),
                       ),
                       DropdownMenuItem(
                         value: VendorSort.alphabetical,
-                        child: Text('A-Z'),
+                        child: Text(l10n.t('aToZ')),
                       ),
                     ],
                     onChanged: (value) {
@@ -668,7 +677,7 @@ class _SearchAndFilters extends StatelessWidget {
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return _FilterChip(
-                    label: 'All',
+                    label: l10n.t('all'),
                     selected: selectedCategory.isEmpty,
                     onTap: () => onCategoryChanged(''),
                   );
@@ -782,6 +791,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final vendor = widget.vendor;
     final initials = _initials(vendor.companyName);
     final hasDue = vendor.pendingAmount > 0;
@@ -862,9 +872,9 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                                   color: MohajonWarm.tintRed,
                                   borderRadius: BorderRadius.circular(999),
                                 ),
-                                child: const Text(
-                                  'Due',
-                                  style: TextStyle(
+                                child: Text(
+                                  l10n.t('due'),
+                                  style: const TextStyle(
                                     color: MohajonWarm.red,
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w900,
@@ -892,7 +902,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                             Text(
                               vendor.rating > 0
                                   ? vendor.rating.toStringAsFixed(1)
-                                  : 'No rating',
+                                  : l10n.t('noRating'),
                               style: TextStyle(
                                 color: vendor.rating > 0
                                     ? const Color(0xFFF59E0B)
@@ -934,8 +944,8 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                         ),
                         child: Text(
                           hasDue
-                              ? 'Due ${money(vendor.pendingAmount)}'
-                              : 'Cleared',
+                              ? l10n.tP('vendorDueAmount', {'n': money(vendor.pendingAmount)})
+                              : l10n.t('cleared'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -950,8 +960,9 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                       const SizedBox(height: 5),
                       Text(
                         vendor.lastPurchaseDate != null
-                            ? _formatDate(vendor.lastPurchaseDate!)
-                            : 'No purchases',
+                            ? _formatDate(vendor.lastPurchaseDate!,
+                                l10n)
+                            : l10n.t('noPurchases'),
                         style: const TextStyle(
                           color: MohajonWarm.muted,
                           fontSize: 10.5,
@@ -990,11 +1001,11 @@ class _VendorCardState extends ConsumerState<_VendorCard>
     );
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDate(DateTime dt, AppLocalizations l10n) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inDays == 0) return 'Today';
-    if (diff.inDays == 1) return 'Yesterday';
-    return '${diff.inDays}d ago';
+    if (diff.inDays == 0) return l10n.t('today');
+    if (diff.inDays == 1) return l10n.t('yesterday');
+    return l10n.tP('daysAgo', {'n': '${diff.inDays}'});
   }
 }
 
@@ -1004,6 +1015,7 @@ class _VendorExpandedDetails extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final outstanding = ref.watch(
       vendorOutstandingProvider(vendor.vendorId),
     );
@@ -1039,21 +1051,21 @@ class _VendorExpandedDetails extends ConsumerWidget {
           Row(
             children: [
               _MiniStat(
-                label: 'Orders',
+                label: l10n.t('orders'),
                 value: '${purchases.length}',
                 color: MohajonWarm.goldText,
                 background: MohajonWarm.tintYellow,
               ),
               const SizedBox(width: 8),
               _MiniStat(
-                label: 'Total Spent',
+                label: l10n.t('totalSpent'),
                 value: money(vendor.totalSpent),
                 color: MohajonWarm.green,
                 background: MohajonWarm.tintGreen,
               ),
               const SizedBox(width: 8),
               _MiniStat(
-                label: outstanding > 0 ? 'Due' : 'Cleared',
+                label: outstanding > 0 ? l10n.t('due') : l10n.t('cleared'),
                 value: money(outstanding),
                 color: outstanding > 0
                     ? MohajonWarm.red
@@ -1083,9 +1095,9 @@ class _VendorExpandedDetails extends ConsumerWidget {
                       _launchPhone(context, vendor.phone);
                     },
                     icon: const Icon(Icons.call_rounded, size: 16),
-                    label: const Text(
-                      'Call',
-                      style: TextStyle(
+                    label: Text(
+                      l10n.t('call'),
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1110,9 +1122,9 @@ class _VendorExpandedDetails extends ConsumerWidget {
                       _launchEmail(context, vendor.email);
                     },
                     icon: const Icon(Icons.email_rounded, size: 16),
-                    label: const Text(
-                      'Email',
-                      style: TextStyle(
+                    label: Text(
+                      l10n.t('email'),
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1128,20 +1140,22 @@ class _VendorExpandedDetails extends ConsumerWidget {
   }
 
   void _launchPhone(BuildContext context, String phone) {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Call $phone')),
+      SnackBar(content: Text(l10n.tP('callNumber', {'n': phone}))),
     );
   }
 
   void _launchEmail(BuildContext context, String email) {
+    final l10n = AppLocalizations.of(context);
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No email address available')),
+        SnackBar(content: Text(l10n.t('noEmailAvailable'))),
       );
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Email $email')),
+      SnackBar(content: Text(l10n.tP('emailAddress', {'n': email}))),
     );
   }
 }

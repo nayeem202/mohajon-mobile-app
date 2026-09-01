@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/app_error.dart';
 
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -62,6 +63,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isEditing = widget.vendor != null;
     return withLoadingOverlay(
       Theme(
@@ -132,9 +134,9 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                             children: [
                               _FormHeader(
                                 title: isEditing
-                                    ? 'Edit Vendor'
-                                    : 'Add Vendor',
-                                subtitle: 'Suppliers & purchases',
+                                    ? l10n.t('editVendor')
+                                    : l10n.t('addVendor'),
+                                subtitle: l10n.t('suppliersAndPurchases'),
                                 onBack: () =>
                                     Navigator.of(context).maybePop(),
                               ),
@@ -143,10 +145,10 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                 icon: Icons.store_rounded,
                                 iconColor: MohajonWarm.goldText,
                                 iconBackground: MohajonWarm.tintYellow,
-                                title: 'Vendor Details',
+                                title: l10n.t('vendorDetails'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Company Name',
+                                  _FieldLabel(
+                                    label: l10n.t('companyName'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -154,22 +156,22 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                     controller: _companyCtrl,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.store_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Fresh Foods Ltd.',
+                                      hintText: l10n.t('companyNameHint'),
                                     ),
                                     validator: (v) =>
                                         v == null || v.trim().isEmpty
-                                        ? 'Required'
+                                        ? l10n.t('required')
                                         : null,
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(
-                                    label: 'Contact Person',
+                                  _FieldLabel(
+                                    label: l10n.t('contactPerson'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -177,17 +179,17 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                     controller: _contactCtrl,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.person_outline_rounded,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Rahim Uddin',
+                                      hintText: l10n.t('contactPersonHint'),
                                     ),
                                     validator: (v) =>
                                         v == null || v.trim().isEmpty
-                                        ? 'Required'
+                                        ? l10n.t('required')
                                         : null,
                                   ),
                                 ],
@@ -197,52 +199,51 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                 icon: Icons.location_on_outlined,
                                 iconColor: MohajonWarm.green,
                                 iconBackground: MohajonWarm.tintGreen,
-                                title: 'Contact Information',
+                                title: l10n.t('contactInformation'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Phone',
+                                  _FieldLabel(
+                                    label: l10n.t('phone'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _phoneCtrl,
                                     keyboardType: TextInputType.phone,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.phone_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. 01711-234567',
+                                      hintText: l10n.t('phoneHint'),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
                                           value.trim().isEmpty) {
-                                        return 'Required';
+                                        return l10n.t('required');
                                       }
                                       final phone = value.trim();
                                       if (phone.length < 10) {
-                                        return 'Invalid phone number';
+                                        return l10n.t('invalidPhone');
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(label: 'Email'),
+                                  _FieldLabel(label: l10n.t('email')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _emailCtrl,
                                     keyboardType:
                                         TextInputType.emailAddress,
                                     autocorrect: false,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.email_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText:
-                                          'e.g. contact@company.com',
+                                      hintText: l10n.t('emailHint'),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
@@ -252,21 +253,21 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                       if (!RegExp(
                                         r'^[^@]+@[^@]+\.[^@]+$',
                                       ).hasMatch(value.trim())) {
-                                        return 'Invalid email';
+                                        return l10n.t('invalidEmail');
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(label: 'Address'),
+                                  _FieldLabel(label: l10n.t('address')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _addressCtrl,
                                     maxLines: 2,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Padding(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Padding(
                                         // Centers the icon on the FIRST text
                                         // line of the two-line field:
                                         // fieldH(~63) - 44.4 => bottom ~18.
@@ -277,8 +278,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                           color: MohajonWarm.muted,
                                         ),
                                       ),
-                                      hintText:
-                                          'e.g. 12/A Mirpur Road, Dhaka',
+                                      hintText: l10n.t('addressHint'),
                                     ),
                                   ),
                                 ],
@@ -288,9 +288,9 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                 icon: Icons.inventory_outlined,
                                 iconColor: MohajonWarm.orange,
                                 iconBackground: MohajonWarm.tintOrange,
-                                title: 'Supply Information',
+                                title: l10n.t('supplyInformation'),
                                 children: [
-                                  const _FieldLabel(label: 'Category'),
+                                  _FieldLabel(label: l10n.t('category')),
                                   const SizedBox(height: 8),
                                   DropdownButtonFormField<String>(
                                     initialValue: _category.isEmpty
@@ -302,13 +302,13 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                       fontWeight: FontWeight.w600,
                                     ),
                                     dropdownColor: Colors.white,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.category_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'Select category',
+                                      hintText: l10n.t('selectCategory'),
                                     ),
                                     icon: const Icon(
                                       Icons
@@ -326,23 +326,23 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(
-                                    label: 'Products Supplied',
+                                  _FieldLabel(
+                                    label: l10n.t('productsSupplied'),
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _productsCtrl,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.shopping_basket_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Rice, Lentils, Spices',
-                                      helperText: 'Separate with commas',
-                                      helperStyle: TextStyle(
+                                      hintText: l10n.t('productsSuppliedHint'),
+                                      helperText: l10n.t('separateWithCommas'),
+                                      helperStyle: const TextStyle(
                                         color: MohajonWarm.muted,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -350,7 +350,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  const _FieldLabel(label: 'Rating'),
+                                  _FieldLabel(label: l10n.t('rating')),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: List.generate(5, (index) {
@@ -393,11 +393,11 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                           isBusy: isBusy,
                           icon: Icons.save_outlined,
                           label: isEditing
-                              ? 'Update Vendor'
-                              : 'Save Vendor',
+                              ? l10n.t('updateVendor')
+                              : l10n.t('saveVendor'),
                           busyLabel: isEditing
-                              ? 'Updating...'
-                              : 'Saving...',
+                              ? l10n.t('updating')
+                              : l10n.t('saving'),
                         ),
                       ),
                     ],
@@ -408,7 +408,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
           ),
         ),
       ),
-      label: 'Saving vendor...',
+      label: l10n.t('savingVendor'),
     );
   }
 
@@ -427,7 +427,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
     if (duplicate) {
       showAppSnackBar(
         context,
-        'A vendor with this company name already exists',
+        AppLocalizations.of(context).t('vendorExistsError'),
         isError: true,
       );
       return;
@@ -450,7 +450,9 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
           Navigator.of(context).pop();
           showAppSnackBar(
             context,
-            widget.vendor != null ? 'Vendor updated' : 'Vendor added',
+            widget.vendor != null
+                ? AppLocalizations.of(context).t('vendorUpdated')
+                : AppLocalizations.of(context).t('vendorAdded'),
           );
         }
       });
