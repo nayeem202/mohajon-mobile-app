@@ -71,9 +71,9 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                 children: [
                   Row(
                     children: [
-                      const Expanded(
-                        child: Text('Add Investment',
-                            style: TextStyle(
+                      Expanded(
+                        child: Text(l10n.t('addInvestment'),
+                            style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: MohajonWarm.ink)),
@@ -86,18 +86,18 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const _FieldLabel(label: 'Description'),
+                  _FieldLabel(label: l10n.t('description')),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _descCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. New shelf installation',
+                    decoration: InputDecoration(
+                      hintText: l10n.t('descHint'),
                     ),
                     validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Required' : null,
+                        v == null || v.trim().isEmpty ? l10n.t('required') : null,
                   ),
                   const SizedBox(height: 14),
-                  const _FieldLabel(label: 'Amount & Category'),
+                  _FieldLabel(label: l10n.t('amountAndCategory')),
                   const SizedBox(height: 6),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,17 +107,17 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                           controller: _amountCtrl,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
-                          decoration: const InputDecoration(
-                            hintText: 'Amount',
+                          decoration: InputDecoration(
+                            hintText: l10n.t('amount'),
                             prefixText: '৳ ',
                           ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Required';
+                              return l10n.t('required');
                             }
                             final amt = double.tryParse(v.trim());
                             if (amt == null || amt <= 0) {
-                              return 'Invalid';
+                              return l10n.t('invalid');
                             }
                             return null;
                           },
@@ -129,8 +129,8 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                           value: _categoryId.isEmpty ? null : _categoryId,
                           style: const TextStyle(
                               fontSize: 14, color: MohajonWarm.ink),
-                          decoration: const InputDecoration(
-                            hintText: 'Category',
+                          decoration: InputDecoration(
+                            hintText: l10n.t('category'),
                           ),
                           items: categories
                               .map((cat) => DropdownMenuItem(
@@ -140,7 +140,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                                   ))
                               .toList(),
                           validator: (v) =>
-                              v == null || v.isEmpty ? 'Required' : null,
+                              v == null || v.isEmpty ? l10n.t('required') : null,
                           onChanged: (v) {
                             if (v == null) return;
                             final cat =
@@ -155,7 +155,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const _FieldLabel(label: 'Profit Share Method'),
+                  _FieldLabel(label: l10n.t('profitShareMethod')),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(4),
@@ -167,7 +167,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                       children: [
                         Expanded(
                           child: _MethodToggle(
-                            label: 'Proportional',
+                            label: l10n.t('proportional'),
                             selected: _profitMethod == 'proportional',
                             onTap: () => setState(
                                 () => _profitMethod = 'proportional'),
@@ -176,7 +176,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                         const SizedBox(width: 4),
                         Expanded(
                           child: _MethodToggle(
-                            label: 'Fixed %',
+                            label: l10n.t('fixedPct'),
                             selected: _profitMethod == 'fixed',
                             onTap: () =>
                                 setState(() => _profitMethod = 'fixed'),
@@ -188,15 +188,15 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                   const SizedBox(height: 8),
                   Text(
                     _profitMethod == 'proportional'
-                        ? 'Profit is shared proportionally based on investment amount. Share % is auto-calculated.'
-                        : 'Profit is shared based on fixed percentage assigned to each investor.',
+                        ? l10n.t('sharedProportionally')
+                        : l10n.t('sharedByFixedPct'),
                     style: const TextStyle(
                         color: MohajonWarm.muted,
                         fontSize: 12,
                         fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
-                  const _FieldLabel(label: 'Investors'),
+                  _FieldLabel(label: l10n.t('investors')),
                   const SizedBox(height: 6),
                   InvestorSelector(
                     selectedInvestors: _selectedInvestors,
@@ -220,13 +220,13 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                     autoCalculatePercentage: _profitMethod == 'proportional',
                   ),
                   const SizedBox(height: 20),
-                  const _FieldLabel(label: 'Notes'),
+                  _FieldLabel(label: l10n.t('notes')),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _notesCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: 'Additional notes...',
+                    decoration: InputDecoration(
+                      hintText: l10n.t('additionalNotesHint'),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -238,8 +238,8 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                         : _save,
                     isBusy: isBusy,
                     icon: Icons.save_rounded,
-                    label: 'Save Investment',
-                    busyLabel: 'Saving...',
+                    label: l10n.t('saveInvestment'),
+                    busyLabel: l10n.t('saving'),
                   ),
                 ],
               ),
@@ -253,6 +253,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedInvestors.any((si) => si.investorId.isEmpty)) return;
+    final l10n = AppLocalizations.of(context);
 
     final totalAmount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
 
@@ -269,7 +270,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
           0, (s, si) => s + si.sharePercentage);
       if (totalShare <= 0) {
         if (mounted) {
-          showAppSnackBar(context, 'Total share percentage must be > 0',
+          showAppSnackBar(context, l10n.t('totalShareMustBePositive'),
               isError: true);
         }
         return;
@@ -296,11 +297,11 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
       });
       if (mounted) {
         Navigator.of(context).pop();
-        showAppSnackBar(context, 'Investment created successfully');
+        showAppSnackBar(context, l10n.t('investmentCreated'));
       }
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, 'Failed: $error', isError: true);
+        showAppSnackBar(context, '${l10n.t('failed')}: $error', isError: true);
       }
     }
   }

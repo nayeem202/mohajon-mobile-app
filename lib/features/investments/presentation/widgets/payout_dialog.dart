@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/mohajon_warm_theme.dart';
 import '../../../../core/utils/money.dart';
 import '../../../../core/utils/snackbar.dart';
@@ -54,6 +55,7 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
         .toDouble();
     final investor =
         ref.watch(memberInvestorProvider(member.investorId));
+    final l10n = AppLocalizations.of(context);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
@@ -72,7 +74,7 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   Row(
                     children: [
                       Expanded(
-                        child: Text('Record Payout',
+                        child: Text(l10n.t('recordPayout'),
                             style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 20,
@@ -106,13 +108,13 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(investor?.name ?? 'Unknown',
+                            Text(investor?.name ?? l10n.t('unknown'),
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
                                     color: MohajonWarm.ink)),
-                            const Text('Investment return payout',
-                                style: TextStyle(
+                            Text(l10n.t('investmentReturnPayout'),
+                                style: const TextStyle(
                                     color: MohajonWarm.muted, fontSize: 12)),
                           ],
                         ),
@@ -123,17 +125,17 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   Row(
                     children: [
                       _PStat(
-                          label: 'Total Due',
+                          label: l10n.t('totalDue'),
                           value: money(totalDue),
                           color: MohajonWarm.goldText),
                       const SizedBox(width: 8),
                       _PStat(
-                          label: 'Paid',
+                          label: l10n.t('paid'),
                           value: money(member.paidAmount),
                           color: MohajonWarm.green),
                       const SizedBox(width: 8),
                       _PStat(
-                          label: 'Remaining',
+                          label: l10n.t('remaining'),
                           value: money(remaining),
                           color: remaining > 0
                               ? MohajonWarm.red
@@ -145,21 +147,23 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                     controller: _amountCtrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Payout Amount',
-                      hintText: 'Enter amount',
+                    decoration: InputDecoration(
+                      labelText: l10n.t('payoutAmount'),
+                      hintText: l10n.t('enterAmount'),
                       prefixText: '৳ ',
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Amount is required';
+                        return l10n.t('amountRequired');
                       }
                       final amount = double.tryParse(value.trim());
                       if (amount == null || amount <= 0) {
-                        return 'Enter a valid amount';
+                        return l10n.t('enterValidAmount');
                       }
                       if (amount > remaining) {
-                        return 'Cannot exceed ${money(remaining)}';
+                        return l10n.tP('cannotExceed', {
+                          'amount': money(remaining),
+                        });
                       }
                       return null;
                     },
@@ -168,9 +172,9 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   InkWell(
                     onTap: _pickDate,
                     child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Date',
-                        suffixIcon: Icon(Icons.calendar_month_rounded),
+                      decoration: InputDecoration(
+                        labelText: l10n.t('date'),
+                        suffixIcon: const Icon(Icons.calendar_month_rounded),
                       ),
                       child: Text(
                         '${_date.day}/${_date.month}/${_date.year}',
@@ -182,9 +186,9 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                   TextFormField(
                     controller: _noteCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Optional Note',
-                      hintText: 'e.g. Monthly payout',
+                    decoration: InputDecoration(
+                      labelText: l10n.t('optionalNote'),
+                      hintText: l10n.t('monthlyPayoutHint'),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -198,24 +202,24 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.info_outline_rounded,
+                            const Icon(Icons.info_outline_rounded,
                                 size: 16, color: MohajonWarm.orange),
-                            SizedBox(width: 6),
-                            Text('How Payouts Work',
-                                style: TextStyle(
+                            const SizedBox(width: 6),
+                            Text(l10n.t('howPayoutsWork'),
+                                style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     color: MohajonWarm.orange,
                                     fontSize: 12)),
                           ],
                         ),
                         const SizedBox(height: 6),
-                        const Text(
-                          '• Reduces Outstanding Capital: The payout amount is subtracted from the investment outstanding balance.\n'
-                          '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.\n'
-                          '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
-                          style: TextStyle(
+                        Text(
+                          '${l10n.t('payoutHelp1')}\n'
+                          '${l10n.t('payoutHelp2')}\n'
+                          '${l10n.t('payoutHelp3')}',
+                          style: const TextStyle(
                               color: MohajonWarm.goldText,
                               fontSize: 11,
                               height: 1.4),
@@ -228,8 +232,8 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
                     onPressed: _submit,
                     isBusy: isBusy,
                     icon: Icons.save_rounded,
-                    label: 'Save Payout',
-                    busyLabel: 'Saving...',
+                    label: l10n.t('savePayout'),
+                    busyLabel: l10n.t('saving'),
                   ),
                 ],
               ),
@@ -252,6 +256,7 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context);
 
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
 
@@ -266,11 +271,11 @@ class _PayoutDialogState extends ConsumerState<PayoutDialog>
       });
       if (mounted) {
         Navigator.of(context).pop();
-        showAppSnackBar(context, 'Payout recorded successfully');
+        showAppSnackBar(context, l10n.t('payoutRecordedSuccess'));
       }
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, 'Failed: $error', isError: true);
+        showAppSnackBar(context, '${l10n.t('failed')}: $error', isError: true);
       }
     }
   }

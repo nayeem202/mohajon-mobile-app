@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/app/app_providers.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -36,6 +37,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
   Widget build(BuildContext context) {
     final session = ref.watch(authStateProvider).value;
     final hasPassword = session == null || session.provider != 'google';
+    final l10n = AppLocalizations.of(context);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
@@ -48,8 +50,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
               children: [
                 _Header(
                   onBack: () => Navigator.of(context).pop(),
-                  title: hasPassword ? 'Change Password' : 'Set Password',
-                  subtitle: 'Keep your account secure',
+                  title: hasPassword
+                      ? l10n.t('changePassword')
+                      : l10n.t('setPassword'),
+                  subtitle: l10n.t('keepAccountSecure'),
                   icon: Icons.shield_outlined,
                 ),
                 Expanded(
@@ -76,8 +80,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                           children: [
                             Text(
                               hasPassword
-                                  ? 'Update your password'
-                                  : 'Create a password',
+                                  ? l10n.t('updateYourPassword')
+                                  : l10n.t('createPassword'),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
@@ -87,8 +91,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                             const SizedBox(height: 6),
                             Text(
                               hasPassword
-                                  ? 'Enter your current password and choose a new one.'
-                                  : 'Your account uses Gmail. Set a password to also sign in with email and password.',
+                                  ? l10n.t('existingPwDesc')
+                                  : l10n.t('gmailPasswordInfo'),
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: MohajonWarm.muted,
@@ -99,7 +103,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                             if (hasPassword) ...[
                               _Field(
                                 controller: _currentPassword,
-                                label: 'Current password',
+                                label: l10n.t('currentPasswordField'),
                                 icon: Icons.lock_outline_rounded,
                                 obscure: _obscure,
                                 onToggle: () =>
@@ -109,7 +113,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                             ],
                             _Field(
                               controller: _newPassword,
-                              label: 'New password',
+                              label: l10n.t('newPasswordField'),
                               icon: Icons.lock_rounded,
                               obscure: _obscure,
                               onToggle: () =>
@@ -118,7 +122,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                             const SizedBox(height: 14),
                             _Field(
                               controller: _confirmPassword,
-                              label: 'Confirm password',
+                              label: l10n.t('confirmPasswordField'),
                               icon: Icons.lock_reset_rounded,
                               obscure: _obscure,
                               onToggle: () =>
@@ -178,9 +182,9 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
                               isBusy: isBusy,
                               icon: Icons.save_alt_rounded,
                               label: hasPassword
-                                  ? 'Update password'
-                                  : 'Set password',
-                              busyLabel: 'Saving...',
+                                  ? l10n.t('updatePassword')
+                                  : l10n.t('setPasswordBtn'),
+                              busyLabel: l10n.t('saving'),
                             ),
                           ],
                         ),
@@ -197,9 +201,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
   }
 
   String? _validateNewPassword() {
-    if (_newPassword.text.length < 6) return 'Use at least 6 characters.';
+    final l10n = AppLocalizations.of(context);
+    if (_newPassword.text.length < 6) return l10n.t('atLeast6Chars');
     if (_newPassword.text != _confirmPassword.text) {
-      return 'Passwords do not match.';
+      return l10n.t('passwordsDoNotMatch');
     }
     return null;
   }
@@ -221,7 +226,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
               currentPassword: _currentPassword.text,
               newPassword: _newPassword.text,
             );
-        if (mounted) _showSuccess('Password updated.');
+        if (mounted) _showSuccess(AppLocalizations.of(context).t('passwordUpdated'));
       } catch (error) {
         if (mounted) _showError(authErrorMessage(error));
       }
@@ -242,7 +247,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen>
         await ref
             .read(authServiceProvider)
             .setPasswordForGoogleAccount(_newPassword.text);
-        if (mounted) _showSuccess('Password login enabled for this account.');
+        if (mounted) {
+          _showSuccess(
+              AppLocalizations.of(context).t('passwordLoginEnabled'));
+        }
       } catch (error) {
         if (mounted) _showError(authErrorMessage(error));
       }

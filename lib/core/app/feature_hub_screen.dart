@@ -107,7 +107,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final locale = ref.watch(localeProvider);
     final sync = ref.watch(syncStateProvider);
     final user = ref.watch(authStateProvider).value;
     final isOwner =
@@ -116,7 +115,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         ) ??
         false;
     final displayName = user?.displayName;
-    final themeMode = ref.watch(themeModeProvider);
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
 
     return withLoadingOverlay(
@@ -272,65 +270,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             onTap: _syncNow,
                           ),
                           _FeatureItem(
-                            icon: Icons.dark_mode_rounded,
-                            title: 'Theme',
-                            subtitle: _themeLabel(l10n, themeMode),
-                            color: MohajonWarm.goldText,
-                            background: MohajonWarm.tintYellow,
-                            trailing: SegmentedButton<ThemeMode>(
-                              style: _segmentStyle(),
-                              segments: const [
-                                ButtonSegment(
-                                  value: ThemeMode.light,
-                                  icon: Icon(Icons.light_mode_outlined, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.system,
-                                  icon: Icon(Icons.settings_suggest_outlined, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.dark,
-                                  icon: Icon(Icons.dark_mode_outlined, size: 16),
-                                ),
-                              ],
-                              selected: {themeMode},
-                              onSelectionChanged: (value) {
-                                final mode = value.first;
-                                ref.read(themeModeProvider.notifier).state = mode;
-                                ref
-                                    .read(localDatabaseProvider)
-                                    .settings
-                                    .put('themeMode', mode.name);
-                              },
-                            ),
-                          ),
-                          _FeatureItem(
-                            icon: Icons.translate_rounded,
-                            title: l10n.t('language'),
-                            subtitle: locale.languageCode == 'bn' ? 'Bangla' : 'English',
-                            color: MohajonWarm.green,
-                            background: MohajonWarm.tintGreen,
-                            trailing: SegmentedButton<String>(
-                              style: _segmentStyle(),
-                              segments: [
-                                ButtonSegment(
-                                  value: 'en',
-                                  label: Text(l10n.t('english')),
-                                ),
-                                ButtonSegment(value: 'bn', label: Text(l10n.t('bangla'))),
-                              ],
-                              selected: {locale.languageCode},
-                              onSelectionChanged: (value) {
-                                final code = value.first;
-                                ref
-                                    .read(localDatabaseProvider)
-                                    .settings
-                                    .put('languageCode', code);
-                                ref.read(localeProvider.notifier).state = Locale(code);
-                              },
-                            ),
-                          ),
-                          _FeatureItem(
                             icon: Icons.lock_outline_rounded,
                             title: l10n.t('accountSecurity'),
                             subtitle: l10n.t('accountSecurityDesc'),
@@ -386,23 +325,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     );
   }
 
-  ButtonStyle _segmentStyle() {
-    return SegmentedButton.styleFrom(
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      backgroundColor: Colors.white,
-      selectedBackgroundColor: MohajonWarm.primary,
-      selectedForegroundColor: const Color(0xFF5D4A00),
-      foregroundColor: MohajonWarm.muted,
-      side: const BorderSide(color: MohajonWarm.goldBorder),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      textStyle: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w800,
-      ),
-    );
-  }
-
   void _open(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
@@ -431,14 +353,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     return sync.message.isEmpty
         ? l10n.tP('pendingCount', {'count': '${sync.pendingCount}'})
         : sync.message;
-  }
-
-  String _themeLabel(AppLocalizations l10n, ThemeMode mode) {
-    return switch (mode) {
-      ThemeMode.light => l10n.t('lightMode'),
-      ThemeMode.dark => l10n.t('darkMode'),
-      ThemeMode.system => l10n.t('systemTheme'),
-    };
   }
 
   Future<void> _syncNow() async {
@@ -516,7 +430,6 @@ class _FeatureItem {
     this.background,
     this.menu,
     this.onTap,
-    this.trailing,
     this.destructive = false,
   });
 
@@ -527,7 +440,6 @@ class _FeatureItem {
   final Color? background;
   final String? menu;
   final VoidCallback? onTap;
-  final Widget? trailing;
   final bool destructive;
 }
 
@@ -600,9 +512,7 @@ class _FeatureRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              if (item.trailing != null)
-                item.trailing!
-              else if (item.onTap != null)
+              if (item.onTap != null)
                 const Icon(
                   Icons.chevron_right_rounded,
                   size: 20,

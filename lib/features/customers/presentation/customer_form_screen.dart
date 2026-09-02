@@ -7,6 +7,7 @@ import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/customer.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/action_button.dart';
@@ -72,6 +73,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.customer != null;
+    final l10n = AppLocalizations.of(context);
     return withLoadingOverlay(
       Theme(
         data: MohajonWarm.theme(Theme.of(context)),
@@ -92,8 +94,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                             padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
                             children: [
                               _FormHeader(
-                                title: isEditing ? 'Edit Client' : 'Add Client',
-                                subtitle: 'Client profile & contact',
+                                title: isEditing
+                                    ? l10n.t('editClient')
+                                    : l10n.t('addClient'),
+                                subtitle: l10n.t('clientProfileContact'),
                                 icon: Icons.people_alt_rounded,
                                 onBack: () =>
                                     Navigator.of(context).maybePop(),
@@ -109,10 +113,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                 icon: Icons.person_outline_rounded,
                                 iconColor: MohajonWarm.goldText,
                                 iconBackground: MohajonWarm.tintYellow,
-                                title: 'Personal Details',
+                                title: l10n.t('personalDetails'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Full Name',
+                                  _FieldLabel(
+                                    label: l10n.t('fullName'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -121,22 +125,23 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                     textCapitalization:
                                         TextCapitalization.words,
                                     onChanged: (_) => setState(() {}),
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.person_outline_rounded,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Rahim Uddin',
+                                      hintText: l10n.t('fullNameHint'),
                                     ),
                                     validator: (value) =>
-                                        value == null || value.trim().isEmpty
-                                        ? 'Required'
+                                        value == null ||
+                                            value.trim().isEmpty
+                                        ? l10n.t('required')
                                         : null,
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(
-                                    label: 'Phone',
+                                  _FieldLabel(
+                                    label: l10n.t('phone'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -147,17 +152,18 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                       FilteringTextInputFormatter.digitsOnly,
                                       LengthLimitingTextInputFormatter(13),
                                     ],
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.phone_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. 01711-234567',
+                                      hintText: l10n.t('phoneHint'),
                                     ),
                                     validator: (value) =>
-                                        value == null || value.trim().isEmpty
-                                        ? 'Required'
+                                        value == null ||
+                                            value.trim().isEmpty
+                                        ? l10n.t('required')
                                         : null,
                                   ),
                                 ],
@@ -167,21 +173,21 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                 icon: Icons.location_on_outlined,
                                 iconColor: MohajonWarm.green,
                                 iconBackground: MohajonWarm.tintGreen,
-                                title: 'Contact Information',
+                                title: l10n.t('contactInformation'),
                                 children: [
-                                  const _FieldLabel(label: 'Email'),
+                                  _FieldLabel(label: l10n.t('email')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _email,
                                     keyboardType: TextInputType.emailAddress,
                                     autocorrect: false,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.email_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. rahim@example.com',
+                                      hintText: l10n.t('emailHint'),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
@@ -191,26 +197,26 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                       if (!RegExp(
                                         r'^[^@]+@[^@]+\.[^@]+$',
                                       ).hasMatch(value.trim())) {
-                                        return 'Invalid email';
+                                        return l10n.t('invalidEmail');
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(label: 'Address'),
+                                  _FieldLabel(label: l10n.t('address')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _address,
                                     maxLines: 1,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.location_on_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. 12/A Mirpur Road, Dhaka',
+                                      hintText: l10n.t('addressHint'),
                                     ),
                                   ),
                                 ],
@@ -220,7 +226,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                 icon: Icons.notes_outlined,
                                 iconColor: MohajonWarm.orange,
                                 iconBackground: MohajonWarm.tintOrange,
-                                title: 'Notes',
+                                title: l10n.t('notes'),
                                 trailing: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
@@ -252,9 +258,8 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                     maxLines: 5,
                                     maxLength: 300,
                                     onChanged: (_) => setState(() {}),
-                                    decoration: const InputDecoration(
-                                      hintText:
-                                          'Any special notes about this client...',
+                                    decoration: InputDecoration(
+                                      hintText: l10n.t('specialNotesHint'),
                                       counterText: '',
                                     ),
                                   ),
@@ -270,19 +275,19 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.info_outline_rounded,
                                       color: MohajonWarm.goldText,
                                       size: 18,
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
-                                        'New clients start with zero dues and zero visits. Their purchase history will update automatically as you add sales.',
-                                        style: TextStyle(
+                                        l10n.t('newClientInfo'),
+                                        style: const TextStyle(
                                           color: Color(0xFF5D4A00),
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -302,8 +307,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                           onPressed: _saveCustomer,
                           isBusy: isBusy,
                           icon: Icons.save_outlined,
-                          label: isEditing ? 'Update Client' : 'Save Client',
-                          busyLabel: isEditing ? 'Updating...' : 'Saving...',
+                          label: isEditing ? l10n.t('updateClient') : l10n.t('saveClient'),
+                          busyLabel:
+                              isEditing ? l10n.t('updating') : l10n.t('saving'),
                         ),
                       ),
                     ],
@@ -314,7 +320,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
           ),
         ),
       ),
-      label: 'Saving customer...',
+      label: l10n.t('savingCustomer'),
     );
   }
 
@@ -349,6 +355,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
   }
 
   Future<void> _pickImage() async {
+    final l10n = AppLocalizations.of(context);
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: MohajonWarm.surface,
@@ -370,9 +377,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Profile Photo',
-                style: TextStyle(
+              Text(
+                l10n.t('profilePhoto'),
+                style: const TextStyle(
                   color: MohajonWarm.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
@@ -384,9 +391,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                   Icons.camera_alt_outlined,
                   color: MohajonWarm.goldText,
                 ),
-                title: const Text(
-                  'Take a photo',
-                  style: TextStyle(
+                title: Text(
+                  l10n.t('takePhoto'),
+                  style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w700,
                   ),
@@ -401,9 +408,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                   Icons.photo_library_outlined,
                   color: MohajonWarm.goldText,
                 ),
-                title: const Text(
-                  'Choose from gallery',
-                  style: TextStyle(
+                title: Text(
+                  l10n.t('chooseFromGallery'),
+                  style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w700,
                   ),
@@ -433,7 +440,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
       }
     } catch (_) {
       if (mounted) {
-        showAppSnackBar(context, 'Could not pick image', isError: true);
+        showAppSnackBar(context, l10n.t('couldNotPickImage'), isError: true);
       }
     }
   }
@@ -692,6 +699,7 @@ class _ProfilePhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const size = 100.0;
+    final l10n = AppLocalizations.of(context);
 
     return Center(
       child: Column(
@@ -790,8 +798,8 @@ class _ProfilePhoto extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   imagePath != null
-                      ? 'Photo added — tap to change'
-                      : 'Tap to add profile photo',
+                      ? l10n.t('photoAddedTapToChange')
+                      : l10n.t('tapToAddProfilePhoto'),
                   style: const TextStyle(
                     color: Color(0xFF5D4A00),
                     fontSize: 11,

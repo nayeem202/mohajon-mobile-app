@@ -8,6 +8,7 @@ import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/app_image.dart';
@@ -86,6 +87,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   Widget build(BuildContext context) {
     final isEditing = widget.product != null;
     final categories = _categoryOptions();
+    final l10n = AppLocalizations.of(context);
     return withLoadingOverlay(
       Theme(
         data: MohajonWarm.theme(Theme.of(context)),
@@ -108,9 +110,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                             children: [
                               _FormHeader(
                                 title: isEditing
-                                    ? 'Edit Product'
-                                    : 'Add Product',
-                                subtitle: 'Product details & pricing',
+                                    ? l10n.t('updateProduct')
+                                    : l10n.t('addProduct'),
+                                subtitle: l10n.t('productDetailsPricing'),
                                 onBack: () =>
                                     Navigator.of(context).maybePop(),
                               ),
@@ -124,10 +126,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                 icon: Icons.shopping_bag_outlined,
                                 iconColor: MohajonWarm.goldText,
                                 iconBackground: MohajonWarm.tintYellow,
-                                title: 'Basic Information',
+                                title: l10n.t('basicInformation'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Product Name',
+                                  _FieldLabel(
+                                    label: l10n.t('productName'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -135,27 +137,27 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                     controller: _name,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
                                         Icons.inventory_2_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Pran Tomato Sauce 200g',
+                                      hintText: l10n.t('productNameHint'),
                                     ),
                                     validator: (value) =>
                                         value == null ||
                                             value.trim().isEmpty
-                                        ? 'Required'
+                                        ? l10n.t('required')
                                         : null,
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(label: 'Barcode'),
+                                  _FieldLabel(label: l10n.t('barcode')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _barcode,
                                     decoration: InputDecoration(
-                                      hintText: 'Scan or type barcode',
+                                      hintText: l10n.t('scanOrTypeBarcode'),
                                       prefixIcon: const Icon(
                                         Icons.qr_code_rounded,
                                         size: 20,
@@ -165,7 +167,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            tooltip: 'Print barcode label',
+                                            tooltip: l10n.t('printBarcodeLabel'),
                                             highlightColor: MohajonWarm
                                                 .primary
                                                 .withValues(alpha: 0.25),
@@ -181,7 +183,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                 : _printBarcodeLabel,
                                           ),
                                           IconButton(
-                                            tooltip: 'Scan',
+                                            tooltip: l10n.t('scanBarcode'),
                                             highlightColor: MohajonWarm
                                                 .primary
                                                 .withValues(alpha: 0.25),
@@ -204,10 +206,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                 icon: Icons.category_outlined,
                                 iconColor: MohajonWarm.green,
                                 iconBackground: MohajonWarm.tintGreen,
-                                title: 'Categorization',
+                                title: l10n.t('categorization'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Category',
+                                  _FieldLabel(
+                                    label: l10n.t('category'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 10),
@@ -217,7 +219,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                     children: [
                                       for (final category in categories)
                                         _PillChip(
-                                          label: category,
+                                          label: _categoryLabel(category, l10n),
                                           selected:
                                               _selectedCategory == category,
                                           onTap: () => setState(() =>
@@ -226,7 +228,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-                                  const _FieldLabel(label: 'Unit'),
+                                  _FieldLabel(label: l10n.t('unit')),
                                   const SizedBox(height: 10),
                                   Wrap(
                                     spacing: 8,
@@ -259,8 +261,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const _FieldLabel(
-                                              label: 'Buying Price (৳)',
+                                            _FieldLabel(
+                                              label: l10n.t('buyingPrice'),
                                               required: true,
                                             ),
                                             const SizedBox(height: 8),
@@ -298,7 +300,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                               validator: (value) =>
                                                   value == null ||
                                                       value.trim().isEmpty
-                                                  ? 'Required'
+                                                  ? l10n.t('required')
                                                   : null,
                                             ),
                                           ],
@@ -310,8 +312,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const _FieldLabel(
-                                              label: 'Selling Price (৳)',
+                                            _FieldLabel(
+                                              label: l10n.t('sellingPrice'),
                                               required: true,
                                             ),
                                             const SizedBox(height: 8),
@@ -349,7 +351,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                               validator: (value) =>
                                                   value == null ||
                                                       value.trim().isEmpty
-                                                  ? 'Required'
+                                                  ? l10n.t('required')
                                                   : null,
                                             ),
                                           ],
@@ -364,7 +366,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                 icon: Icons.inventory_outlined,
                                 iconColor: MohajonWarm.red,
                                 iconBackground: MohajonWarm.tintRed,
-                                title: 'Stock Levels',
+                                title: l10n.t('stockLevels'),
                                 children: [
                                   Row(
                                     crossAxisAlignment:
@@ -375,8 +377,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const _FieldLabel(
-                                              label: 'Stock Qty',
+                                            _FieldLabel(
+                                              label: l10n.t('stockQty'),
                                               required: true,
                                             ),
                                             const SizedBox(height: 8),
@@ -390,13 +392,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.trim().isEmpty) {
-                                                  return 'Required';
+                                                  return l10n.t('required');
                                                 }
                                                 final parsed =
                                                     int.tryParse(value.trim());
                                                 if (parsed == null ||
                                                     parsed < 0) {
-                                                  return 'Enter a valid whole number';
+                                                  return l10n.t('validWholeNumber');
                                                 }
                                                 return null;
                                               },
@@ -410,8 +412,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const _FieldLabel(
-                                              label: 'Min Alert',
+                                            _FieldLabel(
+                                              label: l10n.t('minAlert'),
                                               required: true,
                                             ),
                                             const SizedBox(height: 8),
@@ -425,13 +427,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.trim().isEmpty) {
-                                                  return 'Required';
+                                                  return l10n.t('required');
                                                 }
                                                 final parsed =
                                                     int.tryParse(value.trim());
                                                 if (parsed == null ||
                                                     parsed < 0) {
-                                                  return 'Enter a valid whole number';
+                                                  return l10n.t('validWholeNumber');
                                                 }
                                                 return null;
                                               },
@@ -453,20 +455,20 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                       borderRadius:
                                           BorderRadius.circular(14),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.notifications_active_outlined,
                                           size: 16,
                                           color: MohajonWarm.orange,
                                         ),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            'When stock falls below the minimum alert level, you will receive a low-stock notification on the Home dashboard.',
-                                            style: TextStyle(
+                                            l10n.t('lowStockHelp'),
+                                            style: const TextStyle(
                                               color: Color(0xFF9A3412),
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.w600,
@@ -495,7 +497,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                     ),
                                     icon: const Icon(Icons.delete_outline,
                                         size: 18),
-                                    label: const Text('Delete'),
+                                    label: Text(l10n.t('delete')),
                                   ),
                                 ),
                               ],
@@ -527,7 +529,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                     fontSize: 15,
                                   ),
                                 ),
-                                child: const Text('Cancel'),
+                                child: Text(l10n.t('cancel')),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -538,11 +540,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                 isBusy: isBusy,
                                 icon: Icons.save_outlined,
                                 label: isEditing
-                                    ? 'Update Product'
-                                    : 'Save Product',
+                                    ? l10n.t('updateProduct')
+                                    : l10n.t('saveProduct'),
                                 busyLabel: isEditing
-                                    ? 'Updating...'
-                                    : 'Saving...',
+                                    ? l10n.t('updating')
+                                    : l10n.t('saving'),
                               ),
                             ),
                           ],
@@ -556,8 +558,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
           ),
         ),
       ),
-      label:
-          widget.product == null ? 'Saving product...' : 'Updating product...',
+      label: widget.product == null
+          ? l10n.t('savingProduct')
+          : l10n.t('updatingProduct'),
     );
   }
 
@@ -601,6 +604,29 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     return categories;
   }
 
+  String _categoryLabel(String category, AppLocalizations l10n) {
+    switch (category) {
+      case 'Grocery':
+        return l10n.t('catGrocery');
+      case 'Beverages':
+        return l10n.t('catBeverages');
+      case 'Personal Care':
+        return l10n.t('catPersonalCare');
+      case 'Rice':
+        return l10n.t('catRice');
+      case 'Dairy':
+        return l10n.t('catDairy');
+      case 'Meat':
+        return l10n.t('catMeat');
+      case 'Vegetables':
+        return l10n.t('catVegetables');
+      case 'Health':
+        return l10n.t('catHealth');
+      default:
+        return category;
+    }
+  }
+
   Future<void> _scanBarcode() async {
     final code = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScanScreen()),
@@ -627,12 +653,17 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
       );
     } catch (e) {
       if (mounted) {
-        showAppSnackBar(context, 'Failed to print barcode: $e', isError: true);
+        showAppSnackBar(
+          context,
+          AppLocalizations.of(context).tP('failedPrintBarcode', {'error': '$e'}),
+          isError: true,
+        );
       }
     }
   }
 
   Future<void> _pickImage() async {
+    final l10n = AppLocalizations.of(context);
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: MohajonWarm.surface,
@@ -654,9 +685,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Product Image',
-                style: TextStyle(
+              Text(
+                l10n.t('productImage'),
+                style: const TextStyle(
                   color: MohajonWarm.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
@@ -668,9 +699,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                   Icons.camera_alt_outlined,
                   color: MohajonWarm.goldText,
                 ),
-                title: const Text(
-                  'Take a photo',
-                  style: TextStyle(
+                title: Text(
+                  l10n.t('takePhoto'),
+                  style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w700,
                   ),
@@ -685,9 +716,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                   Icons.photo_library_outlined,
                   color: MohajonWarm.goldText,
                 ),
-                title: const Text(
-                  'Choose from gallery',
-                  style: TextStyle(
+                title: Text(
+                  l10n.t('chooseFromGallery'),
+                  style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1009,7 +1040,7 @@ class _ImagePickerCard extends StatelessWidget {
                       AppImage.file(
                         File(imagePath!),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _placeholder(),
+                        errorBuilder: (_, _, _) => _placeholder(context),
                       ),
                       Positioned(
                         top: 10,
@@ -1040,13 +1071,14 @@ class _ImagePickerCard extends StatelessWidget {
                     ],
                   ),
                 )
-              : _placeholder(),
+              : _placeholder(context),
         ),
       ),
     );
   }
 
-  Widget _placeholder() {
+  Widget _placeholder(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1069,18 +1101,18 @@ class _ImagePickerCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Tap to upload image',
-            style: TextStyle(
+          Text(
+            l10n.t('tapToUploadImage'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 2),
-          const Text(
-            'Clear photo helps identify products faster',
-            style: TextStyle(
+          Text(
+            l10n.t('clearPhotoHelp'),
+            style: const TextStyle(
               color: MohajonWarm.muted,
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
