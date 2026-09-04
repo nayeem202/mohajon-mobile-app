@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations.dart';
+
 class DeleteStaffDialog extends StatelessWidget {
   const DeleteStaffDialog({super.key, required this.onConfirm});
 
@@ -7,6 +9,7 @@ class DeleteStaffDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return PopScope(
       canPop: true,
       child: Material(
@@ -36,22 +39,21 @@ class DeleteStaffDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Remove Staff Member?',
-                  style: TextStyle(
+                Text(
+                  l10n.t('removeStaffMember'),
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF1C1917),
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
-                    'This staff member will lose access to the shop. '
-                    'This action cannot be undone.',
+                    l10n.t('removeStaffConfirm'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF98A2B3),
                     ),
@@ -77,7 +79,7 @@ class DeleteStaffDialog extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          child: const Text('Cancel'),
+                          child: Text(l10n.t('cancel')),
                         ),
                       ),
                     ),
@@ -100,7 +102,7 @@ class DeleteStaffDialog extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          child: const Text('Remove'),
+                          child: Text(l10n.t('removeAction')),
                         ),
                       ),
                     ),

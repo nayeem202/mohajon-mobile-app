@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -61,6 +62,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
   @override
   Widget build(BuildContext context) {
     final investor = widget.investor;
+    final l10n = AppLocalizations.of(context);
     return withLoadingOverlay(
       Theme(
         data: MohajonWarm.theme(Theme.of(context)),
@@ -130,9 +132,9 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                             children: [
                               _FormHeader(
                                 title: isEditing
-                                    ? 'Edit Investor'
-                                    : 'Add Investor',
-                                subtitle: 'Capital partners',
+                                    ? l10n.t('editInvestor')
+                                    : l10n.t('addInvestor'),
+                                subtitle: l10n.t('capitalPartners'),
                                 onBack: () =>
                                     Navigator.of(context).maybePop(),
                               ),
@@ -148,10 +150,10 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                 icon: Icons.badge_outlined,
                                 iconColor: MohajonWarm.goldText,
                                 iconBackground: MohajonWarm.tintYellow,
-                                title: 'Investor Details',
+                                title: l10n.t('investorDetails'),
                                 children: [
-                                  const _FieldLabel(
-                                    label: 'Full Name',
+                                  _FieldLabel(
+                                    label: l10n.t('fullName'),
                                     required: true,
                                   ),
                                   const SizedBox(height: 8),
@@ -161,22 +163,22 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                         TextCapitalization.words,
                                     onChanged: (_) => setState(() {}),
                                     decoration:
-                                        const InputDecoration(
+                                        InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.person_outline_rounded,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. Rahim Uddin',
+                                      hintText: l10n.t('fullNameHint'),
                                     ),
                                     validator: (value) =>
                                         value == null ||
                                             value.trim().isEmpty
-                                        ? 'Please enter full name'
+                                        ? l10n.t('pleaseEnterFullName')
                                         : null,
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(label: 'Phone'),
+                                  _FieldLabel(label: l10n.t('phone')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _phoneCtrl,
@@ -189,13 +191,13 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                       ),
                                     ],
                                     decoration:
-                                        const InputDecoration(
+                                        InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.phone_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText: 'e.g. 01711-234567',
+                                      hintText: l10n.t('phoneHint'),
                                     ),
                                   ),
                                 ],
@@ -205,9 +207,9 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                 icon: Icons.location_on_outlined,
                                 iconColor: MohajonWarm.green,
                                 iconBackground: MohajonWarm.tintGreen,
-                                title: 'Contact Information',
+                                title: l10n.t('contactInformation'),
                                 children: [
-                                  const _FieldLabel(label: 'Email'),
+                                  _FieldLabel(label: l10n.t('email')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _emailCtrl,
@@ -215,14 +217,14 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                         .emailAddress,
                                     autocorrect: false,
                                     decoration:
-                                        const InputDecoration(
+                                        InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.email_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
                                       hintText:
-                                          'e.g. rahim@example.com',
+                                          l10n.t('emailHint'),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
@@ -232,14 +234,14 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                       if (!RegExp(
                                         r'^[^@]+@[^@]+\.[^@]+$',
                                       ).hasMatch(value.trim())) {
-                                        return 'Invalid email';
+                                        return l10n.t('invalidEmail');
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  const _FieldLabel(
-                                    label: 'Address',
+                                  _FieldLabel(
+                                    label: l10n.t('address'),
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
@@ -248,7 +250,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                     textCapitalization:
                                         TextCapitalization.words,
                                     decoration:
-                                        const InputDecoration(
+                                        InputDecoration(
                                       prefixIcon: Padding(
                                         padding: EdgeInsets.only(
                                           bottom: 18,
@@ -261,7 +263,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                         ),
                                       ),
                                       hintText:
-                                          'e.g. 12/A Mirpur Road, Dhaka',
+                                          l10n.t('addressHint'),
                                     ),
                                   ),
                                 ],
@@ -271,7 +273,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                 icon: Icons.notes_outlined,
                                 iconColor: MohajonWarm.orange,
                                 iconBackground: MohajonWarm.tintOrange,
-                                title: 'Notes',
+                                title: l10n.t('notes'),
                                 children: [
                                   TextFormField(
                                     controller: _notesCtrl,
@@ -280,9 +282,9 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                     textCapitalization:
                                         TextCapitalization.sentences,
                                     decoration:
-                                        const InputDecoration(
+                                        InputDecoration(
                                       hintText:
-                                          'Investment preferences, terms...',
+                                          l10n.t('investorNotesHint'),
                                     ),
                                   ),
                                 ],
@@ -299,11 +301,11 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                               ? Icons.save_rounded
                               : Icons.person_add_rounded,
                           label: isEditing
-                              ? 'Update Investor'
-                              : 'Save Investor',
+                              ? l10n.t('updateInvestor')
+                              : l10n.t('saveInvestor'),
                           busyLabel: isEditing
-                              ? 'Updating...'
-                              : 'Saving...',
+                              ? l10n.t('updatingInvestor')
+                              : l10n.t('savingInvestor'),
                         ),
                       ),
                     ],
@@ -314,7 +316,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
           ),
         ),
       ),
-      label: 'Saving investor...',
+      label: l10n.t('savingInvestorSuffix'),
     );
   }
 
@@ -524,6 +526,7 @@ class _PhotoPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const size = 96.0;
+    final l10n = AppLocalizations.of(context);
     ImageProvider? backgroundImage;
     if (photo != null) {
       backgroundImage = FileImage(photo!);
@@ -635,8 +638,8 @@ class _PhotoPicker extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   photo != null || photoUrl.isNotEmpty
-                      ? 'Photo added — tap to change'
-                      : 'Tap to add investor photo',
+                      ? l10n.t('photoAddedChange')
+                      : l10n.t('tapToAddInvestorPhoto'),
                   style: const TextStyle(
                     color: Color(0xFF5D4A00),
                     fontSize: 11,

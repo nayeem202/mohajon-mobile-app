@@ -12,6 +12,7 @@ class AnimatedBottomNavBar extends StatefulWidget {
     required this.destinations,
     required this.onSelected,
     this.onMoreTap,
+    this.itemKeys,
   }) : assert(destinations.length > 1),
        assert(selectedIndex >= 0 && selectedIndex < destinations.length);
 
@@ -19,6 +20,7 @@ class AnimatedBottomNavBar extends StatefulWidget {
   final List<NavDestination> destinations;
   final ValueChanged<int> onSelected;
   final VoidCallback? onMoreTap;
+  final List<GlobalKey>? itemKeys;
 
   @override
   State<AnimatedBottomNavBar> createState() => _AnimatedBottomNavBarState();
@@ -160,7 +162,7 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
                               top: 0,
                               bottom: 0,
                               child: _AnimatedNavItem(
-                                key: ValueKey('nav-item-$index'),
+                                key: widget.itemKeys?[index] ?? ValueKey('nav-item-$index'),
                                 destination: widget.destinations[index],
                                 selected: widget.selectedIndex == index,
                                 showLabel:

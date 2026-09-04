@@ -3,28 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/app_feedback.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
-
-const String _privacyText = '''
-Your privacy matters to us. This policy explains what we collect and how we use it.
-
-1. Information We Collect
-We collect the account details you provide (name, email, phone) and the business records you create inside the app, such as sales, purchases, and customer ledgers.
-
-2. How We Use Data
-Your data is used to power the features you use, to sync across your devices, and to send the notifications you enable. We do not sell your data.
-
-3. Your Choices
-You can control analytics, personalization, and marketing emails from the Privacy screen. Turning a category off stops further collection or use for that purpose.
-
-4. Data Storage & Security
-Data is stored securely and protected in transit. You can request an export or deletion of your data at any time.
-
-5. Contact
-If you have any privacy questions, reach out via the Contact Support option in Settings.
-''';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -68,12 +50,13 @@ class PrivacySettingsScreen extends ConsumerWidget {
   }
 
   void _showPolicy(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Theme(
           data: MohajonWarm.theme(Theme.of(context)),
           child: Scaffold(
-            appBar: AppBar(title: const Text('Privacy Policy')),
+            appBar: AppBar(title: Text(l10n.t('privacyPolicy'))),
             body: DecoratedBox(
               decoration: const BoxDecoration(
                 gradient: MohajonWarm.pageGradient,
@@ -89,7 +72,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       border: Border.all(color: MohajonWarm.goldBorder),
                     ),
                     child: Text(
-                      _privacyText,
+                      l10n.t('privacyPolicyBody'),
                       style: const TextStyle(
                         fontSize: 13,
                         height: 1.6,

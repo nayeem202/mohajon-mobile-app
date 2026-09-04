@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money.dart';
 import '../providers/investor_providers.dart';
 
@@ -12,10 +13,11 @@ class InvestorReportScreen extends ConsumerWidget {
     final investors = ref.watch(investorsStreamProvider).value ?? [];
     final overview = ref.watch(investorsOverviewProvider);
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F1),
-      appBar: AppBar(title: const Text('Investor Report')),
+      appBar: AppBar(title: Text(l10n.t('investorReport'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -29,16 +31,16 @@ class InvestorReportScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Summary',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                Text(l10n.t('summary'),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                 const SizedBox(height: 16),
-                _Row(label: 'Total Investors', value: '${overview.totalInvestors}'),
-                _Row(label: 'Total Invested', value: money(overview.totalInvestment)),
-                _Row(label: 'Total Profit', value: money(overview.totalProfit),
+                _Row(label: l10n.t('totalInvestors'), value: '${overview.totalInvestors}'),
+                _Row(label: l10n.t('totalInvested'), value: money(overview.totalInvestment)),
+                _Row(label: l10n.t('totalProfit'), value: money(overview.totalProfit),
                     color: const Color(0xFF047857)),
-                _Row(label: 'Total Loss', value: money(overview.totalLoss),
+                _Row(label: l10n.t('totalLoss'), value: money(overview.totalLoss),
                     color: colors.error),
-                _Row(label: 'Outstanding', value: money(overview.totalOutstanding),
+                _Row(label: l10n.t('outstanding'), value: money(overview.totalOutstanding),
                     color: overview.totalOutstanding > 0 ? colors.error : const Color(0xFF047857),
                     showDivider: false),
               ],
@@ -55,15 +57,15 @@ class InvestorReportScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('All Investors',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                Text(l10n.t('allInvestors'),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                 const SizedBox(height: 12),
                 if (investors.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Center(
-                        child: Text('No investors yet.',
-                            style: TextStyle(color: Color(0xFF98A2B3)))),
+                        child: Text(l10n.t('noInvestorsYet'),
+                            style: const TextStyle(color: Color(0xFF98A2B3)))),
                   )
                 else
                   ...investors.map((inv) => Container(
@@ -81,7 +83,7 @@ class InvestorReportScreen extends ConsumerWidget {
                                   Text(inv.name,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w800)),
-                                  Text(inv.phone.isNotEmpty ? inv.phone : 'No phone',
+                                  Text(inv.phone.isNotEmpty ? inv.phone : l10n.t('noPhone'),
                                       style: const TextStyle(
                                           color: Color(0xFF667085),
                                           fontSize: 12)),
@@ -95,7 +97,8 @@ class InvestorReportScreen extends ConsumerWidget {
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w800)),
                                 Text(
-                                  'Due ${money(inv.outstanding)}',
+                                  l10n.tP('dueMoney',
+                                      {'amount': money(inv.outstanding)}),
                                   style: TextStyle(
                                     color: inv.outstanding > 0
                                         ? colors.error

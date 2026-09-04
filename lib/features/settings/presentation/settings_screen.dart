@@ -11,50 +11,11 @@ import '../../../core/services/app_feedback.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/app/app_providers.dart';
-import '../../auth/presentation/login_screen.dart';
-import '../../auth/providers/auth_providers.dart';
+import '../../../core/app/app_lock_controller.dart';
+import '../../../core/app/app_lock_screen.dart';
+import '../../../core/app/quick_tour_screen.dart';
 import '../../profile/presentation/widgets/animated_section.dart';
 import 'account_security_screen.dart';
-
-const String _termsText = '''
-Welcome to Mohajon. By using this application you agree to the following terms.
-
-1. Account
-You are responsible for keeping your login credentials safe. Do not share your password or PIN with anyone.
-
-2. Acceptable Use
-Use the app only for lawful business and accounting purposes. You may not misuse, resell, or attempt to reverse-engineer the service.
-
-3. Data Ownership
-All business records, ledgers, and customer data you enter remain your property. We act only as a processor to store and sync that data.
-
-4. Service Availability
-We strive to keep the service available at all times but do not guarantee uninterrupted access. Maintenance and updates may occur without prior notice.
-
-5. Changes
-We may update these terms from time to time. Continued use of the app after changes means you accept the revised terms.
-
-For questions about these terms, contact our support team from the Settings screen.
-''';
-
-const String _privacyText = '''
-Your privacy matters to us. This policy explains what we collect and how we use it.
-
-1. Information We Collect
-We collect the account details you provide (name, email, phone) and the business records you create inside the app, such as sales, purchases, and customer ledgers.
-
-2. How We Use Data
-Your data is used to power the features you use, to sync across your devices, and to send the notifications you enable. We do not sell your data.
-
-3. Notifications
-Push notifications are sent only for the categories you turn on in Settings. You can disable them at any time.
-
-4. Data Storage & Security
-Data is stored securely and protected in transit. You can request export or deletion of your data through the app.
-
-5. Contact
-If you have any privacy questions, reach out via the Contact Support option in Settings.
-''';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -334,33 +295,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           subtitle: l10n.t('appInfo'),
                           accentColor: MohajonWarm.primary,
                           child: _AboutBody(
-                            onTerms: () => _openLegal(l10n.t('termsOfService'), _termsText),
-                            onPrivacy: () => _openLegal(l10n.t('privacyPolicy'), _privacyText),
+                            onTerms: () => _openLegal(l10n.t('termsOfService'), l10n.t('termsBody')),
+                            onPrivacy: () => _openLegal(l10n.t('privacyPolicy'), l10n.t('privacyBody')),
                             onSupport: () => _openSupport(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      AnimatedSection(
-                        delay: const Duration(milliseconds: 420),
-                        child: _ExpandableSection(
-                          icon: Icons.warning_amber_rounded,
-                          title: l10n.t('dangerZone'),
-                          subtitle: l10n.t('irreversibleActions'),
-                          accentColor: Theme.of(context).colorScheme.error,
-                          child: _DangerBody(
-                            onSignOut: () async {
-                              await runBusyAction(() async {
-                                await ref.read(authServiceProvider).signOut();
-                                if (context.mounted) {
-                                  Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                                    (_) => false,
-                                  );
-                                }
-                              });
-                            },
-                            onToast: _showToast,
                           ),
                         ),
                       ),
@@ -950,6 +887,22 @@ class _AppPrefsBody extends ConsumerWidget {
           value: l10n.t('dateFormatValue'),
           onTap: () => onToast(l10n.t('dateFormatComing')),
         ),
+        _Divider(),
+        _NavRow(
+          icon: Icons.info_outline_rounded,
+          label: l10n.t('viewTour'),
+          value: l10n.t('viewTourDesc'),
+          onTap: () {
+            Hive.box('settings').put('hasSeenTour', false);
+            Hive.box('settings').put('hasSeenOnboarding', false);
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) => const QuickTourScreen(),
+              ),
+              (_) => false,
+            );
+          },
+        ),
       ],
     );
   }
@@ -1076,60 +1029,147 @@ class _SecurityBody extends StatelessWidget {
   }
 }
 
-class _AppLockRow extends StatefulWidget {
+class _AppLockRow extends ConsumerWidget {
   @override
-  State<_AppLockRow> createState() => _AppLockRowState();
-}
-
-class _AppLockRowState extends State<_AppLockRow> {
-  late Box _box;
-  bool _locked = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _box = Hive.box('settings');
-    _locked = _box.get('appLock', defaultValue: false) as bool;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return _RowBase(
-      leading: Container(
-        width: 32, height: 32,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4EFE2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(Icons.lock_outline_rounded,
-            color: MohajonWarm.muted, size: 16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.t('appLock'),
-                    style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500,
-                        color: MohajonWarm.ink)),
-                const SizedBox(height: 2),
-                Text(l10n.t('requirePinToOpen'),
-                    style: TextStyle(
-                        fontSize: 11, color: MohajonWarm.muted)),
-              ],
+    final locked = ref.watch(appLockProvider).enabled;
+
+    return Column(
+      children: [
+        _RowBase(
+          leading: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4EFE2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.lock_outline_rounded,
+              color: locked ? MohajonWarm.orange : MohajonWarm.muted,
+              size: 16,
             ),
           ),
-          _Switch(
-            value: _locked,
-            onChanged: (v) {
-              setState(() => _locked = v);
-              _box.put('appLock', v);
-            },
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.t('appLock'),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: MohajonWarm.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.t('requirePinToOpen'),
+                      style: TextStyle(fontSize: 11, color: MohajonWarm.muted),
+                    ),
+                  ],
+                ),
+              ),
+              _Switch(
+                value: locked,
+                onChanged: (v) => _onToggle(context, ref, v),
+              ),
+            ],
           ),
-        ],
+        ),
+        if (locked)
+          _NavRow(
+            icon: Icons.password_rounded,
+            label: l10n.t('changeAppPin'),
+            value: '',
+            onTap: () => _onChangePin(context, ref),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _onToggle(
+    BuildContext context,
+    WidgetRef ref,
+    bool value,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final controller = ref.read(appLockProvider.notifier);
+
+    if (value) {
+      final pin = await Navigator.of(
+        context,
+      ).push<String>(MaterialPageRoute(builder: (_) => const SetAppPinScreen()));
+      if (pin == null || !context.mounted) return;
+      await controller.enable(pin: pin);
+      if (context.mounted) _toast(context, l10n.t('appLockOn'));
+      return;
+    }
+
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => AppLockScreen(
+          title: l10n.t('enterPinTitle'),
+          subtitle: l10n.t('confirmPinToTurnOff'),
+          showBack: true,
+          autoPopOnSuccess: true,
+          onSubmit: (pin) async => controller.verify(pin),
+        ),
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await controller.disable();
+    if (context.mounted) _toast(context, l10n.t('appLockOff'));
+  }
+
+  Future<void> _onChangePin(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final controller = ref.read(appLockProvider.notifier);
+
+    final verified = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => AppLockScreen(
+          title: l10n.t('changePinTitle'),
+          subtitle: l10n.t('enterCurrentPinSubtitle'),
+          showBack: true,
+          autoPopOnSuccess: true,
+          onSubmit: (pin) async => controller.verify(pin),
+        ),
+      ),
+    );
+    if (verified != true || !context.mounted) return;
+
+    final pin = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const SetAppPinScreen()));
+    if (pin == null || !context.mounted) return;
+    await controller.enable(pin: pin);
+    if (context.mounted) _toast(context, l10n.t('pinChanged'));
+  }
+
+  void _toast(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: const TextStyle(fontSize: 13))),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1C1917),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -1294,57 +1334,6 @@ class _LegalScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/* ========== Danger Zone Body ========== */
-
-class _DangerBody extends StatelessWidget {
-  const _DangerBody({
-    required this.onSignOut,
-    required this.onToast,
-  });
-
-  final VoidCallback onSignOut;
-  final void Function(String) onToast;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final colors = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: onSignOut,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: colors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.logout_rounded,
-                      color: colors.error, size: 16),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(l10n.t('signOut'),
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600,
-                          color: colors.error)),
-                ),
-                Icon(Icons.chevron_right_rounded,
-                    color: colors.error, size: 20),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../models/investor.dart';
 import '../../providers/investor_providers.dart';
 
@@ -27,16 +28,17 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
   @override
   Widget build(BuildContext context) {
     final investorsAsync = ref.watch(investorsStreamProvider);
+    final l10n = AppLocalizations.of(context);
 
     return investorsAsync.when(
-      data: (investors) => _buildContent(investors),
-      error: (e, _) => Text('Error: $e'),
+      data: (investors) => _buildContent(investors, l10n),
+      error: (e, _) => Text(l10n.tP('errorText', {'error': '$e'})),
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 
-  Widget _buildContent(List<Investor> investors) {
+  Widget _buildContent(List<Investor> investors, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,8 +63,8 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                       child: DropdownButtonFormField<String>(
                         initialValue:
                             si.investorId.isEmpty ? null : si.investorId,
-                        decoration: const InputDecoration(
-                          labelText: 'Investor *',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('investorRequired'),
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
@@ -74,7 +76,7 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                                 ))
                             .toList(),
                         validator: (v) =>
-                            v == null || v.isEmpty ? 'Required' : null,
+                            v == null || v.isEmpty ? l10n.t('required') : null,
                         onChanged: (v) {
                           if (v == null) return;
                           final list = [...widget.selectedInvestors];
@@ -110,16 +112,16 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                             : si.investmentAmount.toString(),
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
-                        decoration: const InputDecoration(
-                          labelText: 'Amount *',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('amountRequired'),
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Required';
+                          if (v == null || v.trim().isEmpty) return l10n.t('required');
                           final amt = double.tryParse(v.trim());
-                          if (amt == null || amt <= 0) return 'Must be > 0';
+                          if (amt == null || amt <= 0) return l10n.t('mustBeGreaterThanZero');
                           return null;
                         },
                         onChanged: (v) {
@@ -162,8 +164,8 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                                     : si.sharePercentage.toString(),
                                 keyboardType: const TextInputType.numberWithOptions(
                                     decimal: true),
-                                decoration: const InputDecoration(
-                                  labelText: 'Share %',
+                                decoration: InputDecoration(
+                                  labelText: l10n.t('sharePercentLabel'),
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 10),
@@ -191,7 +193,7 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
         OutlinedButton.icon(
           onPressed: _addInvestor,
           icon: const Icon(Icons.person_add_rounded, size: 18),
-          label: const Text('Add Investor'),
+          label: Text(l10n.t('addInvestor')),
         ),
       ],
     );

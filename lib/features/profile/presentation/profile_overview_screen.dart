@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/utils/app_error.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../auth/presentation/login_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../models/profile.dart';
 import '../providers/profile_providers.dart';
+import 'help_support_screen.dart';
 import 'store_info_screen.dart';
 import 'widgets/animated_section.dart';
 import 'widgets/profile_avatar.dart';
@@ -31,6 +31,7 @@ class _ProfileOverviewScreenState
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
+    final l10n = AppLocalizations.of(context);
 
     _seedProfile(profile);
 
@@ -77,8 +78,8 @@ class _ProfileOverviewScreenState
                             children: [
                               _MenuTile(
                                 icon: Icons.store_rounded,
-                                title: 'Store/Business Information',
-                                subtitle: 'View and edit store details',
+                                title: l10n.t('storeBusinessInfo'),
+                                subtitle: l10n.t('viewEditStoreDetails'),
                                 onTap: () => _openStoreInfo(profile),
                               ),
                               Divider(
@@ -88,8 +89,8 @@ class _ProfileOverviewScreenState
                                   color: MohajonWarm.goldBorder),
                               _MenuTile(
                                 icon: Icons.settings_rounded,
-                                title: 'Settings',
-                                subtitle: 'App preferences & more',
+                                title: l10n.t('settings'),
+                                subtitle: l10n.t('appPreferencesMore'),
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => const SettingsScreen(),
@@ -103,22 +104,13 @@ class _ProfileOverviewScreenState
                                   color: MohajonWarm.goldBorder),
                               _MenuTile(
                                 icon: Icons.help_outline_rounded,
-                                title: 'Help & Support',
-                                subtitle: 'FAQs and contact',
-                                onTap: () {},
-                              ),
-                              Divider(
-                                  height: 1,
-                                  indent: 16,
-                                  endIndent: 16,
-                                  color: MohajonWarm.goldBorder),
-                              _MenuTile(
-                                icon: Icons.logout_rounded,
-                                title: 'Sign Out',
-                                subtitle: 'Log out of your account',
-                                iconColor: MohajonWarm.red,
-                                titleColor: MohajonWarm.red,
-                                onTap: _confirmLogout,
+                                title: l10n.t('helpAndSupport'),
+                                subtitle: l10n.t('faqsAndContact'),
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const HelpSupportScreen(),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -145,6 +137,7 @@ class _ProfileOverviewScreenState
   }
 
   Future<void> _pickImage() async {
+    final l10n = AppLocalizations.of(context);
     final remove = _imagePath != null;
     final result = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -167,7 +160,7 @@ class _ProfileOverviewScreenState
                 ),
               ),
               Text(
-                'Profile Photo',
+                l10n.t('profilePhoto'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -175,12 +168,12 @@ class _ProfileOverviewScreenState
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take a photo'),
+                title: Text(l10n.t('takeAPhoto')),
                 onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
+                title: Text(l10n.t('chooseFromGallery')),
                 onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
               ),
               if (remove) ...[
@@ -189,7 +182,7 @@ class _ProfileOverviewScreenState
                   leading: Icon(Icons.delete_outline,
                       color: Theme.of(context).colorScheme.error),
                   title: Text(
-                    'Remove photo',
+                    l10n.t('removePhoto'),
                     style: TextStyle(
                         color: Theme.of(context).colorScheme.error),
                   ),
@@ -220,13 +213,14 @@ class _ProfileOverviewScreenState
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not pick image')),
+          SnackBar(content: Text(l10n.t('couldNotPickImage'))),
         );
       }
     }
   }
 
   Future<void> _saveImagePath(String? path) async {
+    final l10n = AppLocalizations.of(context);
     final current = ref.read(profileProvider);
     if (current == null) return;
     try {
@@ -236,7 +230,7 @@ class _ProfileOverviewScreenState
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not upload profile image')),
+          SnackBar(content: Text(l10n.t('couldNotUploadImage'))),
         );
       }
     }
@@ -250,135 +244,6 @@ class _ProfileOverviewScreenState
       ),
     );
   }
-
-  void _confirmLogout() {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return PopScope(
-          canPop: true,
-          child: Material(
-            color: Colors.transparent,
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 40),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFEBEE),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.logout_rounded,
-                        color: Color(0xFFEF5350),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Sign Out',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1C1917),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        'Are you sure you want to sign out of your account?',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF98A2B3),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 40,
-                            child: OutlinedButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF0ECE6),
-                                foregroundColor: const Color(0xFF525252),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide.none,
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SizedBox(
-                            height: 40,
-                            child: FilledButton(
-                              onPressed: () {
-                                Navigator.of(dialogContext).pop();
-                                _logout();
-                              },
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFFEF5350),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              child: const Text('Sign Out'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _logout() async {
-    try {
-      await ref.read(profileServiceProvider).logout();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (_) => false,
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(error))),
-      );
-    }
-  }
 }
 
 class _Header extends StatelessWidget {
@@ -388,6 +253,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
       child: Row(
@@ -439,12 +305,12 @@ class _Header extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'My Profile',
+                  l10n.t('myProfile'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -454,7 +320,7 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Account & preferences',
+                  l10n.t('accountAndPreferences'),
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -484,9 +350,10 @@ class _UserSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final name = (profile?.ownerName ?? '').isNotEmpty
         ? profile!.ownerName
-        : 'Store Owner';
+        : l10n.t('storeOwner');
     final store = profile?.storeName ?? '';
     final email = profile?.email ?? '';
     final phone = profile?.phone ?? '';
@@ -534,8 +401,8 @@ class _UserSection extends StatelessWidget {
               color: MohajonWarm.goldText.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'Store Owner',
+            child: Text(
+              l10n.t('storeOwner'),
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -597,22 +464,18 @@ class _MenuTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    this.iconColor,
-    this.titleColor,
     this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final Color? iconColor;
-  final Color? titleColor;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? MohajonWarm.primary;
-    final effectiveTitleColor = titleColor ?? MohajonWarm.ink;
+    final effectiveIconColor = MohajonWarm.primary;
+    final effectiveTitleColor = MohajonWarm.ink;
 
     return InkWell(
       onTap: onTap,

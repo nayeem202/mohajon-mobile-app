@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/api_client.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../models/notification_model.dart';
 
 class PushNotificationSheet extends StatefulWidget {
@@ -32,6 +34,7 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
     try {
@@ -42,7 +45,7 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notification sent successfully')),
+        SnackBar(content: Text(l10n.t('notificationSentSuccess'))),
       );
       Navigator.of(context).pop();
     } catch (error, stackTrace) {
@@ -53,14 +56,13 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
       final message = switch (error) {
         ApiException(:final statusCode)
             when statusCode == 401 || statusCode == 403 =>
-          'Your session has expired. Please log in again, then retry.',
+          l10n.t('sessionExpiredRetry'),
         ApiException(:final code) when code == 'FCM_NOT_CONFIGURED' =>
-          'Push notifications are not configured on the server yet.',
+          l10n.t('fcmNotConfigured'),
         ApiException(:final code) when code == 'FCM_CONFIG_INVALID' =>
-          'The server Firebase configuration is invalid.',
+          l10n.t('fcmConfigInvalid'),
         ApiException(:final message) => message,
-        _ =>
-          'Unable to send notification. Check your connection and try again.',
+        _ => l10n.t('unableSendNotification'),
       };
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
@@ -70,14 +72,22 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
         decoration: const BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [MohajonWarm.primaryPale, Color(0xFFFFFDF7)],
+          ),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(
+            top: BorderSide(color: MohajonWarm.primary, width: 2),
+          ),
         ),
         child: Form(
           key: _formKey,
@@ -86,51 +96,33 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _Header(onClose: () => Navigator.of(context).pop()),
+                _Header(l10n: l10n, onClose: () => Navigator.of(context).pop()),
                 const SizedBox(height: 20),
-                _TypeSelector(
-                  selected: _selectedType,
-                  onSelected: (t) => setState(() => _selectedType = t),
-                ),
+                _TypeSelector(l10n: l10n, selected: _selectedType, onSelected: (t) => setState(() => _selectedType = t)),
                 const SizedBox(height: 16),
                 _FormField(
-                  label: 'Title',
+                  label: l10n.t('notificationTitle'),
                   controller: _titleController,
-                  placeholder: 'e.g. Stock Alert: Low Inventory',
+                  placeholder: l10n.t('notificationTitleHint'),
                   validator: (v) =>
-                      v?.trim().isEmpty == true ? 'Title is required' : null,
+                      v?.trim().isEmpty == true ? l10n.t('titleRequired') : null,
                 ),
                 const SizedBox(height: 16),
                 _FormField(
-                  label: 'Message',
+                  label: l10n.t('notificationMessage'),
                   controller: _messageController,
-                  placeholder: 'Write the notification message...',
+                  placeholder: l10n.t('notificationMessageHint'),
                   maxLines: 4,
                   validator: (v) =>
-                      v?.trim().isEmpty == true ? 'Message is required' : null,
+                      v?.trim().isEmpty == true ? l10n.t('messageRequired') : null,
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
+                  child: FilledButton.icon(
                     onPressed: _submitting ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFF97316),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (_submitting) ...[
-                          const SizedBox(
+                    icon: _submitting
+                        ? const SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
@@ -139,15 +131,22 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
                                 Colors.white,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('Sending...'),
-                        ] else ...[
-                          const Icon(Icons.send_rounded, size: 16),
-                          const SizedBox(width: 8),
-                          const Text('Send Notification'),
-                        ],
-                      ],
+                          )
+                        : const Icon(Icons.send_rounded, size: 16),
+                    label: Text(_submitting
+                        ? l10n.t('sendingDots')
+                        : l10n.t('sendNotification')),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: MohajonWarm.primary,
+                      foregroundColor: MohajonWarm.ink,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
@@ -161,23 +160,39 @@ class _PushNotificationSheetState extends State<PushNotificationSheet> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.onClose});
+  const _Header({required this.l10n, required this.onClose});
 
+  final AppLocalizations l10n;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Text(
-          'Push New Notification',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1917),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: MohajonWarm.primary,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(
+            Icons.notifications_active_rounded,
+            color: MohajonWarm.ink,
+            size: 19,
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            l10n.t('pushNewNotification'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: MohajonWarm.ink,
+            ),
+          ),
+        ),
         GestureDetector(
           onTap: onClose,
           child: Container(
@@ -187,7 +202,7 @@ class _Header extends StatelessWidget {
             child: const Icon(
               Icons.close_rounded,
               size: 20,
-              color: Color(0xFF98A2B3),
+              color: MohajonWarm.muted,
             ),
           ),
         ),
@@ -197,18 +212,34 @@ class _Header extends StatelessWidget {
 }
 
 class _TypeSelector extends StatelessWidget {
-  const _TypeSelector({required this.selected, required this.onSelected});
+  const _TypeSelector({
+    required this.l10n,
+    required this.selected,
+    required this.onSelected,
+  });
 
+  final AppLocalizations l10n;
   final NotificationType selected;
   final void Function(NotificationType) onSelected;
 
-  static const _options = [
-    _TypeOption(NotificationType.sale, 'Sale'),
-    _TypeOption(NotificationType.stock, 'Stock'),
-    _TypeOption(NotificationType.expense, 'Expense'),
-    _TypeOption(NotificationType.investment, 'Investment'),
-    _TypeOption(NotificationType.system, 'System'),
-    _TypeOption(NotificationType.payment, 'Payment'),
+  String _label(NotificationType type) => switch (type) {
+        NotificationType.sale => l10n.t('typeSale'),
+        NotificationType.stock => l10n.t('typeStock'),
+        NotificationType.expense => l10n.t('typeExpense'),
+        NotificationType.investment => l10n.t('typeInvestment'),
+        NotificationType.system => l10n.t('typeSystem'),
+        NotificationType.payment => l10n.t('typePayment'),
+        NotificationType.summary => l10n.t('typeSale'),
+        NotificationType.platform => l10n.t('typeSystem'),
+      };
+
+  static const _options = <NotificationType>[
+    NotificationType.sale,
+    NotificationType.stock,
+    NotificationType.expense,
+    NotificationType.investment,
+    NotificationType.system,
+    NotificationType.payment,
   ];
 
   @override
@@ -216,35 +247,38 @@ class _TypeSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FieldLabel('Type'),
+        _FieldLabel(l10n.t('typeLabel')),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _options.map((opt) {
-            final isActive = opt.type == selected;
+          children: _options.map((type) {
+            final isActive = type == selected;
             return GestureDetector(
-              onTap: () => onSelected(opt.type),
-              child: Container(
+              onTap: () => onSelected(type),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.white : const Color(0xFFF0ECE6),
+                  color: isActive ? MohajonWarm.primary : Colors.white,
                   borderRadius: BorderRadius.circular(999),
-                  border: isActive
-                      ? Border.all(color: const Color(0xFFFFC089))
-                      : Border.all(color: Colors.transparent),
+                  border: Border.all(
+                    color: isActive
+                        ? MohajonWarm.primary
+                        : MohajonWarm.goldBorder,
+                  ),
                 ),
                 child: Text(
-                  opt.label,
+                  _label(type),
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     color: isActive
-                        ? const Color(0xFFF97316)
-                        : const Color(0xFF525252),
+                        ? MohajonWarm.ink
+                        : MohajonWarm.muted,
                   ),
                 ),
               ),
@@ -254,12 +288,6 @@ class _TypeSelector extends StatelessWidget {
       ],
     );
   }
-}
-
-class _TypeOption {
-  final NotificationType type;
-  final String label;
-  const _TypeOption(this.type, this.label);
 }
 
 class _FieldLabel extends StatelessWidget {
@@ -273,8 +301,8 @@ class _FieldLabel extends StatelessWidget {
       text,
       style: const TextStyle(
         fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF525252),
+        fontWeight: FontWeight.w700,
+        color: MohajonWarm.ink,
       ),
     );
   }
@@ -306,42 +334,15 @@ class _FormField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           validator: validator,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF1C1917)),
+          style: const TextStyle(fontSize: 13, color: MohajonWarm.ink),
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFD4D4D4)),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: MohajonWarm.muted,
+            ),
             filled: true,
-            fillColor: const Color(0xFFFFF8F1),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE8DDD2)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFFFC089),
-                width: 1.5,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFDC2626)),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFDC2626),
-                width: 1.5,
-              ),
-            ),
+            fillColor: Colors.white,
           ),
         ),
       ],

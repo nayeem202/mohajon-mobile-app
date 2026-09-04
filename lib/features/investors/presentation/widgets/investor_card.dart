@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/mohajon_warm_theme.dart';
 import '../../../../core/utils/money.dart';
 import '../../models/investor.dart';
@@ -32,6 +33,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
     final inv = widget.investor;
     final financials = ref.watch(investorFinancialsProvider(inv.id));
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -129,7 +131,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                'Profit ${money(financials.profit)}',
+                                l10n.tP('profitValue', {'amount': money(financials.profit)}),
                                 style: const TextStyle(
                                     color: Color(0xFF047857),
                                     fontSize: 10,
@@ -183,7 +185,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
           ),
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
-            secondChild: _buildExpanded(inv, financials, colors),
+            secondChild: _buildExpanded(inv, financials, colors, l10n),
             crossFadeState: _expanded
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
@@ -198,6 +200,7 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
     Investor inv,
     InvestorFinancials financials,
     ColorScheme colors,
+    AppLocalizations l10n,
   ) {
     final totalDue = financials.investment + financials.profit;
     final progress = totalDue > 0
@@ -257,17 +260,17 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
           Row(
             children: [
               _EStat(
-                  label: 'Invested',
+                  label: l10n.t('invested'),
                   value: money(financials.investment),
                   color: colors.primary),
               const SizedBox(width: 6),
               _EStat(
-                  label: 'Profit',
+                  label: l10n.t('profit'),
                   value: money(financials.profit),
                   color: const Color(0xFF047857)),
               const SizedBox(width: 6),
               _EStat(
-                  label: 'Loss',
+                  label: l10n.t('loss'),
                   value: money(financials.loss),
                   color: colors.error),
             ],
@@ -276,12 +279,12 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
           Row(
             children: [
               _EStat(
-                  label: 'Paid Out',
+                  label: l10n.t('paidOut'),
                   value: money(totalDue - financials.outstanding),
                   color: const Color(0xFF0F766E)),
               const SizedBox(width: 6),
               _EStat(
-                  label: 'Outstanding',
+                  label: l10n.t('outstanding'),
                   value: money(financials.outstanding),
                   color: financials.outstanding > 0
                       ? colors.error
@@ -324,7 +327,8 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
               ),
               const SizedBox(width: 8),
               Text(
-                  'Payout Progress ${(progress * 100).toStringAsFixed(0)}%',
+                  l10n.tP('payoutProgressLabel',
+                      {'pct': (progress * 100).toStringAsFixed(0)}),
                   style: const TextStyle(
                       color: MohajonWarm.muted,
                       fontSize: 11,
@@ -333,8 +337,8 @@ class _InvestorCardState extends ConsumerState<InvestorCard> {
           ),
           if (financials.investmentCount > 0) ...[
             const SizedBox(height: 14),
-            const Text('INVESTMENT DETAILS',
-                style: TextStyle(
+            Text(l10n.t('investmentDetails'),
+                style: const TextStyle(
                     color: MohajonWarm.muted,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -408,6 +412,7 @@ class _InvestmentsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final investments =
         ref.watch(investmentsStreamProvider).value ?? [];
     final investorInvestments = investments.where((inv) {
@@ -417,10 +422,10 @@ class _InvestmentsList extends ConsumerWidget {
     }).toList();
 
     if (investorInvestments.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text('No active investments.',
-            style: TextStyle(
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(l10n.t('noActiveInvestments'),
+            style: const TextStyle(
                 color: MohajonWarm.muted, fontSize: 13)),
       );
     }
@@ -454,6 +459,7 @@ class _InvestmentMiniCard extends StatelessWidget {
     final netDue =
         member.investmentAmount + member.profit - member.paidAmount;
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final catColor = _catColor(inv.categoryName as String? ?? '');
 
@@ -507,13 +513,13 @@ class _InvestmentMiniCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              _Mini(label: 'Contribution', value: money(member.investmentAmount)),
+              _Mini(label: l10n.t('contribution'), value: money(member.investmentAmount)),
               _Mini(
-                  label: 'Share',
+                  label: l10n.t('share'),
                   value:
                       '${member.sharePercentage.toStringAsFixed(1)}%'),
               _Mini(
-                  label: 'Profit',
+                  label: l10n.t('profit'),
                   value: money(member.profit),
                   color: const Color(0xFF047857)),
             ],
@@ -522,15 +528,15 @@ class _InvestmentMiniCard extends StatelessWidget {
           Row(
             children: [
               _Mini(
-                  label: 'Net Due',
+                  label: l10n.t('netDue'),
                   value: money(netDue),
                   color: netDue > 0 ? colors.error : const Color(0xFF047857)),
               _Mini(
-                  label: 'Paid',
+                  label: l10n.t('paid'),
                   value: money(member.paidAmount),
                   color: colors.primary),
               _Mini(
-                  label: 'Remaining',
+                  label: l10n.t('remaining'),
                   value: money(member.remainingAmount),
                   color: member.remainingAmount > 0
                       ? colors.error
@@ -550,7 +556,7 @@ class _InvestmentMiniCard extends StatelessWidget {
                     size: 14, color: MohajonWarm.goldText,),
                 const SizedBox(width: 6),
                 Text(
-                  'Share calculated by contribution.',
+                  l10n.t('shareCalculatedByContribution'),
                   style: TextStyle(
                       color: const Color(0xFF9A3412)
                           .withValues(alpha: 0.7),

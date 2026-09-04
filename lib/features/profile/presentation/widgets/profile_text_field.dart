@@ -58,7 +58,9 @@ class ProfileTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, size: 20, color: colors.onSurfaceVariant)
+                ? maxLines > 1
+                      ? _TopAlignedPrefixIcon(icon: prefixIcon!, color: colors.onSurfaceVariant)
+                      : Icon(prefixIcon, size: 20, color: colors.onSurfaceVariant)
                 : null,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
@@ -68,6 +70,31 @@ class ProfileTextField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TopAlignedPrefixIcon extends StatelessWidget {
+  const _TopAlignedPrefixIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      heightFactor: 1.0,
+      widthFactor: 1.0,
+      alignment: Alignment.topCenter,
+      child: Center(
+        widthFactor: 1.0,
+        heightFactor: 1.0,
+        child: IgnorePointer(
+          child: ExcludeSemantics(
+            child: Icon(icon, size: 20, color: color),
+          ),
+        ),
+      ),
     );
   }
 }

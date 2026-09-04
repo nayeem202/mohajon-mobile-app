@@ -96,7 +96,26 @@ class _MoreTopBar extends StatelessWidget {
 }
 
 class FeatureHubScreen extends ConsumerStatefulWidget {
-  const FeatureHubScreen({super.key});
+  const FeatureHubScreen({
+    super.key,
+    this.tourVendorsKey,
+    this.tourExpensesKey,
+    this.tourInvestorsKey,
+    this.tourStaffKey,
+    this.tourReportsKey,
+    this.tourInvestmentsKey,
+    this.tourSettingsKey,
+    this.scrollController,
+  });
+
+  final GlobalKey? tourVendorsKey;
+  final GlobalKey? tourExpensesKey;
+  final GlobalKey? tourInvestorsKey;
+  final GlobalKey? tourStaffKey;
+  final GlobalKey? tourReportsKey;
+  final GlobalKey? tourInvestmentsKey;
+  final GlobalKey? tourSettingsKey;
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<FeatureHubScreen> createState() => _FeatureHubScreenState();
@@ -172,6 +191,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                 ),
                 SafeArea(
                   child: ListView(
+                    controller: widget.scrollController,
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
                     children: [
                       const _MoreTopBar(),
@@ -195,6 +215,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.vendors,
                             onTap: () => _open(const VendorListScreen()),
+                            itemKey: widget.tourVendorsKey,
                           ),
                           _FeatureItem(
                             icon: Icons.payments_rounded,
@@ -204,6 +225,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintOrange,
                             menu: MenuCodes.expenses,
                             onTap: () => _open(const ExpensesScreen()),
+                            itemKey: widget.tourExpensesKey,
                           ),
                           _FeatureItem(
                             icon: Icons.people_alt_rounded,
@@ -213,6 +235,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintGreen,
                             menu: MenuCodes.investors,
                             onTap: () => _open(const InvestorListScreen()),
+                            itemKey: widget.tourInvestorsKey,
                           ),
                           _FeatureItem(
                             icon: Icons.group_outlined,
@@ -222,6 +245,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.staff,
                             onTap: () => _open(const StaffListScreen()),
+                            itemKey: widget.tourStaffKey,
                           ),
                           _FeatureItem(
                             icon: Icons.pie_chart_outline_rounded,
@@ -231,6 +255,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.reports,
                             onTap: () => _open(const ReportsScreen()),
+                            itemKey: widget.tourReportsKey,
                           ),
                         ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
                       ),
@@ -246,6 +271,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintGreen,
                             menu: MenuCodes.investments,
                             onTap: () => _open(const InvestmentDashboardScreen()),
+                            itemKey: widget.tourInvestmentsKey,
                           ),
                         ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
                       ),
@@ -295,6 +321,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             background: MohajonWarm.tintYellow,
                             menu: MenuCodes.settings,
                             onTap: () => _open(const SettingsScreen()),
+                            itemKey: widget.tourSettingsKey,
                           ),
                         ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
                       ),
@@ -309,7 +336,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                             color: MohajonWarm.red,
                             background: MohajonWarm.tintRed,
                             destructive: true,
-                            onTap: _signOut,
+                            onTap: _confirmSignOut,
                           ),
                         ],
                       ),
@@ -359,6 +386,127 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     await runBusyAction(() async {
       await ref.read(syncStateProvider.notifier).syncNow();
     });
+  }
+
+  void _confirmSignOut() {
+    final l10n = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: true,
+          child: Material(
+            color: Colors.transparent,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                padding: const EdgeInsets.all(24),
+                width: 320,
+                decoration: BoxDecoration(
+                  color: MohajonWarm.card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: MohajonWarm.ink.withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: const BoxDecoration(
+                        color: MohajonWarm.tintRed,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.logout_rounded,
+                        color: MohajonWarm.red,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.t('signOutMiddle'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: MohajonWarm.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.t('signOutConfirm'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: MohajonWarm.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF0ECE6),
+                                foregroundColor: const Color(0xFF525252),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide.none,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              child: Text(l10n.t('cancel')),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: FilledButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                _signOut();
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: MohajonWarm.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              child: Text(l10n.t('signOutMiddle')),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _signOut() async {
@@ -431,6 +579,7 @@ class _FeatureItem {
     this.menu,
     this.onTap,
     this.destructive = false,
+    this.itemKey,
   });
 
   final IconData icon;
@@ -441,6 +590,7 @@ class _FeatureItem {
   final String? menu;
   final VoidCallback? onTap;
   final bool destructive;
+  final GlobalKey? itemKey;
 }
 
 class _FeatureRow extends StatelessWidget {
@@ -455,12 +605,14 @@ class _FeatureRow extends StatelessWidget {
     final background = destructive
         ? MohajonWarm.tintRed
         : (item.background ?? item.color.withValues(alpha: 0.12));
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: item.onTap,
-        child: Padding(
+    return KeyedSubtree(
+      key: item.itemKey,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: item.onTap,
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
@@ -522,6 +674,7 @@ class _FeatureRow extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

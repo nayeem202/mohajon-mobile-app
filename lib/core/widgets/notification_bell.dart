@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/notifications/providers/notification_providers.dart';
+import '../theme/mohajon_warm_theme.dart';
 
 class NotificationBell extends ConsumerWidget {
   const NotificationBell({
@@ -42,8 +43,11 @@ class NotificationBell extends ConsumerWidget {
               width: 8,
               height: 8,
               decoration: const BoxDecoration(
-                color: Color(0xFFDC2626),
+                color: MohajonWarm.orange,
                 shape: BoxShape.circle,
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.white, width: 1.5),
+                ),
               ),
             ),
           ),

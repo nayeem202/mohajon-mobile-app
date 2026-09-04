@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_providers.dart';
 import 'push_notification_sheet.dart';
@@ -20,6 +22,7 @@ class _NotificationsScreenState
   final Set<String> _deletingIds = {};
 
   Future<void> _deleteNotification(AppNotification notification) async {
+    final l10n = AppLocalizations.of(context);
     final session = ref.read(authStateProvider).value;
     final canDeleteEveryone = session != null &&
         (session.userId == notification.senderUserId ||
@@ -28,14 +31,47 @@ class _NotificationsScreenState
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete notification?'),
-        content: Text(canDeleteEveryone
-            ? 'Choose whether to remove it only for you or for everyone in this shop.'
-            : 'This notification will be removed only for you.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        title: Text(
+          l10n.t('deleteNotification'),
+          style: const TextStyle(
+            color: MohajonWarm.ink,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: Text(
+          canDeleteEveryone
+              ? l10n.t('deleteChoiceMessage')
+              : l10n.t('deleteChoiceMessageOnlyYou'),
+          style: const TextStyle(
+            color: MohajonWarm.muted,
+            fontSize: 13,
+          ),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, 'me'), child: const Text('Delete for me')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'me'),
+            child: Text(
+              l10n.t('deleteForMe'),
+              style: const TextStyle(
+                color: MohajonWarm.ink,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
           if (canDeleteEveryone)
-            TextButton(onPressed: () => Navigator.pop(context, 'everyone'), child: const Text('Delete for everyone')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'everyone'),
+              child: Text(
+                l10n.t('deleteForEveryone'),
+                style: const TextStyle(
+                  color: MohajonWarm.red,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -49,7 +85,7 @@ class _NotificationsScreenState
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are not allowed to delete for everyone.')),
+          SnackBar(content: Text(l10n.t('notAllowedDeleteEveryone'))),
         );
       }
     }
@@ -75,72 +111,86 @@ class _NotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final base = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(notificationsProvider);
     final filtered = state.filtered;
     final totalUnread = state.unreadCount;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F1),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _Header(
-              unreadCount: totalUnread,
-              onMarkAllRead: () {
-                ref.read(notificationsProvider.notifier).markAllAsRead();
-              },
-              onCompose: _openPushSheet,
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            _FilterChips(
-              selected: state.categoryFilter,
-              totalUnread: totalUnread,
-              shopUnread: state.shopUnreadCount,
-              platformUnread: state.platformUnreadCount,
-              onSelected: (cat) {
-                ref
-                    .read(notificationsProvider.notifier)
-                    .setCategoryFilter(cat);
-              },
-            ),
-            _SecondaryTabs(
-              unreadOnly: state.unreadOnly,
-              onChanged: (v) {
-                ref
-                    .read(notificationsProvider.notifier)
-                    .setUnreadOnly(v);
-              },
-            ),
-            const Divider(height: 1, color: Color(0xFFF0ECE6)),
-            if (filtered.isEmpty)
-              const Expanded(
-                child: _EmptyState(),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final notification = filtered[index];
-                    final isDeleting =
-                        _deletingIds.contains(notification.id);
-                    final isLast = index == filtered.length - 1;
-                    return _NotificationItem(
-                      notification: notification,
-                      isDeleting: isDeleting,
-                      showDivider: !isLast,
-                      onMarkRead: () {
-                        ref
-                            .read(notificationsProvider.notifier)
-                            .markAsRead(notification.id);
-                      },
-                      onDelete: () => _deleteNotification(notification),
-                    );
+    return Theme(
+      data: MohajonWarm.theme(base),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: MohajonWarm.pageGradient,
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _Header(
+                  l10n: l10n,
+                  unreadCount: totalUnread,
+                  onMarkAllRead: () {
+                    ref.read(notificationsProvider.notifier).markAllAsRead();
+                  },
+                  onCompose: _openPushSheet,
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+                _FilterChips(
+                  l10n: l10n,
+                  selected: state.categoryFilter,
+                  totalUnread: totalUnread,
+                  shopUnread: state.shopUnreadCount,
+                  platformUnread: state.platformUnreadCount,
+                  onSelected: (cat) {
+                    ref
+                        .read(notificationsProvider.notifier)
+                        .setCategoryFilter(cat);
                   },
                 ),
-              ),
-          ],
+                _SecondaryTabs(
+                  l10n: l10n,
+                  unreadOnly: state.unreadOnly,
+                  onChanged: (v) {
+                    ref
+                        .read(notificationsProvider.notifier)
+                        .setUnreadOnly(v);
+                  },
+                ),
+                const Divider(height: 1, color: MohajonWarm.goldBorder),
+                if (filtered.isEmpty)
+                  Expanded(
+                    child: _EmptyState(l10n: l10n),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final notification = filtered[index];
+                        final isDeleting =
+                            _deletingIds.contains(notification.id);
+                        return _NotificationItem(
+                          notification: notification,
+                          isDeleting: isDeleting,
+                          onMarkRead: () {
+                            ref
+                                .read(notificationsProvider.notifier)
+                                .markAsRead(notification.id);
+                          },
+                          onDelete: () => _deleteNotification(notification),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -149,12 +199,14 @@ class _NotificationsScreenState
 
 class _Header extends StatelessWidget {
   const _Header({
+    required this.l10n,
     required this.unreadCount,
     required this.onMarkAllRead,
     required this.onCompose,
     required this.onClose,
   });
 
+  final AppLocalizations l10n;
   final int unreadCount;
   final VoidCallback onMarkAllRead;
   final VoidCallback onCompose;
@@ -162,39 +214,39 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.only(left: 20, right: 16, top: 12, bottom: 12),
       decoration: const BoxDecoration(
+        color: MohajonWarm.primary,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFF0ECE6)),
+          bottom: BorderSide(color: MohajonWarm.primarySoft),
         ),
       ),
       child: Row(
         children: [
           Text(
-            'Notifications',
-            style: TextStyle(
-              fontSize: 22,
+            l10n.t('notificationsList'),
+            style: const TextStyle(
+              fontSize: 20,
               fontWeight: FontWeight.w900,
-              color: colors.onSurface,
+              color: MohajonWarm.ink,
             ),
           ),
           const Spacer(),
           if (unreadCount > 0)
             Container(
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
               decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.1),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                '$unreadCount new',
-                style: TextStyle(
+                l10n.tP('unreadNew', {'n': '$unreadCount'}),
+                style: const TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: colors.primary,
+                  fontWeight: FontWeight.w800,
+                  color: MohajonWarm.goldText,
                 ),
               ),
             ),
@@ -204,10 +256,10 @@ class _Header extends StatelessWidget {
               width: 24,
               height: 24,
               alignment: Alignment.center,
-              child: Icon(
+              child: const Icon(
                 Icons.add_circle_outline_rounded,
                 size: 20,
-                color: colors.primary,
+                color: MohajonWarm.ink,
               ),
             ),
           ),
@@ -215,13 +267,13 @@ class _Header extends StatelessWidget {
           GestureDetector(
             onTap: unreadCount > 0 ? onMarkAllRead : null,
             child: Text(
-              'Mark all read',
+              l10n.t('markAllRead'),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
                 color: unreadCount > 0
-                    ? colors.primary
-                    : colors.onSurface.withValues(alpha: 0.3),
+                    ? MohajonWarm.ink
+                    : MohajonWarm.ink.withValues(alpha: 0.35),
               ),
             ),
           ),
@@ -230,7 +282,7 @@ class _Header extends StatelessWidget {
             onPressed: onClose,
             icon: const Icon(Icons.close_rounded),
             iconSize: 22,
-            color: const Color(0xFF98A2B3),
+            color: MohajonWarm.ink,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -242,6 +294,7 @@ class _Header extends StatelessWidget {
 
 class _FilterChips extends StatelessWidget {
   const _FilterChips({
+    required this.l10n,
     required this.selected,
     required this.totalUnread,
     required this.shopUnread,
@@ -249,6 +302,7 @@ class _FilterChips extends StatelessWidget {
     required this.onSelected,
   });
 
+  final AppLocalizations l10n;
   final NotificationCategory? selected;
   final int totalUnread;
   final int shopUnread;
@@ -264,7 +318,7 @@ class _FilterChips extends StatelessWidget {
         child: Row(
           children: [
             _Chip(
-              label: 'All',
+              label: l10n.t('chipAll'),
               count: totalUnread,
               icon: Icons.trending_up_rounded,
               isActive: selected == null,
@@ -272,7 +326,7 @@ class _FilterChips extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             _Chip(
-              label: 'Shop',
+              label: l10n.t('chipShop'),
               count: shopUnread,
               icon: Icons.store_rounded,
               isActive: selected == NotificationCategory.shop,
@@ -280,7 +334,7 @@ class _FilterChips extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             _Chip(
-              label: 'Platform',
+              label: l10n.t('chipPlatform'),
               count: platformUnread,
               icon: Icons.campaign_rounded,
               isActive: selected == NotificationCategory.platform,
@@ -310,14 +364,16 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? colors.primary : const Color(0xFFF0ECE6),
+          color: isActive ? MohajonWarm.primary : Colors.white,
           borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isActive ? MohajonWarm.primary : MohajonWarm.goldBorder,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -325,15 +381,15 @@ class _Chip extends StatelessWidget {
             Icon(
               icon,
               size: 14,
-              color: isActive ? Colors.white : const Color(0xFF525252),
+              color: isActive ? MohajonWarm.ink : MohajonWarm.muted,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: isActive ? Colors.white : const Color(0xFF525252),
+                fontWeight: FontWeight.w700,
+                color: isActive ? MohajonWarm.ink : MohajonWarm.ink,
               ),
             ),
             const SizedBox(width: 4),
@@ -341,10 +397,10 @@ class _Chip extends StatelessWidget {
               '$count',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 color: isActive
-                    ? Colors.white
-                    : const Color(0xFF98A2B3),
+                    ? MohajonWarm.goldText
+                    : MohajonWarm.muted,
               ),
             ),
           ],
@@ -356,16 +412,17 @@ class _Chip extends StatelessWidget {
 
 class _SecondaryTabs extends StatelessWidget {
   const _SecondaryTabs({
+    required this.l10n,
     required this.unreadOnly,
     required this.onChanged,
   });
 
+  final AppLocalizations l10n;
   final bool unreadOnly;
   final void Function(bool) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 20, top: 4, bottom: 8),
       child: Row(
@@ -373,13 +430,13 @@ class _SecondaryTabs extends StatelessWidget {
           GestureDetector(
             onTap: () => onChanged(false),
             child: Text(
-              'All',
+              l10n.t('tabAll'),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
                 color: !unreadOnly
-                    ? colors.primary
-                    : const Color(0xFF98A2B3),
+                    ? MohajonWarm.goldText
+                    : MohajonWarm.muted,
               ),
             ),
           ),
@@ -387,13 +444,13 @@ class _SecondaryTabs extends StatelessWidget {
           GestureDetector(
             onTap: () => onChanged(true),
             child: Text(
-              'Unread',
+              l10n.t('tabUnread'),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
                 color: unreadOnly
-                    ? colors.primary
-                    : const Color(0xFF98A2B3),
+                    ? MohajonWarm.goldText
+                    : MohajonWarm.muted,
               ),
             ),
           ),
@@ -407,14 +464,12 @@ class _NotificationItem extends StatelessWidget {
   const _NotificationItem({
     required this.notification,
     required this.isDeleting,
-    required this.showDivider,
     required this.onMarkRead,
     required this.onDelete,
   });
 
   final AppNotification notification;
   final bool isDeleting;
-  final bool showDivider;
   final VoidCallback onMarkRead;
   final VoidCallback onDelete;
 
@@ -428,11 +483,13 @@ class _NotificationItem extends StatelessWidget {
         opacity: isDeleting ? 0 : 1,
         child: isDeleting
             ? const SizedBox(height: 0)
-            : _ItemContent(
-                notification: notification,
-                showDivider: showDivider,
-                onMarkRead: onMarkRead,
-                onDelete: onDelete,
+            : Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ItemContent(
+                  notification: notification,
+                  onMarkRead: onMarkRead,
+                  onDelete: onDelete,
+                ),
               ),
       ),
     );
@@ -442,30 +499,29 @@ class _NotificationItem extends StatelessWidget {
 class _ItemContent extends StatelessWidget {
   const _ItemContent({
     required this.notification,
-    required this.showDivider,
     required this.onMarkRead,
     required this.onDelete,
   });
 
   final AppNotification notification;
-  final bool showDivider;
   final VoidCallback onMarkRead;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final isUnread = !notification.read;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: showDivider
-          ? const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFF0ECE6)),
-              ),
-            )
-          : null,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isUnread ? MohajonWarm.tintYellow : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isUnread ? MohajonWarm.primaryPale : MohajonWarm.goldBorder,
+          width: isUnread ? 1.4 : 1,
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -488,11 +544,11 @@ class _ItemContent extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: isUnread
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: colors.onSurface,
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: MohajonWarm.ink,
                               ),
                             ),
                           ),
@@ -502,7 +558,7 @@ class _ItemContent extends StatelessWidget {
                               width: 8,
                               height: 8,
                               decoration: const BoxDecoration(
-                                color: Color(0xFFF97316),
+                                color: MohajonWarm.orange,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -512,47 +568,47 @@ class _ItemContent extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _relativeTime(notification.timestamp),
+                      _relativeTime(notification.timestamp, l10n),
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF98A2B3),
+                        color: MohajonWarm.muted,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   notification.description,
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF525252),
+                    fontSize: 13,
+                    color: MohajonWarm.muted,
                     height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     if (isUnread)
                       GestureDetector(
                         onTap: onMarkRead,
                         child: Text(
-                          'Mark read',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: colors.primary,
+                          l10n.t('markRead'),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: MohajonWarm.goldText,
                           ),
                         ),
                       ),
-                    if (isUnread) const SizedBox(width: 12),
+                    if (isUnread) const SizedBox(width: 14),
                     GestureDetector(
                       onTap: onDelete,
-                      child: const Text(
-                        'Delete',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF98A2B3),
+                      child: Text(
+                        l10n.t('delete'),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: MohajonWarm.red,
                         ),
                       ),
                     ),
@@ -581,29 +637,29 @@ class _IconCircle extends StatelessWidget {
     switch (type) {
       case NotificationType.sale:
       case NotificationType.summary:
-        bgColor = const Color(0xFFFFF1E6);
-        iconColor = const Color(0xFFF97316);
+        bgColor = MohajonWarm.tintOrange;
+        iconColor = MohajonWarm.orange;
         icon = Icons.shopping_cart_rounded;
       case NotificationType.stock:
-        bgColor = const Color(0xFFFFF3E0);
-        iconColor = Colors.orange;
+        bgColor = MohajonWarm.tintOrange;
+        iconColor = MohajonWarm.orange;
         icon = Icons.inventory_2_rounded;
       case NotificationType.expense:
-        bgColor = const Color(0xFFFFEBEE);
-        iconColor = Colors.red;
+        bgColor = MohajonWarm.tintRed;
+        iconColor = MohajonWarm.red;
         icon = Icons.receipt_rounded;
       case NotificationType.investment:
-        bgColor = const Color(0xFFE8F5E9);
-        iconColor = Colors.green;
+        bgColor = MohajonWarm.tintGreen;
+        iconColor = MohajonWarm.green;
         icon = Icons.trending_up_rounded;
       case NotificationType.platform:
       case NotificationType.system:
-        bgColor = const Color(0xFFF0ECE6);
-        iconColor = const Color(0xFF525252);
+        bgColor = MohajonWarm.goldBorder;
+        iconColor = MohajonWarm.muted;
         icon = Icons.campaign_rounded;
       case NotificationType.payment:
-        bgColor = const Color(0xFFE8F5E9);
-        iconColor = Colors.green;
+        bgColor = MohajonWarm.tintGreen;
+        iconColor = MohajonWarm.green;
         icon = Icons.payments_rounded;
     }
 
@@ -613,6 +669,7 @@ class _IconCircle extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white),
       ),
       child: Icon(icon, size: 18, color: iconColor),
     );
@@ -620,7 +677,9 @@ class _IconCircle extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.l10n});
+
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -630,26 +689,38 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.notifications_off_outlined,
-              size: 40,
-              color: Color(0xFFD4D4D4),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.notifications_off_outlined,
+                size: 36,
+                color: MohajonWarm.goldBorder,
+              ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'No notifications yet',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF525252),
+            const SizedBox(height: 18),
+            Text(
+              l10n.t('noNotificationsYet'),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: MohajonWarm.ink,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'We\u2019ll notify you when something important happens.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF98A2B3),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                l10n.t('noNotificationsHint'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: MohajonWarm.muted,
+                ),
               ),
             ),
           ],
@@ -659,15 +730,21 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-String _relativeTime(DateTime dt) {
+String _relativeTime(DateTime dt, AppLocalizations l10n) {
   final now = DateTime.now();
   final diff = now.difference(dt);
 
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  if (diff.inDays == 1) return 'Yesterday';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  if (diff.inMinutes < 1) return l10n.t('justNow');
+  if (diff.inMinutes < 60) {
+    return l10n.tP('minutesAgo', {'n': '${diff.inMinutes}'});
+  }
+  if (diff.inHours < 24) {
+    return l10n.tP('hoursAgo', {'n': '${diff.inHours}'});
+  }
+  if (diff.inDays == 1) return l10n.t('yesterday');
+  if (diff.inDays < 7) {
+    return l10n.tP('daysAgo', {'n': '${diff.inDays}'});
+  }
 
   return DateFormat('MMM d').format(dt);
 }

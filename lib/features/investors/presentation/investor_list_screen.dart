@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -36,6 +37,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
     final query = ref.watch(investorSearchQueryProvider);
     final overview = ref.watch(investorsOverviewProvider);
     final businessProfit = ref.watch(businessProfitProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
@@ -89,15 +91,15 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                               ),
                             ),
                             const Spacer(),
-                            _HeroPill(label: 'Net P&L'),
+                            _HeroPill(label: l10n.t('netPnL')),
                             const SizedBox(width: 8),
-                            _HeroPill(label: 'Outstanding'),
+                            _HeroPill(label: l10n.t('outstanding')),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Total Investors',
-                          style: TextStyle(
+                        Text(
+                          l10n.t('totalInvestors'),
+                          style: const TextStyle(
                             color: MohajonWarm.muted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -111,7 +113,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                     children: [
                       Expanded(
                         child: _SummaryBox(
-                          label: 'Total Invested',
+                          label: l10n.t('totalInvested'),
                           value: money(overview.totalInvestment),
                           color: MohajonWarm.goldText,
                           background: MohajonWarm.tintYellow,
@@ -121,7 +123,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _SummaryBox(
-                          label: 'Outstanding',
+                          label: l10n.t('outstanding'),
                           value: money(overview.totalOutstanding),
                           color: MohajonWarm.orange,
                           background: MohajonWarm.tintOrange,
@@ -135,13 +137,13 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                     icon: Icons.assessment_rounded,
                     iconColor: MohajonWarm.green,
                     iconBackground: MohajonWarm.tintGreen,
-                    title: 'Business Profit & Loss',
+                    title: l10n.t('businessProfitLoss'),
                     children: [
                       Row(
                         children: [
                           Expanded(
                             child: _ProfitMetric(
-                              label: 'Gross Profit',
+                              label: l10n.t('grossProfit'),
                               value: money(businessProfit.grossProfit),
                               color: MohajonWarm.green,
                               background: MohajonWarm.tintGreen,
@@ -151,7 +153,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _ProfitMetric(
-                              label: 'Gross Loss',
+                              label: l10n.t('grossLoss'),
                               value: money(businessProfit.grossLoss),
                               color: MohajonWarm.red,
                               background: MohajonWarm.tintRed,
@@ -165,7 +167,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                         children: [
                           Expanded(
                             child: _ProfitMetric(
-                              label: 'Expenses',
+                              label: l10n.t('expenses'),
                               value: money(businessProfit.totalExpense),
                               color: MohajonWarm.orange,
                               background: MohajonWarm.tintOrange,
@@ -175,7 +177,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _ProfitMetric(
-                              label: 'Net Profit / Loss',
+                              label: l10n.t('netProfitLoss'),
                               value: money(businessProfit.netProfit),
                               color: businessProfit.netProfit >= 0
                                   ? MohajonWarm.green
@@ -229,10 +231,10 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
-                                  'Profit / Loss Sharing Methods',
-                                  style: TextStyle(
+                                  l10n.t('profitLossMethods'),
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 14,
                                     letterSpacing: -0.2,
@@ -290,13 +292,13 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                             ),
                                           ),
                                           child:
-                                              const Column(
+                                              Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'Proportional',
-                                                style: TextStyle(
+                                                l10n.t('proportional'),
+                                                style: const TextStyle(
                                                   fontWeight:
                                                       FontWeight.w900,
                                                   color:
@@ -304,10 +306,10 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                                   fontSize: 13,
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
+                                              const SizedBox(height: 4),
                                               Text(
-                                                'Profit automatically calculated according to contribution.',
-                                                style: TextStyle(
+                                                l10n.t('proportionalDesc'),
+                                                style: const TextStyle(
                                                   color: Color(0xFF8A6500),
                                                   fontSize: 11,
                                                   fontWeight:
@@ -336,23 +338,23 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                             ),
                                           ),
                                           child:
-                                              const Column(
+                                              Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'Fixed Rate',
-                                                style: TextStyle(
+                                                l10n.t('fixedRate'),
+                                                style: const TextStyle(
                                                   fontWeight:
                                                       FontWeight.w900,
                                                   color: MohajonWarm.ink,
                                                   fontSize: 13,
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
+                                              const SizedBox(height: 4),
                                               Text(
-                                                'Manual percentage regardless of contribution.',
-                                                style: TextStyle(
+                                                l10n.t('fixedRateDesc'),
+                                                style: const TextStyle(
                                                   color: MohajonWarm.muted,
                                                   fontSize: 11,
                                                   fontWeight:
@@ -368,9 +370,9 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                const Text(
-                                  'How Paid Out Is Calculated',
-                                  style: TextStyle(
+                                Text(
+                                  l10n.t('howPaidOutCalculated'),
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 13,
                                     color: MohajonWarm.ink,
@@ -379,18 +381,18 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                 const SizedBox(height: 6),
                                 _StepRow(
                                   number: '1',
-                                  label: 'Total Due',
-                                  desc: 'Investment + Profit',
+                                  label: l10n.t('totalDue'),
+                                  desc: l10n.t('investmentPlusProfit'),
                                 ),
                                 _StepRow(
                                   number: '2',
-                                  label: 'Paid Out',
-                                  desc: 'Sum of payouts',
+                                  label: l10n.t('paidOut'),
+                                  desc: l10n.t('sumOfPayouts'),
                                 ),
                                 _StepRow(
                                   number: '3',
-                                  label: 'Outstanding',
-                                  desc: 'Total Due – Paid',
+                                  label: l10n.t('outstanding'),
+                                  desc: l10n.t('totalDueMinusPaid'),
                                   showDivider: false,
                                 ),
                               ],
@@ -408,7 +410,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                           .read(investorSearchQueryProvider.notifier)
                           .update(v),
                       decoration: InputDecoration(
-                        hintText: 'Search by name or phone...',
+                        hintText: l10n.t('searchByNamePhone'),
                         prefixIcon: const Icon(
                           Icons.search_rounded,
                           size: 20,
@@ -439,8 +441,8 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                   ],
                   const SizedBox(height: 16),
                   if (filtered.isEmpty)
-                    const EmptyState(
-                      message: 'No investors found. Add one to get started.',
+                    EmptyState(
+                      message: l10n.t('noInvestorsFound'),
                       icon: Icons.people_outline_rounded,
                     )
                   else
@@ -507,6 +509,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Material(
@@ -556,23 +559,23 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Investors',
+                l10n.t('investors'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: MohajonWarm.ink,
                 ),
               ),
               Text(
-                'Capital & payouts',
-                style: TextStyle(
+                l10n.t('capitalAndPayouts'),
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF77735F),

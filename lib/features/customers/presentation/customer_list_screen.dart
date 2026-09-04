@@ -20,6 +20,8 @@ import '../../pos/presentation/sales_history_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 
+final GlobalKey tourAddClientKey = GlobalKey();
+
 enum _ClientFilter { all, dues, vip, recent }
 enum _ClientSort { lastVisit, name, totalSpent, dues }
 
@@ -210,10 +212,13 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            FloatingActionButton(
-              heroTag: 'add',
-              onPressed: _openAddClient,
-              child: const Icon(Icons.add_rounded, size: 26),
+            KeyedSubtree(
+              key: tourAddClientKey,
+              child: FloatingActionButton(
+                heroTag: 'add',
+                onPressed: _openAddClient,
+                child: const Icon(Icons.add_rounded, size: 26),
+              ),
             ),
           ],
         ),

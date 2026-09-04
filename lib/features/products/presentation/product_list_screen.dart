@@ -21,6 +21,8 @@ import '../../staff/models/menu_codes.dart';
 import '../../staff/providers/staff_providers.dart';
 import '../../../core/app/app_providers.dart';
 
+final GlobalKey tourAddProductKey = GlobalKey();
+
 enum _StockFilter { all, low, out }
 
 class ProductListScreen extends ConsumerStatefulWidget {
@@ -168,12 +170,15 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             ),
             const SizedBox(height: 8),
             if (canAddProduct)
-              FloatingActionButton(
-                heroTag: 'add',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+              KeyedSubtree(
+                key: tourAddProductKey,
+                child: FloatingActionButton(
+                  heroTag: 'add',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+                  ),
+                  child: const Icon(Icons.add_rounded, size: 26),
                 ),
-                child: const Icon(Icons.add_rounded, size: 26),
               ),
           ],
         ),

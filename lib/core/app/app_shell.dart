@@ -13,7 +13,20 @@ import '../localization/app_localizations.dart';
 import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
 import '../widgets/nav_bar/nav_destination.dart';
 import 'feature_hub_screen.dart';
+import 'app_lock_controller.dart';
+import 'app_lock_screen.dart';
 import 'app_providers.dart';
+import 'tour_models.dart';
+import 'tour_overlay.dart';
+
+// Tour keys for More/FeatureHubScreen items
+final tourMoreVendorsKey = GlobalKey();
+final tourMoreExpensesKey = GlobalKey();
+final tourMoreInvestorsKey = GlobalKey();
+final tourMoreStaffKey = GlobalKey();
+final tourMoreReportsKey = GlobalKey();
+final tourMoreInvestmentsKey = GlobalKey();
+final tourMoreSettingsKey = GlobalKey();
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -22,20 +35,298 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
   late int _index;
+  bool _tourChecked = false;
+
+  // Tour state
+  bool _tourActive = false;
+  int _tourStepIndex = 0;
+  OverlayEntry? _tourOverlay;
+  List<TourStep> _tourSteps = [];
+
+  // Nav item keys for the bottom bar
+  final List<GlobalKey> _navKeys = List.generate(5, (_) => GlobalKey());
+
+  // Scroll controller for More/FeatureHubScreen during tour
+  final ScrollController _moreScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final box = Hive.box(HiveBoxes.settings);
     _index = box.get('selectedTab', defaultValue: 0) as int;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_tourChecked && mounted) {
+        _tourChecked = true;
+        final hasSeenTour = box.get('hasSeenTour', defaultValue: false) as bool;
+        if (!hasSeenTour && !_lockRequired()) {
+          _startTour();
+        }
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      if (_lockRequired()) {
+        ref.read(appLockProvider.notifier).lock();
+      }
+    }
+  }
+
+  bool _lockRequired() {
+    final lock = ref.read(appLockProvider);
+    return lock.enabled && !lock.unlocked;
   }
 
   void _onTabSelected(int index) {
     setState(() => _index = index);
     final box = Hive.box(HiveBoxes.settings);
     box.put('selectedTab', index);
+  }
+
+  void _startTour() {
+    final l10n = AppLocalizations.of(context);
+    _tourSteps = [
+      TourStep(
+        targetKey: _navKeys[0],
+        title: l10n.t('tourStepHome'),
+        description: l10n.t('tourStepHomeDesc'),
+        tabIndex: 0,
+      ),
+      TourStep(
+        targetKey: tourDashboardStatsKey,
+        title: l10n.t('tourStepStats'),
+        description: l10n.t('tourStepStatsDesc'),
+        tabIndex: 0,
+      ),
+      TourStep(
+        targetKey: _navKeys[1],
+        title: l10n.t('tourStepSales'),
+        description: l10n.t('tourStepSalesDesc'),
+        tabIndex: 1,
+      ),
+      TourStep(
+        targetKey: tourProductGridKey,
+        title: l10n.t('tourStepProductGrid'),
+        description: l10n.t('tourStepProductGridDesc'),
+        tabIndex: 1,
+      ),
+      TourStep(
+        targetKey: _navKeys[2],
+        title: l10n.t('tourStepStock'),
+        description: l10n.t('tourStepStockDesc'),
+        tabIndex: 2,
+      ),
+      TourStep(
+        targetKey: tourAddProductKey,
+        title: l10n.t('tourStepAddProduct'),
+        description: l10n.t('tourStepAddProductDesc'),
+        tabIndex: 2,
+      ),
+      TourStep(
+        targetKey: _navKeys[3],
+        title: l10n.t('tourStepClients'),
+        description: l10n.t('tourStepClientsDesc'),
+        tabIndex: 3,
+      ),
+      TourStep(
+        targetKey: tourAddClientKey,
+        title: l10n.t('tourStepAddClient'),
+        description: l10n.t('tourStepAddClientDesc'),
+        tabIndex: 3,
+      ),
+      TourStep(
+        targetKey: _navKeys[4],
+        title: l10n.t('tourStepMore'),
+        description: l10n.t('tourStepMoreDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreVendorsKey,
+        title: l10n.t('tourMoreVendors'),
+        description: l10n.t('tourMoreVendorsDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreExpensesKey,
+        title: l10n.t('tourMoreExpenses'),
+        description: l10n.t('tourMoreExpensesDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreInvestorsKey,
+        title: l10n.t('tourMoreInvestors'),
+        description: l10n.t('tourMoreInvestorsDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreStaffKey,
+        title: l10n.t('tourMoreStaff'),
+        description: l10n.t('tourMoreStaffDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreReportsKey,
+        title: l10n.t('tourMoreReports'),
+        description: l10n.t('tourMoreReportsDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreInvestmentsKey,
+        title: l10n.t('tourMoreInvestments'),
+        description: l10n.t('tourMoreInvestmentsDesc'),
+        tabIndex: 4,
+      ),
+      TourStep(
+        targetKey: tourMoreSettingsKey,
+        title: l10n.t('tourMoreSettings'),
+        description: l10n.t('tourMoreSettingsDesc'),
+        tabIndex: 4,
+      ),
+    ];
+    _tourStepIndex = 0;
+    _tourActive = true;
+    _showTourOverlay();
+  }
+
+  void _showTourOverlay() {
+    _tourOverlay?.remove();
+    _tourOverlay = OverlayEntry(
+      builder: (_) => TourOverlay(
+        steps: _tourSteps,
+        currentIndex: _tourStepIndex,
+        onNext: _tourNext,
+        onSkip: _tourSkipAll,
+        onFinish: _tourFinish,
+      ),
+    );
+    Overlay.of(context).insert(_tourOverlay!);
+  }
+
+  void _tourNext() {
+    _tourStepIndex++;
+    if (_tourStepIndex >= _tourSteps.length) {
+      _tourFinish();
+      return;
+    }
+    final nextStep = _tourSteps[_tourStepIndex];
+    void showAfterScroll() {
+      _scrollTourTargetIntoView(nextStep).then((_) {
+        if (mounted && _tourActive) _showTourOverlay();
+      });
+    }
+
+    if (nextStep.tabIndex != _index) {
+      setState(() => _index = nextStep.tabIndex);
+      final box = Hive.box(HiveBoxes.settings);
+      box.put('selectedTab', _index);
+      // Wait for the new screen to render, then update overlay
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && _tourActive) showAfterScroll();
+        });
+      });
+    } else {
+      showAfterScroll();
+    }
+  }
+
+  RenderBox? _findTourTargetBox(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return null;
+    final obj = ctx.findRenderObject();
+    return (obj is RenderBox && obj.attached) ? obj : null;
+  }
+
+  Future<void> _scrollTourTargetIntoView(TourStep step) async {
+    if (!_moreScrollController.hasClients || step.tabIndex != 4) return;
+
+    // The nav button itself is not inside the More list — never scroll for it.
+    if (identical(step.targetKey, _navKeys[4])) return;
+
+    final desiredScreenY = MediaQuery.of(context).size.height * 0.30;
+
+    // Ensure the target widget is built before measuring (ListView builds lazily).
+    RenderBox? box;
+    for (var i = 0; i < 8; i++) {
+      box = _findTourTargetBox(step.targetKey);
+      if (box != null) break;
+      // Not built yet; scroll toward an estimated region and retry.
+      final extent = _moreScrollController.position.maxScrollExtent;
+      final next = _estimatedMoreOffset(step, extent);
+      if (next == null) break;
+      if ((_moreScrollController.offset - next).abs() < 1) {
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      } else {
+        await _moreScrollController.animateTo(
+          next,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    }
+
+    if (box == null) return;
+
+    // Precisely position the target near the top so its tooltip stays visible.
+    final targetScreenY = box.localToGlobal(Offset.zero).dy;
+    if (targetScreenY > desiredScreenY) {
+      final delta = targetScreenY - desiredScreenY;
+      final newOffset = (_moreScrollController.offset + delta).clamp(
+        0.0,
+        _moreScrollController.position.maxScrollExtent,
+      );
+      await _moreScrollController.animateTo(
+        newOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  double? _estimatedMoreOffset(TourStep step, double extent) {
+    final keys = [
+      tourMoreVendorsKey,
+      tourMoreExpensesKey,
+      tourMoreInvestorsKey,
+      tourMoreStaffKey,
+      tourMoreReportsKey,
+      tourMoreInvestmentsKey,
+      tourMoreSettingsKey,
+    ];
+    final index = keys.indexWhere((k) => identical(k, step.targetKey));
+    if (index < 0) return null;
+    // Spread items roughly evenly so early items need little scroll.
+    return extent * (index / (keys.length - 1));
+  }
+
+  void _tourSkipAll() {
+    _tourActive = false;
+    _tourOverlay?.remove();
+    _tourOverlay = null;
+    Hive.box(HiveBoxes.settings).put('hasSeenTour', true);
+  }
+
+  void _tourFinish() {
+    _tourActive = false;
+    _tourOverlay?.remove();
+    _tourOverlay = null;
+    Hive.box(HiveBoxes.settings).put('hasSeenTour', true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _tourOverlay?.remove();
+    _moreScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -51,7 +342,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         ) ??
         false;
     final tabs = _buildTabs(l10n, grantedMenus, isOwner);
-    if (tabs.isEmpty) {
+if (tabs.isEmpty) {
       return Scaffold(
         body: SafeArea(
           child: Center(
@@ -72,7 +363,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       _index = screens.length - 1;
     }
 
-    return ColoredBox(
+    final lock = ref.watch(appLockProvider);
+    final shell = ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Scaffold(
         extendBody: !wide,
@@ -107,9 +399,20 @@ class _AppShellState extends ConsumerState<AppShell> {
                 selectedIndex: _index,
                 destinations: destinations,
                 onSelected: _onTabSelected,
+                itemKeys: _navKeys,
               ),
       ),
     );
+    if (lock.enabled && !lock.unlocked) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          shell,
+          Positioned.fill(child: _LockScreen(l10n: l10n)),
+        ],
+      );
+    }
+    return shell;
   }
 
   List<_Tab> _buildTabs(
@@ -159,7 +462,16 @@ class _AppShellState extends ConsumerState<AppShell> {
               icon: Icons.more_horiz_rounded,
               label: l10n.t('more'),
             ),
-            screen: const FeatureHubScreen(),
+            screen: FeatureHubScreen(
+              tourVendorsKey: tourMoreVendorsKey,
+              tourExpensesKey: tourMoreExpensesKey,
+              tourInvestorsKey: tourMoreInvestorsKey,
+              tourStaffKey: tourMoreStaffKey,
+              tourReportsKey: tourMoreReportsKey,
+              tourInvestmentsKey: tourMoreInvestmentsKey,
+              tourSettingsKey: tourMoreSettingsKey,
+              scrollController: _moreScrollController,
+            ),
             menu: null,
           ),
         ]
@@ -363,6 +675,29 @@ class _SideNavItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LockScreen extends ConsumerWidget {
+  const _LockScreen({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppLockScreen(
+      title: l10n.t('enterPinTitle'),
+      subtitle: l10n.t('unlockAppSubtitle'),
+      autoPopOnSuccess: false,
+      onSubmit: (pin) async {
+        final notifier = ref.read(appLockProvider.notifier);
+        if (notifier.verify(pin)) {
+          notifier.unlock();
+          return true;
+        }
+        return false;
+      },
     );
   }
 }

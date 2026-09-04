@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_error.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
@@ -25,6 +26,8 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
   final _searchController = TextEditingController();
   bool _showSearch = false;
 
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+
   void _showToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -41,7 +44,9 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     );
     if (saved == true && mounted) {
       _showToast(
-        staff == null ? 'Staff member added' : '${staff.name} updated',
+        staff == null
+            ? _l10n.t('staffAdded')
+            : _l10n.tP('staffUpdated', {'name': staff.name}),
       );
     }
   }
@@ -55,14 +60,14 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       if (!mounted) return;
       _showToast(
         active
-            ? '${staff.name} activated'
-            : '${staff.name} deactivated — they can no longer sign in',
+            ? _l10n.tP('staffActivated', {'name': staff.name})
+            : _l10n.tP('staffDeactivated', {'name': staff.name}),
       );
     } catch (error) {
       if (!mounted) return;
       _showToast(
         friendlyErrorMessage(error,
-            fallback: 'Could not update status. Please try again.'),
+            fallback: _l10n.t('couldNotUpdateStatus')),
         isError: true,
       );
     }
@@ -81,7 +86,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       await api.deleteStaff(staff.id);
       ref.invalidate(staffListProvider);
       if (!mounted) return;
-      _showToast('${staff.name} removed');
+      _showToast(_l10n.tP('staffDeleted', {'name': staff.name}));
     } catch (error) {
       if (!mounted) return;
       _showToast(
@@ -105,6 +110,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
             s.phone.contains(query)).toList();
     final activeCount = staff.where((s) => s.active).length;
     final inactiveCount = staff.length - activeCount;
+    final l10n = AppLocalizations.of(context);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
@@ -144,7 +150,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                         controller: _searchController,
                         onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
-                          hintText: 'Search staff...',
+                          hintText: l10n.t('searchStaff'),
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             size: 20,
@@ -175,8 +181,16 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
                     child: Text(
-                      '${filtered.length} of ${staff.length} staff \u2014 $activeCount active'
-                      '${inactiveCount > 0 ? ", $inactiveCount inactive" : ""}',
+                      l10n.tP('staffSummary', {
+                        'count': '${filtered.length}',
+                        'total': '${staff.length}',
+                        'active': '$activeCount',
+                      }) +
+                          (inactiveCount > 0
+                              ? l10n.tP('staffSummaryInactive', {
+                                  'inactive': '$inactiveCount'
+                                })
+                              : ''),
                       style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
@@ -272,10 +286,10 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               color: MohajonWarm.goldBorder,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Could not load staff.\nPlease check your connection.',
+            Text(
+              _l10n.t('couldNotLoadStaff'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: MohajonWarm.ink,
@@ -291,7 +305,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Retry'),
+              child: Text(_l10n.t('retry')),
             ),
           ],
         ),
@@ -312,9 +326,9 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               color: MohajonWarm.goldBorder,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No staff match your search',
-              style: TextStyle(
+            Text(
+              _l10n.t('noStaffMatch'),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: MohajonWarm.ink,
@@ -348,19 +362,19 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No staff members yet',
-              style: TextStyle(
+            Text(
+              _l10n.t('noStaffMembersYet'),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
                 color: MohajonWarm.ink,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Add your team members and choose\nwhich menus they can access',
+            Text(
+              _l10n.t('noStaffHint'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: MohajonWarm.muted,
                 height: 1.4,
@@ -380,6 +394,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Material(
@@ -429,23 +444,23 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Shop Staff',
+                l10n.t('shopStaff'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: MohajonWarm.ink,
                 ),
               ),
               Text(
-                'Team & permissions',
-                style: TextStyle(
+                l10n.t('teamAndPermissions'),
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF77735F),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../constants/app_constants.dart';
 import 'app_providers.dart';
 import 'app_shell.dart';
+import 'quick_tour_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -26,12 +29,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       if (mounted) {
         final session = ref.read(authStateProvider).value;
         final shopId = ref.read(shopIdProvider);
+        final Widget next;
+        if (session != null) {
+          next = AppShell(key: ValueKey(shopId));
+        } else {
+          final hasSeenOnboarding =
+              Hive.box(HiveBoxes.settings).get('hasSeenOnboarding', defaultValue: false) as bool;
+          next = hasSeenOnboarding ? const LoginScreen() : const QuickTourScreen();
+        }
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => session == null
-                ? const LoginScreen()
-                : AppShell(key: ValueKey(shopId)),
-          ),
+          MaterialPageRoute(builder: (_) => next),
         );
       }
     });

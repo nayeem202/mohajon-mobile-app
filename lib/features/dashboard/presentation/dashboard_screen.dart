@@ -25,6 +25,8 @@ import 'models/weekly_sales.dart';
 import 'widgets/home_shortcut_section.dart';
 import 'widgets/sales_chart_card.dart';
 
+final GlobalKey tourDashboardStatsKey = GlobalKey();
+
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -99,7 +101,10 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 20),
                     const HomeShortcutSection(),
                     const SizedBox(height: 20),
-                    _OverviewStats(summary: summary),
+                    KeyedSubtree(
+                      key: tourDashboardStatsKey,
+                      child: _OverviewStats(summary: summary),
+                    ),
                     const SizedBox(height: 20),
                     SalesChartCard(
                       data: summary.dayWiseSales
@@ -826,46 +831,47 @@ class _LowStockAlert extends StatelessWidget {
                     ),
                   ),
                 ),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '${products.length} ${l10n.t('items')}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF2F3028),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${products.length} ${l10n.t('items')}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF2F3028),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            LowStockProductsScreen(products: products),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              LowStockProductsScreen(products: products),
+                        ),
                       ),
-                    ),
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
                               l10n.t('viewAll'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -875,17 +881,17 @@ class _LowStockAlert extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 2),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Color(0xFF2F3028),
-                            size: 16,
-                          ),
-                        ],
+                            const SizedBox(width: 2),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFF2F3028),
+                              size: 16,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

@@ -13,6 +13,7 @@ import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/utils/money.dart';
 import '../../products/providers/product_providers.dart';
@@ -73,6 +74,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cart = ref.watch(cartProvider);
     final controller = ref.read(cartProvider.notifier);
     final allProducts = ref.watch(productsProvider).value ?? const <Product>[];
@@ -190,25 +192,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Checkout',
+                                  l10n.t('checkout'),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                     color: _kInk,
                                   ),
                                 ),
                                 Text(
-                                  'Review items & payment',
+                                  l10n.t('reviewItemsPayment'),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                     color: _kMuted,
@@ -252,9 +254,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const _SectionHeader(
+                            _SectionHeader(
                               icon: Icons.person_outline_rounded,
-                              title: 'Customer',
+                              title: l10n.t('customer'),
                               iconColor: MohajonWarm.goldText,
                               iconBackground: MohajonWarm.tintYellow,
                             ),
@@ -267,22 +269,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 border: Border.all(color: _kBorder),
                               ),
                               child: SegmentedButton<_CustomerMode>(
-                                segments: const [
+                                segments: [
                                   ButtonSegment(
                                     value: _CustomerMode.walkIn,
-                                    icon: Icon(
+                                    icon: const Icon(
                                       Icons.directions_walk_rounded,
                                       size: 17,
                                     ),
-                                    label: Text('Walk-in'),
+                                    label: Text(l10n.t('walkIn')),
                                   ),
                                   ButtonSegment(
                                     value: _CustomerMode.existing,
-                                    icon: Icon(
+                                    icon: const Icon(
                                       Icons.person_outline_rounded,
                                       size: 17,
                                     ),
-                                    label: Text('Existing Client'),
+                                    label: Text(l10n.t('existingClient')),
                                   ),
                                 ],
                                 selected: {_customerMode},
@@ -317,10 +319,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             ),
                             const SizedBox(height: 12),
                             if (_customerMode == _CustomerMode.walkIn)
-                              const _InfoBanner(
+                              _InfoBanner(
                                 icon: Icons.verified_user_outlined,
-                                message:
-                                    'Anonymous walk-in sale - no customer info needed',
+                                message: l10n.t('walkInSaleNote'),
                               )
                             else if (selectedCustomer != null)
                               _SelectedCustomerCard(
@@ -336,9 +337,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 controller: _customerSearchController,
                                 onChanged: (value) =>
                                     setState(() => _customerQuery = value),
-                                decoration: const InputDecoration(
-                                  hintText: 'Search client by name or phone...',
-                                  prefixIcon: Icon(
+                                decoration: InputDecoration(
+                                  hintText: l10n.t('searchClientHint'),
+                                  prefixIcon: const Icon(
                                     Icons.search_rounded,
                                     size: 20,
                                     color: MohajonWarm.muted,
@@ -386,8 +387,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           children: [
                                             Text(
                                               widget.customers.isEmpty
-                                                  ? 'No clients yet'
-                                                  : 'No client matches your search',
+                                                  ? l10n.t('noClientsYet')
+                                                  : l10n.t('noClientMatch'),
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w900,
                                                 color: _kInk,
@@ -397,8 +398,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             const SizedBox(height: 3),
                                             Text(
                                               widget.customers.isEmpty
-                                                  ? 'Add your regular clients from the Clients tab to attach dues and credit sales here.'
-                                                  : 'Try a different name or phone number.',
+                                                  ? l10n.t('noClientsYetHint')
+                                                  : l10n.t('tryDifferentName'),
                                               style: const TextStyle(
                                                 color: _kMuted,
                                                 fontSize: 11.5,
@@ -508,9 +509,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ),
                             ],
                             const SizedBox(height: 20),
-                            const _SectionHeader(
+                            _SectionHeader(
                               icon: Icons.shopping_bag_outlined,
-                              title: 'Items',
+                              title: l10n.t('items'),
                               iconColor: MohajonWarm.green,
                               iconBackground: MohajonWarm.tintGreen,
                             ),
@@ -577,9 +578,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                               ),
                             const SizedBox(height: 20),
-                            const _SectionHeader(
+                            _SectionHeader(
                               icon: Icons.percent_rounded,
-                              title: 'VAT',
+                              title: l10n.t('vat'),
                               iconColor: MohajonWarm.orange,
                               iconBackground: MohajonWarm.tintOrange,
                             ),
@@ -668,7 +669,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                   RegExp(r'[0-9.]'),
                                                 ),
                                               ],
-                                              decoration: const InputDecoration(
+                                              decoration: InputDecoration(
                                                 filled: false,
                                                 isDense: true,
                                                 contentPadding:
@@ -678,15 +679,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                     InputBorder.none,
                                                 focusedBorder:
                                                     InputBorder.none,
-                                                hintText: 'Custom',
-                                                hintStyle: TextStyle(
+                                                hintText: l10n.t('custom'),
+                                                hintStyle: const TextStyle(
                                                   color: MohajonWarm.muted,
                                                   fontWeight:
                                                       FontWeight.w800,
                                                   fontSize: 11,
                                                 ),
                                                 suffixText: '%',
-                                                suffixStyle: TextStyle(
+                                                suffixStyle: const TextStyle(
                                                   color:
                                                       MohajonWarm.goldText,
                                                   fontWeight:
@@ -735,7 +736,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          'VAT Amount (${_vatPercent.toStringAsFixed(_vatPercent % 1 == 0 ? 0 : 1)}%)',
+                                          l10n.tP('vatAmount', {
+                                            'pct':
+                                                _vatPercent.toStringAsFixed(_vatPercent % 1 == 0 ? 0 : 1),
+                                          }),
                                           style: const TextStyle(
                                             color: _kMuted,
                                             fontWeight: FontWeight.w700,
@@ -755,9 +759,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            const _SectionHeader(
+                            _SectionHeader(
                               icon: Icons.local_offer_outlined,
-                              title: 'Discount',
+                              title: l10n.t('discount'),
                               iconColor: MohajonWarm.red,
                               iconBackground: MohajonWarm.tintRed,
                             ),
@@ -766,14 +770,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               child: Column(
                                 children: [
                                   SegmentedButton<_DiscountMode>(
-                                    segments: const [
+                                    segments: [
                                       ButtonSegment(
                                         value: _DiscountMode.flat,
-                                        label: Text('Flat (৳)'),
+                                        label: Text(l10n.t('discountFlat')),
                                       ),
                                       ButtonSegment(
                                         value: _DiscountMode.percent,
-                                        label: Text('Percent (%)'),
+                                        label: Text(l10n.t('discountPercent')),
                                       ),
                                     ],
                                     selected: {_discountMode},
@@ -850,9 +854,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            const _SectionHeader(
+                            _SectionHeader(
                               icon: Icons.payments_outlined,
-                              title: 'Payment Method',
+                              title: l10n.t('paymentMethod'),
                               iconColor: MohajonWarm.goldText,
                               iconBackground: MohajonWarm.tintYellow,
                             ),
@@ -866,9 +870,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               },
                             ),
                             const SizedBox(height: 20),
-                            const _SectionHeader(
+                            _SectionHeader(
                               icon: Icons.receipt_long_outlined,
-                              title: 'Summary',
+                              title: l10n.t('summary'),
                               iconColor: MohajonWarm.green,
                               iconBackground: MohajonWarm.tintGreen,
                             ),
@@ -877,15 +881,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               child: Column(
                                 children: [
                                   _TotalLine(
-                                    label: 'Subtotal',
+                                    label: l10n.t('subtotal'),
                                     value: money(cart.subtotal),
                                   ),
                                   _TotalLine(
-                                    label: 'VAT',
+                                    label: l10n.t('vat'),
                                     value: money(vatAmount),
                                   ),
                                   _TotalLine(
-                                    label: 'Discount',
+                                    label: l10n.t('discount'),
                                     value: '- ${money(discountAmount)}',
                                   ),
                                   const SizedBox(height: 10),
@@ -950,13 +954,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           ),
                                           child: Row(
                                             children: [
-                                              const Expanded(
+                                              Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      'TOTAL',
+                                                      l10n.t('total').toUpperCase(),
                                                       style: TextStyle(
                                                         color: Color(
                                                           0xFF6B5210,
@@ -969,7 +973,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                     ),
                                                     SizedBox(height: 2),
                                                     Text(
-                                                      'Amount to pay',
+                                                      l10n.t('amountToPay'),
                                                       style: TextStyle(
                                                         color: Color(
                                                           0xFF8A6500,
@@ -1180,8 +1184,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     const SizedBox(width: 9),
                                     Text(
                                       _isCheckingOut
-                                          ? 'Processing...'
-                                          : 'Checkout',
+                                          ? l10n.t('processingDots')
+                                          : l10n.t('checkout'),
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w900,
@@ -1358,6 +1362,7 @@ class _SelectedCustomerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1423,9 +1428,9 @@ class _SelectedCustomerCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              'Change',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            child: Text(
+              l10n.t('change'),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -1734,6 +1739,40 @@ const _paymentOptions = <PaymentMethod, _PaymentOption>{
   ),
 };
 
+String _paymentLabel(PaymentMethod m, AppLocalizations l10n) {
+  switch (m) {
+    case PaymentMethod.cash:
+      return l10n.t('cash');
+    case PaymentMethod.bkash:
+      return l10n.t('bkash');
+    case PaymentMethod.nagad:
+      return l10n.t('nagad');
+    case PaymentMethod.credit:
+      return l10n.t('credit');
+    case PaymentMethod.bank:
+      return l10n.t('bank');
+    case PaymentMethod.other:
+      return l10n.t('other');
+  }
+}
+
+String _paymentSubtitle(PaymentMethod m, AppLocalizations l10n) {
+  switch (m) {
+    case PaymentMethod.cash:
+      return l10n.t('payCashSub');
+    case PaymentMethod.bkash:
+      return l10n.t('payBKashSub');
+    case PaymentMethod.nagad:
+      return l10n.t('payNagadSub');
+    case PaymentMethod.credit:
+      return l10n.t('payCreditSub');
+    case PaymentMethod.bank:
+      return l10n.t('payBankSub');
+    case PaymentMethod.other:
+      return l10n.t('payOtherSub');
+  }
+}
+
 class _PaymentMethodDropdown extends StatelessWidget {
   const _PaymentMethodDropdown({
     required this.selected,
@@ -1763,6 +1802,7 @@ class _PaymentMethodDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final option = _paymentOptions[selected]!;
     final locked = !creditEnabled && selected == PaymentMethod.credit;
     final color = locked ? const Color(0xFFB9AE93) : option.color;
@@ -1802,7 +1842,7 @@ class _PaymentMethodDropdown extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      option.label,
+                      _paymentLabel(selected, l10n),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -1812,8 +1852,8 @@ class _PaymentMethodDropdown extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       locked
-                          ? 'Select a customer to use credit'
-                          : option.subtitle,
+                          ? l10n.t('creditLockedHint')
+                          : _paymentSubtitle(selected, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1871,6 +1911,7 @@ class _PaymentMethodSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -1895,23 +1936,23 @@ class _PaymentMethodSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
               child: Column(
                 children: [
                   Text(
-                    'Select Payment Method',
-                    style: TextStyle(
+                    l10n.t('choosePaymentMethod'),
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: _kInk,
                       letterSpacing: -0.4,
                     ),
                   ),
-                  SizedBox(height: 3),
+                  const SizedBox(height: 3),
                   Text(
-                    'Choose how the customer will pay',
-                    style: TextStyle(
+                    l10n.t('chooseHowCustomerWillPay'),
+                    style: const TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: _kMuted,
@@ -1953,9 +1994,9 @@ class _PaymentMethodSheet extends StatelessWidget {
                     minimumSize: const Size(0, 48),
                   ),
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                  child: Text(
+                    l10n.t('cancel'),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -1982,6 +2023,7 @@ class _PaymentOptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final option = _paymentOptions[method]!;
     final color = enabled ? option.color : const Color(0xFFB9AE93);
     return AnimatedContainer(
@@ -2028,7 +2070,7 @@ class _PaymentOptionRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        option.label,
+                        _paymentLabel(method, l10n),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -2038,8 +2080,8 @@ class _PaymentOptionRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         enabled
-                            ? option.subtitle
-                            : 'Select a customer to use credit',
+                            ? _paymentSubtitle(method, l10n)
+                            : l10n.t('creditLockedHint'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

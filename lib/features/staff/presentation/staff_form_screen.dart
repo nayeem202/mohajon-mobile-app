@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/app_error.dart';
 import '../../../core/widgets/action_button.dart';
@@ -43,6 +44,8 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
   bool _saving = false;
 
   bool get _isEditing => widget.staff != null;
+
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -107,9 +110,9 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Staff Photo',
-                style: TextStyle(
+              Text(
+                _l10n.t('staffPhoto'),
+                style: const TextStyle(
                   color: MohajonWarm.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
@@ -121,9 +124,9 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                   Icons.camera_alt_outlined,
                   color: MohajonWarm.goldText,
                 ),
-                title: const Text(
-                  'Take a photo',
-                  style: TextStyle(
+                title: Text(
+                  _l10n.t('takeAPhoto'),
+                  style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w700,
                   ),
@@ -138,9 +141,9 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                   Icons.photo_library_outlined,
                   color: MohajonWarm.goldText,
                 ),
-                title: const Text(
-                  'Choose from gallery',
-                  style: TextStyle(
+                title: Text(
+                  _l10n.t('chooseFromGallery'),
+                  style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w700,
                   ),
@@ -169,18 +172,18 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
         setState(() => _imagePath = picked.path);
       }
     } catch (_) {
-      if (mounted) _showToast('Could not pick image', isError: true);
+      if (mounted) _showToast(_l10n.t('couldNotPickImage'), isError: true);
     }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedRole.isEmpty) {
-      _showToast('Please select a role', isError: true);
+      _showToast(_l10n.t('pleaseSelectRole'), isError: true);
       return;
     }
     if (_selectedMenus.isEmpty) {
-      _showToast('Select at least one menu access', isError: true);
+      _showToast(_l10n.t('selectAtLeastMenu'), isError: true);
       return;
     }
     setState(() => _saving = true);
@@ -221,7 +224,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
         error is StaffApiException
             ? error.message
             : friendlyErrorMessage(error,
-                fallback: 'Could not save staff member. Please try again.'),
+                fallback: _l10n.t('couldNotSaveStaff')),
         isError: true,
       );
     }
@@ -229,6 +232,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rolesAsync = ref.watch(staffRolesProvider);
     final menusAsync = ref.watch(staffMenusProvider);
 
@@ -310,9 +314,9 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                     children: [
                                       _FormHeader(
                                         title: _isEditing
-                                            ? 'Edit Staff Member'
-                                            : 'Add Staff Member',
-                                        subtitle: 'Team & permissions',
+                                            ? l10n.t('editStaffMember')
+                                            : l10n.t('addStaffMember'),
+                                        subtitle: l10n.t('teamAndPermissions'),
                                         onBack: () =>
                                             Navigator.of(context).maybePop(),
                                       ),
@@ -328,10 +332,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                         icon: Icons.badge_outlined,
                                         iconColor: MohajonWarm.goldText,
                                         iconBackground: MohajonWarm.tintYellow,
-                                        title: 'Staff Details',
+                                        title: l10n.t('staffDetails'),
                                         children: [
-                                          const _FieldLabel(
-                                            label: 'Full Name',
+                                          _FieldLabel(
+                                            label: l10n.t('fullName'),
                                             required: true,
                                           ),
                                           const SizedBox(height: 8),
@@ -350,12 +354,12 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                             ),
                                             validator: (v) =>
                                                 v?.trim().isEmpty == true
-                                                    ? 'Name is required'
+                                                    ? l10n.t('nameIsRequired')
                                                     : null,
                                           ),
                                           const SizedBox(height: 14),
-                                          const _FieldLabel(
-                                              label: 'Phone Number'),
+                                          _FieldLabel(
+                                              label: l10n.t('phoneNumber')),
                                           const SizedBox(height: 8),
                                           TextFormField(
                                             controller: _phoneCtrl,
@@ -382,10 +386,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                         icon: Icons.lock_outline_rounded,
                                         iconColor: MohajonWarm.green,
                                         iconBackground: MohajonWarm.tintGreen,
-                                        title: 'Sign In Credentials',
+                                        title: l10n.t('signInCredentials'),
                                         children: [
-                                          const _FieldLabel(
-                                            label: 'Email',
+                                          _FieldLabel(
+                                            label: l10n.t('email'),
                                             required: true,
                                           ),
                                           const SizedBox(height: 8),
@@ -408,14 +412,16 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                               final trimmed = v?.trim() ?? '';
                                               if (!_isEditing &&
                                                   trimmed.isEmpty) {
-                                                return 'Email is required — staff signs in with it';
+                                                return l10n.t(
+                                                    'emailIsRequiredSignIn');
                                               }
                                               if (trimmed.isNotEmpty) {
                                                 final emailRegex = RegExp(
                                                     r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
                                                 if (!emailRegex
                                                     .hasMatch(trimmed)) {
-                                                  return 'Enter a valid email address';
+                                                  return l10n.t(
+                                                      'validEmailAddress');
                                                 }
                                               }
                                               return null;
@@ -423,8 +429,8 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                           ),
                                           if (!_isEditing) ...[
                                             const SizedBox(height: 14),
-                                            const _FieldLabel(
-                                              label: 'Password',
+                                            _FieldLabel(
+                                              label: l10n.t('password'),
                                               required: true,
                                             ),
                                             const SizedBox(height: 8),
@@ -432,21 +438,23 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                               controller: _passwordCtrl,
                                               obscureText: true,
                                               decoration:
-                                                  const InputDecoration(
+                                                  InputDecoration(
                                                 prefixIcon: Icon(
                                                   Icons.password_rounded,
                                                   size: 20,
                                                   color: MohajonWarm.muted,
                                                 ),
                                                 hintText:
-                                                    'Minimum 6 characters',
+                                                    l10n.t('minPassword'),
                                               ),
                                               validator: (v) {
                                                 if (v?.trim().isEmpty == true) {
-                                                  return 'Password is required';
+                                                  return l10n.t(
+                                                      'passwordIsRequired');
                                                 }
                                                 if ((v?.length ?? 0) < 6) {
-                                                  return 'Password must be at least 6 characters';
+                                                  return l10n.t(
+                                                      'passwordTooShort');
                                                 }
                                                 return null;
                                               },
@@ -454,9 +462,9 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                           ],
                                           if (_isEditing) ...[
                                             const SizedBox(height: 12),
-                                            const Text(
-                                              'Email and password stay unchanged while editing.',
-                                              style: TextStyle(
+                                            Text(
+                                              l10n.t('emailPasswordUnchanged'),
+                                              style: const TextStyle(
                                                 color: MohajonWarm.muted,
                                                 fontSize: 11.5,
                                                 fontWeight: FontWeight.w600,
@@ -471,7 +479,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                             Icons.admin_panel_settings_rounded,
                                         iconColor: MohajonWarm.orange,
                                         iconBackground: MohajonWarm.tintOrange,
-                                        title: 'Role',
+                                        title: l10n.t('role'),
                                         children: [
                                           Wrap(
                                             spacing: 8,
@@ -502,11 +510,11 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                                         ? Icons.save_rounded
                                         : Icons.person_add_rounded,
                                     label: _isEditing
-                                        ? 'Save Changes'
-                                        : 'Create Staff Member',
+                                        ? l10n.t('saveChanges')
+                                        : l10n.t('createStaffMember'),
                                     busyLabel: _isEditing
-                                        ? 'Updating...'
-                                        : 'Creating...',
+                                        ? l10n.t('updating')
+                                        : l10n.t('creating'),
                                   ),
                                 ),
                               ],
@@ -542,10 +550,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Could not load roles and menus.\nPlease check your connection.',
+            Text(
+              _l10n.t('couldNotLoadRolesMenus'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: MohajonWarm.ink,
@@ -564,7 +572,7 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Retry'),
+              child: Text(_l10n.t('retry')),
             ),
           ],
         ),
@@ -581,11 +589,11 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
       icon: Icons.apps_rounded,
       iconColor: MohajonWarm.red,
       iconBackground: MohajonWarm.tintRed,
-      title: 'Menu Access',
+      title: _l10n.t('menuAccess'),
       children: [
-        const Text(
-          'Grant access by section. Tap the box on the right to allow or remove the whole group, or expand a section to pick individual menus.',
-          style: TextStyle(
+        Text(
+          _l10n.t('menuAccessHelp'),
+          style: const TextStyle(
             color: MohajonWarm.muted,
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
@@ -625,10 +633,10 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
 
   String _sectionLabel(String section) {
     return switch (section) {
-      'MAIN' => 'Main Menu',
-      'OPERATIONS' => 'Operations',
-      'FINANCE' => 'Finance',
-      'APP' => 'App',
+      'MAIN' => _l10n.t('sectionMainMenu'),
+      'OPERATIONS' => _l10n.t('sectionOperations'),
+      'FINANCE' => _l10n.t('sectionFinance'),
+      'APP' => _l10n.t('sectionApp'),
       _ => section,
     };
   }
@@ -651,6 +659,7 @@ class _StaffPhotoPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const size = 96.0;
+    final l10n = AppLocalizations.of(context);
     final hasPhoto = imagePath != null || (photoUrl?.isNotEmpty == true);
 
     return Center(
@@ -757,8 +766,8 @@ class _StaffPhotoPicker extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   hasPhoto
-                      ? 'Photo added — tap to change'
-                      : 'Tap to add staff photo',
+                      ? l10n.t('photoAddedChange')
+                      : l10n.t('tapToAddStaffPhoto'),
                   style: const TextStyle(
                     color: Color(0xFF5D4A00),
                     fontSize: 11,
@@ -1136,6 +1145,33 @@ class _MenuTypeSectionState extends State<_MenuTypeSection> {
   }
 }
 
+String _menuLocalizedName(String code, AppLocalizations l10n) {
+  return switch (code) {
+    'HOME' => l10n.t('home'),
+    'SALES' => l10n.t('sales'),
+    'STOCK' => l10n.t('stock'),
+    'CLIENTS' => l10n.t('clients'),
+    'PRODUCTS' => l10n.t('products'),
+    'ADD_PRODUCT' => l10n.t('addProductItem'),
+    'ADD_CUSTOMER' => l10n.t('addCustomer'),
+    'VENDORS' => l10n.t('vendors'),
+    'EXPENSES' => l10n.t('expenses'),
+    'INVESTORS' => l10n.t('investors'),
+    'BARCODE' => l10n.t('barcodeScan'),
+    'PURCHASE' => l10n.t('purchase'),
+    'DUE' => l10n.t('due'),
+    'INVESTMENTS' => l10n.t('investments'),
+    'REPORTS' => l10n.t('reports'),
+    'SALES_HISTORY' => l10n.t('salesHistory'),
+    'PROFILE' => l10n.t('myProfile'),
+    'STAFF' => l10n.t('staff'),
+    'SETTINGS' => l10n.t('settings'),
+    'SECURITY' => l10n.t('accountSecurity'),
+    'PRIVACY' => l10n.t('privacy'),
+    _ => code,
+  };
+}
+
 /// Pill chip matching the Stock filter chips.
 class _PillChip extends StatelessWidget {
   const _PillChip({
@@ -1193,6 +1229,7 @@ class _MenuCheckboxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       onTap: () => onChanged(!checked),
       child: Padding(
@@ -1211,7 +1248,7 @@ class _MenuCheckboxTile extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                menu.name,
+                _menuLocalizedName(menu.code, l10n),
                 style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,

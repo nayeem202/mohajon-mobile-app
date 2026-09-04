@@ -17,6 +17,9 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../products/presentation/barcode_scan_screen.dart';
 
+final GlobalKey tourProductGridKey = GlobalKey();
+final GlobalKey tourCheckoutKey = GlobalKey();
+
 const _kAmber = Color(0xFFFFC800);
 const _kAmberLight = Color(0xFFFFD83D);
 const _kAmberSoft = Color(0xFFFFF0A6);
@@ -142,10 +145,13 @@ class _PosScreenState extends ConsumerState<PosScreen>
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _ProductGrid(
-                        products: visibleProducts,
-                        enabled: !isBusy,
-                        onProductTap: cartController.addProduct,
+                      child: KeyedSubtree(
+                        key: tourProductGridKey,
+                        child: _ProductGrid(
+                          products: visibleProducts,
+                          enabled: !isBusy,
+                          onProductTap: cartController.addProduct,
+                        ),
                       ),
                     ),
                   ),
@@ -154,12 +160,15 @@ class _PosScreenState extends ConsumerState<PosScreen>
                       top: false,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: _CheckoutBar(
-                          itemCount: cart.items.length,
-                          total: cart.total,
-                          onTap: isBusy
-                              ? null
-                              : () => _openCheckoutScreen(customers),
+                        child: KeyedSubtree(
+                          key: tourCheckoutKey,
+                          child: _CheckoutBar(
+                            itemCount: cart.items.length,
+                            total: cart.total,
+                            onTap: isBusy
+                                ? null
+                                : () => _openCheckoutScreen(customers),
+                          ),
                         ),
                       ),
                     ),
