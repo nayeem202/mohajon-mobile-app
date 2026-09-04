@@ -412,6 +412,7 @@ class ReportRowTile extends StatelessWidget {
     required this.subtitle,
     required this.trailing,
     this.titleColor = const Color(0xFF101828),
+    this.trailingColor = MohajonWarm.ink,
     this.icon,
     this.iconColor = const Color(0xFFF97316),
   });
@@ -420,6 +421,7 @@ class ReportRowTile extends StatelessWidget {
   final String subtitle;
   final String trailing;
   final Color titleColor;
+  final Color trailingColor;
   final IconData? icon;
   final Color iconColor;
 
@@ -499,10 +501,10 @@ class ReportRowTile extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             trailing,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: MohajonWarm.ink,
+              color: trailingColor,
             ),
           ),
         ],

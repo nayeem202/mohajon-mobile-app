@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:remixicon/remixicon.dart';
 
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
@@ -12,6 +11,7 @@ import '../../expenses/models/expense.dart';
 import '../../expenses/providers/expense_providers.dart';
 import '../services/expense_report_excel_service.dart';
 import '../services/expense_report_pdf_service.dart';
+import 'report_shared_widgets.dart';
 
 class ExpenseReportScreen extends ConsumerStatefulWidget {
   const ExpenseReportScreen({super.key});
@@ -22,25 +22,13 @@ class ExpenseReportScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+    with ReportExportMixin {
   late DateTimeRange _range;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _range = _monthRange(now);
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    _range = reportMonthRange(DateTime.now());
   }
 
   Future<void> _pickRange() async {
@@ -56,29 +44,23 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
     setState(() => _range = picked);
   }
 
-  void _setPreset(DateTimeRange range) {
-    setState(() => _range = range);
-  }
+  Future<void> _exportXlsx(List<Expense> expenses) => runExport(
+        task: () async {
+          if (expenses.isEmpty) return;
+          await ExpenseReportExcelService()
+              .saveExpenseReport(expenses: expenses, range: _range);
+        },
+        message: 'Expense report exported as XLSX',
+      );
 
-  Future<void> _exportXlsx(List<Expense> expenses) async {
-    if (expenses.isEmpty) return;
-    final service = ExpenseReportExcelService();
-    await service.saveExpenseReport(expenses: expenses, range: _range);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Expense report exported as XLSX')),
-    );
-  }
-
-  Future<void> _exportPdf(List<Expense> expenses) async {
-    if (expenses.isEmpty) return;
-    final service = ExpenseReportPdfService();
-    await service.saveExpenseReport(expenses: expenses, range: _range);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Expense report exported as PDF')),
-    );
-  }
+  Future<void> _exportPdf(List<Expense> expenses) => runExport(
+        task: () async {
+          if (expenses.isEmpty) return;
+          await ExpenseReportPdfService()
+              .saveExpenseReport(expenses: expenses, range: _range);
+        },
+        message: 'Expense report exported as PDF',
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +83,10 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
           title: const Text(
             'Expense Report',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
               color: MohajonWarm.ink,
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
             ),
           ),
           backgroundColor: MohajonWarm.primary,
@@ -115,172 +98,177 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
             statusBarColor: MohajonWarm.primary,
             statusBarIconBrightness: Brightness.dark,
           ),
-          actions: [
-            const NotificationBell(),
-            const SizedBox(width: 4),
-            const ShopAvatar(
-              radius: 16,
-              backgroundColor: MohajonWarm.primary,
-              textColor: MohajonWarm.ink,
-            ),
-            const SizedBox(width: 8),
+          actions: const [
+            NotificationBell(),
+            SizedBox(width: 6),
+            ShopAvatar(),
           ],
         ),
         body: DecoratedBox(
           decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             top: false,
-            child: FadeTransition(
-        opacity: CurvedAnimation(
-          parent: _controller,
-          curve: Curves.easeOut,
-        ),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            Row(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'Total Expense',
-                    value: money(total),
-                    valueColor: const Color(0xFFF97316),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'Entries',
-                    value: '${selectedExpenses.length}',
-                    valueColor: MohajonWarm.goldText,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'Average',
-                    value: money(average),
-                    valueColor: const Color(0xFFF97316),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'Categories',
-                    value: '$categoryCount',
-                    valueColor: MohajonWarm.goldText,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _RangeSelector(
-              range: _range,
-              onPickRange: _pickRange,
-              onThisMonth: () => _setPreset(_monthRange(DateTime.now())),
-              onLastMonth: () => _setPreset(_previousMonthRange(DateTime.now())),
-              onLast30Days: () => _setPreset(_last30DaysRange(DateTime.now())),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Top category: $highestCategory',
-              style: const TextStyle(
-                color: MohajonWarm.goldText,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _FullExportButton(
-                    label: 'Download XLSX',
-                    icon: Icons.table_chart_outlined,
-                    color: const Color(0xFF059669),
-                    onTap: () => _exportXlsx(selectedExpenses),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _FullExportButton(
-                    label: 'Download PDF',
-                    icon: Icons.picture_as_pdf_rounded,
-                    color: const Color(0xFFF97316),
-                    onTap: () => _exportPdf(selectedExpenses),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Expense List',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF101828),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: 'Total Expense',
+                        value: money(total),
+                        valueColor: const Color(0xFF9A3412),
+                      ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: 'Entries',
+                        value: '${selectedExpenses.length}',
+                        valueColor: MohajonWarm.goldText,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: 'Average',
+                        value: money(average),
+                        valueColor: const Color(0xFFB45309),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: 'Categories',
+                        value: '$categoryCount',
+                        valueColor: const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                ReportRangeSelector(
+                  range: _range,
+                  onPickRange: _pickRange,
+                  onThisMonth: () =>
+                      setState(() => _range = reportMonthRange(DateTime.now())),
+                  onLastMonth: () => setState(
+                    () => _range = reportPreviousMonthRange(DateTime.now()),
+                  ),
+                  onLast30Days: () => setState(
+                    () => _range = reportLast30DaysRange(DateTime.now()),
                   ),
                 ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportExportButton(
+                        label: 'Download XLSX',
+                        icon: Icons.table_chart_outlined,
+                        color: const Color(0xFF059669),
+                        isBusy: exporting,
+                        onTap: () => _exportXlsx(selectedExpenses),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportExportButton(
+                        label: 'Download PDF',
+                        icon: Icons.picture_as_pdf_rounded,
+                        color: const Color(0xFFF97316),
+                        isBusy: exporting,
+                        onTap: () => _exportPdf(selectedExpenses),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                _HighlightsRow(highestCategory: highestCategory),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_rounded,
+                        size: 15,
+                        color: MohajonWarm.ink,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    const Text(
+                      'EXPENSE LIST',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.9,
+                        color: Color(0x992F3028),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MohajonWarm.tintYellow,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: MohajonWarm.goldBorder),
+                      ),
+                      child: Text(
+                        '${selectedExpenses.length} items',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: MohajonWarm.goldText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
                 Text(
-                  '${selectedExpenses.length} items',
+                  reportRangeLabel(_range),
                   style: const TextStyle(
-                    color: Color(0xFF667085),
+                    color: MohajonWarm.muted,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '${DateFormat('dd MMM yyyy').format(_range.start)} - ${DateFormat('dd MMM yyyy').format(_range.end)}',
-              style: const TextStyle(
-                color: Color(0xFF667085),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (selectedExpenses.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 40),
-                child: Center(
-                  child: Text(
-                    'No expenses found for this date range.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFF98A2B3),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                const SizedBox(height: 12),
+                if (selectedExpenses.isEmpty)
+                  const _EmptyState()
+                else
+                  ...selectedExpenses.map(
+                    (expense) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ExpenseRowTile(
+                        expense: expense,
+                        category: _categoryFor(categories, expense.categoryId),
+                      ),
                     ),
                   ),
-                ),
-              )
-            else
-              ...selectedExpenses.map(
-                (expense) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ExpenseCard(
-                    expense: expense,
-                    category: _categoryFor(categories, expense.categoryId),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-            _ListFooter(total: total, count: selectedExpenses.length),
-          ],
+                const SizedBox(height: 8),
+                _ListFooter(total: total, count: selectedExpenses.length),
+              ],
+            ),
+          ),
         ),
-        ),
-        ),
-      ),
       ),
     );
   }
@@ -329,166 +317,87 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
       ..sort((a, b) => b.value.compareTo(a.value));
     return top.first.key;
   }
-
-  static DateTimeRange _monthRange(DateTime value) {
-    final start = DateTime(value.year, value.month, 1);
-    final end = DateTime(value.year, value.month + 1, 0);
-    return DateTimeRange(start: start, end: end);
-  }
-
-  static DateTimeRange _previousMonthRange(DateTime value) {
-    final prev = DateTime(value.year, value.month - 1, 1);
-    final end = DateTime(value.year, value.month, 0);
-    return DateTimeRange(start: prev, end: end);
-  }
-
-  static DateTimeRange _last30DaysRange(DateTime value) {
-    final end = DateTime(value.year, value.month, value.day);
-    final start = end.subtract(const Duration(days: 29));
-    return DateTimeRange(start: start, end: end);
-  }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
+class _HighlightsRow extends StatelessWidget {
+  const _HighlightsRow({required this.highestCategory});
 
-  final String label;
-  final String value;
-  final Color valueColor;
+  final String highestCategory;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
+          colors: [
+            MohajonWarm.primary.withValues(alpha: 0.1),
+            MohajonWarm.primarySoft.withValues(alpha: 0.06),
+          ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MohajonWarm.goldBorder),
+        border: Border.all(color: MohajonWarm.primary.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-            color: MohajonWarm.ink.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: MohajonWarm.primary.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: MohajonWarm.muted,
-              fontWeight: FontWeight.w700,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primarySoft],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.local_fire_department_rounded,
+              size: 18,
+              color: MohajonWarm.ink,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: valueColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RangeSelector extends StatelessWidget {
-  const _RangeSelector({
-    required this.range,
-    required this.onPickRange,
-    required this.onThisMonth,
-    required this.onLastMonth,
-    required this.onLast30Days,
-  });
-
-  final DateTimeRange range;
-  final VoidCallback onPickRange;
-  final VoidCallback onThisMonth;
-  final VoidCallback onLastMonth;
-  final VoidCallback onLast30Days;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MohajonWarm.goldBorder),
-        boxShadow: [
-          BoxShadow(
-            color: MohajonWarm.ink.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Date Range',
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'TOP CATEGORY',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 10,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                    color: MohajonWarm.muted,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  highestCategory,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
                     color: MohajonWarm.ink,
                   ),
                 ),
-              ),
-              TextButton.icon(
-                onPressed: onPickRange,
-                icon: const Icon(Icons.date_range_rounded,
-                    size: 18, color: MohajonWarm.goldText),
-                label: const Text('Change',
-                    style: TextStyle(
-                        color: MohajonWarm.goldText,
-                        fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${DateFormat('dd MMM yyyy').format(range.start)}  -  ${DateFormat('dd MMM yyyy').format(range.end)}',
-            style: const TextStyle(
-              color: MohajonWarm.muted,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 38,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _RangeChip(label: 'This Month', onTap: onThisMonth),
-                const SizedBox(width: 8),
-                _RangeChip(label: 'Last Month', onTap: onLastMonth),
-                const SizedBox(width: 8),
-                _RangeChip(label: 'Last 30 Days', onTap: onLast30Days),
               ],
             ),
+          ),
+          const Icon(
+            Icons.auto_awesome_rounded,
+            size: 18,
+            color: MohajonWarm.goldText,
           ),
         ],
       ),
@@ -496,38 +405,8 @@ class _RangeSelector extends StatelessWidget {
   }
 }
 
-class _RangeChip extends StatelessWidget {
-  const _RangeChip({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      onPressed: onTap,
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      backgroundColor: MohajonWarm.tintYellow,
-      side: const BorderSide(color: MohajonWarm.goldBorder),
-      labelStyle: const TextStyle(
-        color: MohajonWarm.goldText,
-        fontWeight: FontWeight.w800,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
-}
-
-class _ExpenseCard extends StatelessWidget {
-  const _ExpenseCard({
+class _ExpenseRowTile extends StatelessWidget {
+  const _ExpenseRowTile({
     required this.expense,
     required this.category,
   });
@@ -538,172 +417,16 @@ class _ExpenseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateText = DateFormat('dd MMM yyyy').format(expense.date);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MohajonWarm.goldBorder),
-        boxShadow: [
-          BoxShadow(
-            color: MohajonWarm.ink.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [category.color, category.color.withValues(alpha: 0.6)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: category.color.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(category.icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  expense.description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF101828),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  expense.categoryLabel.isNotEmpty
-                      ? expense.categoryLabel
-                      : category.label,
-                  style: TextStyle(
-                    color: category.color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Remix.calendar_2_line,
-                      size: 14,
-                      color: Color(0xFF98A2B3),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      dateText,
-                      style: const TextStyle(
-                        color: Color(0xFF98A2B3),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (expense.notes.isNotEmpty) ...[
-                      const SizedBox(width: 10),
-                      const Icon(
-                        Remix.file_text_line,
-                        size: 14,
-                        color: Color(0xFF98A2B3),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          expense.notes,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF98A2B3),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            money(expense.amount),
-            style: const TextStyle(
-              color: MohajonWarm.goldText,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FullExportButton extends StatelessWidget {
-  const _FullExportButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final subtitle = expense.notes.isNotEmpty
+        ? '$dateText  •  ${category.label}  •  ${expense.notes}'
+        : '$dateText  •  ${category.label}';
+    return ReportRowTile(
+      icon: category.icon,
+      iconColor: category.color,
+      title: expense.description.isEmpty ? category.label : expense.description,
+      subtitle: subtitle,
+      trailing: money(expense.amount),
+      trailingColor: MohajonWarm.goldText,
     );
   }
 }
@@ -729,6 +452,13 @@ class _ListFooter extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: MohajonWarm.goldBorder),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -751,12 +481,77 @@ class _ListFooter extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            money(total),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFFF97316),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.orange, Color(0xFFF97316)],
+              ),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              money(total),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: MohajonWarm.tintYellow,
+              border: Border.all(color: MohajonWarm.goldBorder),
+            ),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              size: 40,
+              color: MohajonWarm.goldText,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No expenses found',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: MohajonWarm.ink,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'No expenses for this date range',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: MohajonWarm.muted,
             ),
           ),
         ],
