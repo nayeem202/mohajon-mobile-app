@@ -5,6 +5,7 @@ import '../../../core/app/app_providers.dart';
 import '../../../core/models/payment.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
+import '../../../core/utils/money.dart';
 import '../../notifications/models/notification_model.dart';
 import '../../notifications/providers/notification_providers.dart';
 
@@ -31,16 +32,24 @@ class PaymentService {
   }) async {
     final now = DateTime.now();
     final db = _ref.read(localDatabaseProvider);
+    final shopId = _ref.read(shopIdProvider);
+    final amountRounded = moneyRound2(amount);
     if (saleId != null) {
-      final sale = db.sales.getForShop(_ref.read(shopIdProvider), saleId);
+      final sale = db.sales.getForShop(shopId, saleId);
       if (sale == null || sale.customerId != customerId) {
         throw StateError('The selected sale could not be found.');
       }
-      if (amount > sale.dueAmount) {
-        throw StateError('Payment cannot exceed the sale due amount.');
+      final paymentsSum = db.payments
+          .valuesForShop(shopId)
+          .where((p) => p.saleId == saleId && !p.isDeleted)
+          .fold<double>(0, (sum, p) => sum + p.amount);
+      if (amountRounded > moneyRound2(sale.totalAmount - paymentsSum)) {
+        throw StateError('Payment cannot exceed the remaining due amount.');
       }
-      final newPaid = sale.paidAmount + amount;
-      final newDue = (sale.totalAmount - newPaid).clamp(0.0, double.infinity);
+      final newPaid = moneyRound2(paymentsSum + amountRounded);
+      final newDue = moneyRound2(
+        (sale.totalAmount - newPaid).clamp(0.0, double.infinity),
+      );
       await db.sales.put(sale.copyWith(
         paidAmount: newPaid,
         dueAmount: newDue,
@@ -56,9 +65,9 @@ class PaymentService {
             paymentId: _uuid.v4(),
             customerId: customerId,
             saleId: saleId,
-            amount: amount,
+            amount: amountRounded,
             paymentMethod: method,
-            shopId: _ref.read(shopIdProvider),
+            shopId: shopId,
             createdAt: now,
             updatedAt: now,
             syncStatus: SyncStatus.pending,
@@ -67,7 +76,7 @@ class PaymentService {
     _ref.read(notificationServiceProvider).add(
           type: NotificationType.payment,
           title: 'Payment received',
-          message: '৳${amount.toStringAsFixed(2)} payment recorded.',
+          message: '৳${amountRounded.toStringAsFixed(2)} payment recorded.',
           sourceKey: 'payment:${now.microsecondsSinceEpoch}',
         );
     await _ref.read(syncStateProvider.notifier).syncIfOnline();

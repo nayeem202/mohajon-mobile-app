@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+enum LedgerStatus { settled, due, advance }
+
 class CustomerLedger {
   const CustomerLedger({
     required this.customerId,
@@ -28,4 +30,11 @@ class CustomerLedger {
       : 0;
 
   bool get hasDue => balance > 0;
+
+  double get absoluteBalance => balance.abs();
+
+  LedgerStatus get status {
+    if (balance.abs() < 1) return LedgerStatus.settled;
+    return balance > 0 ? LedgerStatus.due : LedgerStatus.advance;
+  }
 }

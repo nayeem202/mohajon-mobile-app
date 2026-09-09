@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/payment.dart';
 import '../../../core/models/sale.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../payments/providers/payment_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../models/table_report.dart';
 import '../services/payment_methods_excel_service.dart';
 import '../services/payment_methods_pdf_service.dart';
@@ -34,13 +37,14 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
   }
 
   Future<void> _pickRange() async {
+    final l10n = AppLocalizations.of(context);
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020, 1, 1),
       lastDate: DateTime(DateTime.now().year + 1, 12, 31),
       initialDateRange: _range,
-      helpText: 'Select payments range',
-      saveText: 'Apply',
+      helpText: l10n.t('selectPaymentsRange'),
+      saveText: l10n.t('applyLabel'),
     );
     if (picked == null) return;
     setState(() => _range = picked);
@@ -109,6 +113,28 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
     final table = ReportTableData(
       title: 'Payment Methods',
       subtitle: reportRangeLabel(_range),
+      summaries: [
+        ReportSummary(
+          label: 'Payments',
+          value: '$paymentCount',
+          accent: 0xFF1E3A8A,
+        ),
+        ReportSummary(
+          label: 'Received',
+          value: money(received),
+          accent: 0xFF059669,
+        ),
+        ReportSummary(
+          label: 'Methods Used',
+          value: '${rows.length}',
+          accent: 0xFFEA580C,
+        ),
+        ReportSummary(
+          label: 'Top Method',
+          value: rows.isEmpty ? '—' : _methodLabel('${rows.first['method']}'),
+          accent: 0xFFD97706,
+        ),
+      ],
       columns: const [
         ReportTableColumn(key: 'method', header: 'Method', weight: 2.5),
         ReportTableColumn(key: 'count', header: 'Payments', rightAlign: true),
@@ -129,21 +155,27 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
   }
 
   Future<void> _exportXlsx() => runExport(
+        isXlsx: true,
         task: () async {
           final data = _compute();
           await PaymentMethodsExcelService()
               .savePaymentMethods(table: data.table, range: _range);
         },
-        message: 'Payment methods exported as XLSX',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsXlsx', {'report': AppLocalizations.of(context).t('reportPaymentMethods')}),
       );
 
   Future<void> _exportPdf() => runExport(
+        isXlsx: false,
         task: () async {
           final data = _compute();
+          final company =
+              DocCompany.fromShop(ref.read(shopProfileProvider).value);
           await PaymentMethodsPdfService()
-              .savePaymentMethods(table: data.table, range: _range);
+              .savePaymentMethods(table: data.table, range: _range, company: company);
         },
-        message: 'Payment methods exported as PDF',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsPdf', {'report': AppLocalizations.of(context).t('reportPaymentMethods')}),
       );
 
   IconData _methodIcon(String key) {
@@ -183,22 +215,23 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
   }
 
   String _methodLabel(String key) {
-    if (key == 'cash_walk_in') return 'Cash (Walk-in)';
+    if (key == 'cash_walk_in') return AppLocalizations.of(context).t('cashWalkIn');
     return PaymentMethodX.parse(key).displayName;
   }
 
   @override
   Widget build(BuildContext context) {
     final data = _compute();
+    final l10n = AppLocalizations.of(context);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Payment Methods',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reportPaymentMethods'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -231,17 +264,19 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
             children: [
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Payments',
+                  label: l10n.t('paymentsLabel'),
                   value: '${data.paymentCount}',
                   valueColor: MohajonWarm.goldText,
+                  icon: Icons.payments_rounded,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Received',
+                  label: l10n.t('receivedLabel'),
                   value: money(data.received),
                   valueColor: const Color(0xFF059669),
+                  icon: Icons.call_received_rounded,
                 ),
               ),
             ],
@@ -251,17 +286,19 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
             children: [
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Methods Used',
+                  label: l10n.t('methodsUsed'),
                   value: '${data.rows.length}',
                   valueColor: const Color(0xFFF97316),
+                  icon: Icons.bolt_rounded,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Top Method',
+                  label: l10n.t('topMethod'),
                   value: data.rows.isEmpty ? '—' : _methodLabel('${data.rows.first['method']}'),
                   valueColor: const Color(0xFF9A3412),
+                  icon: Icons.emoji_events_outlined,
                 ),
               ),
             ],
@@ -279,20 +316,20 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
             children: [
               Expanded(
                 child: ReportExportButton(
-                  label: 'Download XLSX',
+                  label: l10n.t('downloadXlsx'),
                   icon: Icons.table_chart_outlined,
                   color: const Color(0xFF059669),
-                  isBusy: exporting,
+                  isBusy: exportingXlsx,
                   onTap: _exportXlsx,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ReportExportButton(
-                  label: 'Download PDF',
+                  label: l10n.t('downloadPdf'),
                   icon: Icons.picture_as_pdf_rounded,
                   color: const Color(0xFFF97316),
-                  isBusy: exporting,
+                  isBusy: exportingPdf,
                   onTap: _exportPdf,
                 ),
               ),
@@ -301,10 +338,10 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
           const SizedBox(height: 18),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Collections by Method',
-                  style: TextStyle(
+                  l10n.t('collectionsByMethod'),
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF101828),
@@ -312,7 +349,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
                 ),
               ),
               Text(
-                'Total ${money(data.received)}',
+                l10n.tP('totalWithCount', {'amount': money(data.received)}),
                 style: const TextStyle(
                   color: Color(0xFF667085),
                   fontSize: 12,
@@ -327,18 +364,18 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
               icon: _methodIcon('${row['method']}'),
               iconColor: _methodColor('${row['method']}'),
               title: _methodLabel('${row['method']}'),
-              subtitle: '${row['count']} payments',
+              subtitle: l10n.tP('xPayments', {'count': '${row['count']}'}),
               trailing: money(row['amount'] as double),
             ),
             const SizedBox(height: 8),
           ],
           if (data.rows.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'No payments in this period',
-                  style: TextStyle(
+                  l10n.t('noPaymentsInPeriod'),
+                  style: const TextStyle(
                     color: Color(0xFF98A2B3),
                     fontWeight: FontWeight.w600,
                   ),

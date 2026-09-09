@@ -1,13 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:barcode/barcode.dart';
-import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-final _labelCurrency = NumberFormat.currency(locale: 'en_US', symbol: 'Tk. ');
+import '../../../core/utils/money.dart';
 
-String _labelMoney(num value) => _labelCurrency.format(value);
+String _labelMoney(num value) => money(value);
 
 class BarcodeLabel {
   const BarcodeLabel({

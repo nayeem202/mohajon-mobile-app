@@ -120,7 +120,7 @@ final customerLedgerProvider = Provider.family<List<LedgerEntry>, String>((
         type: LedgerEntryType.sale,
         amount: sale.totalAmount,
         createdAt: sale.createdAt,
-        description: 'Sale',
+        description: _saleParticulars(sale),
       ),
     ),
     ...sales
@@ -260,4 +260,14 @@ class CustomerLedgerService {
     await _ref.read(localDatabaseProvider).customerLedgerEntries.put(entry);
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
   }
+}
+
+String _saleParticulars(Sale sale) {
+  final parts = sale.items.map((item) {
+    final qty = item.qty % 1 == 0
+        ? item.qty.toInt().toString()
+        : item.qty.toString();
+    return '${item.name} ×$qty';
+  }).join(', ');
+  return parts.length <= 60 ? parts : '${parts.substring(0, 57)}...';
 }

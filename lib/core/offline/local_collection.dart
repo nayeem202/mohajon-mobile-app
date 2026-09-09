@@ -47,6 +47,8 @@ class LocalCollection<T extends Syncable> {
 
   Future<void> put(T item) => _box.put(_keyFor(item), item.toJson());
 
+  Future<void> remove(String shopId, String id) => _box.delete('$shopId:$id');
+
   Future<void> clear() => _box.clear();
 
   Future<void> putSynced(T item) {

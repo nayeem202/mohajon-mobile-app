@@ -3,13 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/models/payment.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../customers/providers/customer_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../models/daily_sales.dart';
 import '../models/table_report.dart';
 import '../services/daily_transactions_excel_service.dart';
@@ -35,13 +38,14 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
   }
 
   Future<void> _pickRange() async {
+    final l10n = AppLocalizations.of(context);
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020, 1, 1),
       lastDate: DateTime(DateTime.now().year + 1, 12, 31),
       initialDateRange: _range,
-      helpText: 'Select transactions range',
-      saveText: 'Apply',
+      helpText: l10n.t('selectTransactionsRange'),
+      saveText: l10n.t('applyLabel'),
     );
     if (picked == null) return;
     setState(() => _range = picked);
@@ -111,6 +115,28 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
     final table = ReportTableData(
       title: 'Daily Transactions',
       subtitle: reportRangeLabel(_range),
+      summaries: [
+        ReportSummary(
+          label: 'Transactions',
+          value: '$transactionCount',
+          accent: 0xFF1E3A8A,
+        ),
+        ReportSummary(
+          label: 'Sales Amount',
+          value: money(salesAmount),
+          accent: 0xFFEA580C,
+        ),
+        ReportSummary(
+          label: 'Received',
+          value: money(received),
+          accent: 0xFF059669,
+        ),
+        ReportSummary(
+          label: 'Active Days',
+          value: '${days.length}',
+          accent: 0xFFD97706,
+        ),
+      ],
       columns: const [
         ReportTableColumn(key: 'date', header: 'Date', weight: 1.5),
         ReportTableColumn(key: 'sales', header: 'Sales', rightAlign: true),
@@ -143,35 +169,42 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
   }
 
   Future<void> _exportXlsx() => runExport(
+        isXlsx: true,
         task: () async {
           final data = _compute();
           await DailyTransactionsExcelService()
               .saveDailyTransactions(table: data.table, range: _range);
         },
-        message: 'Daily transactions exported as XLSX',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsXlsx', {'report': AppLocalizations.of(context).t('reportDailyTransactions')}),
       );
 
   Future<void> _exportPdf() => runExport(
+        isXlsx: false,
         task: () async {
           final data = _compute();
+          final company =
+              DocCompany.fromShop(ref.read(shopProfileProvider).value);
           await DailyTransactionsPdfService()
-              .saveDailyTransactions(table: data.table, range: _range);
+              .saveDailyTransactions(table: data.table, range: _range, company: company);
         },
-        message: 'Daily transactions exported as PDF',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsPdf', {'report': AppLocalizations.of(context).t('reportDailyTransactions')}),
       );
 
   @override
   Widget build(BuildContext context) {
     final data = _compute();
+    final l10n = AppLocalizations.of(context);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Daily Transactions',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reportDailyTransactions'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -204,17 +237,19 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
             children: [
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Transactions',
+                  label: l10n.t('transactions'),
                   value: '${data.transactionCount}',
                   valueColor: MohajonWarm.goldText,
+                  icon: Icons.receipt_long_rounded,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Sales',
+                  label: l10n.t('sales'),
                   value: money(data.salesAmount),
                   valueColor: const Color(0xFF059669),
+                  icon: Icons.attach_money_rounded,
                 ),
               ),
             ],
@@ -224,17 +259,19 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
             children: [
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Received',
+                  label: l10n.t('receivedLabel'),
                   value: money(data.received),
                   valueColor: const Color(0xFFF97316),
+                  icon: Icons.call_received_rounded,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ReportSummaryCard(
-                  label: 'Active Days',
+                  label: l10n.t('activeDays'),
                   value: '${data.days.length}',
                   valueColor: const Color(0xFF9A3412),
+                  icon: Icons.bolt_rounded,
                 ),
               ),
             ],
@@ -252,20 +289,20 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
             children: [
               Expanded(
                 child: ReportExportButton(
-                  label: 'Download XLSX',
+                  label: l10n.t('downloadXlsx'),
                   icon: Icons.table_chart_outlined,
                   color: const Color(0xFF059669),
-                  isBusy: exporting,
+                  isBusy: exportingXlsx,
                   onTap: _exportXlsx,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ReportExportButton(
-                  label: 'Download PDF',
+                  label: l10n.t('downloadPdf'),
                   icon: Icons.picture_as_pdf_rounded,
                   color: const Color(0xFFF97316),
-                  isBusy: exporting,
+                  isBusy: exportingPdf,
                   onTap: _exportPdf,
                 ),
               ),
@@ -274,10 +311,10 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
           const SizedBox(height: 18),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Daily Breakdown',
-                  style: TextStyle(
+                  l10n.t('dailyBreakdown'),
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF101828),
@@ -285,7 +322,7 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
                 ),
               ),
               Text(
-                '${data.days.length} days',
+                l10n.tP('xDays', {'count': '${data.days.length}'}),
                 style: const TextStyle(
                   color: Color(0xFF667085),
                   fontSize: 12,
@@ -300,19 +337,21 @@ class _DailyTransactionsScreenState extends ConsumerState<DailyTransactionsScree
               icon: Icons.calendar_today_outlined,
               iconColor: const Color(0xFFF97316),
               title: DateFormat('EEEE, dd MMM yyyy').format(day.date),
-              subtitle:
-                  '${day.transactionCount} sales  •  received ${money(data.receivedByDay[day.date] ?? 0)}',
+              subtitle: l10n.tP('salesReceived', {
+                'count': '${day.transactionCount}',
+                'amount': money(data.receivedByDay[day.date] ?? 0),
+              }),
               trailing: money(day.amount),
             ),
             const SizedBox(height: 8),
           ],
           if (data.days.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'No transactions in this period',
-                  style: TextStyle(
+                  l10n.t('noTransactionsInPeriod'),
+                  style: const TextStyle(
                     color: Color(0xFF98A2B3),
                     fontWeight: FontWeight.w600,
                   ),

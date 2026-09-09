@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 
 /// Central configuration for the self-hosted backend services.
 ///
@@ -24,9 +24,18 @@ class AppConfig {
     defaultValue: true,
   );
 
+  static Never _missingReleaseDefine(String name) {
+    throw StateError(
+      'Release builds require --dart-define=$name pointing at the '
+      'production server. Example: '
+      '--dart-define=$name=https://your-server.example.com',
+    );
+  }
+
   /// Base URL of the custom auth service.
   static String get authBaseUrl {
     if (_authBaseUrlOverride.isNotEmpty) return _authBaseUrlOverride;
+    if (kReleaseMode) return _missingReleaseDefine('AUTH_BASE_URL');
     if (!kIsWeb && Platform.isAndroid) {
       // Android emulator reaches the host machine via 10.0.2.2.
       return 'http://10.0.2.2:8080';
@@ -37,6 +46,7 @@ class AppConfig {
   /// Base URL of the Haalkhata business service (sync, investments, files).
   static String get apiBaseUrl {
     if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
+    if (kReleaseMode) return _missingReleaseDefine('HAALKHATA_BASE_URL');
     if (!kIsWeb && Platform.isAndroid) {
       return 'http://10.0.2.2:8081';
     }

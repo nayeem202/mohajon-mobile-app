@@ -128,6 +128,20 @@ class AuthService {
 
   Future<void> signOut() async {
     final db = _ref.read(localDatabaseProvider);
+    final syncService = SyncService(db);
+    final shopId = _ref.read(shopIdProvider);
+    if (syncService.pendingCount(shopId: shopId) > 0) {
+      // Flush offline changes first so none are lost on sign-out.
+      if (await syncService.isOnline) {
+        await syncService.sync(shopId: shopId);
+      }
+      if (syncService.pendingCount(shopId: shopId) > 0) {
+        throw const AuthMessageException(
+          'You have unsynced offline data. Connect to the internet, sync, '
+          'and try signing out again so no data is lost.',
+        );
+      }
+    }
     await db.clearBusinessData();
     // Store information is account-specific. Do not show the previous
     // account's owner/email after another user signs in on this device.

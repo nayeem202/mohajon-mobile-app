@@ -100,7 +100,7 @@ class SyncService {
     if (_api.accessToken == null) {
       return SyncState(
         phase: SyncPhase.notSignedIn,
-        message: 'Sign in to sync with the Haalkhata service.',
+        message: 'Sign in to sync with the Mohajon service.',
         pendingCount: pendingCount(shopId: shopId),
       );
     }
@@ -124,7 +124,7 @@ class SyncService {
 
       return SyncState(
         phase: SyncPhase.idle,
-        message: 'Synced with the Haalkhata service.',
+        message: 'Synced with the Mohajon service.',
         pendingCount: pendingCount(shopId: shopId),
       );
     } catch (error) {

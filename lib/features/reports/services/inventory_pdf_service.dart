@@ -1,53 +1,70 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/product.dart';
 import '../../../core/services/download_export_service.dart';
-import '../../../core/services/server_report_downloader.dart';
+import '../../../core/services/pdf_doc.dart';
+import '../../../core/services/pdf_raster_text.dart';
 import '../providers/report_providers.dart';
+
+const _invGrey800 = ui.Color(0xFF374151);
 
 class InventoryPdfService {
   final _downloadExportService = DownloadExportService();
-  final _serverDownloader = ServerReportDownloader();
-  pw.Font? _baseFont;
-  pw.Font? _boldFont;
 
-  Future<pw.ThemeData> _buildTheme() async {
-    if (_baseFont == null) {
-      final regular = await rootBundle.load(
-        'assets/fonts/NotoSansBengali-Regular.ttf',
-      );
-      _baseFont = pw.Font.ttf(regular);
+  Future<File> saveInventoryReport(
+    InventoryReport report,
+    DocCompany company,
+  ) async {
+    if (report.products.isEmpty) {
+      throw StateError('No products found to export');
     }
-    if (_boldFont == null) {
-      final bold = await rootBundle.load(
-        'assets/fonts/NotoSansBengali-Bold.ttf',
-      );
-      _boldFont = pw.Font.ttf(bold);
-    }
-    return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
-  }
-
-  Future<File> saveInventoryReport(InventoryReport report) async {
     final fileName = 'inventory-report.pdf';
-    final serverBytes = await _serverDownloader.download(
-      reportType: 'inventory',
-      format: 'pdf',
-    );
-    if (serverBytes != null) return _saveFile(fileName, serverBytes);
-
-    final bytes = await buildInventoryPdf(report);
+    final bytes = await buildInventoryPdf(report, company);
     return _saveFile(fileName, bytes);
   }
 
-  Future<Uint8List> buildInventoryPdf(InventoryReport report) async {
-    final theme = await _buildTheme();
+  Future<Uint8List> buildInventoryPdf(
+    InventoryReport report,
+    DocCompany company,
+  ) async {
+    final theme = await buildAppPdfTheme();
+    final raster = PdfRasterText();
+    final contentWidth = PdfPageFormat.a4.width - 72;
+    final colWidths = _colWidths(contentWidth);
+    final cellWidths = <double>[for (final w in colWidths) w - 12];
+
+    await _prepareCompany(raster, company);
+    for (var i = 0; i < report.products.length; i++) {
+      final p = report.products[i];
+      await raster.prepare('${i + 1}',
+          fontSize: 9, bold: false, color: _invGrey800, width: cellWidths[0]);
+      await raster.prepare(p.nameEn.isEmpty ? p.nameBn : p.nameEn,
+          fontSize: 9, bold: false, color: _invGrey800, width: cellWidths[1]);
+      await raster.prepare(p.category.isEmpty ? 'Uncategorized' : p.category,
+          fontSize: 9, bold: false, color: _invGrey800, width: cellWidths[2]);
+      await raster.prepare('${p.stockQty}',
+          fontSize: 9, bold: false, color: _invGrey800, width: cellWidths[3], textAlign: ui.TextAlign.right);
+      await raster.prepare('${p.lowStockAlert}',
+          fontSize: 9, bold: false, color: _invGrey800, width: cellWidths[4], textAlign: ui.TextAlign.right);
+      await raster.prepare(_fmt(p.stockQty * p.purchasePrice),
+          fontSize: 9, bold: false, color: _invGrey800, width: cellWidths[5], textAlign: ui.TextAlign.right);
+    }
+    final totalStock = report.products.fold<int>(0, (s, p) => s + p.stockQty);
+    await raster.prepare('TOTAL',
+        fontSize: 9, bold: true, color: _invGrey800, width: cellWidths[0]);
+    await raster.prepare('$totalStock',
+        fontSize: 9, bold: true, color: _invGrey800, width: cellWidths[3], textAlign: ui.TextAlign.right);
+    await raster.prepare(_fmt(report.totalStockValue),
+        fontSize: 9, bold: true, color: _invGrey800, width: cellWidths[5], textAlign: ui.TextAlign.right);
+
     final doc = pw.Document(theme: theme);
     final now = DateTime.now();
 
@@ -55,7 +72,8 @@ class InventoryPdfService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
-        header: (context) => _header('Inventory Report'),
+        header: (context) =>
+            _header(doc.document, raster, 'Inventory Report', company),
         footer: (context) => _pageFooter(context),
         build: (context) => [
           _reportMetaBar(now, report: report),
@@ -89,6 +107,7 @@ class InventoryPdfService {
           ),
           pw.SizedBox(height: 20),
           pw.Table(
+            defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
             border: pw.TableBorder(
               horizontalInside: pw.BorderSide(
                 color: PdfColors.grey300,
@@ -117,9 +136,9 @@ class InventoryPdfService {
                 'Status',
               ]),
               ...report.products.asMap().entries.map(
-                (e) => _productRow(e.value, e.key),
+                (e) => _productRow(doc.document, raster, cellWidths, e.value, e.key),
               ),
-              _totalRow(report),
+              _totalRow(doc.document, raster, cellWidths, report, totalStock),
             ],
           ),
         ],
@@ -128,7 +147,12 @@ class InventoryPdfService {
     return doc.save();
   }
 
-  pw.Widget _header(String title) {
+  pw.Widget _header(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    String title,
+    DocCompany company,
+  ) {
     return pw.Column(
       children: [
         pw.Row(
@@ -136,39 +160,7 @@ class InventoryPdfService {
           children: [
             pw.Expanded(
               flex: 3,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 4),
-                    child: pw.Text(
-                      'Haalkhata',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: const PdfColor.fromInt(0xFF1E3A8A),
-                      ),
-                    ),
-                  ),
-                  pw.Text(
-                    'Smart POS & Inventory Management',
-                    style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    'Dhaka, Bangladesh',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                  pw.Text(
-                    '+880 1700-000000',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                  pw.Text(
-                    'hello@haalkhata.com',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                ],
-              ),
+              child: buildRasterCompanyColumn(pdf, raster, company),
             ),
             pw.Expanded(
               flex: 2,
@@ -368,7 +360,13 @@ class InventoryPdfService {
     );
   }
 
-  pw.TableRow _productRow(Product p, int index) {
+  pw.TableRow _productRow(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    List<double> widths,
+    Product p,
+    int index,
+  ) {
     final status = inventoryStatus(p);
     final stockValue = p.stockQty * p.purchasePrice;
     final odd = index.isOdd;
@@ -377,36 +375,49 @@ class InventoryPdfService {
         color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
-        _cell('${index + 1}'),
-        _cell(p.nameEn.isEmpty ? p.nameBn : p.nameEn),
-        _cell(p.category.isEmpty ? 'Uncategorized' : p.category),
-        _cell('${p.stockQty}', align: pw.TextAlign.right),
-        _cell('${p.lowStockAlert}', align: pw.TextAlign.right),
-        _cell(_fmt(stockValue), align: pw.TextAlign.right),
+        _cell(pdf, raster, '${index + 1}', width: widths[0]),
+        _cell(pdf, raster, p.nameEn.isEmpty ? p.nameBn : p.nameEn,
+            width: widths[1]),
+        _cell(pdf, raster,
+            p.category.isEmpty ? 'Uncategorized' : p.category,
+            width: widths[2]),
+        _cell(pdf, raster, '${p.stockQty}',
+            width: widths[3],
+            alignment: pw.Alignment.centerRight),
+        _cell(pdf, raster, '${p.lowStockAlert}',
+            width: widths[4],
+            alignment: pw.Alignment.centerRight),
+        _cell(pdf, raster, _fmt(stockValue),
+            width: widths[5],
+            alignment: pw.Alignment.centerRight),
         _statusBadge(status),
       ],
     );
   }
 
-  pw.TableRow _totalRow(InventoryReport report) {
+  pw.TableRow _totalRow(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    List<double> widths,
+    InventoryReport report,
+    int totalStock,
+  ) {
     return pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: [
-        _cell('TOTAL', bold: true),
-        _cell('', bold: true),
-        _cell('', bold: true),
-        _cell(
-          '${report.products.fold<int>(0, (s, p) => s + p.stockQty)}',
-          align: pw.TextAlign.right,
-          bold: true,
-        ),
-        _cell('', bold: true),
-        _cell(
-          _fmt(report.totalStockValue),
-          align: pw.TextAlign.right,
-          bold: true,
-        ),
-        _cell('', bold: true),
+        _cell(pdf, raster, 'TOTAL', width: widths[0], bold: true),
+        _cell(pdf, raster, '', width: widths[1], bold: true),
+        _cell(pdf, raster, '', width: widths[2], bold: true),
+        _cell(pdf, raster, '$totalStock',
+            width: widths[3],
+            alignment: pw.Alignment.centerRight,
+            bold: true),
+        _cell(pdf, raster, '', width: widths[4], bold: true),
+        _cell(pdf, raster, _fmt(report.totalStockValue),
+            width: widths[5],
+            alignment: pw.Alignment.centerRight,
+            bold: true),
+        _cell(pdf, raster, '', width: widths[6], bold: true),
       ],
     );
   }
@@ -447,23 +458,48 @@ class InventoryPdfService {
   }
 
   pw.Widget _cell(
+    PdfDocument pdf,
+    PdfRasterText raster,
     String text, {
-    pw.TextAlign align = pw.TextAlign.left,
+    required double width,
+    pw.Alignment alignment = pw.Alignment.centerLeft,
     bool bold = false,
-    PdfColor? color,
+    ui.Color? color,
   }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
-      child: pw.Text(
+      child: raster.build(
+        pdf,
         text,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: 9,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: color ?? PdfColors.grey800,
-        ),
+        fontSize: 9,
+        bold: bold,
+        color: color ?? _invGrey800,
+        width: width,
+        alignment: alignment,
       ),
     );
+  }
+
+  List<double> _colWidths(double contentWidth) {
+    const ratios = <double>[1, 2.5, 1.5, 1, 1, 1.5, 1];
+    final total = ratios.fold<double>(0, (sum, r) => sum + r);
+    return <double>[for (final r in ratios) contentWidth * r / total];
+  }
+
+  Future<void> _prepareCompany(PdfRasterText raster, DocCompany company) async {
+    const indigo = ui.Color(0xFF1E3A8A);
+    const grey600 = ui.Color(0xFF525252);
+    const grey500 = ui.Color(0xFF737373);
+    await raster.prepare(company.name,
+        fontSize: 20, bold: true, color: indigo, width: 300);
+    await raster.prepare(company.tagline,
+        fontSize: 9, bold: false, color: grey600, width: 300);
+    for (final field in <String>[company.address, company.phone, company.email]) {
+      if (field.isNotEmpty) {
+        await raster.prepare(field,
+            fontSize: 8, bold: false, color: grey500, width: 300);
+      }
+    }
   }
 
   pw.Widget _pageFooter(pw.Context context) {
@@ -475,7 +511,7 @@ class InventoryPdfService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              'Haalkhata — Confidential',
+              '${AppConstants.appName} — Confidential',
               style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
             pw.Text(
@@ -493,7 +529,7 @@ class InventoryPdfService {
     );
   }
 
-  String _fmt(double v) => '৳ ${NumberFormat('#,##0').format(v)}';
+  String _fmt(double v) => '৳ ${NumberFormat('#,##0.00').format(v)}';
 
   Future<File> _saveFile(String fileName, Uint8List bytes) async {
     final androidSavedPath = await _downloadExportService.saveFileToDownloads(

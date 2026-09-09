@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../models/customer_ledger.dart';
 import '../providers/report_providers.dart';
 import '../services/ledger_excel_service.dart';
@@ -24,6 +27,8 @@ class _CustomerLedgerScreenState
     extends ConsumerState<CustomerLedgerScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  bool _exportingXlsx = false;
+  bool _exportingPdf = false;
 
   @override
   void dispose() {
@@ -32,32 +37,46 @@ class _CustomerLedgerScreenState
   }
 
   Future<void> _exportXlsx() async {
-    final all = ref.read(customerLedgerListProvider);
-    if (all.isEmpty) return;
-    final service = LedgerExcelService();
-    await service.saveAllCustomers(all);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('XLSX exported successfully')),
+    if (_exportingXlsx) return;
+    setState(() => _exportingXlsx = true);
+    try {
+      final all = ref.read(customerLedgerListProvider);
+      if (all.isEmpty) return;
+      final l10n = AppLocalizations.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      final service = LedgerExcelService();
+      await service.saveAllCustomers(all);
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.t('xlsxExported'))),
       );
+    } finally {
+      if (mounted) setState(() => _exportingXlsx = false);
     }
   }
 
   Future<void> _exportPdf() async {
-    final all = ref.read(customerLedgerListProvider);
-    if (all.isEmpty) return;
-    final service = LedgerPdfService();
-    await service.saveAllCustomers(all);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF exported successfully')),
+    if (_exportingPdf) return;
+    setState(() => _exportingPdf = true);
+    try {
+      final all = ref.read(customerLedgerListProvider);
+      if (all.isEmpty) return;
+      final l10n = AppLocalizations.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      final service = LedgerPdfService();
+      final company = DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      await service.saveAllCustomers(all, company);
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.t('pdfExported'))),
       );
+    } finally {
+      if (mounted) setState(() => _exportingPdf = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final all = ref.watch(customerLedgerListProvider);
+    final l10n = AppLocalizations.of(context);
     final customers = _query.isEmpty
         ? all
         : all
@@ -75,9 +94,9 @@ class _CustomerLedgerScreenState
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Customer Ledger',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reportCustomerLedger'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -110,17 +129,21 @@ class _CustomerLedgerScreenState
             children: [
               Expanded(
                 child: _SummaryCard(
-                  label: 'Outstanding',
+                  label: l10n.t('outstanding'),
                   value: money(outstanding),
                   valueColor: const Color(0xFFF97316),
+                  icon: Icons.account_balance_wallet_rounded,
+                  accent: const Color(0xFFF97316),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
-                  label: 'Customers',
+                  label: l10n.t('customers'),
                   value: '${all.length}',
                   valueColor: MohajonWarm.goldText,
+                  icon: Icons.people_alt_rounded,
+                  accent: MohajonWarm.goldText,
                 ),
               ),
             ],
@@ -130,17 +153,21 @@ class _CustomerLedgerScreenState
             children: [
               Expanded(
                 child: _SummaryCard(
-                  label: 'Total Paid',
+                  label: l10n.t('totalPaid'),
                   value: money(totalPaid),
                   valueColor: const Color(0xFFF97316),
+                  icon: Icons.payments_rounded,
+                  accent: const Color(0xFF059669),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryCard(
-                  label: 'With Dues',
+                  label: l10n.t('withDuesLabel'),
                   value: '$withDues',
                   valueColor: MohajonWarm.goldText,
+                  icon: Icons.warning_amber_rounded,
+                  accent: const Color(0xFFEF4444),
                 ),
               ),
             ],
@@ -155,7 +182,7 @@ class _CustomerLedgerScreenState
                     controller: _searchController,
                     onChanged: (v) => setState(() => _query = v),
                     decoration: InputDecoration(
-                      hintText: 'Search customer name',
+                      hintText: l10n.t('searchCustomer'),
                       hintStyle: const TextStyle(
                         color: MohajonWarm.muted,
                       ),
@@ -190,19 +217,24 @@ class _CustomerLedgerScreenState
               _ExportPill(
                 label: 'XLSX',
                 color: const Color(0xFF059669),
+                isBusy: _exportingXlsx,
                 onTap: _exportXlsx,
               ),
               const SizedBox(width: 6),
               _ExportPill(
                 label: 'PDF',
                 color: const Color(0xFFF97316),
+                isBusy: _exportingPdf,
                 onTap: _exportPdf,
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            '${customers.length} of ${all.length} customers',
+            l10n.tP('xOfCustomers', {
+              'a': '${customers.length}',
+              'b': '${all.length}',
+            }),
             style: const TextStyle(
               fontSize: 12,
               color: MohajonWarm.muted,
@@ -211,13 +243,13 @@ class _CustomerLedgerScreenState
           ),
           const SizedBox(height: 12),
           if (all.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 48),
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
               child: Center(
                 child: Text(
-                  'No customer data yet.\nStart by adding customers and recording sales.',
+                  l10n.t('noCustomerData'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xFF98A2B3),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -252,28 +284,18 @@ class _SummaryCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueColor,
+    required this.icon,
+    required this.accent,
   });
 
   final String label;
   final String value;
   final Color valueColor;
-
-  (IconData, Color) _accent() {
-    switch (label) {
-      case 'Outstanding':
-        return (Icons.account_balance_wallet_rounded, const Color(0xFFF97316));
-      case 'Customers':
-        return (Icons.people_alt_rounded, MohajonWarm.goldText);
-      case 'Total Paid':
-        return (Icons.payments_rounded, const Color(0xFF059669));
-      default:
-        return (Icons.warning_amber_rounded, const Color(0xFFEF4444));
-    }
-  }
+  final IconData icon;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    final (icon, accent) = _accent();
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -366,34 +388,45 @@ class _ExportPill extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    this.isBusy = false,
   });
 
   final String label;
   final Color color;
+  final bool isBusy;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
+      onTap: isBusy ? null : onTap,
       child: Container(
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withValues(alpha: isBusy ? 0.06 : 0.1),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: color,
-          ),
-        ),
+        child: isBusy
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
+                ),
+              )
+            : Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
       ),
     );
   }
@@ -407,7 +440,25 @@ class _CustomerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settled = !customer.hasDue;
+    final l10n = AppLocalizations.of(context);
+    final status = customer.status;
+    final isDue = status == LedgerStatus.due;
+    final isAdvance = status == LedgerStatus.advance;
+    final badgeBg = isAdvance
+        ? const Color(0xFFFEF3C7)
+        : isDue
+            ? const Color(0xFFFFF1F2)
+            : const Color(0xFFE4F6E9);
+    final badgeFg = isAdvance
+        ? const Color(0xFFB45309)
+        : isDue
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF059669);
+    final badgeLabel = isAdvance
+        ? l10n.tP('advanceBadge', {'amount': money(customer.absoluteBalance)})
+        : isDue
+            ? l10n.tP('dueBadge', {'amount': money(customer.balance)})
+            : l10n.t('settled');
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -496,21 +547,15 @@ class _CustomerCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: settled
-                          ? const Color(0xFFE4F6E9)
-                          : const Color(0xFFFFF1F2),
+                      color: badgeBg,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      settled
-                          ? 'Settled'
-                          : 'Due ${money(customer.balance)}',
+                      badgeLabel,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: settled
-                            ? const Color(0xFF059669)
-                            : const Color(0xFFEF4444),
+                        color: badgeFg,
                       ),
                     ),
                   ),
@@ -528,9 +573,9 @@ class _CustomerCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Debit (Dr)',
-                          style: TextStyle(
+                        Text(
+                          l10n.t('debitDr'),
+                          style: const TextStyle(
                             fontSize: 11,
                             color: Color(0xFF98A2B3),
                             fontWeight: FontWeight.w600,
@@ -566,9 +611,9 @@ class _CustomerCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Credit (Cr)',
-                          style: TextStyle(
+                        Text(
+                          l10n.t('creditCr'),
+                          style: const TextStyle(
                             fontSize: 11,
                             color: Color(0xFF98A2B3),
                             fontWeight: FontWeight.w600,

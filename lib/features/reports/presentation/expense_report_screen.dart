@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../expenses/models/expense.dart';
 import '../../expenses/providers/expense_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../services/expense_report_excel_service.dart';
 import '../services/expense_report_pdf_service.dart';
 import 'report_shared_widgets.dart';
@@ -32,38 +35,46 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
   }
 
   Future<void> _pickRange() async {
+    final l10n = AppLocalizations.of(context);
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020, 1, 1),
       lastDate: DateTime(DateTime.now().year + 1, 12, 31),
       initialDateRange: _range,
-      helpText: 'Select expense date range',
-      saveText: 'Apply',
+      helpText: l10n.t('selectExpenseRange'),
+      saveText: l10n.t('applyLabel'),
     );
     if (picked == null) return;
     setState(() => _range = picked);
   }
 
   Future<void> _exportXlsx(List<Expense> expenses) => runExport(
+        isXlsx: true,
         task: () async {
           if (expenses.isEmpty) return;
           await ExpenseReportExcelService()
               .saveExpenseReport(expenses: expenses, range: _range);
         },
-        message: 'Expense report exported as XLSX',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsXlsx', {'report': AppLocalizations.of(context).t('reportExpense')}),
       );
 
   Future<void> _exportPdf(List<Expense> expenses) => runExport(
+        isXlsx: false,
         task: () async {
           if (expenses.isEmpty) return;
+          final company =
+              DocCompany.fromShop(ref.read(shopProfileProvider).value);
           await ExpenseReportPdfService()
-              .saveExpenseReport(expenses: expenses, range: _range);
+              .saveExpenseReport(expenses: expenses, range: _range, company: company);
         },
-        message: 'Expense report exported as PDF',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsPdf', {'report': AppLocalizations.of(context).t('reportExpense')}),
       );
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final allExpenses = ref.watch(expensesProvider).value ?? const <Expense>[];
     final categories = ref.watch(expenseCategoriesProvider);
     final selectedExpenses = _filterExpenses(allExpenses);
@@ -80,9 +91,9 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Expense Report',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reportExpense'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -115,17 +126,19 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                   children: [
                     Expanded(
                       child: ReportSummaryCard(
-                        label: 'Total Expense',
+                        label: l10n.t('totalExpense'),
                         value: money(total),
                         valueColor: const Color(0xFF9A3412),
+                        icon: Icons.receipt_long_rounded,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: ReportSummaryCard(
-                        label: 'Entries',
+                        label: l10n.t('entriesLabel'),
                         value: '${selectedExpenses.length}',
                         valueColor: MohajonWarm.goldText,
+                        icon: Icons.list_alt_rounded,
                       ),
                     ),
                   ],
@@ -135,17 +148,19 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                   children: [
                     Expanded(
                       child: ReportSummaryCard(
-                        label: 'Average',
+                        label: l10n.t('averageLabel'),
                         value: money(average),
                         valueColor: const Color(0xFFB45309),
+                        icon: Icons.speed_rounded,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: ReportSummaryCard(
-                        label: 'Categories',
+                        label: l10n.t('categoriesLabel'),
                         value: '$categoryCount',
                         valueColor: const Color(0xFF059669),
+                        icon: Icons.category_outlined,
                       ),
                     ),
                   ],
@@ -168,20 +183,20 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                   children: [
                     Expanded(
                       child: ReportExportButton(
-                        label: 'Download XLSX',
+                        label: l10n.t('downloadXlsx'),
                         icon: Icons.table_chart_outlined,
                         color: const Color(0xFF059669),
-                        isBusy: exporting,
+                        isBusy: exportingXlsx,
                         onTap: () => _exportXlsx(selectedExpenses),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: ReportExportButton(
-                        label: 'Download PDF',
+                        label: l10n.t('downloadPdf'),
                         icon: Icons.picture_as_pdf_rounded,
                         color: const Color(0xFFF97316),
-                        isBusy: exporting,
+                        isBusy: exportingPdf,
                         onTap: () => _exportPdf(selectedExpenses),
                       ),
                     ),
@@ -210,9 +225,9 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                       ),
                     ),
                     const SizedBox(width: 9),
-                    const Text(
-                      'EXPENSE LIST',
-                      style: TextStyle(
+                    Text(
+                      l10n.t('expenseList'),
+                      style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.9,
@@ -231,7 +246,7 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
                         border: Border.all(color: MohajonWarm.goldBorder),
                       ),
                       child: Text(
-                        '${selectedExpenses.length} items',
+                        l10n.tP('xItems', {'count': '${selectedExpenses.length}'}),
                         style: const TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w800,
@@ -326,6 +341,7 @@ class _HighlightsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -371,9 +387,9 @@ class _HighlightsRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'TOP CATEGORY',
-                  style: TextStyle(
+                Text(
+                  l10n.t('topCategory'),
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.8,
@@ -442,6 +458,7 @@ class _ListFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -462,10 +479,10 @@ class _ListFooter extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
-              'Selected range total',
-              style: TextStyle(
+              l10n.t('selectedRangeTotal'),
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF667085),
@@ -473,7 +490,7 @@ class _ListFooter extends StatelessWidget {
             ),
           ),
           Text(
-            '$count items',
+            l10n.tP('xItems', {'count': '$count'}),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -518,6 +535,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(
@@ -537,19 +555,19 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No expenses found',
-            style: TextStyle(
+          Text(
+            l10n.t('noExpensesFound'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: MohajonWarm.ink,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'No expenses for this date range',
+          Text(
+            l10n.t('noExpensesForRange'),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               color: MohajonWarm.muted,
             ),

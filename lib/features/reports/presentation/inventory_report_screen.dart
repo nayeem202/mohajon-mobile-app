@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/product.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../providers/report_providers.dart';
 import '../services/inventory_excel_service.dart';
 import '../services/inventory_pdf_service.dart';
@@ -53,26 +56,33 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
   }
 
   Future<void> _exportXlsx() => runExport(
+        isXlsx: true,
         task: () async {
           final report = ref.read(inventoryReportProvider);
           if (report.products.isEmpty) return;
           await InventoryExcelService().saveInventoryReport(report);
         },
-        message: 'Inventory report exported as XLSX',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsXlsx', {'report': AppLocalizations.of(context).t('reportInventory')}),
       );
 
   Future<void> _exportPdf() => runExport(
+        isXlsx: false,
         task: () async {
           final report = ref.read(inventoryReportProvider);
           if (report.products.isEmpty) return;
-          await InventoryPdfService().saveInventoryReport(report);
+          final company =
+              DocCompany.fromShop(ref.read(shopProfileProvider).value);
+          await InventoryPdfService().saveInventoryReport(report, company);
         },
-        message: 'Inventory report exported as PDF',
+        message: AppLocalizations.of(context)
+            .tP('exportedAsPdf', {'report': AppLocalizations.of(context).t('reportInventory')}),
       );
 
   @override
   Widget build(BuildContext context) {
     final report = ref.watch(inventoryReportProvider);
+    final l10n = AppLocalizations.of(context);
     final products = _query.isEmpty
         ? report.products
         : report.products.where((p) {
@@ -88,9 +98,9 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Inventory Report',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reportInventory'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -134,17 +144,19 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
                     children: [
                       Expanded(
                         child: ReportSummaryCard(
-                          label: 'Total Items',
+                          label: l10n.t('totalItems'),
                           value: '${report.totalItems}',
                           valueColor: const Color(0xFF9A3412),
+                          icon: Icons.inventory_2_rounded,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ReportSummaryCard(
-                          label: 'Stock Value',
+                          label: l10n.t('stockValue'),
                           value: money(report.totalStockValue),
                           valueColor: MohajonWarm.goldText,
+                          icon: Icons.attach_money_rounded,
                         ),
                       ),
                     ],
@@ -154,17 +166,19 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
                     children: [
                       Expanded(
                         child: ReportSummaryCard(
-                          label: 'Low Stock',
+                          label: l10n.t('lowStockLabel'),
                           value: '${report.lowStockCount}',
                           valueColor: const Color(0xFFB45309),
+                          icon: Icons.warning_amber_rounded,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ReportSummaryCard(
-                          label: 'Out of Stock',
+                          label: l10n.t('outOfStockLabel'),
                           value: '${report.outOfStockCount}',
                           valueColor: const Color(0xFFB91C1C),
+                          icon: Icons.block_rounded,
                         ),
                       ),
                     ],
@@ -174,20 +188,20 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
                     children: [
                       Expanded(
                         child: ReportExportButton(
-                          label: 'Download XLSX',
+                          label: l10n.t('downloadXlsx'),
                           icon: Icons.table_chart_outlined,
                           color: const Color(0xFF059669),
-                          isBusy: exporting,
+                          isBusy: exportingXlsx,
                           onTap: _exportXlsx,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ReportExportButton(
-                          label: 'Download PDF',
+                          label: l10n.t('downloadPdf'),
                           icon: Icons.picture_as_pdf_rounded,
                           color: const Color(0xFFF97316),
-                          isBusy: exporting,
+                          isBusy: exportingPdf,
                           onTap: _exportPdf,
                         ),
                       ),
@@ -201,7 +215,7 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
                         controller: _searchCtrl,
                         autofocus: true,
                         decoration: InputDecoration(
-                          hintText: 'Search products...',
+                          hintText: l10n.t('searchProducts'),
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             size: 20,
@@ -273,6 +287,7 @@ class _InventoryListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (products.isEmpty) {
       return const _EmptyState();
     }
@@ -299,9 +314,9 @@ class _InventoryListView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 9),
-            const Text(
-              'INVENTORY ITEMS',
-              style: TextStyle(
+            Text(
+              l10n.t('inventoryItems'),
+              style: const TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.9,
@@ -317,7 +332,7 @@ class _InventoryListView extends StatelessWidget {
                 border: Border.all(color: MohajonWarm.goldBorder),
               ),
               child: Text(
-                '${products.length} items',
+                l10n.tP('xItems', {'count': '${products.length}'}),
                 style: const TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
@@ -353,6 +368,7 @@ class _InventoryItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final status = inventoryStatus(product);
     final indicatorColor = status == InventoryStatus.outOfStock
         ? const Color(0xFFDC2626)
@@ -367,10 +383,10 @@ class _InventoryItemCard extends StatelessWidget {
             : const Color(0xFF059669);
 
     final statusLabel = status == InventoryStatus.outOfStock
-        ? 'Out of stock'
+        ? l10n.t('outOfStockStatus')
         : status == InventoryStatus.low
-            ? 'Low stock'
-            : 'In stock';
+            ? l10n.t('lowStockStatus')
+            : l10n.t('inStockStatus');
 
     return FadeTransition(
       opacity: CurvedAnimation(
@@ -470,7 +486,9 @@ class _InventoryItemCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Stock Value: ${money(product.purchasePrice * product.stockQty)}',
+                                l10n.tP('stockValueOf', {
+                                  'amount': money(product.purchasePrice * product.stockQty),
+                                }),
                                 style: const TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
@@ -480,7 +498,7 @@ class _InventoryItemCard extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 product.category.isEmpty
-                                    ? 'Uncategorized'
+                                    ? l10n.t('uncategorized')
                                     : product.category,
                                 style: const TextStyle(
                                   fontSize: 11.5,
@@ -514,7 +532,7 @@ class _InventoryItemCard extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                'Alert: ${product.lowStockAlert}',
+                                l10n.tP('alertStock', {'qty': '${product.lowStockAlert}'}),
                                 style: const TextStyle(
                                   fontSize: 10.5,
                                   color: MohajonWarm.muted,
@@ -541,6 +559,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(
@@ -560,18 +579,18 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No inventory found',
-            style: TextStyle(
+          Text(
+            l10n.t('noInventoryFound'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: MohajonWarm.ink,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Add products to see them here',
-            style: TextStyle(
+          Text(
+            l10n.t('addProductsToSee'),
+            style: const TextStyle(
               fontSize: 13,
               color: MohajonWarm.muted,
             ),

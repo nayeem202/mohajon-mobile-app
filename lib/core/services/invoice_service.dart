@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -8,29 +7,16 @@ import 'package:pdf/widgets.dart' as pw;
 import '../constants/app_constants.dart';
 import '../models/sale.dart';
 import '../utils/money.dart';
+import 'pdf_doc.dart';
 
 class InvoiceService {
-  pw.Font? _baseFont;
-  pw.Font? _boldFont;
-
-  Future<pw.ThemeData> _buildTheme() async {
-    if (_baseFont == null) {
-      final regular = await rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf');
-      _baseFont = pw.Font.ttf(regular);
-    }
-    if (_boldFont == null) {
-      final bold = await rootBundle.load('assets/fonts/NotoSansBengali-Bold.ttf');
-      _boldFont = pw.Font.ttf(bold);
-    }
-    return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
-  }
-
   Future<Uint8List> buildSaleInvoice(
     Sale sale, {
     String customerName = '',
     String customerPhone = '',
+    required DocCompany company,
   }) async {
-    final theme = await _buildTheme();
+    final theme = await buildAppPdfTheme();
     final pdf = pw.Document(theme: theme);
     final now = DateTime.now();
 
@@ -38,7 +24,7 @@ class InvoiceService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
-        header: (context) => _header(),
+        header: (context) => _header(company),
         footer: (context) => _pageFooter(context),
         build: (context) => [
           _invoiceMeta(sale, now),
@@ -54,7 +40,7 @@ class InvoiceService {
     return pdf.save();
   }
 
-  pw.Widget _header() {
+  pw.Widget _header(DocCompany company) {
     return pw.Column(
       children: [
         pw.Row(
@@ -62,51 +48,7 @@ class InvoiceService {
           children: [
             pw.Expanded(
               flex: 3,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 4),
-                    child: pw.Text(
-                      AppConstants.appName,
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: const PdfColor.fromInt(0xFF1E3A8A),
-                      ),
-                    ),
-                  ),
-                  pw.Text(
-                    'Smart POS & Inventory Management',
-                    style: pw.TextStyle(
-                      fontSize: 9,
-                      color: PdfColors.grey600,
-                    ),
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    'Dhaka, Bangladesh',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
-                  ),
-                  pw.Text(
-                    '+880 1700-000000',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
-                  ),
-                  pw.Text(
-                    'hello@haalkhata.com',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColors.grey500,
-                    ),
-                  ),
-                ],
-              ),
+              child: buildCompanyColumn(company),
             ),
             pw.Expanded(
               flex: 2,

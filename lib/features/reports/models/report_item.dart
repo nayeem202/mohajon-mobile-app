@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class ReportItem {
   const ReportItem({
+    required this.id,
     required this.icon,
     required this.title,
     required this.description,
@@ -10,6 +11,7 @@ class ReportItem {
     this.available = true,
   });
 
+  final String id;
   final IconData icon;
   final String title;
   final String description;

@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/sale.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../customers/providers/customer_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../models/daily_sales.dart';
 import '../services/sales_summary_excel_service.dart';
 import '../services/sales_summary_pdf_service.dart';
@@ -32,7 +35,8 @@ class SalesSummaryScreen extends ConsumerStatefulWidget {
 class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
   final _pdfService = SalesSummaryPdfService();
   final _excelService = SalesSummaryExcelService();
-  bool _exporting = false;
+  bool _exportingXlsx = false;
+  bool _exportingPdf = false;
 
   late DateTimeRange _range;
 
@@ -53,14 +57,15 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
   }
 
   Future<void> _pickRange() async {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final picked = await showDateRangePicker(
       context: context,
       initialDateRange: _range,
       firstDate: DateTime(now.year - 5),
       lastDate: now,
-      helpText: 'Select Date Range',
-      confirmText: 'Apply',
+      helpText: l10n.t('selectDateRange'),
+      confirmText: l10n.t('applyLabel'),
       builder: (context, child) => Theme(
         data: MohajonWarm.theme(Theme.of(context)),
         child: child!,
@@ -180,8 +185,8 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
   }
 
   Future<void> _exportXlsx() async {
-    if (_exporting) return;
-    setState(() => _exporting = true);
+    if (_exportingXlsx) return;
+    setState(() => _exportingXlsx = true);
     try {
       final data = _compute();
       await _excelService.saveSalesSummary(
@@ -190,7 +195,14 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sales summary exported as XLSX')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).tP(
+              'exportedAsXlsx',
+              {'report': AppLocalizations.of(context).t('reportSalesSummary')},
+            ),
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -201,22 +213,32 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _exporting = false);
+      if (mounted) setState(() => _exportingXlsx = false);
     }
   }
 
   Future<void> _exportPdf() async {
-    if (_exporting) return;
-    setState(() => _exporting = true);
+    if (_exportingPdf) return;
+    setState(() => _exportingPdf = true);
     try {
       final data = _compute();
+      final company =
+          DocCompany.fromShop(ref.read(shopProfileProvider).value);
       await _pdfService.saveSalesSummary(
         days: data.days,
         range: _range,
+        company: company,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sales summary exported as PDF')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).tP(
+              'exportedAsPdf',
+              {'report': AppLocalizations.of(context).t('reportSalesSummary')},
+            ),
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -227,17 +249,31 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _exporting = false);
+      if (mounted) setState(() => _exportingPdf = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final data = _compute();
+    final l10n = AppLocalizations.of(context);
     final summaryCards = [
-      _SummaryCardData(label: 'Total Sales', amount: data.totalSales),
-      _SummaryCardData(label: 'Transactions', amount: data.transactions),
-      _SummaryCardData(label: 'Average Order', amount: data.averageOrder),
+      _SummaryCardData(
+        label: l10n.t('totalSalesLabel'),
+        amount: data.totalSales,
+        icon: Icons.trending_up_rounded,
+      ),
+      _SummaryCardData(
+        label: l10n.t('transactions'),
+        amount: data.transactions,
+        icon: Icons.receipt_long_rounded,
+        isCount: true,
+      ),
+      _SummaryCardData(
+        label: l10n.t('averageOrder'),
+        amount: data.averageOrder,
+        icon: Icons.shopping_cart_rounded,
+      ),
     ];
     final rangeLabel =
         '${DateFormat('dd MMM yyyy').format(_range.start)} – ${DateFormat('dd MMM yyyy').format(_range.end)}';
@@ -247,9 +283,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
-            'Sales Summary',
-            style: TextStyle(
+          title: Text(
+            l10n.t('reportSalesSummary'),
+            style: const TextStyle(
               color: MohajonWarm.ink,
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -288,7 +324,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
                       label: 'XLSX',
                       icon: Icons.table_chart_outlined,
                       color: MohajonWarm.green,
-                      isBusy: _exporting,
+                      isBusy: _exportingXlsx,
                       onTap: _exportXlsx,
                     ),
                     const SizedBox(width: 8),
@@ -296,7 +332,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
                       label: 'PDF',
                       icon: Icons.picture_as_pdf_rounded,
                       color: MohajonWarm.orange,
-                      isBusy: _exporting,
+                      isBusy: _exportingPdf,
                       onTap: _exportPdf,
                     ),
                   ],
@@ -305,19 +341,19 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
                 Row(
                   children: [
                     _PresetChip(
-                      label: 'This Month',
+                      label: l10n.t('thisMonth'),
                       icon: Icons.calendar_today_rounded,
                       onTap: _thisMonth,
                     ),
                     const SizedBox(width: 8),
                     _PresetChip(
-                      label: 'Last Month',
+                      label: l10n.t('lastMonth'),
                       icon: Icons.calendar_view_month_rounded,
                       onTap: _lastMonth,
                     ),
                     const SizedBox(width: 8),
                     _PresetChip(
-                      label: 'Last 30 Days',
+                      label: l10n.t('last30Days'),
                       icon: Icons.date_range_rounded,
                       onTap: _last30Days,
                     ),
@@ -333,19 +369,19 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
                   ],
                 ),
                 const SizedBox(height: 22),
-                const _SectionLabel(label: 'Daily Sales'),
+                _SectionLabel(label: l10n.t('dailySales')),
                 const SizedBox(height: 14),
                 for (final day in data.days) ...[
                   _DailySalesRow(day: day),
                   const SizedBox(height: 8),
                 ],
                 if (data.days.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        'No sales in the last 10 days',
-                        style: TextStyle(
+                        l10n.t('noSalesLast10Days'),
+                        style: const TextStyle(
                           color: Color(0xFF98A2B3),
                           fontWeight: FontWeight.w600,
                         ),
@@ -419,10 +455,17 @@ class _ExportButton extends StatelessWidget {
 }
 
 class _SummaryCardData {
-  const _SummaryCardData({required this.label, required this.amount});
+  const _SummaryCardData({
+    required this.label,
+    required this.amount,
+    required this.icon,
+    this.isCount = false,
+  });
 
   final String label;
   final num amount;
+  final IconData icon;
+  final bool isCount;
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -431,10 +474,10 @@ class _SummaryCard extends StatelessWidget {
   final _SummaryCardData data;
 
   (Color, IconData) _accent() {
-    switch (data.label) {
-      case 'Transactions':
+    switch (data.icon) {
+      case Icons.receipt_long_rounded:
         return (MohajonWarm.green, Icons.receipt_long_rounded);
-      case 'Average Order':
+      case Icons.shopping_cart_rounded:
         return (MohajonWarm.orange, Icons.shopping_cart_rounded);
       default:
         return (MohajonWarm.goldText, Icons.trending_up_rounded);
@@ -443,7 +486,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatted = data.label == 'Transactions'
+    final formatted = data.isCount
         ? '${data.amount.toInt()}'
         : money(data.amount);
     final (accent, icon) = _accent();
@@ -678,6 +721,7 @@ class _DailySalesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -706,7 +750,7 @@ class _DailySalesRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${day.transactionCount} txns',
+                  l10n.tP('xTxns', {'count': '${day.transactionCount}'}),
                   style: const TextStyle(
                     fontSize: 11,
                     color: MohajonWarm.muted,
@@ -731,7 +775,7 @@ class _DailySalesRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Avg ${money(day.average)}',
+                  l10n.tP('avgAmount', {'amount': money(day.average)}),
                   style: const TextStyle(
                     fontSize: 11,
                     color: MohajonWarm.muted,

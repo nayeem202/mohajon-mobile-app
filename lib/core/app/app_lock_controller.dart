@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:hive/hive.dart';
 
@@ -8,6 +7,9 @@ import '../constants/app_constants.dart';
 
 const _appLockKey = 'appLock';
 const _appLockPinKey = 'appLockPin';
+const _lockAttemptsKey = 'appLockFailedAttempts';
+const _lockoutUntilKey = 'appLockLockoutUntil';
+const _maxAttempts = 5;
 
 final appLockProvider = StateNotifierProvider<AppLockController, AppLockState>(
   (ref) => AppLockController(),
@@ -35,10 +37,47 @@ class AppLockController extends StateNotifier<AppLockState> {
     return stored != null && stored.isNotEmpty;
   }
 
+  int get failedAttempts => ((_box.get(_lockAttemptsKey) as num?) ?? 0).toInt();
+
+  DateTime? get lockoutUntil {
+    final raw = _box.get(_lockoutUntilKey) as String?;
+    if (raw == null || raw.isEmpty) return null;
+    final until = DateTime.tryParse(raw);
+    if (until == null || !until.isAfter(DateTime.now())) return null;
+    return until;
+  }
+
+  bool get isLockedOut => lockoutUntil != null;
+
+  Duration get lockoutRemaining {
+    final until = lockoutUntil;
+    if (until == null) return Duration.zero;
+    return until.difference(DateTime.now());
+  }
+
   bool verify(String pin) {
+    if (isLockedOut) return false;
     final stored = _box.get(_appLockPinKey) as String?;
     if (stored == null || stored.isEmpty) return false;
-    return stored == _hashPin(pin);
+    final ok = stored == _hashPin(pin);
+    if (ok) {
+      _box.put(_lockAttemptsKey, 0);
+      _box.delete(_lockoutUntilKey);
+      return true;
+    }
+    final attempts = failedAttempts + 1;
+    _box.put(_lockAttemptsKey, attempts);
+    if (attempts >= _maxAttempts) {
+      // Escalating lockout: 30s after the 5th miss, 60s after the 10th, ...
+      final seconds = 30 * (attempts ~/ _maxAttempts);
+      _box.put(
+        _lockoutUntilKey,
+        DateTime.now()
+            .add(Duration(seconds: seconds))
+            .toIso8601String(),
+      );
+    }
+    return false;
   }
 
   Future<void> enable({String? pin}) async {

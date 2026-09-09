@@ -6,27 +6,17 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/services/download_export_service.dart';
-import '../../../core/services/server_report_downloader.dart';
 import '../models/table_report.dart';
 import 'report_table_xlsx.dart';
 
 class DuePaymentsExcelService {
   final _downloadExportService = DownloadExportService();
-  final _serverDownloader = ServerReportDownloader();
 
   Future<File> saveDuePayments({
     required ReportTableData table,
     required DateTimeRange range,
   }) async {
     final fileName = 'due-payments-${_rangeFilePart(range)}.xlsx';
-    final serverBytes = await _serverDownloader.download(
-      reportType: 'due-payments',
-      format: 'xlsx',
-      from: range.start,
-      to: range.end,
-    );
-    if (serverBytes != null) return _saveFile(fileName, serverBytes);
-
     final bytes = buildTableXlsx(table);
     return _saveFile(fileName, bytes);
   }

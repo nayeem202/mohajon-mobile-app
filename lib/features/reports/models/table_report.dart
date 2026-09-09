@@ -1,3 +1,15 @@
+class ReportSummary {
+  const ReportSummary({
+    required this.label,
+    required this.value,
+    this.accent = 0xFF1E3A8A,
+  });
+
+  final String label;
+  final String value;
+  final int accent;
+}
+
 class ReportTableColumn {
   const ReportTableColumn({
     required this.key,
@@ -18,10 +30,12 @@ class ReportTableData {
     required this.subtitle,
     required this.columns,
     required this.rows,
+    this.summaries = const [],
   });
 
   final String title;
   final String subtitle;
   final List<ReportTableColumn> columns;
   final List<Map<String, Object?>> rows;
+  final List<ReportSummary> summaries;
 }

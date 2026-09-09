@@ -10,3 +10,7 @@ String money(num value) {
   );
   return formatter.format(value);
 }
+
+/// Rounds a monetary value to 2 decimal places (paisa) at the point of
+/// arithmetic so stored amounts never carry floating-point dust.
+double moneyRound2(num value) => (value * 100).roundToDouble() / 100;

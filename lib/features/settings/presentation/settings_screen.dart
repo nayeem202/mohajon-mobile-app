@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:intl/intl.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/fcm_service.dart';
@@ -14,6 +17,7 @@ import '../../../core/app/app_providers.dart';
 import '../../../core/app/app_lock_controller.dart';
 import '../../../core/app/app_lock_screen.dart';
 import '../../../core/app/quick_tour_screen.dart';
+import '../../../core/services/download_export_service.dart';
 import '../../profile/presentation/widgets/animated_section.dart';
 import 'account_security_screen.dart';
 
@@ -1116,6 +1120,7 @@ class _AppLockRow extends ConsumerWidget {
           subtitle: l10n.t('confirmPinToTurnOff'),
           showBack: true,
           autoPopOnSuccess: true,
+          lockoutRemaining: () => controller.lockoutRemaining,
           onSubmit: (pin) async => controller.verify(pin),
         ),
       ),
@@ -1136,6 +1141,7 @@ class _AppLockRow extends ConsumerWidget {
           subtitle: l10n.t('enterCurrentPinSubtitle'),
           showBack: true,
           autoPopOnSuccess: true,
+          lockoutRemaining: () => controller.lockoutRemaining,
           onSubmit: (pin) async => controller.verify(pin),
         ),
       ),
@@ -1177,13 +1183,13 @@ class _AppLockRow extends ConsumerWidget {
 
 /* ========== Data & Backup Body ========== */
 
-class _DataBackupBody extends StatelessWidget {
+class _DataBackupBody extends ConsumerWidget {
   const _DataBackupBody({required this.onToast});
 
   final void Function(String) onToast;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1192,7 +1198,15 @@ class _DataBackupBody extends StatelessWidget {
           icon: Icons.file_download_outlined,
           label: l10n.t('exportData'),
           value: '',
-          onTap: () => onToast(l10n.t('dataExportStarted')),
+          onTap: () async {
+            onToast(l10n.t('dataExportStarted'));
+            try {
+              await _exportBackup(ref);
+              if (context.mounted) onToast(l10n.t('dataExportComplete'));
+            } catch (_) {
+              if (context.mounted) onToast(l10n.t('dataExportFailed'));
+            }
+          },
         ),
         _Divider(),
         _NavRow(
@@ -1204,6 +1218,46 @@ class _DataBackupBody extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Writes all local business collections to a single JSON file in Downloads.
+/// Auth tokens, the app-lock PIN, and other credentials are deliberately
+/// excluded so a backup never carries secrets.
+Future<void> _exportBackup(WidgetRef ref) async {
+  final db = ref.read(localDatabaseProvider);
+  final backup = <String, Object>{
+    'app': 'Mohajon',
+    'exportedAt': DateTime.now().toIso8601String(),
+    'products': db.products.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'customers': db.customers.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'sales': db.sales.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'customerLedgerEntries': db.customerLedgerEntries
+        .values(includeDeleted: true)
+        .map((e) => e.toJson())
+        .toList(),
+    'payments': db.payments.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'purchases': db.purchases.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'suppliers': db.suppliers.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'vendors': db.vendors.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'vendorPurchases': db.vendorPurchases
+        .values(includeDeleted: true)
+        .map((e) => e.toJson())
+        .toList(),
+    'vendorPayments': db.vendorPayments
+        .values(includeDeleted: true)
+        .map((e) => e.toJson())
+        .toList(),
+    'expenses': db.expenses.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+    'users': db.users.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+  };
+  final json = const JsonEncoder.withIndent('  ').convert(backup);
+  final fileName =
+      'mohajon-backup-${DateFormat('yyyy-MM-dd_HHmm').format(DateTime.now())}.json';
+  await DownloadExportService().saveFileToDownloads(
+    fileName: fileName,
+    mimeType: 'application/json',
+    bytes: Uint8List.fromList(utf8.encode(json)),
+  );
 }
 
 /* ========== About Body ========== */

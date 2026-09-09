@@ -7,6 +7,7 @@ import '../../../core/models/payment.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/models/product.dart';
+import '../../../core/utils/money.dart';
 import '../../../features/products/providers/product_providers.dart';
 import '../../notifications/models/notification_model.dart';
 import '../../notifications/providers/notification_providers.dart';
@@ -32,10 +33,12 @@ class CartState {
   final double vatPercent;
   final PaymentMethod paymentMethod;
 
-  double get subtotal => items.fold<double>(0, (sum, item) => sum + item.lineTotal);
-  double get vatAmount => subtotal * (vatPercent / 100);
-  double get total => (subtotal + vatAmount - discount).clamp(0, double.infinity);
-  double get due => (total - paidAmount).clamp(0, double.infinity);
+  double get subtotal =>
+      moneyRound2(items.fold<double>(0, (sum, item) => sum + item.lineTotal));
+  double get vatAmount => moneyRound2(subtotal * (vatPercent / 100));
+  double get total =>
+      moneyRound2((subtotal + vatAmount - discount).clamp(0, double.infinity));
+  double get due => moneyRound2((total - paidAmount).clamp(0, double.infinity));
 
   CartState copyWith({
     List<SaleItem>? items,
@@ -127,6 +130,13 @@ class CartController extends StateNotifier<CartState> {
     if (state.due > 0 && state.customerId.isEmpty) {
       throw StateError('Select a customer before saving a due sale.');
     }
+    final totalAmount = state.total;
+    if (totalAmount <= 0) {
+      throw StateError('Sale total must be greater than zero.');
+    }
+    final paidAmount = moneyRound2(
+      state.paidAmount > totalAmount ? totalAmount : state.paidAmount,
+    );
     final db = _ref.read(localDatabaseProvider);
     for (final item in state.items) {
       final product = db.products.getForShop(_ref.read(shopIdProvider), item.productId);
@@ -143,12 +153,12 @@ class CartController extends StateNotifier<CartState> {
       discount: state.discount,
       vatPercent: state.vatPercent,
       charge: 0,
-      totalAmount: state.total,
-      paidAmount: state.paidAmount,
-      dueAmount: state.due,
-      paymentStatus: state.due == 0
+      totalAmount: totalAmount,
+      paidAmount: paidAmount,
+      dueAmount: moneyRound2((totalAmount - paidAmount).clamp(0, double.infinity)),
+      paymentStatus: totalAmount - paidAmount == 0
           ? PaymentStatus.paid
-          : state.paidAmount > 0
+          : paidAmount > 0
               ? PaymentStatus.partial
               : PaymentStatus.due,
       shopId: _ref.read(shopIdProvider),
@@ -157,33 +167,48 @@ class CartController extends StateNotifier<CartState> {
       syncStatus: SyncStatus.pending,
     );
 
-    await db.sales.put(sale);
-    for (final item in state.items) {
-      await _ref.read(productServiceProvider).adjustStock(
-            item.productId,
-            -item.qty.round(),
-            syncAfterSave: false,
-          );
-    }
-    if (state.paidAmount > 0 && state.customerId.isNotEmpty) {
-      await db.payments.put(
-        Payment(
-          paymentId: _uuid.v4(),
-          customerId: state.customerId,
-          saleId: sale.saleId,
-          amount: state.paidAmount,
-          paymentMethod: state.paymentMethod,
-          shopId: sale.shopId,
-          createdAt: now,
-          updatedAt: now,
-          syncStatus: SyncStatus.pending,
-        ),
-      );
+    final shopId = sale.shopId;
+    try {
+      await db.sales.put(sale);
+      for (final item in state.items) {
+        await _ref.read(productServiceProvider).adjustStock(
+              item.productId,
+              -item.qty.round(),
+              syncAfterSave: false,
+            );
+      }
+      if (paidAmount > 0 && state.customerId.isNotEmpty) {
+        await db.payments.put(
+          Payment(
+            paymentId: _uuid.v4(),
+            customerId: state.customerId,
+            saleId: sale.saleId,
+            amount: paidAmount,
+            paymentMethod: state.paymentMethod,
+            shopId: shopId,
+            createdAt: now,
+            updatedAt: now,
+            syncStatus: SyncStatus.pending,
+          ),
+        );
+      }
+    } catch (error) {
+      // Compensate for partially applied writes so a user retry cannot
+      // duplicate the sale, payment, or stock deduction.
+      for (final item in state.items) {
+        await _ref.read(productServiceProvider).adjustStock(
+              item.productId,
+              item.qty.round(),
+              syncAfterSave: false,
+            );
+      }
+      await db.sales.remove(shopId, sale.saleId);
+      rethrow;
     }
     _ref.read(notificationServiceProvider).add(
           type: NotificationType.sale,
           title: 'Sale completed',
-          message: 'Sale of ৳${sale.totalAmount.toStringAsFixed(2)} recorded.',
+          message: 'Sale of ৳${totalAmount.toStringAsFixed(2)} recorded.',
           sourceKey: 'sale:${sale.saleId}',
         );
     clear();

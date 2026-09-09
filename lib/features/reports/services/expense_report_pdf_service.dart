@@ -1,72 +1,86 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/download_export_service.dart';
-import '../../../core/services/server_report_downloader.dart';
+import '../../../core/services/pdf_doc.dart';
+import '../../../core/services/pdf_raster_text.dart';
 import '../../expenses/models/expense.dart';
+
+const _expenseOrange = ui.Color(0xFFEA580C);
+const _expenseIndigo = ui.Color(0xFF1E3A8A);
+const _expenseGrey800 = ui.Color(0xFF374151);
 
 class ExpenseReportPdfService {
   final _downloadExportService = DownloadExportService();
-  final _serverDownloader = ServerReportDownloader();
-  pw.Font? _baseFont;
-  pw.Font? _boldFont;
-
-  Future<pw.ThemeData> _buildTheme() async {
-    if (_baseFont == null) {
-      final regular = await rootBundle.load(
-        'assets/fonts/NotoSansBengali-Regular.ttf',
-      );
-      _baseFont = pw.Font.ttf(regular);
-    }
-    if (_boldFont == null) {
-      final bold = await rootBundle.load(
-        'assets/fonts/NotoSansBengali-Bold.ttf',
-      );
-      _boldFont = pw.Font.ttf(bold);
-    }
-    return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
-  }
 
   Future<File> saveExpenseReport({
     required List<Expense> expenses,
     required DateTimeRange range,
+    required DocCompany company,
   }) async {
+    if (expenses.isEmpty) {
+      throw StateError('No data in the selected period');
+    }
     final fileName = 'expense-report-${_rangeFilePart(range)}.pdf';
-    final serverBytes = await _serverDownloader.download(
-      reportType: 'expenses',
-      format: 'pdf',
-      from: range.start,
-      to: range.end,
-    );
-    if (serverBytes != null) return _saveFile(fileName, serverBytes);
-
-    final bytes = await buildExpenseReportPdf(expenses, range);
+    final bytes = await buildExpenseReportPdf(expenses, range, company);
     return _saveFile(fileName, bytes);
   }
 
   Future<Uint8List> buildExpenseReportPdf(
     List<Expense> expenses,
     DateTimeRange range,
+    DocCompany company,
   ) async {
-    final theme = await _buildTheme();
-    final doc = pw.Document(theme: theme);
+    final theme = await buildAppPdfTheme();
+    final raster = PdfRasterText();
+    final contentWidth = PdfPageFormat.a4.width - 72;
+    final colWidths = _colWidths(contentWidth);
+    final cellWidths = <double>[for (final w in colWidths) w - 12];
+
+    final topCategory = _topCategory(expenses);
     final total = expenses.fold<double>(
       0,
       (sum, expense) => sum + expense.amount,
     );
+    await raster.prepare(topCategory,
+        fontSize: 9, bold: false, color: _expenseGrey800, width: contentWidth - 20);
+    await _prepareCompany(raster, company);
+    for (final expense in expenses) {
+      await raster.prepare(DateFormat('dd MMM yyyy').format(expense.date),
+          fontSize: 9, bold: false, color: _expenseGrey800, width: cellWidths[0]);
+      await raster.prepare(expense.categoryLabel,
+          fontSize: 9, bold: false, color: _expenseGrey800, width: cellWidths[1]);
+      await raster.prepare(expense.description,
+          fontSize: 9, bold: false, color: _expenseGrey800, width: cellWidths[2]);
+      await raster.prepare(_fmt(expense.amount),
+          fontSize: 9,
+          bold: true,
+          color: _expenseOrange,
+          width: cellWidths[3],
+          textAlign: ui.TextAlign.right);
+    }
+    await raster.prepare('TOTAL',
+        fontSize: 9, bold: true, color: _expenseGrey800, width: cellWidths[0]);
+    await raster.prepare(_fmt(total),
+        fontSize: 9,
+        bold: true,
+        color: _expenseIndigo,
+        width: cellWidths[3],
+        textAlign: ui.TextAlign.right);
+
+    final doc = pw.Document(theme: theme);
     final average = expenses.isEmpty ? 0.0 : total / expenses.length;
     final categoryCount = expenses
         .map((expense) => expense.categoryId)
         .toSet()
         .length;
-    final topCategory = _topCategory(expenses);
     final periodText =
         '${DateFormat('dd MMM yyyy').format(range.start)} - ${DateFormat('dd MMM yyyy').format(range.end)}';
 
@@ -74,7 +88,8 @@ class ExpenseReportPdfService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
-        header: (context) => _header('Expense Report'),
+        header: (context) =>
+            _header(doc.document, raster, 'Expense Report', company),
         footer: (context) => _pageFooter(context),
         build: (context) => [
           _reportMetaBar(periodText: periodText, reportType: 'Date Range'),
@@ -155,9 +170,15 @@ class ExpenseReportPdfService {
                 'Amount (৳)',
               ]),
               ...expenses.asMap().entries.map(
-                (e) => _expenseRow(e.value, e.key.isOdd),
+                (e) => _expenseRow(
+                  doc.document,
+                  raster,
+                  cellWidths,
+                  e.value,
+                  e.key.isOdd,
+                ),
               ),
-              _totalRow(total),
+              _totalRow(doc.document, raster, cellWidths, total),
             ],
           ),
         ],
@@ -166,7 +187,12 @@ class ExpenseReportPdfService {
     return doc.save();
   }
 
-  pw.Widget _header(String title) {
+  pw.Widget _header(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    String title,
+    DocCompany company,
+  ) {
     return pw.Column(
       children: [
         pw.Row(
@@ -174,39 +200,7 @@ class ExpenseReportPdfService {
           children: [
             pw.Expanded(
               flex: 3,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 4),
-                    child: pw.Text(
-                      'Haalkhata',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: const PdfColor.fromInt(0xFF1E3A8A),
-                      ),
-                    ),
-                  ),
-                  pw.Text(
-                    'Smart POS & Inventory Management',
-                    style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    'Dhaka, Bangladesh',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                  pw.Text(
-                    '+880 1700-000000',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                  pw.Text(
-                    'hello@haalkhata.com',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                ],
-              ),
+              child: buildRasterCompanyColumn(pdf, raster, company),
             ),
             pw.Expanded(
               flex: 2,
@@ -399,36 +393,54 @@ class ExpenseReportPdfService {
     );
   }
 
-  pw.TableRow _expenseRow(Expense expense, bool odd) {
+  pw.TableRow _expenseRow(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    List<double> widths,
+    Expense expense,
+    bool odd,
+  ) {
     return pw.TableRow(
       decoration: pw.BoxDecoration(
         color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
-        _cell(DateFormat('dd MMM yyyy').format(expense.date)),
-        _cell(expense.categoryLabel),
-        _cell(expense.description),
+        _cell(pdf, raster, DateFormat('dd MMM yyyy').format(expense.date),
+            width: widths[0]),
+        _cell(pdf, raster, expense.categoryLabel, width: widths[1]),
+        _cell(pdf, raster, expense.description, width: widths[2]),
         _cell(
+          pdf,
+          raster,
           _fmt(expense.amount),
-          align: pw.TextAlign.right,
-          color: const PdfColor.fromInt(0xFFEA580C),
+          width: widths[3],
+          alignment: pw.Alignment.centerRight,
+          color: _expenseOrange,
           bold: true,
         ),
       ],
     );
   }
 
-  pw.TableRow _totalRow(double total) {
+  pw.TableRow _totalRow(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    List<double> widths,
+    double total,
+  ) {
     return pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: [
-        _cell('TOTAL', bold: true),
-        _cell(''),
-        _cell(''),
+        _cell(pdf, raster, 'TOTAL', width: widths[0], bold: true),
+        _cell(pdf, raster, '', width: widths[1]),
+        _cell(pdf, raster, '', width: widths[2]),
         _cell(
+          pdf,
+          raster,
           _fmt(total),
-          align: pw.TextAlign.right,
-          color: const PdfColor.fromInt(0xFF1E3A8A),
+          width: widths[3],
+          alignment: pw.Alignment.centerRight,
+          color: _expenseIndigo,
           bold: true,
         ),
       ],
@@ -436,23 +448,48 @@ class ExpenseReportPdfService {
   }
 
   pw.Widget _cell(
+    PdfDocument pdf,
+    PdfRasterText raster,
     String value, {
-    pw.TextAlign align = pw.TextAlign.left,
-    PdfColor? color,
+    required double width,
+    pw.Alignment alignment = pw.Alignment.centerLeft,
+    ui.Color? color,
     bool bold = false,
   }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      child: pw.Text(
+      child: raster.build(
+        pdf,
         value,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: 9,
-          color: color ?? PdfColors.grey800,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-        ),
+        fontSize: 9,
+        bold: bold,
+        color: color ?? _expenseGrey800,
+        width: width,
+        alignment: alignment,
       ),
     );
+  }
+
+  List<double> _colWidths(double contentWidth) {
+    const ratios = <double>[1.4, 1.6, 3.2, 1.4];
+    final total = ratios.fold<double>(0, (sum, r) => sum + r);
+    return <double>[for (final r in ratios) contentWidth * r / total];
+  }
+
+  Future<void> _prepareCompany(PdfRasterText raster, DocCompany company) async {
+    const indigo = ui.Color(0xFF1E3A8A);
+    const grey600 = ui.Color(0xFF525252);
+    const grey500 = ui.Color(0xFF737373);
+    await raster.prepare(company.name,
+        fontSize: 20, bold: true, color: indigo, width: 300);
+    await raster.prepare(company.tagline,
+        fontSize: 9, bold: false, color: grey600, width: 300);
+    for (final field in <String>[company.address, company.phone, company.email]) {
+      if (field.isNotEmpty) {
+        await raster.prepare(field,
+            fontSize: 8, bold: false, color: grey500, width: 300);
+      }
+    }
   }
 
   pw.Widget _pageFooter(pw.Context context) {
@@ -479,7 +516,7 @@ class ExpenseReportPdfService {
     return entries.first.key;
   }
 
-  String _fmt(double v) => '৳ ${NumberFormat('#,##0').format(v)}';
+  String _fmt(double v) => '৳ ${NumberFormat('#,##0.00').format(v)}';
 
   String _rangeFilePart(DateTimeRange range) =>
       '${DateFormat('yyyy-MM-dd').format(range.start)}-to-${DateFormat('yyyy-MM-dd').format(range.end)}';

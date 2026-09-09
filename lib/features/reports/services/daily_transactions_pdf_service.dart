@@ -6,28 +6,20 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/services/download_export_service.dart';
-import '../../../core/services/server_report_downloader.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../models/table_report.dart';
 import 'report_table_pdf.dart';
 
 class DailyTransactionsPdfService {
   final _downloadExportService = DownloadExportService();
-  final _serverDownloader = ServerReportDownloader();
 
   Future<File> saveDailyTransactions({
     required ReportTableData table,
     required DateTimeRange range,
+    required DocCompany company,
   }) async {
     final fileName = 'daily-transactions-${_rangeFilePart(range)}.pdf';
-    final serverBytes = await _serverDownloader.download(
-      reportType: 'daily-transactions',
-      format: 'pdf',
-      from: range.start,
-      to: range.end,
-    );
-    if (serverBytes != null) return _saveFile(fileName, serverBytes);
-
-    final bytes = await buildTablePdf(table);
+    final bytes = await buildTablePdf(table, company);
     return _saveFile(fileName, bytes);
   }
 

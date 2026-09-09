@@ -7,6 +7,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -297,6 +298,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
                 sale,
                 customerName: customer?.name ?? '',
                 customerPhone: customer?.phone ?? '',
+                company: DocCompany.fromShop(profile),
               );
               await Printing.sharePdf(
                 bytes: bytes,

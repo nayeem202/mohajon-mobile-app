@@ -2,19 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 
 mixin ReportExportMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
-  bool _exporting = false;
+  bool _exportingXlsx = false;
+  bool _exportingPdf = false;
 
-  bool get exporting => _exporting;
+  bool get exportingXlsx => _exportingXlsx;
+  bool get exportingPdf => _exportingPdf;
 
   Future<void> runExport({
     required Future<void> Function() task,
     required String message,
+    required bool isXlsx,
   }) async {
-    if (_exporting) return;
-    setState(() => _exporting = true);
+    if (isXlsx && _exportingXlsx) return;
+    if (!isXlsx && _exportingPdf) return;
+    setState(() {
+      if (isXlsx) {
+        _exportingXlsx = true;
+      } else {
+        _exportingPdf = true;
+      }
+    });
     try {
       await task();
       if (!mounted) return;
@@ -30,7 +41,15 @@ mixin ReportExportMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _exporting = false);
+      if (mounted) {
+        setState(() {
+          if (isXlsx) {
+            _exportingXlsx = false;
+          } else {
+            _exportingPdf = false;
+          }
+        });
+      }
     }
   }
 }
@@ -74,13 +93,19 @@ class ReportSummaryCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueColor,
+    this.subtitle,
+    this.icon,
   });
 
   final String label;
   final String value;
   final Color valueColor;
+  final String? subtitle;
+  final IconData? icon;
 
   IconData _icon() {
+    final explicit = icon;
+    if (explicit != null) return explicit;
     final l = label.toLowerCase();
     if (l.contains('profit')) return Icons.trending_up_rounded;
     if (l.contains('revenue') ||
@@ -182,6 +207,19 @@ class ReportSummaryCard extends StatelessWidget {
                       letterSpacing: -0.3,
                     ),
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: MohajonWarm.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -209,6 +247,7 @@ class ReportRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -250,10 +289,10 @@ class ReportRangeSelector extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 9),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Date Range',
-                  style: TextStyle(
+                  l10n.t('dateRange'),
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
@@ -263,7 +302,7 @@ class ReportRangeSelector extends StatelessWidget {
               TextButton.icon(
                 onPressed: onPickRange,
                 icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                label: const Text('Change'),
+                label: Text(l10n.t('changeLabel')),
                 style: TextButton.styleFrom(
                   foregroundColor: MohajonWarm.goldText,
                   textStyle: const TextStyle(fontWeight: FontWeight.w800),
@@ -285,21 +324,21 @@ class ReportRangeSelector extends StatelessWidget {
             children: [
               Expanded(
                 child: _PresetChip(
-                  label: 'This Month',
+                  label: l10n.t('thisMonth'),
                   onTap: onThisMonth,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _PresetChip(
-                  label: 'Last Month',
+                  label: l10n.t('lastMonth'),
                   onTap: onLastMonth,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _PresetChip(
-                  label: 'Last 30 Days',
+                  label: l10n.t('last30Days'),
                   onTap: onLast30Days,
                 ),
               ),

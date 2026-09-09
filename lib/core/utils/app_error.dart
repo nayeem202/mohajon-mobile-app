@@ -30,6 +30,13 @@ String friendlyErrorMessage(
     if (error.statusCode == 409) return 'This item already exists.';
     return fallback;
   }
+  // Curated validation/domain errors (e.g. "Product X has only 3 in stock")
+  // are written as friendly sentences — surface them instead of the generic
+  // fallback so the checkout and forms show the real reason.
+  if (error is StateError) {
+    final msg = error.message.trim();
+    if (msg.isNotEmpty) return msg;
+  }
   final s = error.toString().toLowerCase();
   if (s.contains('socketexception') ||
       s.contains('connection refused') ||

@@ -12,11 +12,13 @@ import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/utils/money.dart';
 import '../../products/providers/product_providers.dart';
+import '../../settings/providers/shop_profile_providers.dart';
 import '../providers/cart_provider.dart';
 
 const _kAmber = Color(0xFFFFC800);
@@ -318,12 +320,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            if (_customerMode == _CustomerMode.walkIn)
-                              _InfoBanner(
-                                icon: Icons.verified_user_outlined,
-                                message: l10n.t('walkInSaleNote'),
-                              )
-                            else if (selectedCustomer != null)
+                            if (selectedCustomer != null)
                               _SelectedCustomerCard(
                                 customer: selectedCustomer,
                                 onClear: () {
@@ -1138,6 +1135,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 customerPhone:
                                                     selectedCustomer?.phone ??
                                                         '',
+                                                company: DocCompany.fromShop(
+                                                  ref
+                                                      .read(shopProfileProvider)
+                                                      .value,
+                                                ),
                                               );
                                           if (mounted) {
                                             await Printing.sharePdf(
@@ -1308,48 +1310,6 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _InfoBanner extends StatelessWidget {
-  const _InfoBanner({required this.icon, required this.message});
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _kWarmTint,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: _kSoftFill,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(icon, color: _kBronzeText, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: _kBronzeText,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

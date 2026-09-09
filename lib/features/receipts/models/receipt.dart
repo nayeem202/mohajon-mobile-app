@@ -1,12 +1,9 @@
-import 'package:intl/intl.dart';
-
 import '../../../core/models/payment.dart';
+import '../../../core/utils/money.dart';
 
 const receiptPaymentMethods = PaymentMethod.values;
 
-final _receiptCurrency = NumberFormat.currency(locale: 'en_US', symbol: r'$');
-
-String receiptMoney(num value) => _receiptCurrency.format(value);
+String receiptMoney(num value) => money(value);
 
 enum ReceiptDiscountType { percentage, fixedAmount }
 

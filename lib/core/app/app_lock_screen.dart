@@ -20,6 +20,7 @@ class AppLockScreen extends StatefulWidget {
     required this.onSubmit,
     this.showBack = false,
     this.autoPopOnSuccess = false,
+    this.lockoutRemaining,
   });
 
   final String title;
@@ -29,6 +30,10 @@ class AppLockScreen extends StatefulWidget {
   final Future<bool> Function(String pin) onSubmit;
   final bool showBack;
   final bool autoPopOnSuccess;
+
+  /// Reports any active brute-force lockout so the UI can block input and
+  /// show the remaining wait (checked only after a failed attempt).
+  final Duration Function()? lockoutRemaining;
 
   @override
   State<AppLockScreen> createState() => _AppLockScreenState();
@@ -59,6 +64,17 @@ class _AppLockScreenState extends State<AppLockScreen>
 
   Future<void> _onKey(String digit) async {
     if (_busy || _pin.length >= 4) return;
+    final l10n = AppLocalizations.of(context);
+    final lockout = widget.lockoutRemaining?.call() ?? Duration.zero;
+    if (lockout > Duration.zero) {
+      setState(() {
+        _error = l10n.tP(
+          'lockoutMessage',
+          {'seconds': '${lockout.inSeconds.ceil()}'},
+        );
+      });
+      return;
+    }
     setState(() {
       _pin += digit;
       _error = '';
@@ -74,9 +90,14 @@ class _AppLockScreenState extends State<AppLockScreen>
       }
       return;
     }
-    final l10n = AppLocalizations.of(context);
+    final remaining = widget.lockoutRemaining?.call() ?? Duration.zero;
     setState(() {
-      _error = l10n.t('wrongPin');
+      _error = remaining > Duration.zero
+          ? l10n.tP(
+              'lockoutMessage',
+              {'seconds': '${remaining.inSeconds.ceil()}'},
+            )
+          : l10n.t('wrongPin');
       _pin = '';
     });
     _shakeController.forward(from: 0);
@@ -89,7 +110,6 @@ class _AppLockScreenState extends State<AppLockScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final size = MediaQuery.sizeOf(context);
     final horizontalPad = size.width >= 480
         ? (size.width - 320) / 2

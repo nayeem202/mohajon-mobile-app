@@ -1,80 +1,89 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/services/download_export_service.dart';
-import '../../../core/services/server_report_downloader.dart';
+import '../../../core/services/pdf_doc.dart';
+import '../../../core/services/pdf_raster_text.dart';
 import '../models/customer_ledger.dart';
 import '../models/ledger_entry.dart';
 
+const _ledgerIndigo = ui.Color(0xFF1E3A8A);
+const _ledgerRed = ui.Color(0xFFDC2626);
+const _ledgerAmber = ui.Color(0xFFD97706);
+const _ledgerGrey700 = ui.Color(0xFF374151);
+
 class LedgerPdfService {
   final _downloadExportService = DownloadExportService();
-  final _serverDownloader = ServerReportDownloader();
-  pw.Font? _baseFont;
-  pw.Font? _boldFont;
 
-  Future<pw.ThemeData> _buildTheme() async {
-    if (_baseFont == null) {
-      final regular = await rootBundle.load(
-        'assets/fonts/NotoSansBengali-Regular.ttf',
-      );
-      _baseFont = pw.Font.ttf(regular);
+  Future<File> saveAllCustomers(
+    List<CustomerLedger> customers,
+    DocCompany company,
+  ) async {
+    if (customers.isEmpty) {
+      throw StateError('No data in the selected period');
     }
-    if (_boldFont == null) {
-      final bold = await rootBundle.load(
-        'assets/fonts/NotoSansBengali-Bold.ttf',
-      );
-      _boldFont = pw.Font.ttf(bold);
-    }
-    return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);
-  }
-
-  Future<File> saveAllCustomers(List<CustomerLedger> customers) async {
     final fileName = 'customer-ledger-all.pdf';
-    final serverBytes = await _serverDownloader.download(
-      reportType: 'customer-ledger',
-      format: 'pdf',
-    );
-    if (serverBytes != null) return _saveFile(fileName, serverBytes);
-
-    final bytes = await buildAllCustomersPdf(customers);
+    final bytes = await buildAllCustomersPdf(customers, company);
     return _saveFile(fileName, bytes);
   }
 
   Future<File> saveCustomerDetail(
     CustomerLedger customer,
     List<LedgerEntry> entries,
+    DocCompany company,
   ) async {
+    if (entries.isEmpty) {
+      throw StateError('No ledger entries for this customer');
+    }
     final fileName =
         'ledger-${_safeFilePart(customer.name.isEmpty ? 'customer' : customer.name)}.pdf';
-    final serverBytes = await _serverDownloader.download(
-      reportType: 'customer-ledger',
-      format: 'pdf',
-      extraQuery: {'customerId': customer.customerId},
-    );
-    if (serverBytes != null) return _saveFile(fileName, serverBytes);
-
-    final bytes = await buildCustomerDetailPdf(customer, entries);
+    final bytes = await buildCustomerDetailPdf(customer, entries, company);
     return _saveFile(fileName, bytes);
   }
 
-  Future<Uint8List> buildAllCustomersPdf(List<CustomerLedger> customers) async {
-    final theme = await _buildTheme();
+  Future<Uint8List> buildAllCustomersPdf(
+    List<CustomerLedger> customers,
+    DocCompany company,
+  ) async {
+    final theme = await buildAppPdfTheme();
     final doc = pw.Document(theme: theme);
+    final raster = PdfRasterText();
+    final contentWidth = PdfPageFormat.a4.width - 72;
+    final cellWidths = _cellWidths(contentWidth, const [2.5, 2, 1.5, 1.5, 1.5, 1.2]);
     final totalOutstanding = customers.fold<double>(0, (s, c) => s + c.balance);
     final withDues = customers.where((c) => c.hasDue).length;
     final now = DateTime.now();
+    await _prepareCompany(raster, company);
+    for (final c in customers) {
+      await raster.prepare(c.name,
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[0]);
+      await raster.prepare(c.phone,
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[1]);
+      await raster.prepare(_fmt(c.debit),
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[2], textAlign: ui.TextAlign.right);
+      await raster.prepare(_fmt(c.credit),
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[3], textAlign: ui.TextAlign.right);
+      await raster.prepare(_fmt(c.balance),
+          fontSize: 9,
+          bold: c.status == LedgerStatus.due,
+          color: _balanceColor(c.status),
+          width: cellWidths[4],
+          textAlign: ui.TextAlign.right);
+    }
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
-        header: (context) => _header('Customer Ledger'),
+        header: (context) =>
+            _header(doc.document, raster, 'Customer Ledger', company: company),
         footer: (context) => _pageFooter(context),
         build: (context) => [
           _reportMetaBar(now),
@@ -128,7 +137,13 @@ class LedgerPdfService {
                 'Status',
               ]),
               ...customers.asMap().entries.map(
-                (e) => _customerRow(e.value, e.key.isOdd),
+                (e) => _customerRow(
+                  doc.document,
+                  raster,
+                  cellWidths,
+                  e.value,
+                  e.key.isOdd,
+                ),
               ),
             ],
           ),
@@ -141,23 +156,64 @@ class LedgerPdfService {
   Future<Uint8List> buildCustomerDetailPdf(
     CustomerLedger customer,
     List<LedgerEntry> entries,
+    DocCompany company,
   ) async {
-    final theme = await _buildTheme();
+    final theme = await buildAppPdfTheme();
     final doc = pw.Document(theme: theme);
+    final raster = PdfRasterText();
+    final contentWidth = PdfPageFormat.a4.width - 72;
+    final cellWidths = _cellWidths(contentWidth, const [1.5, 3, 1.3, 1.3, 1.3]);
     final totalDebit = entries.fold<double>(0, (s, e) => s + e.debit);
     final totalCredit = entries.fold<double>(0, (s, e) => s + e.credit);
     final lastBalance = entries.isEmpty ? 0.0 : entries.last.balance;
     final now = DateTime.now();
+    await _prepareCompany(raster, company);
+    await raster.prepare(customer.name,
+        fontSize: 14, bold: true, color: _ledgerIndigo, width: contentWidth - 24);
+    await raster.prepare(customer.phone,
+        fontSize: 9, bold: false, color: _ledgerGrey700, width: contentWidth - 24);
+    for (final e in entries) {
+      await raster.prepare(DateFormat('MMM d, y').format(e.date),
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[0]);
+      await raster.prepare(e.particulars,
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[1]);
+      await raster.prepare(e.debit > 0 ? _fmt(e.debit) : '',
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[2], textAlign: ui.TextAlign.right);
+      await raster.prepare(e.credit > 0 ? _fmt(e.credit) : '',
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: cellWidths[3], textAlign: ui.TextAlign.right);
+      await raster.prepare(_fmt(e.balance),
+          fontSize: 9,
+          bold: e.balance != 0,
+          color: e.balance != 0 ? _ledgerRed : _ledgerGrey700,
+          width: cellWidths[4],
+          textAlign: ui.TextAlign.right);
+    }
+    await raster.prepare('TOTAL',
+        fontSize: 9, bold: true, color: _ledgerIndigo, width: cellWidths[0]);
+    await raster.prepare(_fmt(totalDebit),
+        fontSize: 9, bold: true, color: _ledgerIndigo, width: cellWidths[2], textAlign: ui.TextAlign.right);
+    await raster.prepare(_fmt(totalCredit),
+        fontSize: 9, bold: true, color: _ledgerIndigo, width: cellWidths[3], textAlign: ui.TextAlign.right);
+    await raster.prepare(_fmt(lastBalance),
+        fontSize: 9, bold: true, color: _ledgerIndigo, width: cellWidths[4], textAlign: ui.TextAlign.right);
 
     final reportType = 'Individual Customer';
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
-        header: (context) => _header('Customer Ledger', reportType: reportType),
+        header: (context) =>
+            _header(
+              doc.document,
+              raster,
+              'Customer Ledger',
+              company: company,
+              reportType: reportType,
+            ),
         footer: (context) => _pageFooter(context),
         build: (context) => [
-          _customerInfoSection(customer),
+          _customerInfoSection(doc.document, raster, customer,
+              contentWidth: contentWidth - 24),
           pw.SizedBox(height: 16),
           _reportMetaBar(now, reportType: reportType),
           pw.SizedBox(height: 16),
@@ -214,15 +270,20 @@ class LedgerPdfService {
                 'Balance',
               ]),
               ...entries.asMap().entries.map(
-                (e) => _entryRow(e.value, e.key.isOdd),
+                (e) => _entryRow(
+                  doc.document,
+                  raster,
+                  cellWidths,
+                  e.value,
+                  e.key.isOdd,
+                ),
               ),
-              _totalRow([
-                'TOTAL',
-                '',
-                _fmt(totalDebit),
-                _fmt(totalCredit),
-                _fmt(lastBalance),
-              ]),
+              _totalRow(
+                doc.document,
+                raster,
+                cellWidths,
+                <String>['TOTAL', '', _fmt(totalDebit), _fmt(totalCredit), _fmt(lastBalance)],
+              ),
             ],
           ),
         ],
@@ -231,7 +292,13 @@ class LedgerPdfService {
     return doc.save();
   }
 
-  pw.Widget _header(String title, {String reportType = 'All Customers'}) {
+  pw.Widget _header(
+    PdfDocument pdfDocument,
+    PdfRasterText raster,
+    String title, {
+    String reportType = 'All Customers',
+    required DocCompany company,
+  }) {
     return pw.Column(
       children: [
         pw.Row(
@@ -239,39 +306,7 @@ class LedgerPdfService {
           children: [
             pw.Expanded(
               flex: 3,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 4),
-                    child: pw.Text(
-                      'Haalkhata',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: const PdfColor.fromInt(0xFF1E3A8A),
-                      ),
-                    ),
-                  ),
-                  pw.Text(
-                    'Smart POS & Inventory Management',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    'Dhaka, Bangladesh',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                  pw.Text(
-                    '+880 1700-000000',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                  pw.Text(
-                    'hello@haalkhata.com',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-                  ),
-                ],
-              ),
+              child: buildRasterCompanyColumn(pdfDocument, raster, company),
             ),
             pw.Expanded(
               flex: 2,
@@ -400,7 +435,12 @@ class LedgerPdfService {
     );
   }
 
-  pw.Widget _customerInfoSection(CustomerLedger customer) {
+  pw.Widget _customerInfoSection(
+    PdfDocument pdfDocument,
+    PdfRasterText raster,
+    CustomerLedger customer, {
+    required double contentWidth,
+  }) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
@@ -411,14 +451,8 @@ class LedgerPdfService {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            customer.name,
-            style: pw.TextStyle(
-              fontSize: 14,
-              fontWeight: pw.FontWeight.bold,
-              color: const PdfColor.fromInt(0xFF1E3A8A),
-            ),
-          ),
+          raster.build(pdfDocument, customer.name,
+              fontSize: 14, bold: true, color: _ledgerIndigo, width: contentWidth),
           pw.SizedBox(height: 4),
           pw.Row(
             children: [
@@ -430,10 +464,9 @@ class LedgerPdfService {
                   color: PdfColors.grey600,
                 ),
               ),
-              pw.Text(
-                customer.phone,
-                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
-              ),
+              pw.SizedBox(width: 2),
+              raster.build(pdfDocument, customer.phone,
+                  fontSize: 9, bold: false, color: _ledgerGrey700, width: contentWidth),
             ],
           ),
         ],
@@ -513,93 +546,117 @@ class LedgerPdfService {
     );
   }
 
-  pw.TableRow _customerRow(CustomerLedger c, bool odd) {
-    final settled = !c.hasDue;
+  pw.TableRow _customerRow(
+    PdfDocument pdfDocument,
+    PdfRasterText raster,
+    List<double> cellWidths,
+    CustomerLedger c,
+    bool odd,
+  ) {
     return pw.TableRow(
       decoration: pw.BoxDecoration(
         color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
-        _cell(c.name),
-        _cell(c.phone),
-        _cell(_fmt(c.debit), align: pw.TextAlign.right),
-        _cell(_fmt(c.credit), align: pw.TextAlign.right),
+        _cell(pdfDocument, raster, c.name, width: cellWidths[0]),
+        _cell(pdfDocument, raster, c.phone, width: cellWidths[1]),
+        _cell(pdfDocument, raster, _fmt(c.debit),
+            width: cellWidths[2], alignment: pw.Alignment.centerRight),
+        _cell(pdfDocument, raster, _fmt(c.credit),
+            width: cellWidths[3], alignment: pw.Alignment.centerRight),
         _cell(
+          pdfDocument,
+          raster,
           _fmt(c.balance),
-          align: pw.TextAlign.right,
-          color: c.hasDue
-              ? const PdfColor.fromInt(0xFFDC2626)
-              : PdfColors.grey700,
-          bold: c.hasDue,
+          width: cellWidths[4],
+          alignment: pw.Alignment.centerRight,
+          color: _balanceColor(c.status),
+          bold: c.status == LedgerStatus.due,
         ),
-        _statusBadge(settled),
+        _statusBadge(c.status),
       ],
     );
   }
 
-  pw.TableRow _entryRow(LedgerEntry entry, bool odd) {
+  pw.TableRow _entryRow(
+    PdfDocument pdfDocument,
+    PdfRasterText raster,
+    List<double> cellWidths,
+    LedgerEntry entry,
+    bool odd,
+  ) {
     final dateStr = DateFormat('MMM d, y').format(entry.date);
     return pw.TableRow(
       decoration: pw.BoxDecoration(
         color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
-        _cell(dateStr),
-        _cell(entry.particulars),
+        _cell(pdfDocument, raster, dateStr, width: cellWidths[0]),
+        _cell(pdfDocument, raster, entry.particulars,
+            width: cellWidths[1]),
+        _cell(pdfDocument, raster, entry.debit > 0 ? _fmt(entry.debit) : '',
+            width: cellWidths[2], alignment: pw.Alignment.centerRight),
+        _cell(pdfDocument, raster, entry.credit > 0 ? _fmt(entry.credit) : '',
+            width: cellWidths[3], alignment: pw.Alignment.centerRight),
         _cell(
-          entry.debit > 0 ? _fmt(entry.debit) : '',
-          align: pw.TextAlign.right,
-        ),
-        _cell(
-          entry.credit > 0 ? _fmt(entry.credit) : '',
-          align: pw.TextAlign.right,
-        ),
-        _cell(
+          pdfDocument,
+          raster,
           _fmt(entry.balance),
-          align: pw.TextAlign.right,
+          width: cellWidths[4],
+          alignment: pw.Alignment.centerRight,
           bold: entry.balance != 0,
-          color: entry.balance != 0
-              ? const PdfColor.fromInt(0xFFDC2626)
-              : PdfColors.grey700,
+          color: entry.balance != 0 ? _ledgerRed : _ledgerGrey700,
         ),
       ],
     );
   }
 
-  pw.TableRow _totalRow(List<String> cells) {
+  pw.TableRow _totalRow(
+    PdfDocument pdfDocument,
+    PdfRasterText raster,
+    List<double> cellWidths,
+    List<String> cells,
+  ) {
     return pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: cells
+          .asMap()
+          .entries
           .map(
-            (c) => pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 7,
-              ),
-              child: pw.Text(
-                c,
-                textAlign: c == 'TOTAL'
-                    ? pw.TextAlign.left
-                    : pw.TextAlign.right,
-                style: pw.TextStyle(
-                  fontSize: 9,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromInt(0xFF1E3A8A),
-                ),
-              ),
+            (e) => _cell(
+              pdfDocument,
+              raster,
+              e.value,
+              width: cellWidths[e.key],
+              alignment: e.key == 0
+                  ? pw.Alignment.centerLeft
+                  : pw.Alignment.centerRight,
+              color: _ledgerIndigo,
+              bold: true,
             ),
           )
           .toList(),
     );
   }
 
-  pw.Widget _statusBadge(bool settled) {
-    final bg = settled
-        ? const PdfColor.fromInt(0xFFDCFCE7)
-        : const PdfColor.fromInt(0xFFFEE2E2);
-    final fg = settled
-        ? const PdfColor.fromInt(0xFF16A34A)
-        : const PdfColor.fromInt(0xFFDC2626);
+  pw.Widget _statusBadge(LedgerStatus status) {
+    final (bg, fg, text) = switch (status) {
+      LedgerStatus.settled => (
+          const PdfColor.fromInt(0xFFDCFCE7),
+          const PdfColor.fromInt(0xFF16A34A),
+          'Settled',
+        ),
+      LedgerStatus.due => (
+          const PdfColor.fromInt(0xFFFEE2E2),
+          const PdfColor.fromInt(0xFFDC2626),
+          'Due',
+        ),
+      LedgerStatus.advance => (
+          const PdfColor.fromInt(0xFFFEF3C7),
+          const PdfColor.fromInt(0xFFD97706),
+          'Advance',
+        ),
+    };
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
       alignment: pw.Alignment.center,
@@ -610,7 +667,7 @@ class LedgerPdfService {
           borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
         ),
         child: pw.Text(
-          settled ? 'Settled' : 'Due',
+          text,
           style: pw.TextStyle(
             fontSize: 9,
             fontWeight: pw.FontWeight.bold,
@@ -622,24 +679,51 @@ class LedgerPdfService {
   }
 
   pw.Widget _cell(
+    PdfDocument pdfDocument,
+    PdfRasterText raster,
     String text, {
-    pw.TextAlign align = pw.TextAlign.left,
+    required double width,
+    pw.Alignment alignment = pw.Alignment.centerLeft,
     bool bold = false,
-    PdfColor? color,
+    ui.Color? color,
   }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
-      child: pw.Text(
+      child: raster.build(
+        pdfDocument,
         text,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: 9,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: color ?? PdfColors.grey800,
-        ),
+        fontSize: 9,
+        bold: bold,
+        color: color ?? _ledgerGrey700,
+        width: width,
+        alignment: alignment,
       ),
     );
   }
+
+  Future<void> _prepareCompany(PdfRasterText raster, DocCompany company) async {
+    await raster.prepare(company.name,
+        fontSize: 20, bold: true, color: _ledgerIndigo, width: 300);
+    if (company.address.isNotEmpty) {
+      await raster.prepare(company.address,
+          fontSize: 9, bold: false, color: _ledgerGrey700, width: 300);
+    }
+    await raster.prepare('${company.phone} • ${company.email}',
+        fontSize: 9, bold: false, color: _ledgerGrey700, width: 300);
+  }
+
+  List<double> _cellWidths(double contentWidth, List<double> ratios) {
+    final sum = ratios.fold<double>(0, (s, r) => s + r);
+    return <double>[
+      for (final r in ratios) (contentWidth * r / sum) - 8,
+    ];
+  }
+
+  ui.Color _balanceColor(LedgerStatus status) => switch (status) {
+        LedgerStatus.due => _ledgerRed,
+        LedgerStatus.advance => _ledgerAmber,
+        LedgerStatus.settled => _ledgerGrey700,
+      };
 
   pw.Widget _pageFooter(pw.Context context) {
     return pw.Column(
@@ -650,7 +734,7 @@ class LedgerPdfService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              'Haalkhata — Confidential',
+              '${AppConstants.appName} — Confidential',
               style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500),
             ),
             pw.Text(
@@ -668,7 +752,7 @@ class LedgerPdfService {
     );
   }
 
-  String _fmt(double v) => '৳ ${NumberFormat('#,##0').format(v)}';
+  String _fmt(double v) => '৳ ${NumberFormat('#,##0.00').format(v)}';
 
   Future<File> _saveFile(String fileName, Uint8List bytes) async {
     final androidSavedPath = await _downloadExportService.saveFileToDownloads(

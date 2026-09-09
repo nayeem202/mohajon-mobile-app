@@ -690,6 +690,8 @@ class _LockScreen extends ConsumerWidget {
       title: l10n.t('enterPinTitle'),
       subtitle: l10n.t('unlockAppSubtitle'),
       autoPopOnSuccess: false,
+      lockoutRemaining: () =>
+          ref.read(appLockProvider.notifier).lockoutRemaining,
       onSubmit: (pin) async {
         final notifier = ref.read(appLockProvider.notifier);
         if (notifier.verify(pin)) {

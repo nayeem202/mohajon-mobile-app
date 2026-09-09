@@ -19,7 +19,7 @@ void main() {
     await Hive.openBox<Map>(HiveBoxes.users);
     await Hive.openBox<dynamic>(HiveBoxes.settings);
 
-    await tester.pumpWidget(const ProviderScope(child: PosInventoryApp()));
+    await tester.pumpWidget(ProviderScope(child: PosInventoryApp()));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 

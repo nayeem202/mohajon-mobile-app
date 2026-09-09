@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
@@ -23,9 +25,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     Future.microtask(() async {
       final signedIn = await ref.read(authServiceProvider).restoreSession();
       if (signedIn) {
-        await ref.read(syncStateProvider.notifier).syncNow();
+        // Refresh data in the background instead of blocking the UI, so
+        // relaunching the app enters the home screen immediately.
+        unawaited(ref.read(syncStateProvider.notifier).syncNow());
       }
-      await Future<void>.delayed(const Duration(milliseconds: 450));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       if (mounted) {
         final session = ref.read(authStateProvider).value;
         final shopId = ref.read(shopIdProvider);
