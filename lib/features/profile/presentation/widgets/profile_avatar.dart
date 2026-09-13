@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
 
 class ProfileAvatar extends StatelessWidget {
@@ -19,15 +20,6 @@ class ProfileAvatar extends StatelessWidget {
   final double size;
   final double fontSize;
   final VoidCallback? onTap;
-
-  String get _initials {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || name.trim().isEmpty) return '?';
-    if (parts.length == 1) {
-      return parts.first.substring(0, 1).toUpperCase();
-    }
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +53,9 @@ class ProfileAvatar extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    Widget avatar;
     if (imagePath != null) {
-      return Container(
+      avatar = Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
@@ -79,30 +72,25 @@ class ProfileAvatar extends StatelessWidget {
             width: size,
             height: size,
             fit: BoxFit.cover,
-            errorBuilder: (ctx, err, stk) => _initialsAvatar(),
+            errorBuilder: (ctx, err, stk) => _defaultAvatar(),
           ),
         ),
       );
+    } else {
+      avatar = _defaultAvatar();
     }
-    return _initialsAvatar();
+    return avatar;
   }
 
-  Widget _initialsAvatar() {
+  Widget _defaultAvatar() {
     return Container(
       width: size,
       height: size,
       decoration: const BoxDecoration(
-        color: Color(0xFFFF7A00),
         shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          _initials,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: fontSize,
-            fontWeight: FontWeight.w700,
-          ),
+        image: DecorationImage(
+          image: AssetImage(defaultAvatarAsset),
+          fit: BoxFit.cover,
         ),
       ),
     );

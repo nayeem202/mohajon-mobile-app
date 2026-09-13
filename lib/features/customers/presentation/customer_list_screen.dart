@@ -17,6 +17,9 @@ import 'customer_profile_screen.dart';
 import '../providers/customer_providers.dart';
 import 'customer_form_screen.dart';
 import '../../pos/presentation/sales_history_screen.dart';
+import '../../pos/services/whatsapp_service.dart';
+import '../../settings/providers/shop_profile_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 
@@ -260,9 +263,13 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
   }
 
   void _openAddClient() {
-    Navigator.of(
+    PaywallGate.guard(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const CustomerFormScreen()));
+      ref,
+      () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CustomerFormScreen()),
+      ),
+    );
   }
 
   Future<void> _showCustomerSheet(
@@ -304,15 +311,53 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           },
           onRecordPayment: () {
             Navigator.of(sheetContext).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => AddPaymentScreen(customer: customer),
+            PaywallGate.guard(
+              context,
+              ref,
+              () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => AddPaymentScreen(customer: customer),
+                ),
               ),
             );
+          },
+          onSendReminder: () {
+            Navigator.of(sheetContext).pop();
+            _sendDueReminder(context, customer, due);
           },
         );
       },
     );
+  }
+
+  Future<void> _sendDueReminder(
+    BuildContext context,
+    Customer customer,
+    double due,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    if (customer.phone.trim().isEmpty) {
+      showAppSnackBar(context, l10n.t('whatsappNoPhone'), isError: true);
+      return;
+    }
+    final shopName = ref.read(shopProfileProvider).value?.shopName ?? '';
+    final message = WhatsAppService.dueReminderMessage(
+      customer: customer,
+      dueAmount: due,
+      shopName: shopName,
+      t: (key) => l10n.t(key),
+    );
+    final ok = await WhatsAppService.openChat(
+      phone: customer.phone,
+      message: message,
+    );
+    if (!ok && mounted) {
+      showAppSnackBar(
+        this.context,
+        l10n.t('whatsappFailed'),
+        isError: true,
+      );
+    }
   }
 }
 
@@ -1167,6 +1212,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
     required this.onViewProfile,
     required this.onViewInvoices,
     required this.onRecordPayment,
+    required this.onSendReminder,
   });
 
   final Customer customer;
@@ -1176,6 +1222,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
   final VoidCallback onViewProfile;
   final VoidCallback onViewInvoices;
   final VoidCallback onRecordPayment;
+  final VoidCallback onSendReminder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1429,6 +1476,24 @@ class _CustomerDetailSheet extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (due > 0) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: onSendReminder,
+                      icon: const Icon(Icons.chat_rounded, size: 19),
+                      label: Text(
+                        l10n.t('sendDueReminder'),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -20,6 +20,8 @@ import '../../../core/utils/money.dart';
 import '../../products/providers/product_providers.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 import '../providers/cart_provider.dart';
+import '../services/whatsapp_service.dart';
+import 'widgets/sale_success_sheet.dart';
 
 const _kAmber = Color(0xFFFFC800);
 const _kAmberLight = Color(0xFFFFD83D);
@@ -1103,6 +1105,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     ? () async {
                                         setState(() => _isCheckingOut = true);
                                         final navigator = Navigator.of(context);
+                                        final l10n = AppLocalizations.of(context);
                                         try {
                                           final controller = ref.read(
                                             cartProvider.notifier,
@@ -1126,26 +1129,52 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           }
                                           final sale = await controller
                                               .checkout();
-                                          final bytes = await InvoiceService()
-                                              .buildSaleInvoice(
-                                                sale,
-                                                customerName:
-                                                    selectedCustomer?.name ??
-                                                        '',
-                                                customerPhone:
-                                                    selectedCustomer?.phone ??
-                                                        '',
-                                                company: DocCompany.fromShop(
-                                                  ref
-                                                      .read(shopProfileProvider)
-                                                      .value,
-                                                ),
-                                              );
+                                          final shopProfile = ref
+                                              .read(shopProfileProvider)
+                                              .value;
+                                          final billMessage = WhatsAppService
+                                              .billMessage(
+                                            sale: sale,
+                                            shopName:
+                                                shopProfile?.shopName ?? '',
+                                            customerName:
+                                                selectedCustomer?.name ?? '',
+                                            t: (key) => l10n.t(key),
+                                          );
                                           if (mounted) {
-                                            await Printing.sharePdf(
-                                              bytes: bytes,
-                                              filename:
-                                                  'invoice-${sale.saleId}.pdf',
+                                            await showModalBottomSheet<void>(
+                                              context: context,
+                                              backgroundColor: Colors.transparent,
+                                              isScrollControlled: true,
+                                              builder: (_) => SaleSuccessSheet(
+                                                onPrint: () async {
+                                                  final bytes =
+                                                      await InvoiceService()
+                                                          .buildSaleInvoice(
+                                                    sale,
+                                                    customerName:
+                                                        selectedCustomer
+                                                                ?.name ??
+                                                            '',
+                                                    customerPhone:
+                                                        selectedCustomer
+                                                                ?.phone ??
+                                                            '',
+                                                    company:
+                                                        DocCompany.fromShop(
+                                                      shopProfile,
+                                                    ),
+                                                  );
+                                                  await Printing.sharePdf(
+                                                    bytes: bytes,
+                                                    filename:
+                                                        'invoice-${sale.saleId}.pdf',
+                                                  );
+                                                },
+                                                whatsappPhone:
+                                                    selectedCustomer?.phone,
+                                                whatsappMessage: billMessage,
+                                              ),
                                             );
                                           }
                                           if (mounted) navigator.pop();

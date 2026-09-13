@@ -12,6 +12,7 @@ import '../../../core/widgets/shop_avatar.dart';
 import '../models/staff_model.dart';
 import '../providers/staff_providers.dart';
 import '../services/staff_api_service.dart';
+import '../../subscription/services/paywall_gate.dart';
 import 'delete_staff_dialog.dart';
 import 'staff_form_screen.dart';
 
@@ -39,6 +40,10 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
   }
 
   Future<void> _openForm({StaffMember? staff}) async {
+    if (PaywallGate.isReadOnly(ref)) {
+      await PaywallGate.showPaywallSheet(context);
+      return;
+    }
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => StaffFormScreen(staff: staff)),
     );

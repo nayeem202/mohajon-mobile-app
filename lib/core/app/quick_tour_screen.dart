@@ -7,7 +7,11 @@ import '../theme/mohajon_warm_theme.dart';
 import '../../features/auth/presentation/login_screen.dart';
 
 class QuickTourScreen extends StatefulWidget {
-  const QuickTourScreen({super.key});
+  const QuickTourScreen({super.key, this.includeWelcome = true});
+
+  /// When false (opened from Settings for a logged-in user) the pre-login
+  /// "Welcome" slide is skipped and only the post-login feature slides show.
+  final bool includeWelcome;
 
   @override
   State<QuickTourScreen> createState() => _QuickTourScreenState();
@@ -17,7 +21,7 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
   final PageController _controller = PageController();
   int _currentPage = 0;
 
-  static const _slideCount = 5;
+  int get _slideCount => widget.includeWelcome ? 5 : 4;
 
   @override
   void dispose() {
@@ -50,16 +54,17 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
     final isLast = _currentPage == _slideCount - 1;
 
     final slides = <_Slide>[
-      _Slide(
-        hero: Image.asset(
-          'assets/brand/mohajon.png',
-          width: 130,
-          height: 130,
-          fit: BoxFit.contain,
+      if (widget.includeWelcome)
+        _Slide(
+          hero: Image.asset(
+            'assets/brand/mohajon.png',
+            width: 130,
+            height: 130,
+            fit: BoxFit.contain,
+          ),
+          title: l10n.t('welcomeToMohajon'),
+          description: l10n.t('tourWelcomeDesc'),
         ),
-        title: l10n.t('welcomeToMohajon'),
-        description: l10n.t('tourWelcomeDesc'),
-      ),
       _Slide(
         hero: const _SlideIcon(icon: Icons.dashboard_rounded, color: MohajonWarm.goldText),
         title: l10n.t('tourDashboardTitle'),

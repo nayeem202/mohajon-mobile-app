@@ -7,11 +7,16 @@ import '../../../core/utils/app_error.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/snackbar.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_form_screen.dart';
 import '../providers/customer_providers.dart';
+import '../../pos/services/whatsapp_service.dart';
+import '../../settings/providers/shop_profile_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import '../services/customer_ledger_excel_service.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
@@ -51,6 +56,12 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
         appBar: AppBar(
           title: Text(customer.name),
           actions: [
+            if (due > 0)
+              IconButton(
+                tooltip: AppLocalizations.of(context).t('sendDueReminder'),
+                onPressed: () => _sendDueReminder(customer, due),
+                icon: const Icon(Icons.chat_rounded),
+              ),
             IconButton(
               tooltip: 'Edit customer',
               onPressed: () => Navigator.of(context).push(
@@ -65,9 +76,13 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
         floatingActionButton: FloatingActionButton.extended(
           onPressed: isBusy
               ? null
-              : () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => AddPaymentScreen(customer: customer),
+              : () => PaywallGate.guard(
+                  context,
+                  ref,
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AddPaymentScreen(customer: customer),
+                    ),
                   ),
                 ),
           icon: const Icon(Icons.payments_outlined),
@@ -331,6 +346,32 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
       ),
       label: 'Saving entry...',
     );
+  }
+
+  Future<void> _sendDueReminder(Customer customer, double due) async {
+    final l10n = AppLocalizations.of(context);
+    if (customer.phone.trim().isEmpty) {
+      showAppSnackBar(context, l10n.t('whatsappNoPhone'), isError: true);
+      return;
+    }
+    final shopName = ref.read(shopProfileProvider).value?.shopName ?? '';
+    final message = WhatsAppService.dueReminderMessage(
+      customer: customer,
+      dueAmount: due,
+      shopName: shopName,
+      t: (key) => l10n.t(key),
+    );
+    final ok = await WhatsAppService.openChat(
+      phone: customer.phone,
+      message: message,
+    );
+    if (!ok && mounted) {
+      showAppSnackBar(
+        context,
+        l10n.t('whatsappFailed'),
+        isError: true,
+      );
+    }
   }
 
   Future<void> _exportLedger(Customer customer, List<LedgerEntry> ledger) async {

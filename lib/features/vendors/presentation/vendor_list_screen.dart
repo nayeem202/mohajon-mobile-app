@@ -9,6 +9,7 @@ import '../models/vendor.dart';
 import '../providers/vendor_providers.dart';
 import 'vendor_detail_screen.dart';
 import 'vendor_form_screen.dart';
+import '../../subscription/services/paywall_gate.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 
@@ -170,8 +171,12 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
   }
 
   void _openAddVendor() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const VendorFormScreen()),
+    PaywallGate.guard(
+      context,
+      ref,
+      () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const VendorFormScreen())),
     );
   }
 

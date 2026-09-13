@@ -19,6 +19,7 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../staff/models/menu_codes.dart';
 import '../../staff/providers/staff_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import '../../../core/app/app_providers.dart';
 
 final GlobalKey tourAddProductKey = GlobalKey();
@@ -174,9 +175,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 key: tourAddProductKey,
                 child: FloatingActionButton(
                   heroTag: 'add',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProductFormScreen()),
-                  ),
+                  onPressed: () => PaywallGate.guard(context, ref, () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const ProductFormScreen()),
+                    );
+                  }),
                   child: const Icon(Icons.add_rounded, size: 26),
                 ),
               ),

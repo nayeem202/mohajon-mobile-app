@@ -5,6 +5,7 @@ import '../../../core/theme/mohajon_warm_theme.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../settings/presentation/settings_screen.dart';
+import '../../subscription/presentation/subscription_screen.dart';
 import '../models/profile.dart';
 import '../providers/profile_providers.dart';
 import 'help_support_screen.dart';
@@ -77,9 +78,27 @@ class _ProfileOverviewScreenState
                           child: Column(
                             children: [
                               _MenuTile(
+                                icon: Icons.redeem_rounded,
+                                title: l10n.t('subscription'),
+                                subtitle: l10n.t('subscriptionSubtitle'),
+                                iconColor: const Color(0xFF059669),
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SubscriptionScreen(),
+                                  ),
+                                ),
+                              ),
+                              Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: MohajonWarm.goldBorder),
+                              _MenuTile(
                                 icon: Icons.store_rounded,
                                 title: l10n.t('storeBusinessInfo'),
                                 subtitle: l10n.t('viewEditStoreDetails'),
+                                iconColor: const Color(0xFF1D4ED8),
                                 onTap: () => _openStoreInfo(profile),
                               ),
                               Divider(
@@ -91,6 +110,7 @@ class _ProfileOverviewScreenState
                                 icon: Icons.settings_rounded,
                                 title: l10n.t('settings'),
                                 subtitle: l10n.t('appPreferencesMore'),
+                                iconColor: const Color(0xFF6D28D9),
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => const SettingsScreen(),
@@ -106,6 +126,7 @@ class _ProfileOverviewScreenState
                                 icon: Icons.help_outline_rounded,
                                 title: l10n.t('helpAndSupport'),
                                 subtitle: l10n.t('faqsAndContact'),
+                                iconColor: const Color(0xFFBE123C),
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => const HelpSupportScreen(),
@@ -464,17 +485,18 @@ class _MenuTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.iconColor = MohajonWarm.goldText,
     this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color iconColor;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = MohajonWarm.primary;
     final effectiveTitleColor = MohajonWarm.ink;
 
     return InkWell(
@@ -487,20 +509,20 @@ class _MenuTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: effectiveIconColor.withValues(alpha: 0.3),
+                  color: iconColor.withValues(alpha: 0.35),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: effectiveIconColor.withValues(alpha: 0.22),
+                    color: iconColor.withValues(alpha: 0.18),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Icon(icon, color: effectiveIconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(

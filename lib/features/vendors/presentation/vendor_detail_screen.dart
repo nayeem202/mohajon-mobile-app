@@ -9,6 +9,7 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/vendor.dart';
 import '../providers/vendor_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import 'vendor_form_screen.dart';
 
 class VendorDetailScreen extends ConsumerStatefulWidget {
@@ -484,6 +485,10 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPurchaseSheet(Vendor vendor) async {
+    if (PaywallGate.isReadOnly(ref)) {
+      await PaywallGate.showPaywallSheet(context);
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final warmTheme = MohajonWarm.theme(Theme.of(context));
     final amountCtrl = TextEditingController();
@@ -680,6 +685,10 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPaymentSheet(Vendor vendor) async {
+    if (PaywallGate.isReadOnly(ref)) {
+      await PaywallGate.showPaywallSheet(context);
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final warmTheme = MohajonWarm.theme(Theme.of(context));
     final amountCtrl = TextEditingController();

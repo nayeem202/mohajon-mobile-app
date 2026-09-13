@@ -13,6 +13,7 @@ import '../../products/providers/product_providers.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
+import '../../subscription/services/paywall_gate.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../products/presentation/barcode_scan_screen.dart';
@@ -213,9 +214,13 @@ class _PosScreenState extends ConsumerState<PosScreen>
   }
 
   void _openCheckoutScreen(List<Customer> customers) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CheckoutScreen(customers: customers),
+    PaywallGate.guard(
+      context,
+      ref,
+      () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CheckoutScreen(customers: customers),
+        ),
       ),
     );
   }

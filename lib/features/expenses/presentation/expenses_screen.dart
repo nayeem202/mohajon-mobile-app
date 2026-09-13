@@ -12,6 +12,7 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../models/expense.dart';
 import '../providers/expense_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import 'expense_form_screen.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
@@ -215,8 +216,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
   }
 
   void _openForm(Expense? expense) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ExpenseFormScreen(expense: expense)),
+    PaywallGate.guard(
+      context,
+      ref,
+      () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ExpenseFormScreen(expense: expense)),
+      ),
     );
   }
 

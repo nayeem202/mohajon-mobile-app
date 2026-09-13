@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/models/sale.dart';
@@ -10,6 +11,7 @@ import '../../../core/services/invoice_service.dart';
 import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/notification_bell.dart';
@@ -17,6 +19,8 @@ import '../../../core/widgets/shop_avatar.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import '../../settings/providers/shop_profile_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
+import '../services/whatsapp_service.dart';
 
 enum _SalesTimeFilter { allTime, today, thisWeek, thisMonth }
 enum _InvoiceStatusFilter { all, paid, due, partial }
@@ -310,15 +314,44 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
               ? null
               : () {
                   Navigator.of(sheetContext).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AddPaymentScreen(customer: customer),
+                  PaywallGate.guard(
+                    context,
+                    ref,
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AddPaymentScreen(customer: customer),
+                      ),
                     ),
                   );
                 },
+          onSendBill: () {
+            Navigator.of(sheetContext).pop();
+            _sendBillOnWhatsapp(sale, customer, profile);
+          },
         );
       },
     );
+  }
+
+  Future<void> _sendBillOnWhatsapp(
+    Sale sale,
+    Customer? customer,
+    ShopProfile? profile,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final message = WhatsAppService.billMessage(
+      sale: sale,
+      shopName: profile?.shopName ?? '',
+      customerName: customer?.name ?? '',
+      t: (key) => l10n.t(key),
+    );
+    final ok = await WhatsAppService.openChat(
+      phone: customer?.phone ?? '',
+      message: message,
+    );
+    if (!ok && mounted) {
+      showAppSnackBar(context, l10n.t('whatsappFailed'), isError: true);
+    }
   }
 
   String _activeCustomerLabel(Customer customer) {
@@ -388,11 +421,11 @@ class _TopBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Sales History',
+                Text(
+                  AppLocalizations.of(context).t('salesHistory'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
@@ -494,7 +527,9 @@ class _ActiveCustomerChip extends StatelessWidget {
             ),
             const SizedBox(width: 5),
             Text(
-              allClear ? 'All clear' : 'Outstanding dues',
+              allClear
+                  ? AppLocalizations.of(context).t('allClear')
+                  : AppLocalizations.of(context).t('outstandingDues'),
               style: TextStyle(
                 color: allClear ? MohajonWarm.green : MohajonWarm.red,
                 fontSize: 11.5,
@@ -578,22 +613,22 @@ class _SearchPanel extends StatelessWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'All Time',
+                  label: AppLocalizations.of(context).t('allTime'),
                   selected: timeFilter == _SalesTimeFilter.allTime,
                   onTap: () => onTimeChanged(_SalesTimeFilter.allTime),
                 ),
                 _FilterChip(
-                  label: 'Today',
+                  label: AppLocalizations.of(context).t('today'),
                   selected: timeFilter == _SalesTimeFilter.today,
                   onTap: () => onTimeChanged(_SalesTimeFilter.today),
                 ),
                 _FilterChip(
-                  label: 'This Week',
+                  label: AppLocalizations.of(context).t('thisWeek'),
                   selected: timeFilter == _SalesTimeFilter.thisWeek,
                   onTap: () => onTimeChanged(_SalesTimeFilter.thisWeek),
                 ),
                 _FilterChip(
-                  label: 'This Month',
+                  label: AppLocalizations.of(context).t('thisMonth'),
                   selected: timeFilter == _SalesTimeFilter.thisMonth,
                   onTap: () => onTimeChanged(_SalesTimeFilter.thisMonth),
                 ),
@@ -606,22 +641,22 @@ class _SearchPanel extends StatelessWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'All Invoices',
+                  label: AppLocalizations.of(context).t('allInvoices'),
                   selected: statusFilter == _InvoiceStatusFilter.all,
                   onTap: () => onStatusChanged(_InvoiceStatusFilter.all),
                 ),
                 _FilterChip(
-                  label: 'Paid',
+                  label: AppLocalizations.of(context).t('paid'),
                   selected: statusFilter == _InvoiceStatusFilter.paid,
                   onTap: () => onStatusChanged(_InvoiceStatusFilter.paid),
                 ),
                 _FilterChip(
-                  label: 'Due',
+                  label: AppLocalizations.of(context).t('due'),
                   selected: statusFilter == _InvoiceStatusFilter.due,
                   onTap: () => onStatusChanged(_InvoiceStatusFilter.due),
                 ),
                 _FilterChip(
-                  label: 'Partial',
+                  label: AppLocalizations.of(context).t('partial'),
                   selected: statusFilter == _InvoiceStatusFilter.partial,
                   onTap: () => onStatusChanged(_InvoiceStatusFilter.partial),
                 ),
@@ -641,12 +676,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
-            'All Invoices',
-            style: TextStyle(
+            l10n.t('allInvoices'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.2,
@@ -664,7 +700,7 @@ class _SectionTitle extends StatelessWidget {
             ),
           ),
           child: Text(
-            '$count invoices',
+            l10n.tP('invoicesCount', {'n': '$count'}),
             style: const TextStyle(
               color: Color(0xFF5D4A00),
               fontSize: 11,
@@ -684,6 +720,7 @@ class _SalesStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         _RevenueCard(stats: stats),
@@ -698,17 +735,17 @@ class _SalesStats extends StatelessWidget {
             final cards = [
               _StatSpec(
                 icon: Icons.receipt_long_rounded,
-                label: 'Invoices',
+                label: l10n.t('invoices'),
                 value: '${stats.count}',
-                subtext: '${stats.paidCount} paid in full',
+                subtext: l10n.tP('paidInFullCount', {'n': '${stats.paidCount}'}),
                 color: MohajonWarm.goldText,
                 background: MohajonWarm.tintYellow,
               ),
               _StatSpec(
                 icon: Icons.error_outline_rounded,
-                label: 'Outstanding',
+                label: l10n.t('outstanding'),
                 value: money(stats.outstanding),
-                subtext: '${stats.dueCount} pending',
+                subtext: l10n.tP('pendingCount', {'count': '${stats.dueCount}'}),
                 color: MohajonWarm.red,
                 background: MohajonWarm.tintRed,
               ),
@@ -785,9 +822,9 @@ class _RevenueCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'Total Revenue',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).t('totalRevenue'),
+                      style: const TextStyle(
                         color: MohajonWarm.green,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -796,7 +833,8 @@ class _RevenueCard extends StatelessWidget {
                     const Spacer(),
                     Flexible(
                       child: Text(
-                        'Across ${stats.count} invoices',
+                        AppLocalizations.of(context)
+                            .tP('acrossInvoices', {'n': '${stats.count}'}),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1078,6 +1116,7 @@ class _InvoiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final statusColor = _statusColor(sale.paymentStatus);
     final statusBg = _statusBackground(sale.paymentStatus);
 
@@ -1119,7 +1158,7 @@ class _InvoiceCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    customer?.name ?? 'Walk-in customer',
+                    customer?.name ?? l10n.t('walkIn'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1156,7 +1195,7 @@ class _InvoiceCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      _statusLabel(sale.paymentStatus),
+                     _statusLabel(sale.paymentStatus, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1168,7 +1207,7 @@ class _InvoiceCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    '${sale.items.length} items • ${_formatInvoiceTime(sale.createdAt)}',
+                    '${l10n.tP('itemsCount', {'n': '${sale.items.length}'})} • ${_formatInvoiceTime(sale.createdAt, l10n)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1239,6 +1278,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
     required this.profile,
     required this.onPrint,
     required this.onRecordPayment,
+    required this.onSendBill,
   });
 
   final Sale sale;
@@ -1246,10 +1286,12 @@ class _InvoiceDetailSheet extends StatelessWidget {
   final ShopProfile? profile;
   final VoidCallback onPrint;
   final VoidCallback? onRecordPayment;
+  final VoidCallback onSendBill;
 
   @override
   Widget build(BuildContext context) {
-    final status = _statusLabel(sale.paymentStatus);
+    final l10n = AppLocalizations.of(context);
+    final status = _statusLabel(sale.paymentStatus, l10n);
     final statusColor = _statusColor(sale.paymentStatus);
     final statusBg = _statusBackground(sale.paymentStatus);
     final subtotal = sale.items.fold<double>(
@@ -1345,8 +1387,8 @@ class _InvoiceDetailSheet extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _SummaryTile(
-                        title: 'Customer',
-                        value: customer?.name ?? 'Walk-in customer',
+                        title: l10n.t('customer'),
+                        value: customer?.name ?? l10n.t('walkIn'),
                         valueColor: MohajonWarm.ink,
                         background: MohajonWarm.tintYellow,
                       ),
@@ -1354,7 +1396,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _SummaryTile(
-                        title: 'Payment',
+                        title: l10n.t('payment'),
                         value: status.toUpperCase(),
                         valueColor: statusColor,
                         background: statusBg,
@@ -1367,7 +1409,9 @@ class _InvoiceDetailSheet extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'ITEMS (${sale.items.length})',
+                        l10n
+                            .tP('itemsLabel', {'n': '${sale.items.length}'})
+                            .toUpperCase(),
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
                           color: MohajonWarm.ink,
@@ -1432,16 +1476,20 @@ class _InvoiceDetailSheet extends StatelessWidget {
                   ),
                 ],
                 const Divider(height: 24),
-                _AmountRow(label: 'Subtotal', value: money(subtotal)),
-                _AmountRow(label: 'Discount', value: money(sale.discount)),
+                _AmountRow(label: l10n.t('subtotal'), value: money(subtotal)),
+                _AmountRow(
+                  label: l10n.t('discount'),
+                  value: money(sale.discount),
+                ),
                 const SizedBox(height: 6),
                 _AmountRow(
-                  label: 'Total',
+                  label: l10n.t('total'),
                   value: money(sale.totalAmount),
                   bold: true,
                 ),
                 const SizedBox(height: 16),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
@@ -1451,10 +1499,16 @@ class _InvoiceDetailSheet extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
+                          minimumSize: const Size(0, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                         ),
                         onPressed: onPrint,
                         icon: const Icon(Icons.print_rounded),
-                        label: const Text('Print Invoice'),
+                        label: Text(
+                          l10n.t('printInvoice'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1466,14 +1520,41 @@ class _InvoiceDetailSheet extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
+                          minimumSize: const Size(0, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                         ),
                         onPressed: onRecordPayment,
                         icon: const Icon(Icons.payments_outlined),
-                        label: const Text('Record Payment'),
+                        label: Text(
+                          l10n.t('recordPayment'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
                 ),
+                if (customer?.phone.isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: onSendBill,
+                      icon: const Icon(Icons.chat_rounded, size: 19),
+                      label: Text(
+                        AppLocalizations.of(context).t('sendBillOnWhatsapp'),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1578,11 +1659,11 @@ String _invoiceNumber(String saleId) {
   return 'INV-${saleId.substring(0, length).toUpperCase()}';
 }
 
-String _statusLabel(PaymentStatus status) {
+String _statusLabel(PaymentStatus status, AppLocalizations l10n) {
   return switch (status) {
-    PaymentStatus.paid => 'Paid',
-    PaymentStatus.partial => 'Partial',
-    PaymentStatus.due => 'Due',
+    PaymentStatus.paid => l10n.t('paid'),
+    PaymentStatus.partial => l10n.t('partial'),
+    PaymentStatus.due => l10n.t('due'),
   };
 }
 
@@ -1608,11 +1689,13 @@ String _formatQuantity(double value) {
       : value.toStringAsFixed(1);
 }
 
-String _formatInvoiceTime(DateTime time) {
+String _formatInvoiceTime(DateTime time, AppLocalizations l10n) {
   final now = DateTime.now();
   final diff = now.difference(time);
-  if (diff.inDays == 0) return 'Today';
-  if (diff.inDays == 1) return 'Yesterday';
-  if (diff.inDays < 7) return '${diff.inDays} days ago';
+  if (diff.inDays == 0) return l10n.t('today');
+  if (diff.inDays == 1) return l10n.t('yesterday');
+  if (diff.inDays < 7) {
+    return l10n.tP('daysAgo', {'n': '${diff.inDays}'});
+  }
   return DateFormat('MMM d').format(time);
 }

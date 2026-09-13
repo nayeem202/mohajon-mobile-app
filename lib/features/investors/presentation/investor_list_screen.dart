@@ -9,6 +9,7 @@ import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../models/investor.dart';
 import '../providers/investor_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import 'investor_form_screen.dart';
 import 'widgets/investor_card.dart';
 
@@ -496,8 +497,12 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
   }
 
   void _showAddDialog(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const InvestorFormScreen()),
+    PaywallGate.guard(
+      context,
+      ref,
+      () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const InvestorFormScreen()),
+      ),
     );
   }
 }

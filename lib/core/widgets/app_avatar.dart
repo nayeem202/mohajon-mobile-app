@@ -1,8 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'app_image.dart';
+
+/// Default avatar placeholder shown while no profile picture is set,
+/// used consistently across the whole app.
+const String defaultAvatarAsset = 'assets/images/default_avatar.png';
 
 class AppAvatar extends StatelessWidget {
   const AppAvatar({
@@ -22,31 +24,15 @@ class AppAvatar extends StatelessWidget {
   final Color? backgroundColor;
   final Color? textColor;
 
-  String get _initials {
-    if (name.trim().isEmpty) return '?';
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.length >= 2) return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    return parts.first[0].toUpperCase();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final hasImage = imagePath != null && imagePath!.isNotEmpty;
     final avatar = CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor ?? const Color(0xFFD6F2EA),
-      backgroundImage: imagePath != null && imagePath!.isNotEmpty
+      backgroundImage: hasImage
           ? imageProviderForPath(imagePath!)
-          : null,
-      child: imagePath == null || imagePath!.isEmpty
-          ? Text(
-              _initials,
-              style: TextStyle(
-                color: textColor ?? const Color(0xFF0F766E),
-                fontWeight: FontWeight.w900,
-                fontSize: radius * 0.7,
-              ),
-            )
-          : null,
+          : const AssetImage(defaultAvatarAsset),
     );
 
     if (onTap != null) {

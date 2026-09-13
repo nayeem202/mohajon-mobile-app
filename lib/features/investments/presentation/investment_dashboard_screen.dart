@@ -7,6 +7,7 @@ import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/premium_header.dart';
 import '../providers/investment_providers.dart';
+import '../../subscription/services/paywall_gate.dart';
 import 'add_investment_sheet.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/investment_card.dart';
@@ -122,15 +123,17 @@ class _InvestmentDashboardScreenState
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            showModalBottomSheet(
+          onPressed: () => PaywallGate.guard(
+            context,
+            ref,
+            () => showModalBottomSheet(
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
               backgroundColor: Colors.transparent,
               builder: (_) => const AddInvestmentSheet(),
-            );
-          },
+            ),
+          ),
           child: const Icon(Icons.add_rounded, size: 28),
         ),
       ),

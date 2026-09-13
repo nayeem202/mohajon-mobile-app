@@ -18,6 +18,7 @@ import '../../../core/app/app_lock_controller.dart';
 import '../../../core/app/app_lock_screen.dart';
 import '../../../core/app/quick_tour_screen.dart';
 import '../../../core/services/download_export_service.dart';
+import '../../../core/services/sync_service.dart';
 import '../../profile/presentation/widgets/animated_section.dart';
 import 'account_security_screen.dart';
 
@@ -288,6 +289,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           subtitle: l10n.t('manageData'),
                           accentColor: const Color(0xFFB45309),
                           child: _DataBackupBody(onToast: _showToast),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AnimatedSection(
+                        delay: const Duration(milliseconds: 240),
+                        child: _ExpandableSection(
+                          icon: Icons.cloud_sync_rounded,
+                          title: l10n.t('internetAndSync'),
+                          subtitle: l10n.t('internetAndSyncDesc'),
+                          accentColor: const Color(0xFF0F766E),
+                          child: _InternetSyncBody(onToast: _showToast),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -901,7 +913,7 @@ class _AppPrefsBody extends ConsumerWidget {
             Hive.box('settings').put('hasSeenOnboarding', false);
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (_) => const QuickTourScreen(),
+                builder: (_) => const QuickTourScreen(includeWelcome: false),
               ),
               (_) => false,
             );
@@ -1182,6 +1194,249 @@ class _AppLockRow extends ConsumerWidget {
 }
 
 /* ========== Data & Backup Body ========== */
+
+/* ========== Internet & Sync Body ========== */
+
+class _InternetSyncBody extends ConsumerWidget {
+  const _InternetSyncBody({required this.onToast});
+
+  final void Function(String) onToast;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(syncStateProvider);
+
+    final (icon, color, label) = switch (state.phase) {
+      SyncPhase.offline => (
+        Icons.cloud_off_rounded,
+        const Color(0xFFBE3A1A),
+        l10n.t('offlineModeTitle'),
+      ),
+      SyncPhase.syncing => (
+        Icons.cloud_sync_rounded,
+        MohajonWarm.goldText,
+        l10n.t('syncingNowTitle'),
+      ),
+      SyncPhase.failed => (
+        Icons.sync_problem_rounded,
+        MohajonWarm.red,
+        l10n.t('syncFailed'),
+      ),
+      SyncPhase.idle => (
+        state.pendingCount > 0
+            ? Icons.cloud_upload_outlined
+            : Icons.cloud_done_rounded,
+        MohajonWarm.green,
+        l10n.t('syncedKey'),
+      ),
+      SyncPhase.notSignedIn => (
+        Icons.cloud_off_rounded,
+        MohajonWarm.muted,
+        l10n.t('signInToSync'),
+      ),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.30)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                      ),
+                    ),
+                    if (state.pendingCount > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        l10n.tP('pendingCount', {'count': '${state.pendingCount}'}),
+                        style: TextStyle(fontSize: 11, color: MohajonWarm.muted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 34,
+                child: FilledButton.icon(
+                  onPressed: () =>
+                      ref.read(syncStateProvider.notifier).syncNow(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: MohajonWarm.primary,
+                    foregroundColor: MohajonWarm.ink,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  icon: const Icon(Icons.sync_rounded, size: 15),
+                  label: Text(
+                    l10n.t('syncNow'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          l10n.t('connectivityHowWorks'),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            color: MohajonWarm.ink,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.t('connectivityHowWorksDesc'),
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.5,
+            color: MohajonWarm.muted,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          l10n.t('offlineWorksTitle'),
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w900,
+            color: MohajonWarm.green,
+          ),
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.edit_note_rounded,
+          label: l10n.t('offlineFeatureEntry'),
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.bar_chart_rounded,
+          label: l10n.t('offlineFeatureReports'),
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.sd_storage_outlined,
+          label: l10n.t('offlineFeatureBackup'),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          l10n.t('onlineNeedsTitle'),
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFFB45309),
+          ),
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.sync_rounded,
+          label: l10n.t('onlineFeatureSync'),
+          online: true,
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.account_balance_wallet_outlined,
+          label: l10n.t('onlineFeatureBkash'),
+          online: true,
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.workspace_premium_outlined,
+          label: l10n.t('onlineFeatureSubscription'),
+          online: true,
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.chat_outlined,
+          label: l10n.t('onlineFeatureWhatsApp'),
+          online: true,
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.mic_none_rounded,
+          label: l10n.t('onlineFeatureVoice'),
+          online: true,
+        ),
+        const SizedBox(height: 6),
+        _FeatureTag(
+          icon: Icons.login_rounded,
+          label: l10n.t('onlineFeatureLogin'),
+          online: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _FeatureTag extends StatelessWidget {
+  const _FeatureTag({required this.icon, required this.label, this.online = false});
+
+  final IconData icon;
+  final String label;
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = online ? const Color(0xFFB45309) : MohajonWarm.green;
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 15, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: MohajonWarm.ink,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            l10n.t(online ? 'badgeOnline' : 'badgeOffline'),
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _DataBackupBody extends ConsumerWidget {
   const _DataBackupBody({required this.onToast});

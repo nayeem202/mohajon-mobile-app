@@ -8,8 +8,10 @@ import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/staff/models/menu_codes.dart';
 import '../../features/staff/providers/staff_providers.dart';
+import '../../features/subscription/services/paywall_service.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
+import '../widgets/connectivity_banner.dart';
 import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
 import '../widgets/nav_bar/nav_destination.dart';
 import 'feature_hub_screen.dart';
@@ -59,6 +61,7 @@ class _AppShellState extends ConsumerState<AppShell>
     final box = Hive.box(HiveBoxes.settings);
     _index = box.get('selectedTab', defaultValue: 0) as int;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshPaywall();
       if (!_tourChecked && mounted) {
         _tourChecked = true;
         final hasSeenTour = box.get('hasSeenTour', defaultValue: false) as bool;
@@ -69,8 +72,17 @@ class _AppShellState extends ConsumerState<AppShell>
     });
   }
 
+  void _refreshPaywall() {
+    ref
+        .read(paywallStateProvider.notifier)
+        .refresh(online: true);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPaywall();
+    }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
@@ -369,26 +381,36 @@ if (tabs.isEmpty) {
       child: Scaffold(
         extendBody: !wide,
         backgroundColor: Colors.transparent,
-        body: Row(
+        body: Column(
           children: [
-            if (wide)
-              _SideNav(
-                selectedIndex: _index,
-                destinations: destinations,
-                onSelected: _onTabSelected,
-              ),
+            const ConnectivityBanner(),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, animation) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                child: KeyedSubtree(
-                  key: ValueKey(_index),
-                  child: screens[_index],
-                ),
+              child: Row(
+                children: [
+                  if (wide)
+                    _SideNav(
+                      selectedIndex: _index,
+                      destinations: destinations,
+                      onSelected: _onTabSelected,
+                    ),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey(_index),
+                        child: screens[_index],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

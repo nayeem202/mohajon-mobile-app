@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -83,7 +84,7 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Low stock products'),
+        title: Text(AppLocalizations.of(context).t('lowStockProducts')),
         backgroundColor: MohajonWarm.primary,
         foregroundColor: MohajonWarm.ink,
         elevation: 0,
@@ -124,9 +125,10 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
       body: DecoratedBox(
         decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
         child: widget.products.isEmpty
-            ? const Center(
+            ? Center(
                 child: EmptyState(
-                  message: 'No low stock products right now.',
+                  message: AppLocalizations.of(context)
+                      .t('noLowStockRightNow'),
                   icon: Icons.warning_amber_rounded,
                 ),
               )
@@ -152,9 +154,10 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         if (filtered.isEmpty) {
-                          return const Center(
+                          return Center(
                             child: EmptyState(
-                              message: 'No products match your search.',
+                              message: AppLocalizations.of(context)
+                                  .t('noProductsMatchSearch'),
                               icon: Icons.search_off_rounded,
                             ),
                           );
@@ -226,16 +229,22 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                           children: [
                                             _ProductChip(product.category
                                                     .isEmpty
-                                                ? 'General'
+                                                ? AppLocalizations.of(context)
+                                                    .t('general')
                                                 : product.category),
                                             _ProductChip(
-                                              'Stock ${product.stockQty}',
+                                              AppLocalizations.of(context)
+                                                  .tP('stockQtyLabel',
+                                                      {'n': '${product.stockQty}'}),
                                               tint: statusColor
                                                   .withValues(alpha: 0.12),
                                               textColor: statusColor,
                                             ),
                                             _ProductChip(
-                                                'Alert ${product.lowStockAlert}'),
+                                                AppLocalizations.of(context)
+                                                    .tP('alertQtyLabel', {
+                                                  'n': '${product.lowStockAlert}'
+                                                })),
                                           ],
                                         ),
                                         const SizedBox(height: 9),
@@ -305,7 +314,13 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              isOut ? 'Out' : 'Low',
+                                              isOut
+                                                  ? AppLocalizations.of(
+                                                          context)
+                                                      .t('outOfStockShort')
+                                                  : AppLocalizations.of(
+                                                          context)
+                                                      .t('lowStockShort'),
                                               style: TextStyle(
                                                 color: statusColor,
                                                 fontSize: 10,
@@ -370,7 +385,8 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$count products running low',
+                  AppLocalizations.of(context)
+                      .tP('productsRunningLow', {'n': '$count'}),
                   style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w900,
@@ -379,7 +395,7 @@ class _SummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Restock soon to avoid missing sales.',
+                  AppLocalizations.of(context).t('restockSoonHint'),
                   style: const TextStyle(
                     color: MohajonWarm.muted,
                     fontSize: 11.5,
@@ -431,7 +447,8 @@ class _SearchPanel extends StatelessWidget {
           controller: controller,
           onChanged: onSearchChanged,
           decoration: InputDecoration(
-            hintText: 'Search product name, category...',
+            hintText: AppLocalizations.of(context)
+                .t('searchProductCategory'),
             prefixIcon:
                 Icon(Icons.search_rounded, size: 20, color: MohajonWarm.primary),
             suffixIcon: query.isEmpty
