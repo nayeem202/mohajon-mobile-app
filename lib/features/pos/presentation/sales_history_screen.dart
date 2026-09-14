@@ -285,26 +285,49 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     required Customer? customer,
     required ShopProfile? profile,
   }) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _InvoicePage(
-          sale: sale,
-          customer: customer,
-          profile: profile,
-          onRecordPayment: customer == null
-              ? null
-              : () {
-                  PaywallGate.guard(
-                    context,
-                    ref,
-                    () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => AddPaymentScreen(customer: customer),
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MohajonWarm.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => Container(
+        height: MediaQuery.sizeOf(sheetContext).height * 0.93,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+          child: _InvoiceDetailSheet(
+            sale: sale,
+            customer: customer,
+            profile: profile,
+            onPrint: () async {
+              final bytes = await InvoiceService().buildSaleInvoice(
+                sale,
+                customerName: customer?.name ?? '',
+                customerPhone: customer?.phone ?? '',
+                company: DocCompany.fromShop(profile),
+              );
+              await Printing.sharePdf(
+                bytes: bytes,
+                filename: 'invoice-${sale.saleId}.pdf',
+              );
+            },
+            onRecordPayment: customer == null
+                ? null
+                : () {
+                    PaywallGate.guard(
+                      context,
+                      ref,
+                      () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AddPaymentScreen(customer: customer),
+                        ),
                       ),
-                    ),
-                  );
-                },
-          onSendBill: () => _sendBillOnWhatsapp(sale, customer, profile),
+                    );
+                  },
+            onSendBill: () => _sendBillOnWhatsapp(sale, customer, profile),
+          ),
         ),
       ),
     );
@@ -1246,54 +1269,6 @@ class _InvoiceCard extends StatelessWidget {
           size: 20,
         ),
       );
-}
-
-class _InvoicePage extends StatelessWidget {
-  const _InvoicePage({
-    required this.sale,
-    required this.customer,
-    required this.profile,
-    required this.onRecordPayment,
-    required this.onSendBill,
-  });
-
-  final Sale sale;
-  final Customer? customer;
-  final ShopProfile? profile;
-  final VoidCallback? onRecordPayment;
-  final VoidCallback onSendBill;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: MohajonWarm.surface,
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-          child: _InvoiceDetailSheet(
-            sale: sale,
-            customer: customer,
-            profile: profile,
-            onPrint: () async {
-              final bytes = await InvoiceService().buildSaleInvoice(
-                sale,
-                customerName: customer?.name ?? '',
-                customerPhone: customer?.phone ?? '',
-                company: DocCompany.fromShop(profile),
-              );
-              await Printing.sharePdf(
-                bytes: bytes,
-                filename: 'invoice-${sale.saleId}.pdf',
-              );
-            },
-            onRecordPayment: onRecordPayment,
-            onSendBill: onSendBill,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _InvoiceDetailSheet extends StatelessWidget {
