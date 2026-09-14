@@ -285,35 +285,15 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
     required Customer? customer,
     required ShopProfile? profile,
   }) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _InvoiceDetailSheet(
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _InvoicePage(
           sale: sale,
           customer: customer,
           profile: profile,
-          onPrint: () async {
-            Navigator.of(sheetContext).pop();
-            await runBusyAction(() async {
-              final bytes = await InvoiceService().buildSaleInvoice(
-                sale,
-                customerName: customer?.name ?? '',
-                customerPhone: customer?.phone ?? '',
-                company: DocCompany.fromShop(profile),
-              );
-              await Printing.sharePdf(
-                bytes: bytes,
-                filename: 'invoice-${sale.saleId}.pdf',
-              );
-            });
-          },
           onRecordPayment: customer == null
               ? null
               : () {
-                  Navigator.of(sheetContext).pop();
                   PaywallGate.guard(
                     context,
                     ref,
@@ -324,12 +304,9 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
                     ),
                   );
                 },
-          onSendBill: () {
-            Navigator.of(sheetContext).pop();
-            _sendBillOnWhatsapp(sale, customer, profile);
-          },
-        );
-      },
+          onSendBill: () => _sendBillOnWhatsapp(sale, customer, profile),
+        ),
+      ),
     );
   }
 
@@ -1271,6 +1248,54 @@ class _InvoiceCard extends StatelessWidget {
       );
 }
 
+class _InvoicePage extends StatelessWidget {
+  const _InvoicePage({
+    required this.sale,
+    required this.customer,
+    required this.profile,
+    required this.onRecordPayment,
+    required this.onSendBill,
+  });
+
+  final Sale sale;
+  final Customer? customer;
+  final ShopProfile? profile;
+  final VoidCallback? onRecordPayment;
+  final VoidCallback onSendBill;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MohajonWarm.surface,
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+          child: _InvoiceDetailSheet(
+            sale: sale,
+            customer: customer,
+            profile: profile,
+            onPrint: () async {
+              final bytes = await InvoiceService().buildSaleInvoice(
+                sale,
+                customerName: customer?.name ?? '',
+                customerPhone: customer?.phone ?? '',
+                company: DocCompany.fromShop(profile),
+              );
+              await Printing.sharePdf(
+                bytes: bytes,
+                filename: 'invoice-${sale.saleId}.pdf',
+              );
+            },
+            onRecordPayment: onRecordPayment,
+            onSendBill: onSendBill,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _InvoiceDetailSheet extends StatelessWidget {
   const _InvoiceDetailSheet({
     required this.sale,
@@ -1290,7 +1315,9 @@ class _InvoiceDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('SHEET_INVOICE_BUILD_START sale=${sale.saleId} items=${sale.items.length}');
     final l10n = AppLocalizations.of(context);
+    debugPrint('SHEET_INVOICE_L10N_OK status-label-get');
     final status = _statusLabel(sale.paymentStatus, l10n);
     final statusColor = _statusColor(sale.paymentStatus);
     final statusBg = _statusBackground(sale.paymentStatus);
@@ -1298,23 +1325,10 @@ class _InvoiceDetailSheet extends StatelessWidget {
       0,
       (sum, item) => sum + item.lineTotal,
     );
-    return DraggableScrollableSheet(
-      initialChildSize: 0.93,
-      minChildSize: 0.72,
-      maxChildSize: 0.97,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: MohajonWarm.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    debugPrint('SHEET_INVOICE_BUILD_END returning Column');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
                 Center(
                   child: Container(
                     width: 44,
@@ -1489,7 +1503,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
@@ -1556,11 +1570,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
                   ),
                 ],
               ],
-            ),
-          ),
-        );
-      },
-    );
+            );
   }
 }
 

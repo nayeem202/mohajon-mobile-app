@@ -139,10 +139,9 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     yesterdaySales: yesterdaySales,
     totalDue: totalDue,
     customerDueCount: customerDueCount,
-    totalStock: products.fold<int>(
-      0,
-      (sum, product) => sum + product.stockQty,
-    ).toDouble(),
+    totalStock: products
+        .fold<int>(0, (sum, product) => sum + product.stockQty)
+        .toDouble(),
     customerCount: customers.length,
     grossProfit: grossProfit,
     grossLoss: grossLoss,
@@ -157,6 +156,7 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     recentSales: sortedSales.take(6).map((sale) {
       final customer = customerById[sale.customerId];
       return RecentSaleSummary(
+        saleId: sale.saleId,
         invoiceNo:
             '#INV-${sale.saleId.substring(0, sale.saleId.length < 6 ? sale.saleId.length : 6).toUpperCase()}',
         customerName: customer?.name.isNotEmpty == true
@@ -217,6 +217,7 @@ class DashboardSummary {
 
 class RecentSaleSummary {
   const RecentSaleSummary({
+    required this.saleId,
     required this.invoiceNo,
     required this.customerName,
     required this.itemCount,
@@ -225,6 +226,7 @@ class RecentSaleSummary {
     required this.createdAt,
   });
 
+  final String saleId;
   final String invoiceNo;
   final String customerName;
   final int itemCount;

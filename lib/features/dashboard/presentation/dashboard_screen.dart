@@ -670,7 +670,15 @@ class _RecentSalesCard extends StatelessWidget {
             for (var index = 0; index < sales.length; index++) ...[
               if (index != 0)
                 const Divider(height: 18, color: Color(0xFFF0ECE6)),
-              _RecentSaleRow(sale: sales[index]),
+              _RecentSaleRow(
+                sale: sales[index],
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SalesHistoryScreen(),
+                  ),
+                ),
+              ),
             ],
         ],
       ),
@@ -679,9 +687,10 @@ class _RecentSalesCard extends StatelessWidget {
 }
 
 class _RecentSaleRow extends StatelessWidget {
-  const _RecentSaleRow({required this.sale});
+  const _RecentSaleRow({required this.sale, required this.onTap});
 
   final RecentSaleSummary sale;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -691,7 +700,14 @@ class _RecentSaleRow extends StatelessWidget {
     final statusColor = paid
         ? const Color(0xFF047857)
         : const Color(0xFF8B6F47);
-    return Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
       children: [
         Container(
           width: 40,
@@ -759,7 +775,10 @@ class _RecentSaleRow extends StatelessWidget {
           ],
         ),
       ],
-    );
+        ),
+      ),
+    ),
+  );
   }
 }
 

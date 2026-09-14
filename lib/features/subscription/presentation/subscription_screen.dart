@@ -31,9 +31,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: MohajonWarm.pageGradient,
-          ),
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             child: withLoadingOverlay(
               Column(
@@ -120,15 +118,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       'YEARLY' => 12,
       _ => null,
     };
-    final savePct =
-        monthly != null && months != null
+    final savePct = monthly != null && months != null
         ? (((monthly.priceBdt * months) - plan.priceBdt) /
-                (monthly.priceBdt * months) *
-                100)
+                  (monthly.priceBdt * months) *
+                  100)
               .round()
               .clamp(0, 99)
         : 0;
-    final isHighlight = status.hasValue && status.value?.planCode == plan.planCode;
+    final isHighlight =
+        status.hasValue && status.value?.planCode == plan.planCode;
     return _PlanCard(
       plan: plan,
       savePct: savePct,
@@ -143,9 +141,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     final service = ref.read(subscriptionApiServiceProvider);
 
     try {
-      final result = await runBusyAction(
-        () => service.purchase(planCode),
-      );
+      final result = await runBusyAction(() => service.purchase(planCode));
       if (!mounted || result == null) return;
 
       if (result.paymentStatus == 'SUCCESS') {
@@ -161,9 +157,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       final bkashUrl = result.bkashUrl;
       if (bkashUrl == null || bkashUrl.isEmpty) {
         // Backend could not produce a checkout URL (e.g. gateway unreachable).
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.t('paymentCouldNotStart'))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('paymentCouldNotStart'))));
         return;
       }
 
@@ -180,14 +176,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       await _confirmPayment(result);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.t('paymentCouldNotStart'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('paymentCouldNotStart'))));
     }
   }
 
@@ -209,13 +205,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       if (confirmed.isSuccess) {
         await _showResultDialog(confirmed);
       } else if (confirmed.paymentStatus == 'PENDING') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.t('paymentPending'))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('paymentPending'))));
       } else if (confirmed.paymentStatus == 'CANCELLED') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.t('paymentCancelled'))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('paymentCancelled'))));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -229,14 +225,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.t('paymentFailed'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('paymentFailed'))));
     }
   }
 
@@ -245,8 +241,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.check_circle_rounded,
-            color: MohajonWarm.goldText, size: 44),
+        icon: const Icon(
+          Icons.check_circle_rounded,
+          color: MohajonWarm.goldText,
+          size: 44,
+        ),
         title: Text(l10n.t('subscriptionActivated')),
         content: Text(
           confirmed.endDate?.isNotEmpty == true
@@ -418,18 +417,19 @@ class _HeroBanner extends StatelessWidget {
       title = l10n.t('trialActiveTitle');
       body = info.daysRemaining != null && info.endDate != null
           ? '${l10n.t('trialDaysLeft')} ${info.daysRemaining} • '
-              '${l10n.t('expiresOn')} ${_humanDate(info.endDate)}'
+                '${l10n.t('expiresOn')} ${_humanDate(info.endDate)}'
           : l10n.t('trialActiveNotice');
       actionText = l10n.t('subscribeNow');
       actionIcon = Icons.arrow_forward_rounded;
     } else if (info.isActive) {
       gradient = const [Color(0xFFFFEDB3), Color(0xFFFFC64D)];
       icon = Icons.verified_rounded;
-      title = '${info.planName ?? info.planCode ?? ''} '
+      title =
+          '${info.planName ?? info.planCode ?? ''} '
           '${l10n.t('subscription')} ${l10n.t('isActive')}';
       body = info.daysRemaining != null && info.endDate != null
           ? '${l10n.t('daysRemaining')} ${info.daysRemaining} • '
-              '${l10n.t('expiresOn')} ${_humanDate(info.endDate)}'
+                '${l10n.t('expiresOn')} ${_humanDate(info.endDate)}'
           : l10n.t('subscriptionActive');
       actionText = l10n.t('renew');
       actionIcon = Icons.refresh_rounded;
@@ -457,18 +457,65 @@ class _HeroBanner extends StatelessWidget {
     final VoidCallback? action = info.isTrialActive
         ? onUpgrade
         : info.isActive
-            ? onRenew
-            : pending
-                ? onResume
-                : onUpgrade;
+        ? onRenew
+        : pending
+        ? onResume
+        : onUpgrade;
 
     final bool lightBg = info.isActive;
     final Color contentColor = lightBg ? MohajonWarm.ink : Colors.white;
-    final Color contentMuted =
-        lightBg ? const Color(0xFF6B5B1E) : Colors.white;
+    final Color contentMuted = lightBg ? const Color(0xFF6B5B1E) : Colors.white;
+
+    final Widget? actionButton = action == null
+        ? null
+        : Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: action,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionText,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w900,
+                          color: MohajonWarm.ink,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(actionIcon, size: 16, color: MohajonWarm.ink),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -504,8 +551,8 @@ class _HeroBanner extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 28,
-            bottom: -34,
+            right: 34,
+            bottom: -46,
             child: Container(
               width: 90,
               height: 90,
@@ -539,6 +586,10 @@ class _HeroBanner extends StatelessWidget {
                     child: Icon(icon, color: contentColor, size: 24),
                   ),
                   const Spacer(),
+                  if (actionButton != null) ...[
+                    actionButton,
+                    const SizedBox(width: 8),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -578,64 +629,6 @@ class _HeroBanner extends StatelessWidget {
                   color: contentMuted,
                 ),
               ),
-              if (action != null) ...[
-                const SizedBox(height: 14),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          MohajonWarm.primary,
-                          MohajonWarm.primaryPale,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.20),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: action,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 11,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                actionText,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: MohajonWarm.ink,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Icon(
-                                actionIcon,
-                                size: 16,
-                                color: MohajonWarm.ink,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ],
@@ -667,19 +660,16 @@ class _PlanCard extends StatelessWidget {
     final (Color badgeColor, String? badgeText) = highlight
         ? (MohajonWarm.goldText, l10n.t('currentPlan'))
         : savePct > 0
-            ? (MohajonWarm.goldText, l10n.tP('save', {'pct': '$savePct'}))
-            : isPopular
-                ? (MohajonWarm.orange, l10n.t('mostPopular'))
-                : (MohajonWarm.goldText, null);
+        ? (MohajonWarm.goldText, l10n.tP('save', {'pct': '$savePct'}))
+        : isPopular
+        ? (MohajonWarm.orange, l10n.t('mostPopular'))
+        : (MohajonWarm.goldText, null);
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: MohajonWarm.goldBorder,
-          width: 1,
-        ),
+        border: Border.all(color: MohajonWarm.goldBorder, width: 1),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),
@@ -737,10 +727,7 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _GoldButton(
-                label: l10n.t('subscribe'),
-                onPressed: onSubscribe,
-              ),
+              _GoldButton(label: l10n.t('subscribe'), onPressed: onSubscribe),
             ],
           ),
           const SizedBox(height: 16),
@@ -761,10 +748,9 @@ class _PlanCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  l10n.tP(
-                    'perDay',
-                    {'amount': money(plan.priceBdt / plan.durationDays)},
-                  ),
+                  l10n.tP('perDay', {
+                    'amount': money(plan.priceBdt / plan.durationDays),
+                  }),
                   style: const TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -942,10 +928,7 @@ class _ErrorRetry extends StatelessWidget {
             style: const TextStyle(color: MohajonWarm.muted),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: Text(l10n.t('retry')),
-          ),
+          OutlinedButton(onPressed: onRetry, child: Text(l10n.t('retry'))),
         ],
       ),
     );

@@ -17,6 +17,7 @@ import '../../subscription/services/paywall_gate.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../products/presentation/barcode_scan_screen.dart';
+import '../../voice_assistant/presentation/voice_billing_sheet.dart';
 
 final GlobalKey tourProductGridKey = GlobalKey();
 final GlobalKey tourCheckoutKey = GlobalKey();
@@ -131,6 +132,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
                           controller: _searchController,
                           onChanged: (value) => setState(() => _query = value),
                           onScan: _scanBarcode,
+                          onMic: _openVoiceBilling,
                         ),
                         const SizedBox(height: 12),
                         _CategoryStrip(
@@ -222,6 +224,15 @@ class _PosScreenState extends ConsumerState<PosScreen>
           builder: (_) => CheckoutScreen(customers: customers),
         ),
       ),
+    );
+  }
+
+  Future<void> _openVoiceBilling() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const VoiceBillingSheet(),
     );
   }
 
@@ -318,11 +329,13 @@ class _SearchBar extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     required this.onScan,
+    required this.onMic,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback onScan;
+  final VoidCallback onMic;
 
   @override
   Widget build(BuildContext context) {
@@ -333,10 +346,21 @@ class _SearchBar extends StatelessWidget {
       decoration: InputDecoration(
         hintText: l10n.t('searchProductsHint'),
         prefixIcon: const Icon(Icons.search_rounded, size: 20, color: _kMuted),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.qr_code_scanner_rounded, size: 22, color: _kMuted),
-          tooltip: l10n.t('scanBarcode'),
-          onPressed: onScan,
+        suffixIconConstraints: const BoxConstraints(maxHeight: 48),
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.mic_rounded, size: 22, color: _kMuted),
+              tooltip: l10n.t('voiceBillingTitle'),
+              onPressed: onMic,
+            ),
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 22, color: _kMuted),
+              tooltip: l10n.t('scanBarcode'),
+              onPressed: onScan,
+            ),
+          ],
         ),
       ),
     );

@@ -38,13 +38,21 @@ final investmentProfitSyncProvider = Provider<void>((ref) {
   );
   if (totalInvestment <= 0) return;
   final composition = investments
-      .map((investment) =>
-          '${investment.id}:${investment.totalInvestment.toStringAsFixed(2)}')
+      .map(
+        (investment) =>
+            '${investment.id}:${investment.totalInvestment.toStringAsFixed(2)}',
+      )
       .join('|');
-  final signature = '${netProfit.toStringAsFixed(2)}:$totalInvestment:$composition';
+  final signature =
+      '${netProfit.toStringAsFixed(2)}:$totalInvestment:$composition';
   if (ref.read(_profitSyncSignatureProvider) == signature) return;
-  ref.read(_profitSyncSignatureProvider.notifier).state = signature;
   Future<void>(() async {
+    // Provider initialization must stay read-only. Updating the signature on
+    // the next event-loop turn avoids notifying another provider while this
+    // provider is still being built.
+    await Future<void>.delayed(Duration.zero);
+    if (ref.read(_profitSyncSignatureProvider) == signature) return;
+    ref.read(_profitSyncSignatureProvider.notifier).state = signature;
     final service = ref.read(investmentServiceProvider);
     for (final investment in investments) {
       final share = investment.totalInvestment / totalInvestment;
@@ -53,9 +61,13 @@ final investmentProfitSyncProvider = Provider<void>((ref) {
         totalProfit: netProfit * share,
       );
     }
-    ref.read(notificationServiceProvider).add(
+    ref
+        .read(notificationServiceProvider)
+        .add(
           type: NotificationType.investment,
-          title: netProfit < 0 ? 'Investor loss updated' : 'Investor profit updated',
+          title: netProfit < 0
+              ? 'Investor loss updated'
+              : 'Investor profit updated',
           message: netProfit < 0
               ? 'Current business loss allocation: ৳${netProfit.abs().toStringAsFixed(2)}.'
               : 'Current net profit pool: ৳${netProfit.toStringAsFixed(2)}.',
@@ -69,14 +81,15 @@ final investmentProfitSyncProvider = Provider<void>((ref) {
 
 final investmentCategoriesStreamProvider =
     StreamProvider<List<InvestmentCategory>>((ref) {
-  return ref.watch(investmentServiceProvider).watchCategories();
-});
+      return ref.watch(investmentServiceProvider).watchCategories();
+    });
 
 class InvestmentSearchQuery extends Notifier<String> {
   @override
   String build() => '';
   void update(String value) => state = value;
 }
+
 final investmentSearchQueryProvider =
     NotifierProvider<InvestmentSearchQuery, String>(InvestmentSearchQuery.new);
 
@@ -85,20 +98,31 @@ class InvestmentCategoryFilter extends Notifier<String> {
   String build() => '';
   void update(String value) => state = value;
 }
+
 final investmentCategoryFilterProvider =
     NotifierProvider<InvestmentCategoryFilter, String>(
-        InvestmentCategoryFilter.new);
+      InvestmentCategoryFilter.new,
+    );
 
-enum InvestmentSort { newest, oldest, highestAmount, lowestAmount, highestRoi, alphabetical }
+enum InvestmentSort {
+  newest,
+  oldest,
+  highestAmount,
+  lowestAmount,
+  highestRoi,
+  alphabetical,
+}
 
 class InvestmentSortNotifier extends Notifier<InvestmentSort> {
   @override
   InvestmentSort build() => InvestmentSort.newest;
   void update(InvestmentSort value) => state = value;
 }
+
 final investmentSortProvider =
     NotifierProvider<InvestmentSortNotifier, InvestmentSort>(
-        InvestmentSortNotifier.new);
+      InvestmentSortNotifier.new,
+    );
 
 final filteredInvestmentsProvider = Provider<List<Investment>>((ref) {
   final investments = ref.watch(investmentsStreamProvider).value ?? [];
@@ -117,21 +141,26 @@ final filteredInvestmentsProvider = Provider<List<Investment>>((ref) {
   }
 
   if (categoryFilter.isNotEmpty) {
-    filtered =
-        filtered.where((inv) => inv.categoryId == categoryFilter).toList();
+    filtered = filtered
+        .where((inv) => inv.categoryId == categoryFilter)
+        .toList();
   }
 
-  filtered = [...filtered]..sort((a, b) {
+  filtered = [...filtered]
+    ..sort((a, b) {
       final cmp = switch (sort) {
         InvestmentSort.newest => b.createdAt.compareTo(a.createdAt),
         InvestmentSort.oldest => a.createdAt.compareTo(b.createdAt),
-        InvestmentSort.highestAmount =>
-          b.totalInvestment.compareTo(a.totalInvestment),
-        InvestmentSort.lowestAmount =>
-          a.totalInvestment.compareTo(b.totalInvestment),
+        InvestmentSort.highestAmount => b.totalInvestment.compareTo(
+          a.totalInvestment,
+        ),
+        InvestmentSort.lowestAmount => a.totalInvestment.compareTo(
+          b.totalInvestment,
+        ),
         InvestmentSort.highestRoi => b.roi.compareTo(a.roi),
-        InvestmentSort.alphabetical =>
-          a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        InvestmentSort.alphabetical => a.title.toLowerCase().compareTo(
+          b.title.toLowerCase(),
+        ),
       };
       return cmp;
     });
@@ -141,22 +170,26 @@ final filteredInvestmentsProvider = Provider<List<Investment>>((ref) {
 
 final investmentDashboardProvider = Provider<InvestmentDashboardData>((ref) {
   final investments = ref.watch(investmentsStreamProvider).value ?? [];
-  final totalInvested =
-      investments.fold<double>(0, (s, i) => s + i.totalInvestment);
-  final totalReturns =
-      investments.fold<double>(0, (s, i) => s + i.totalPaid);
-  final totalOutstanding =
-      investments.fold<double>(0, (s, i) => s + i.outstanding);
-  final totalProfit =
-      investments.fold<double>(0, (s, i) => s + i.totalProfit);
+  final totalInvested = investments.fold<double>(
+    0,
+    (s, i) => s + i.totalInvestment,
+  );
+  final totalReturns = investments.fold<double>(0, (s, i) => s + i.totalPaid);
+  final totalOutstanding = investments.fold<double>(
+    0,
+    (s, i) => s + i.outstanding,
+  );
+  final totalProfit = investments.fold<double>(0, (s, i) => s + i.totalProfit);
   final roi = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0.0;
 
   final categoryTotals = <String, double>{};
   final categoryNames = <String, String>{};
   for (final inv in investments) {
     categoryTotals.update(
-        inv.categoryId, (v) => v + inv.totalInvestment,
-        ifAbsent: () => inv.totalInvestment);
+      inv.categoryId,
+      (v) => v + inv.totalInvestment,
+      ifAbsent: () => inv.totalInvestment,
+    );
     categoryNames[inv.categoryId] = inv.categoryName;
   }
 
@@ -174,28 +207,34 @@ final investmentDashboardProvider = Provider<InvestmentDashboardData>((ref) {
 
 final investmentMembersProvider =
     Provider.family<List<InvestmentMember>, String>((ref, investmentId) {
-  final members = ref.watch(investmentMembersStreamProvider(investmentId)).value ??
-      [];
-  return members;
-});
+      final members =
+          ref.watch(investmentMembersStreamProvider(investmentId)).value ?? [];
+      return members;
+    });
 
 final investmentMembersStreamProvider =
     StreamProvider.family<List<InvestmentMember>, String>((ref, investmentId) {
-  return ref.watch(investmentServiceProvider).watchMembers(investmentId);
-});
+      return ref.watch(investmentServiceProvider).watchMembers(investmentId);
+    });
 
-final payoutsStreamProvider =
-    StreamProvider.family<List<Payout>, String>((ref, investmentId) {
+final payoutsStreamProvider = StreamProvider.family<List<Payout>, String>((
+  ref,
+  investmentId,
+) {
   return ref.watch(investmentServiceProvider).watchPayouts(investmentId);
 });
 
 final investorPayoutsStreamProvider =
     StreamProvider.family<List<Payout>, String>((ref, investorId) {
-  return ref.watch(investmentServiceProvider).watchPayoutsByInvestor(investorId);
-});
+      return ref
+          .watch(investmentServiceProvider)
+          .watchPayoutsByInvestor(investorId);
+    });
 
-final memberInvestorProvider =
-    Provider.family<Investor?, String>((ref, investorId) {
+final memberInvestorProvider = Provider.family<Investor?, String>((
+  ref,
+  investorId,
+) {
   final investors = ref.watch(investorsStreamProvider).value ?? [];
   try {
     return investors.firstWhere((i) => i.id == investorId);
@@ -242,10 +281,11 @@ final investmentOverviewProvider = Provider<InvestmentOverview>((ref) {
     0,
     (sum, sale) => sum + (sale.profit < 0 ? sale.profit.abs() : 0),
   );
-  final totalExpense = ref.watch(expensesProvider).value?.fold<double>(
-            0,
-            (sum, expense) => sum + expense.amount,
-          ) ??
+  final totalExpense =
+      ref
+          .watch(expensesProvider)
+          .value
+          ?.fold<double>(0, (sum, expense) => sum + expense.amount) ??
       0;
   final netProfit = grossProfit - grossLoss - totalExpense;
 
