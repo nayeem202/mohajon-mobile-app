@@ -9,6 +9,7 @@ import '../../features/products/presentation/product_list_screen.dart';
 import '../../features/staff/models/menu_codes.dart';
 import '../../features/staff/providers/staff_providers.dart';
 import '../../features/subscription/services/paywall_service.dart';
+import '../../features/voice_assistant/presentation/hambot_sheet.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
 import '../widgets/connectivity_banner.dart';
@@ -101,6 +102,15 @@ class _AppShellState extends ConsumerState<AppShell>
     setState(() => _index = index);
     final box = Hive.box(HiveBoxes.settings);
     box.put('selectedTab', index);
+  }
+
+  Future<void> _openHambot() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const HambotSheet(),
+    );
   }
 
   void _startTour() {
@@ -392,6 +402,7 @@ if (tabs.isEmpty) {
                       selectedIndex: _index,
                       destinations: destinations,
                       onSelected: _onTabSelected,
+                      onAsk: _openHambot,
                     ),
                   Expanded(
                     child: AnimatedSwitcher(
@@ -422,6 +433,7 @@ if (tabs.isEmpty) {
                 destinations: destinations,
                 onSelected: _onTabSelected,
                 itemKeys: _navKeys,
+                trailing: _HambotNavButton(onTap: _openHambot),
               ),
       ),
     );
@@ -519,11 +531,13 @@ class _SideNav extends StatelessWidget {
     required this.selectedIndex,
     required this.destinations,
     required this.onSelected,
+    required this.onAsk,
   });
 
   final int selectedIndex;
   final List<NavDestination> destinations;
   final ValueChanged<int> onSelected;
+  final VoidCallback onAsk;
 
   @override
   Widget build(BuildContext context) {
@@ -617,6 +631,15 @@ class _SideNav extends StatelessWidget {
               selected: selectedIndex == index,
               onTap: () => onSelected(index),
             ),
+          const SizedBox(height: 8),
+          _SideNavItem(
+            destination: NavDestination(
+              icon: Icons.auto_awesome_rounded,
+              label: l10n.t('hambotQuickAsk'),
+            ),
+            selected: false,
+            onTap: onAsk,
+          ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.all(14),
@@ -694,6 +717,56 @@ class _SideNavItem extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HambotNavButton extends StatelessWidget {
+  const _HambotNavButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context).t('hambotQuickAsk'),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFC800), Color(0xFFFFE36E)],
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.40),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFC800).withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: Color(0xFF2F3028),
+                size: 19,
+              ),
+            ),
           ),
         ),
       ),

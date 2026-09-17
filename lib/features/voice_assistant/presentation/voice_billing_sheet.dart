@@ -1,10 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/product.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/network_guard.dart';
 import '../../pos/providers/cart_provider.dart';
 import '../models/voice_bill.dart';
 import '../services/gemini_billing_client.dart';
@@ -17,45 +21,113 @@ class VoiceBillingSheet extends ConsumerStatefulWidget {
   ConsumerState<VoiceBillingSheet> createState() => _VoiceBillingSheetState();
 }
 
-class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet> {
+class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet>
+    with SingleTickerProviderStateMixin {
   final VoiceAssistantService _service = VoiceAssistantService();
   String? _error;
   bool _busy = false;
   bool _matching = false;
   VoiceBill? _bill;
+  Uint8List? _pendingAudio;
+  late AnimationController _pulseController;
 
   List<VoiceBillItem> get _items =>
       _bill?.items.map((item) => item.copyWith()).toList() ?? const [];
 
   @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+  }
+
+  @override
   void dispose() {
+    _pulseController.dispose();
     _service.dispose();
     super.dispose();
   }
 
+  void _startPulse() {
+    _pulseController.repeat(reverse: true);
+  }
+
+  void _stopPulse() {
+    _pulseController.stop();
+    _pulseController.reset();
+  }
+
   Future<void> _listen() async {
+    debugPrint('VOICE: _listen start');
     setState(() {
       _error = null;
       _bill = null;
+      _pendingAudio = null;
       _busy = true;
     });
-    final available = await _service.start();
+    _startPulse();
+    bool available;
+    try {
+      available = await _service.start();
+    } catch (e, st) {
+      debugPrint('VOICE: start threw $e\n$st');
+      available = false;
+    }
+    debugPrint('VOICE: _listen available=$available busy=$_busy');
     if (!mounted) return;
-    setState(() => _busy = false);
     if (!available) {
-      setState(() => _error = AppLocalizations.of(context).t('voiceBillingUnavailable'));
+      _stopPulse();
+      setState(() {
+        _busy = false;
+        _error = AppLocalizations.of(context).t('voiceBillingUnavailable');
+      });
     }
   }
 
   Future<void> _stop() async {
-    await _service.stop();
-    if (mounted) setState(() {});
+    debugPrint('VOICE: _stop start');
+    _stopPulse();
+    setState(() {
+      _busy = false;
+      _matching = true;
+    });
+    final wav = await _service.stopAndGetWav();
+    debugPrint('VOICE: stopAndGetWav done, wav=${wav?.length} peak=${_service.recordingPeak}');
+    if (!mounted) return;
+    final silent = wav == null ||
+        wav.isEmpty ||
+        _service.recordingPeak < 0.025;
+    if (silent) {
+      setState(() {
+        _matching = false;
+        _error = AppLocalizations.of(context).t('voiceBillingNoSpeech');
+      });
+      return;
+    }
+    setState(() {
+      _pendingAudio = wav;
+      _matching = false;
+    });
+    await _match();
   }
 
   Future<void> _match() async {
+    debugPrint('VOICE: _match start audio=${_pendingAudio?.length}');
     final l10n = AppLocalizations.of(context);
-    final transcript = _service.transcript.value.trim();
-    if (transcript.isEmpty) {
+    final audio = _pendingAudio;
+    if (audio == null || audio.isEmpty) {
+      setState(() => _error = l10n.t('voiceBillingNoSpeech'));
+      return;
+    }
+    await requireInternetFor(context, _doMatch);
+  }
+
+  Future<void> _doMatch() async {
+    final l10n = AppLocalizations.of(context);
+    final audio = _pendingAudio;
+    if (audio == null || audio.isEmpty) {
       setState(() => _error = l10n.t('voiceBillingNoSpeech'));
       return;
     }
@@ -66,14 +138,17 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet> {
     });
     try {
       final bill = await GeminiBillingClient(ref.read(localDatabaseProvider))
-          .match(transcript);
+          .matchAudio(audio);
       if (!mounted) return;
       setState(() {
         _matching = false;
         _bill = bill;
+        _service.transcript.value = bill.transcript;
       });
       if (!bill.hasMatches) {
-        setState(() => _error = l10n.t('voiceBillingNoMatch'));
+        setState(() {
+          _error = bill.reply.isNotEmpty ? bill.reply : l10n.t('voiceBillingNoMatch');
+        });
       }
     } catch (_) {
       if (!mounted) return;
@@ -137,144 +212,447 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet> {
     final l10n = AppLocalizations.of(context);
     final items = _items;
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+      ),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: MohajonWarm.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.t('voiceBillingTitle'),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                const Icon(Icons.mic_rounded, color: Color(0xFFE98300)),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildHeader(l10n),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTranscriptArea(l10n),
+                  if (_error != null) ...[
+                    const SizedBox(height: 10),
+                    _buildErrorBanner(l10n),
+                  ],
+                  const SizedBox(height: 16),
+                  _buildActionButtons(l10n),
+                  if (_bill != null && items.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _buildMatchedItems(items, l10n),
+                    const SizedBox(height: 16),
+                    _buildAddToCartButton(l10n),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(l10n.t('voiceBillingHint'), style: TextStyle(color: Colors.black54)),
-            const SizedBox(height: 16),
-            ValueListenableBuilder<String>(
-              valueListenable: _service.transcript,
-              builder: (context, transcript, _) => Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(minHeight: 72),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(14),
-                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                color: MohajonWarm.goldBorder,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
                 child: Text(
-                  transcript.isEmpty ? l10n.t('voiceBillingListening') : transcript,
-                  style: TextStyle(
-                    color: transcript.isEmpty ? Colors.black45 : Colors.black87,
-                    fontSize: 16,
+                  l10n.t('voiceBillingTitle'),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
                   ),
                 ),
               ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 10),
-              Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+              _buildMicIndicator(),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded, color: MohajonWarm.muted),
+              ),
             ],
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _matching ? null : (_busy ? _stop : _listen),
-                    icon: Icon(_busy ? Icons.stop_rounded : Icons.mic_rounded),
-                    label: Text(_busy ? l10n.t('voiceBillingStop') : l10n.t('voiceBillingSpeak')),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: (_busy || _matching) ? null : _match,
-                    icon: Icon(_matching ? Icons.hourglass_top_rounded : Icons.search_rounded),
-                    label: Text(_matching ? l10n.t('voiceBillingProcessing') : l10n.t('voiceBillingRun')),
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.t('voiceBillingHint'),
+            style: const TextStyle(color: MohajonWarm.muted, fontSize: 13),
+          ),
+          const SizedBox(height: 14),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLevelBars(double level) {
+    final bars = <Widget>[];
+    const count = 5;
+    for (var i = 0; i < count; i++) {
+      final factor = (i + 1) / count;
+      final on = level >= factor * 0.55;
+      bars.add(Container(
+        width: 4,
+        height: 16,
+        margin: const EdgeInsets.symmetric(horizontal: 1.5),
+        decoration: BoxDecoration(
+          color: on ? MohajonWarm.orange : MohajonWarm.goldBorder,
+          borderRadius: BorderRadius.circular(3),
+        ),
+      ));
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: bars);
+  }
+
+  Widget _buildMicIndicator() {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final t = _pulseController.value;
+        return Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _busy
+                ? MohajonWarm.orange.withValues(alpha: 0.12 + t * 0.18)
+                : MohajonWarm.tintYellow,
+            border: Border.all(
+              color: _busy
+                  ? MohajonWarm.orange.withValues(alpha: 0.3 + t * 0.4)
+                  : MohajonWarm.goldBorder,
             ),
-            if (_bill != null && items.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              Text(
-                l10n.tP('voiceBillingItemsFound', {'count': '${items.length}'}),
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-              ),
-              const SizedBox(height: 8),
-              for (final item in items) ...[
+          ),
+          child: Icon(
+            _busy ? Icons.mic_rounded : Icons.mic_none_rounded,
+            size: 18,
+            color: _busy ? MohajonWarm.orange : MohajonWarm.goldText,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTranscriptArea(AppLocalizations l10n) {
+    return ValueListenableBuilder<String>(
+      valueListenable: _service.transcript,
+      builder: (context, transcript, _) {
+        final hasText = transcript.isNotEmpty;
+        return Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 80),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: MohajonWarm.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _busy ? MohajonWarm.orange.withValues(alpha: 0.35) : MohajonWarm.goldBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_busy)
+                ValueListenableBuilder<double>(
+                  valueListenable: _service.level,
+                  builder: (context, level, _) {
+                    return Row(
+                      children: [
+                        _buildLevelBars(level),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            l10n.t('voiceBillingListening'),
+                            style: const TextStyle(
+                              color: MohajonWarm.orange,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                )
+              else if (!hasText)
                 Row(
                   children: [
+                    Icon(
+                      Icons.hearing_rounded,
+                      size: 16,
+                      color: MohajonWarm.muted.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.nameBn.isNotEmpty && _isBangla(l10n)
-                                ? item.nameBn
-                                : item.nameEn,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          Text(
-                            '${money(item.sellingPrice)} / ${item.unit}',
-                            style: const TextStyle(color: Colors.black54, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _changeQty(item.productId, -0.5),
-                      icon: const Icon(Icons.remove_circle_outline_rounded),
-                    ),
-                    SizedBox(
-                      width: 44,
                       child: Text(
-                        item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _changeQty(item.productId, 0.5),
-                      icon: const Icon(Icons.add_circle_outline_rounded),
-                    ),
-                    SizedBox(
-                      width: 74,
-                      child: Text(
-                        money(item.sellingPrice * item.quantity),
-                        textAlign: TextAlign.end,
-                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFE98300)),
+                        l10n.t('voiceBillingIdle'),
+                        style: const TextStyle(
+                          color: MohajonWarm.muted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
+                )
+              else
+                Text(
+                  transcript,
+                  style: TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const Divider(height: 12),
-              ],
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _addToCart,
-                  icon: const Icon(Icons.add_shopping_cart_rounded),
-                  label: Text(l10n.t('voiceBillingAddToCart')),
-                ),
-              ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorBanner(AppLocalizations l10n) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: MohajonWarm.tintRed,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: MohajonWarm.red.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, size: 16, color: MohajonWarm.red),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _error!,
+              style: const TextStyle(
+                color: MohajonWarm.red,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(AppLocalizations l10n) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _matching ? null : (_busy ? _stop : _listen),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _busy ? MohajonWarm.red : MohajonWarm.ink,
+              side: BorderSide(
+                color: _busy ? MohajonWarm.red.withValues(alpha: 0.3) : MohajonWarm.goldBorder,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              minimumSize: const Size(0, 48),
+            ),
+            icon: Icon(_busy ? Icons.stop_rounded : Icons.mic_rounded, size: 20),
+            label: Text(
+              _busy ? l10n.t('voiceBillingStop') : l10n.t('voiceBillingSpeak'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: (_busy || _matching || (_pendingAudio == null))
+                ? null
+                : _match,
+            style: FilledButton.styleFrom(
+              backgroundColor: MohajonWarm.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              minimumSize: const Size(0, 48),
+            ),
+            icon: _matching
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome_rounded, size: 20),
+            label: Text(
+              _matching ? l10n.t('voiceBillingProcessing') : l10n.t('voiceBillingRun'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMatchedItems(List<VoiceBillItem> items, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: MohajonWarm.green,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.tP('voiceBillingItemsFound', {'count': '${items.length}'}),
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: MohajonWarm.ink,
+              ),
+            ),
           ],
+        ),
+        const SizedBox(height: 10),
+        for (final item in items) ...[
+          _buildItemCard(item),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildItemCard(VoiceBillItem item) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.nameBn.isNotEmpty && _isBangla(AppLocalizations.of(context))
+                      ? item.nameBn
+                      : item.nameEn,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: MohajonWarm.ink,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${money(item.sellingPrice)} / ${item.unit}',
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildQtyButton(
+            icon: Icons.remove_rounded,
+            onTap: () => _changeQty(item.productId, -0.5),
+          ),
+          SizedBox(
+            width: 44,
+            child: Text(
+              item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                color: MohajonWarm.ink,
+              ),
+            ),
+          ),
+          _buildQtyButton(
+            icon: Icons.add_rounded,
+            onTap: () => _changeQty(item.productId, 0.5),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 74,
+            child: Text(
+              money(item.sellingPrice * item.quantity),
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: MohajonWarm.orange,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQtyButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: MohajonWarm.tintYellow,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 18, color: MohajonWarm.goldText),
+      ),
+    );
+  }
+
+  Widget _buildAddToCartButton(AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: _addToCart,
+        style: FilledButton.styleFrom(
+          backgroundColor: MohajonWarm.green,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          minimumSize: const Size(0, 52),
+        ),
+        icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
+        label: Text(
+          l10n.t('voiceBillingAddToCart'),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
         ),
       ),
     );

@@ -13,6 +13,7 @@ class AnimatedBottomNavBar extends StatefulWidget {
     required this.onSelected,
     this.onMoreTap,
     this.itemKeys,
+    this.trailing,
   }) : assert(destinations.length > 1),
        assert(selectedIndex >= 0 && selectedIndex < destinations.length);
 
@@ -21,6 +22,7 @@ class AnimatedBottomNavBar extends StatefulWidget {
   final ValueChanged<int> onSelected;
   final VoidCallback? onMoreTap;
   final List<GlobalKey>? itemKeys;
+  final Widget? trailing;
 
   @override
   State<AnimatedBottomNavBar> createState() => _AnimatedBottomNavBarState();
@@ -85,18 +87,20 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final availableWidth = constraints.maxWidth;
+                      final trailingWidth =
+                          widget.trailing == null ? 0.0 : 46.0;
+                      final navWidth = availableWidth - trailingWidth;
                       final maxAllowedActiveWidth =
-                          availableWidth -
+                          navWidth -
                           (NavBarTheme.minInactiveWidth * (itemCount - 1));
                       final desiredActiveWidth =
-                          (availableWidth * NavBarTheme.activeWidthFraction)
-                              .clamp(
-                                NavBarTheme.minActiveWidth,
-                                NavBarTheme.maxActiveWidth,
-                              );
+                          (navWidth * NavBarTheme.activeWidthFraction).clamp(
+                            NavBarTheme.minActiveWidth,
+                            NavBarTheme.maxActiveWidth,
+                          );
                       final activeWidth =
                           maxAllowedActiveWidth < NavBarTheme.minInactiveWidth
-                          ? availableWidth / itemCount
+                          ? navWidth / itemCount
                           : desiredActiveWidth
                                 .clamp(
                                   NavBarTheme.minInactiveWidth,
@@ -104,9 +108,8 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
                                 )
                                 .toDouble();
                       final inactiveWidth =
-                          (availableWidth - activeWidth) / (itemCount - 1);
-                      final indicatorLeft =
-                          widget.selectedIndex * inactiveWidth;
+                          (navWidth - activeWidth) / (itemCount - 1);
+                      final indicatorLeft = widget.selectedIndex * inactiveWidth;
 
                       double itemLeft(int index) {
                         if (index <= widget.selectedIndex) {
@@ -173,6 +176,14 @@ class _AnimatedBottomNavBarState extends State<AnimatedBottomNavBar> {
                                 inactiveColor: _navInactive,
                                 onTap: () => _onTap(index),
                               ),
+                            ),
+                          if (widget.trailing != null)
+                            Positioned(
+                              key: const ValueKey('nav-trailing'),
+                              right: 0,
+                              top: 0,
+                              bottom: 0,
+                              child: Center(child: widget.trailing),
                             ),
                         ],
                       );

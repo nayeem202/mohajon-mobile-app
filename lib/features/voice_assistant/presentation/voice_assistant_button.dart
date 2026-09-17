@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/offline/local_database.dart';
+import '../../../core/utils/network_guard.dart';
 import '../models/voice_command.dart';
 import '../services/gemini_command_client.dart';
 import '../services/voice_assistant_service.dart';
@@ -78,23 +79,25 @@ class _VoiceAssistantSheetState extends State<VoiceAssistantSheet> {
     final command = VoiceCommandParser.parse(transcript);
     var resolved = command;
     if (!command.isKnown) {
-      setState(() {
-        _busy = true;
-        _usingAi = true;
-        _error = null;
-      });
-      try {
-        resolved = await GeminiCommandClient(widget.database).interpret(transcript);
-      } catch (_) {
-        if (mounted) {
-          setState(() {
-            _busy = false;
-            _usingAi = false;
-            _error = 'এই command বুঝতে পারিনি। আরও পরিষ্কার করে বলুন।';
-          });
+      await requireInternetFor(context, () async {
+        setState(() {
+          _busy = true;
+          _usingAi = true;
+          _error = null;
+        });
+        try {
+          resolved = await GeminiCommandClient(widget.database).interpret(transcript);
+        } catch (_) {
+          if (mounted) {
+            setState(() {
+              _busy = false;
+              _usingAi = false;
+              _error = 'এই command বুঝতে পারিনি। আরও পরিষ্কার করে বলুন।';
+            });
+          }
+          return;
         }
-        return;
-      }
+      });
       if (!resolved.isKnown) {
         setState(() {
           _busy = false;

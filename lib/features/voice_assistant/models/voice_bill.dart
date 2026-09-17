@@ -29,10 +29,18 @@ class VoiceBillItem {
 }
 
 class VoiceBill {
-  const VoiceBill({required this.items, required this.reply});
+  const VoiceBill({
+    required this.items,
+    required this.reply,
+    this.transcript = '',
+  });
 
   final List<VoiceBillItem> items;
   final String reply;
+  final String transcript;
 
   bool get hasMatches => items.isNotEmpty;
+
+  VoiceBill copyWithTranscript(String transcript) =>
+      VoiceBill(items: items, reply: reply, transcript: transcript);
 }

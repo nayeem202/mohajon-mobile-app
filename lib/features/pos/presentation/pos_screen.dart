@@ -127,12 +127,13 @@ class _PosScreenState extends ConsumerState<PosScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _TopBar(onAvatarTap: _openProfile),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
+                        _VoiceBillingHero(onMic: _openVoiceBilling),
+                        const SizedBox(height: 12),
                         _SearchBar(
                           controller: _searchController,
                           onChanged: (value) => setState(() => _query = value),
                           onScan: _scanBarcode,
-                          onMic: _openVoiceBilling,
                         ),
                         const SizedBox(height: 12),
                         _CategoryStrip(
@@ -329,13 +330,11 @@ class _SearchBar extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     required this.onScan,
-    required this.onMic,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback onScan;
-  final VoidCallback onMic;
 
   @override
   Widget build(BuildContext context) {
@@ -350,11 +349,6 @@ class _SearchBar extends StatelessWidget {
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.mic_rounded, size: 22, color: _kMuted),
-              tooltip: l10n.t('voiceBillingTitle'),
-              onPressed: onMic,
-            ),
             IconButton(
               icon: const Icon(Icons.qr_code_scanner_rounded, size: 22, color: _kMuted),
               tooltip: l10n.t('scanBarcode'),
@@ -393,6 +387,166 @@ class _CategoryStrip extends StatelessWidget {
             if (index != categories.length - 1) const SizedBox(width: 10),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _VoiceBillingHero extends StatelessWidget {
+  const _VoiceBillingHero({required this.onMic});
+
+  final VoidCallback onMic;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFFFFC800), Color(0xFFFFD83D), Color(0xFFFFE36E)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _kBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: _kAmber.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _kInk,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'PREMIUM',
+                        style: TextStyle(
+                          color: _kAmber,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 13,
+                      color: _kBronzeText,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      l10n.t('voiceBillingTitle'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: _kInk,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  l10n.t('voiceBillingTagline'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _kInk,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.t('voiceBillingSubtitle'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: _kInk.withValues(alpha: 0.75),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          _VoiceHeroChip(
+            icon: Icons.mic_rounded,
+            label: l10n.t('voiceBillingSpeak'),
+            backgroundColor: _kInk,
+            foregroundColor: _kAmber,
+            onTap: onMic,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoiceHeroChip extends StatelessWidget {
+  const _VoiceHeroChip({
+    required this.icon,
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final String? label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: foregroundColor),
+              if (label != null) ...[
+                const SizedBox(width: 5),
+                Text(
+                  label!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: foregroundColor,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -34,7 +34,7 @@ class ConnectivityBanner extends ConsumerWidget {
       color: color.withValues(alpha: 0.20),
       child: SafeArea(
         bottom: false,
-        top: false,
+        top: true,
         child: InkWell(
           onTap: onTap,
           child: Container(
