@@ -118,8 +118,17 @@ class SyncService {
       for (final (name, _) in _collections) {
         await _pushCollection(shopId, name);
       }
+      // Occasional full products refresh acts as a self-heal: it repairs any
+      // row that a page-boundary split could ever have skipped.
+      final syncCount = ((_db.settings.get('syncCount') as num?) ?? 0).toInt() + 1;
+      await _db.settings.put('syncCount', syncCount);
+      final forceFullProducts = syncCount % 10 == 0;
       for (final (name, _) in _collections) {
-        await _pullCollection(name, shopId);
+        await _pullCollection(
+          name,
+          shopId,
+          forceFull: forceFullProducts && name == 'products',
+        );
       }
 
       return SyncState(
@@ -176,9 +185,17 @@ class SyncService {
     }
   }
 
-  Future<void> _pullCollection(String name, String shopId) async {
+  Future<void> _pullCollection(
+    String name,
+    String shopId, {
+    bool forceFull = false,
+  }) async {
     final collection = _collectionFor(name);
-    var after = _lastPulledAt(name, shopId);
+    var after = forceFull ? null : _lastPulledAt(name, shopId);
+    // The server captures `serverNow` before each query and returns it with
+    // every page. Using it as the watermark (instead of the device clock)
+    // guarantees no row is ever skipped because of client-server clock skew.
+    DateTime? serverNow;
 
     // Chunked delta pull: the server caps each page when `limit` is sent and
     // reports `hasMore`, so a huge backlog never arrives as one giant
@@ -195,6 +212,10 @@ class SyncService {
         },
         timeout: _pullTimeout,
       );
+      final serverValue = DateTime.tryParse('${response['serverNow']}');
+      if (serverValue != null && (serverNow == null || serverValue.isAfter(serverNow))) {
+        serverNow = serverValue;
+      }
       final documents = (response['documents'] as List?)
           ?.cast<Map<String, dynamic>>() ??
       const <Map<String, dynamic>>[];
@@ -208,7 +229,7 @@ class SyncService {
         }
       }
       if (response['hasMore'] != true) {
-        after = DateTime.now();
+        after = serverNow ?? DateTime.now();
         break;
       }
       if (newest != null && (after == null || newest.isAfter(after))) {
