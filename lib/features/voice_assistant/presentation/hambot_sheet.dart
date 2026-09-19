@@ -5,13 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/api_client.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/network_guard.dart';
 import '../services/gemini_ask_client.dart';
 import '../services/hambot_stats.dart';
+import '../services/mohajon_tts.dart';
 import '../services/voice_assistant_service.dart';
 
-/// "HamBot" — ask your shop questions by voice or text and get a friendly
+/// "Mohajon AI" — ask your shop questions by voice or text and get a friendly
 /// answer from the AI assistant based on the shop's real data.
 class HambotSheet extends ConsumerStatefulWidget {
   const HambotSheet({super.key});
@@ -27,15 +29,36 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
   bool _busy = false;
   bool _matching = false;
   String? _error;
+  MohajonTts? _tts;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = MohajonTts(ref.read(localDatabaseProvider));
+    _tts!.init();
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.isEmpty) return;
+    final tts = _tts;
+    if (tts == null) return;
+    await tts.speak(text);
+  }
+
+  Future<void> _stopSpeaking() async {
+    await _tts?.stop();
+  }
 
   @override
   void dispose() {
+    _tts?.dispose();
     _service.dispose();
     _textController.dispose();
     super.dispose();
   }
 
   Future<void> _listen() async {
+    await _stopSpeaking();
     setState(() {
       _error = null;
       _busy = true;
@@ -109,13 +132,24 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
                 : result.answer,
           );
         });
-      } catch (_) {
+        final answer = result.answer.isEmpty
+            ? l10n.t('hambotNoAnswer')
+            : result.answer;
+        await _speak(answer);
+      } catch (err) {
         if (!mounted) return;
+        final isQuota = err is ApiException &&
+            (err.code == 'AI_UNAVAILABLE' || err.statusCode == 429);
         setState(() {
           _matching = false;
           final last = _turns.removeLast();
           if (_turns.isNotEmpty && _turns.last.answer == null) _turns.removeLast();
-          _turns.add(_ChatTurn(question: last.question, answer: l10n.t('hambotAiError')));
+          _turns.add(_ChatTurn(
+            question: last.question,
+            answer: l10n.t(
+                isQuota ? 'hambotQuotaExhausted' : 'hambotAiError'),
+            isError: true,
+          ));
         });
       }
     });
@@ -147,7 +181,12 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
                           return const _TypingIndicator();
                         }
                         final turn = _turns[index];
-                        return _TurnBubble(turn: turn);
+                        return _TurnBubble(
+                          turn: turn,
+                          onSpeak: (turn.answer != null && !turn.isError)
+                              ? () => _speak(turn.answer!)
+                              : null,
+                        );
                       },
                     )
                   : _IdleHint(l10n: l10n),
@@ -184,7 +223,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'HamBot',
+                'Mohajon AI',
                 style: const TextStyle(
                   color: MohajonWarm.ink,
                   fontSize: 17,
@@ -311,16 +350,18 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
 }
 
 class _ChatTurn {
-  const _ChatTurn({required this.question, this.answer});
+  const _ChatTurn({required this.question, this.answer, this.isError = false});
 
   final String question;
   final String? answer;
+  final bool isError;
 }
 
 class _TurnBubble extends StatelessWidget {
-  const _TurnBubble({required this.turn});
+  const _TurnBubble({required this.turn, this.onSpeak});
 
   final _ChatTurn turn;
+  final VoidCallback? onSpeak;
 
   @override
   Widget build(BuildContext context) {
@@ -365,13 +406,36 @@ class _TurnBubble extends StatelessWidget {
                 ),
                 border: Border.all(color: MohajonWarm.goldBorder),
               ),
-              child: Text(
-                turn.answer!,
-                style: const TextStyle(
-                  color: MohajonWarm.ink,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: Text(
+                      turn.answer!,
+                      style: const TextStyle(
+                        color: MohajonWarm.ink,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  if (onSpeak != null) ...[
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: onSpeak,
+                      borderRadius: BorderRadius.circular(20),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.volume_up_rounded,
+                          size: 17,
+                          color: MohajonWarm.orange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -389,7 +453,7 @@ class _TypingIndicator extends StatelessWidget {
       padding: EdgeInsets.only(top: 10),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text('HamBot…', style: TextStyle(color: MohajonWarm.goldText)),
+        child: Text('Mohajon AI…', style: TextStyle(color: MohajonWarm.goldText)),
       ),
     );
   }
@@ -445,7 +509,7 @@ class _IdleHint extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             const Text(
-              'HamBot',
+              'Mohajon AI',
               style: TextStyle(
                 color: MohajonWarm.ink,
                 fontSize: 17,
@@ -459,11 +523,13 @@ class _IdleHint extends StatelessWidget {
               style: const TextStyle(color: MohajonWarm.muted, fontSize: 13),
             ),
             const SizedBox(height: 18),
-            _ExampleChip(text: 'আজ কত বিক্রি হয়েছে?'),
+            _ExampleChip(text: 'আজ কত টাকার বিক্রি হলো?'),
             const SizedBox(height: 8),
-            _ExampleChip(text: 'কে আমার বেশি বাকি?'),
+            _ExampleChip(text: 'কার কাছ থেকে সবচেয়ে বেশি বাকি পাবো?'),
             const SizedBox(height: 8),
-            _ExampleChip(text: 'কোন পণ্য স্টকে কম আছে?'),
+            _ExampleChip(text: 'কোন পণ্যের স্টক এখন কম?'),
+            const SizedBox(height: 8),
+            _ExampleChip(text: 'আজ কত টাকা ক্যাশ পেয়েছি?'),
           ],
         ),
       ),

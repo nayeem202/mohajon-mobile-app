@@ -3,26 +3,26 @@ import 'package:flutter/material.dart';
 class AuthBrand {
   const AuthBrand._();
 
-  static const backgroundColor = Color(0xFFFFF8E1);
+  static const backgroundColor = Color(0xFFF4F8F4);
   static const panelBackground = Colors.white;
-  static const panelBorder = Color(0xFFF1DFAD);
-  static const panelText = Color(0xFF2F3028);
-  static const panelMuted = Color(0xFF77735F);
-  static const primary = Color(0xFFFFC800);
-  static const primaryDeep = Color(0xFFE98300);
-  static const secondary = Color(0xFFD97706);
-  static const secondarySoft = Color(0xFFFFF0A6);
-  static const accent = Color(0xFFE98300);
-  static const gold = Color(0xFFFFC800);
-  static const shadow = Color(0xFF8C7538);
+  static const panelBorder = Color(0xFFD6E4D8);
+  static const panelText = Color(0xFF173D2A);
+  static const panelMuted = Color(0xFF728378);
+  static const primary = Color(0xFF3E7E51);
+  static const primaryDeep = Color(0xFF164C35);
+  static const secondary = Color(0xFF2E6944);
+  static const secondarySoft = Color(0xFFDCE9DE);
+  static const accent = Color(0xFF3E7E51);
+  static const gold = Color(0xFFE5B64B);
+  static const shadow = Color(0xFF274B35);
   static const danger = Color(0xFFD64545);
-  static const buttonDisabled = Color(0xFFD7CFAE);
-  static const onGold = Color(0xFF2F3028);
+  static const buttonDisabled = Color(0xFFB8C8BA);
+  static const onGold = Colors.white;
 
   static const gradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [primary, primaryDeep],
+    colors: [primaryDeep, primary],
   );
   static const gradientTeal = gradient;
 

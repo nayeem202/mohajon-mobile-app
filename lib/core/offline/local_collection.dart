@@ -56,6 +56,20 @@ class LocalCollection<T extends Syncable> {
     return _box.put(_keyFor(item), json);
   }
 
+  /// Persists an already-server-authoritative document (e.g. a product whose
+  /// local offline photo was just uploaded, so the saved imagePath is the new
+  /// server URL — not the local filesystem path the [T] object still holds).
+  Future<void> putRemoteJson(
+    String shopId,
+    String id,
+    Map<String, dynamic> json,
+  ) {
+    return _box.put(
+      '$shopId:$id',
+      json..['syncStatus'] = SyncStatus.synced.value,
+    );
+  }
+
   List<T> pending() => values(includeDeleted: true)
       .where((item) => item.syncStatus == SyncStatus.pending)
       .toList();
@@ -68,6 +82,12 @@ class LocalCollection<T extends Syncable> {
   Future<void> mergeRemote(Map<String, dynamic> remote) async {
     final remoteItem = _fromJson(remote);
     final local = getForShop(remoteItem.shopId, remoteItem.id);
+    // A pending local document holds this device's newest user intent and has
+    // not reached the server yet (push failed or was quarantined). Never let a
+    // pull clobber it — it gets pushed and wins on the next sync.
+    if (local is T && local.syncStatus == SyncStatus.pending) {
+      return;
+    }
     if (local == null || remoteItem.updatedAt.isAfter(local.updatedAt)) {
       final json = remoteItem.toJson()..['syncStatus'] = SyncStatus.synced.value;
       await _box.put(_keyFor(remoteItem), json);

@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../offline/local_database.dart';
 import 'secure_http.dart';
+import 'secure_tokens.dart';
 
 /// Thrown when the Haalkhata business service returns a non-2xx response.
 class ApiException implements Exception {
@@ -45,7 +46,7 @@ class ApiClient {
 
   String get _baseUrl => AppConfig.apiBaseUrl;
 
-  String? get accessToken => _settings.get(_kAccessToken) as String?;
+  String? get accessToken => TokenStore.get(_kAccessToken);
 
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$_baseUrl$path').replace(queryParameters: query);
@@ -87,7 +88,7 @@ class ApiClient {
         .get(_uri(path, query), headers: _headers())
         .timeout(timeout ?? _timeout);
     if ((response.statusCode == 401 || response.statusCode == 403) &&
-        _settings.get(_kRefreshToken) != null) {
+        TokenStore.get(_kRefreshToken) != null) {
       final refreshed = await _tryRefresh();
       if (refreshed) {
         response = await client
@@ -108,8 +109,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> post(
     String path,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    Duration? timeout,
+  }) async {
     final client = await secureHttpClient();
     final data = await _send(
       () => client.post(
@@ -118,6 +120,7 @@ class ApiClient {
         body: jsonEncode(body),
       ),
       path: path,
+      timeout: timeout,
     );
     return (data is Map<String, dynamic>) ? data : const {};
   }
@@ -177,7 +180,7 @@ class ApiClient {
 
     var response = await sendUpload();
     if ((response.statusCode == 401 || response.statusCode == 403) &&
-        _settings.get(_kRefreshToken) != null) {
+        TokenStore.get(_kRefreshToken) != null) {
       final refreshed = await _tryRefresh();
       if (refreshed) response = await sendUpload();
     }
@@ -197,7 +200,7 @@ class ApiClient {
   }) async {
     var response = await send().timeout(timeout ?? _timeout);
     if ((response.statusCode == 401 || response.statusCode == 403) &&
-        _settings.get(_kRefreshToken) != null) {
+        TokenStore.get(_kRefreshToken) != null) {
       final refreshed = await _tryRefresh();
       if (refreshed) {
         response = await send().timeout(timeout ?? _timeout);
@@ -219,7 +222,7 @@ class ApiClient {
   }
 
   Future<bool> _doRefresh() async {
-    final refreshToken = _settings.get(_kRefreshToken) as String?;
+    final refreshToken = TokenStore.get(_kRefreshToken);
     if (refreshToken == null) return false;
     try {
       final client = await secureHttpClient();
@@ -241,8 +244,8 @@ class ApiClient {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final access = (data['accessToken'] ?? '') as String;
       final refresh = (data['refreshToken'] ?? '') as String;
-      await _settings.put(_kAccessToken, access);
-      await _settings.put(_kRefreshToken, refresh);
+      await TokenStore.put(_kAccessToken, access);
+      await TokenStore.put(_kRefreshToken, refresh);
       return true;
     } catch (_) {
       // Network/timeout error — keep tokens and let a later request retry.
@@ -266,7 +269,12 @@ class ApiClient {
     throw ApiException(response.statusCode, code, message);
   }
 
+  /// Wipes tokens from the keychain first, then any legacy plaintext Hive
+  /// copies so a downgraded build can never re-read a stale token.
   Future<void> _clearTokens() async {
+    await TokenStore.remove(_kAccessToken);
+    await TokenStore.remove(_kRefreshToken);
+    await TokenStore.remove(_kSession);
     await _settings.delete(_kAccessToken);
     await _settings.delete(_kRefreshToken);
     await _settings.delete(_kSession);

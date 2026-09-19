@@ -342,7 +342,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     }
     final shopName = ref.read(shopProfileProvider).value?.shopName ?? '';
     final message = WhatsAppService.dueReminderMessage(
-      customer: customer,
+      customerName: customer.name,
       dueAmount: due,
       shopName: shopName,
       t: (key) => l10n.t(key),

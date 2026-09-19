@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:hive/hive.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/app/app_providers.dart';
 import '../models/subscription_models.dart';
 import '../providers/subscription_providers.dart';
 import 'subscription_api_service.dart';
@@ -17,15 +18,14 @@ import 'subscription_api_service.dart';
 ///   still view every report and all history, but new entries are blocked
 ///   until they subscribe.
 /// - Offline friendly: the last known status is cached in Hive. If the app is
-///   offline and has no cached status, writes are allowed (never lock a shop
-///   out of its own data just because the internet is down).
+///   offline with no cached status, the shop falls back to read-only (view)
+///   mode — the user can still see everything, writes simply need an active
+///   subscription that could be verified online.
 class PaywallService {
   PaywallService(this._ref);
 
   final Ref _ref;
 
-  static const _cachedStatusKey = 'paywallCachedSubscriptionStatus';
-  static const _cachedAtKey = 'paywallCachedStatusAt';
   static const _gateDisabledKey = 'paywallGateDisabled';
 
   /// Cache is trusted for at most this long while offline.
@@ -35,6 +35,14 @@ class PaywallService {
       _ref.read(subscriptionApiServiceProvider);
 
   Box get _settings => Hive.box(HiveBoxes.settings);
+
+  // Paywall state is also shop-scoped. Never use a previous account's
+  // subscription as the fallback for the currently signed-in account.
+  String get _cachedStatusKey =>
+      'paywallCachedSubscriptionStatus.${_ref.read(shopIdProvider)}';
+
+  String get _cachedAtKey =>
+      'paywallCachedStatusAt.${_ref.read(shopIdProvider)}';
 
   /// Whether the paywall gate is enabled at all (demo/offline builds may
   /// disable it). Defaults to enabled.
@@ -53,9 +61,8 @@ class PaywallService {
   }
 
   Future<void> _cache(SubscriptionInfo info) async {
-    _settings
-      ..put(_cachedStatusKey, jsonEncode(_infoToJson(info)))
-      ..put(_cachedAtKey, DateTime.now().toIso8601String());
+    await _settings.put(_cachedStatusKey, jsonEncode(_infoToJson(info)));
+    await _settings.put(_cachedAtKey, DateTime.now().toIso8601String());
   }
 
   /// Cached status, if present and fresh enough.
@@ -69,6 +76,21 @@ class PaywallService {
     if (DateTime.now().difference(cachedAt).inDays >= _cacheTrustDays) {
       return null;
     }
+    try {
+      return SubscriptionInfo.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Last known status regardless of age. Used while offline so an active
+  /// subscriber keeps full access even after the trust window, while an
+  /// expired plan still stays in read-only view mode.
+  SubscriptionInfo? get lastKnownStatus {
+    final raw = _settings.get(_cachedStatusKey) as String?;
+    if (raw == null) return null;
     try {
       return SubscriptionInfo.fromJson(
         jsonDecode(raw) as Map<String, dynamic>,
@@ -101,20 +123,21 @@ class PaywallService {
   ///
   /// [online] tells the service whether the device currently has internet.
   /// - Online: server status wins (falls back to cache on error).
-  /// - Offline: cached status decides; no cache → writes allowed.
+  /// - Offline: the last known status decides — an active subscriber keeps
+  ///   full access forever, an expired plan stays in read-only (view) mode.
   Future<PaywallVerdict> verdict({required bool online}) async {
     if (!gateEnabled) return PaywallVerdict.fullAccess;
     if (!online) {
-      final cached = cachedStatus;
-      if (cached == null) return PaywallVerdict.fullAccess;
+      final cached = lastKnownStatus;
+      if (cached == null) return PaywallVerdict.readOnly;
       return _verdictFor(cached);
     }
     try {
       final fresh = await refresh();
       return _verdictFor(fresh);
     } catch (_) {
-      final cached = cachedStatus;
-      if (cached == null) return PaywallVerdict.fullAccess;
+      final cached = lastKnownStatus;
+      if (cached == null) return PaywallVerdict.readOnly;
       return _verdictFor(cached);
     }
   }

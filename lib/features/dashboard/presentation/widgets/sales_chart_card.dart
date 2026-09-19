@@ -4,10 +4,16 @@ import '../models/weekly_sales.dart';
 import 'sales_line_chart.dart';
 
 class SalesChartCard extends StatelessWidget {
-  const SalesChartCard({super.key, this.data, this.onSalesOverviewTap});
+  const SalesChartCard({
+    super.key,
+    this.data,
+    this.onSalesOverviewTap,
+    this.weekChangePercent,
+  });
 
   final List<WeeklySalesData>? data;
   final VoidCallback? onSalesOverviewTap;
+  final double? weekChangePercent;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +49,10 @@ class SalesChartCard extends StatelessWidget {
           ),
           if (hasData) ...[
             const SizedBox(height: 16),
-            _TrendIndicator(colors: colors),
+            _TrendIndicator(
+              colors: colors,
+              weekChangePercent: weekChangePercent,
+            ),
           ],
         ],
       ),
@@ -87,42 +96,64 @@ class _Header extends StatelessWidget {
 }
 
 class _TrendIndicator extends StatelessWidget {
-  const _TrendIndicator({required this.colors});
+  const _TrendIndicator({required this.colors, required this.weekChangePercent});
 
   final ColorScheme colors;
+  final double? weekChangePercent;
 
   @override
   Widget build(BuildContext context) {
+    final percent = weekChangePercent;
+    final positive = (percent ?? 0) >= 0;
+    final icon = positive
+        ? Icons.trending_up_rounded
+        : Icons.trending_down_rounded;
+    final trendColor = percent == null
+        ? const Color(0xFF77735F)
+        : positive
+        ? const Color(0xFF047857)
+        : const Color(0xFFB42318);
+    final label = percent == null
+        ? '—'
+        : '${percent >= 0 ? '+' : ''}${percent.abs().round()}%';
+    final caption = percent == null
+        ? 'No sales data from last week'
+        : 'compared to last week';
+
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFF047857).withValues(alpha: 0.1),
+            color: trendColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Icon(
-            Icons.trending_up_rounded,
-            color: Color(0xFF047857),
+          child: Icon(
+            icon,
+            color: trendColor,
             size: 18,
           ),
         ),
         const SizedBox(width: 8),
         Text(
-          '18%',
+          label,
           style: TextStyle(
-            color: const Color(0xFF047857),
+            color: trendColor,
             fontSize: 14,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          'compared to last week',
-          style: TextStyle(
-            color: colors.onSurfaceVariant,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+        Flexible(
+          child: Text(
+            caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],

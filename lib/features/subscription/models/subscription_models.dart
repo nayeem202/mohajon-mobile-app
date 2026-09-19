@@ -25,6 +25,15 @@ class SubscriptionPlan {
       isActive: json['isActive'] as bool? ?? true,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'planCode': planCode,
+    'name': name,
+    'description': description,
+    'price': priceBdt,
+    'durationDays': durationDays,
+    'isActive': isActive,
+  };
 }
 
 class SubscriptionPurchase {
@@ -157,4 +166,18 @@ class SubscriptionInfo {
           sub['planCode'] == 'TRIAL',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'hasActive': hasActive,
+    'isTrial': isTrial,
+    'daysRemaining': daysRemaining,
+    'subscription': {
+      'subscriptionId': subscriptionId,
+      'status': status,
+      'planCode': planCode,
+      'startDate': startDate,
+      'endDate': endDate,
+      'plan': {'name': planName, 'price': amountBdt?.toStringAsFixed(2)},
+    },
+  };
 }

@@ -1,4 +1,4 @@
-enum NotificationType { sale, stock, expense, investment, platform, summary, system, payment }
+enum NotificationType { sale, stock, expense, investment, platform, summary, system, payment, due }
 
 enum NotificationCategory { shop, platform }
 

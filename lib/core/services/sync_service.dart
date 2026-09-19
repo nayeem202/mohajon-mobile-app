@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../models/syncable.dart';
 import '../offline/local_collection.dart';
@@ -45,6 +48,19 @@ class SyncService {
   ];
 
   Future<bool> get isOnline async {
+    // Hard cap: a stalled DNS/connectivity call must never freeze the UI for
+    // more than a few seconds on every satellite operation.
+    try {
+      return await _probeOnline().timeout(
+        const Duration(seconds: 6),
+        onTimeout: () => false,
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _probeOnline() async {
     try {
       final results = await Connectivity().checkConnectivity();
       if (!results.any((result) => result != ConnectivityResult.none)) {
@@ -76,7 +92,7 @@ class SyncService {
           _db.expenses.pending().length +
           _db.users.pending().length;
     }
-    return _db.products.pendingForShop(shopId).length +
+    var total = _db.products.pendingForShop(shopId).length +
         _db.customers.pendingForShop(shopId).length +
         _db.sales.pendingForShop(shopId).length +
         _db.customerLedgerEntries.pendingForShop(shopId).length +
@@ -88,9 +104,73 @@ class SyncService {
         _db.vendorPayments.pendingForShop(shopId).length +
         _db.expenses.pendingForShop(shopId).length +
         _db.users.pendingForShop(shopId).length;
+    var quarantined = 0;
+    for (final (name, _) in _collections) {
+      final block = _db.settings.get(_quarantineKey(shopId, name));
+      if (block is Map) quarantined += block.length;
+    }
+    // Quarantined documents stay pending in Hive but are deliberately not
+    // re-sent every sync, so they must not inflate the visible pending badge.
+    return total - quarantined < 0 ? 0 : total - quarantined;
   }
 
-  Future<SyncState> sync({String shopId = AppConstants.demoShopId}) async {
+  static const _quarantinePrefix = 'pushQuarantine';
+  static const _quarantineTriedPrefix = 'pushQuarantineTried';
+  static const _quarantineRetryAfter = Duration(days: 7);
+
+  String _quarantineKey(String shopId, String name) =>
+      '$_quarantinePrefix.$shopId.$name';
+
+  String _quarantineTriedKey(String shopId, String name) =>
+      '$_quarantineTriedPrefix.$shopId.$name';
+
+  Map<String, String> _quarantined(String shopId, String name) =>
+      Map<String, String>.from(
+        (_db.settings.get(_quarantineKey(shopId, name)) as Map?)
+                ?.cast<String, dynamic>() ??
+            const {},
+      );
+
+  Map<String, String> _quarantineTried(String shopId, String name) =>
+      Map<String, String>.from(
+        (_db.settings.get(_quarantineTriedKey(shopId, name)) as Map?)
+                ?.cast<String, dynamic>() ??
+            const {},
+      );
+
+  Future<void> _saveQuarantine(
+    String shopId,
+    String name,
+    Map<String, String> quarantined,
+    Map<String, String> tried,
+  ) async {
+    if (quarantined.isEmpty) {
+      await _db.settings.delete(_quarantineKey(shopId, name));
+    } else {
+      await _db.settings.put(_quarantineKey(shopId, name), quarantined);
+    }
+    if (tried.isEmpty) {
+      await _db.settings.delete(_quarantineTriedKey(shopId, name));
+    } else {
+      await _db.settings.put(_quarantineTriedKey(shopId, name), tried);
+    }
+  }
+
+  /// Shared across all [SyncService] instances so startup (auth layer) and
+  /// the dashboard's connectivity listener can never run two full syncs over
+  /// the same Hive database at once — concurrent pulls would race the
+  /// per-collection watermarks (wiping data or skipping rows).
+  static Future<SyncState>? _inflightSync;
+
+  Future<SyncState> sync({String shopId = AppConstants.demoShopId}) {
+    final running = _inflightSync;
+    if (running != null) return running;
+    final run = _sync(shopId: shopId);
+    _inflightSync = run.whenComplete(() => _inflightSync = null);
+    return _inflightSync!;
+  }
+
+  Future<SyncState> _sync({String shopId = AppConstants.demoShopId}) async {
     if (!await isOnline) {
       return SyncState(
         phase: SyncPhase.offline,
@@ -120,7 +200,8 @@ class SyncService {
       }
       // Occasional full products refresh acts as a self-heal: it repairs any
       // row that a page-boundary split could ever have skipped.
-      final syncCount = ((_db.settings.get('syncCount') as num?) ?? 0).toInt() + 1;
+      final syncCount =
+          ((_db.settings.get('syncCount') as num?) ?? 0).toInt() + 1;
       await _db.settings.put('syncCount', syncCount);
       final forceFullProducts = syncCount % 10 == 0;
       for (final (name, _) in _collections) {
@@ -168,21 +249,115 @@ class SyncService {
     final items = collection.pendingForShop(shopId);
     if (items.isEmpty) return;
 
-    final documents = <Map<String, dynamic>>[];
-    for (final item in items) {
-      documents.add(
-        item.toJson()..['syncStatus'] = SyncStatus.synced.value,
-      );
-    }
-
-    await _api.post('/api/v1/sync/push', {
-      'collection': name,
-      'documents': documents,
+    // Quarantined document ids are skipped so one permanently-rejected row
+    // (e.g. an old validation error) does not block the whole collection.
+    // They are retried once a week and un-quarantined automatically on success
+    // or when the user fixes the underlying data (edit re-marks it pending).
+    final quarantined = _quarantined(shopId, name);
+    final tried = _quarantineTried(shopId, name);
+    final now = DateTime.now();
+    final retryable = <String>{};
+    quarantined.forEach((id, reason) {
+      final lastTried = DateTime.tryParse(tried[id] ?? '');
+      if (lastTried == null || now.difference(lastTried) >= _quarantineRetryAfter) {
+        retryable.add(id);
+      }
     });
+    final active = items
+        .where((item) =>
+            !quarantined.containsKey(item.id) || retryable.contains(item.id))
+        .toList();
+    if (active.isEmpty) return;
 
-    for (final item in items) {
-      await collection.putSynced(item);
+    // Offline photo queue (#6): a product saved while offline keeps a local
+    // file path. Now that we are online, upload it first and persist the
+    // server URL locally so the product screen shows the real photo. If the
+    // upload still fails, the product simply stays pending for the next sync.
+    final documents = <Map<String, dynamic>>[];
+    final uploadedImageIds = <String>{};
+    for (final item in active) {
+      final doc = item.toJson()..['syncStatus'] = SyncStatus.synced.value;
+      if (name == 'products') {
+        final imagePath = doc['imagePath'];
+        if (imagePath is String &&
+            imagePath.isNotEmpty &&
+            !imagePath.startsWith('http')) {
+          try {
+            final json =
+                await _api.uploadFile('/api/v1/files', File(imagePath));
+            final url = (json['url'] ?? '').toString();
+            if (url.isNotEmpty) {
+              doc['imagePath'] = url.startsWith('http')
+                  ? url
+                  : '${AppConfig.apiBaseUrl}$url';
+              uploadedImageIds.add(item.id);
+            }
+          } catch (_) {
+            // Upload failed — cannot leave a bogus local path on the server.
+            continue;
+          }
+        }
+      }
+      documents.add(doc);
     }
+    if (documents.isEmpty) return;
+
+    Map<String, dynamic> docFor(String id) => documents.firstWhere(
+      (doc) => doc['id'] == id,
+      orElse: () => active
+          .firstWhere((item) => item.id == id, orElse: () => active.first)
+          .toJson(),
+    );
+
+    try {
+      await _api.post('/api/v1/sync/push', {
+        'collection': name,
+        'documents': documents,
+      });
+      for (final item in active) {
+        if (uploadedImageIds.contains(item.id)) {
+          await collection.putRemoteJson(item.shopId, item.id, docFor(item.id));
+        } else {
+          await collection.putSynced(item);
+        }
+        quarantined.remove(item.id);
+        tried.remove(item.id);
+      }
+    } on ApiException {
+      // The whole batch was rejected — isolate the offending document(s) by
+      // pushing each one individually so the rest can still get through.
+      for (final item in active) {
+        final one = [docFor(item.id)];
+        try {
+          await _api.post('/api/v1/sync/push', {
+            'collection': name,
+            'documents': one,
+          });
+          if (uploadedImageIds.contains(item.id)) {
+            await collection.putRemoteJson(item.shopId, item.id, one.first);
+          } else {
+            await collection.putSynced(item);
+          }
+          quarantined.remove(item.id);
+          tried.remove(item.id);
+        } on ApiException catch (error) {
+          if (error.statusCode >= 400 && error.statusCode < 500) {
+            // Permanent server rejection — quarantine instead of bouncing off
+            // it on every future sync.
+            quarantined[item.id] = '${error.code}: ${error.message}';
+          }
+          tried[item.id] = now.toIso8601String();
+        } catch (_) {
+          // Transient (network/timeout) — leave pending, retry next sync.
+          tried[item.id] = now.toIso8601String();
+        }
+      }
+    } catch (_) {
+      // Transient for the whole batch — keep everything pending.
+      return;
+    }
+
+    await _saveQuarantine(shopId, name, quarantined, tried);
   }
 
   Future<void> _pullCollection(

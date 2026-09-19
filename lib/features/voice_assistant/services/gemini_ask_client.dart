@@ -13,7 +13,7 @@ class GeminiAskClient {
     final response = await ApiClient(_db).post('/api/v1/assistant/ask', {
       'text': question,
       'stats': statsJson,
-    });
+    }, timeout: const Duration(seconds: 60));
     return HamBotAnswer(
       answer: (response['answer'] ?? '') as String,
       transcript: (response['transcript'] ?? question) as String,
@@ -29,7 +29,7 @@ class GeminiAskClient {
       'audio': base64Encode(wavBytes),
       'mimeType': mimeType,
       'stats': statsJson,
-    });
+    }, timeout: const Duration(seconds: 60));
     return HamBotAnswer(
       answer: (response['answer'] ?? '') as String,
       transcript: (response['transcript'] ?? '') as String,

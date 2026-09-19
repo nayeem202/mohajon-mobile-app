@@ -6,6 +6,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/network_guard.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/subscription_models.dart';
 import '../providers/subscription_providers.dart';
@@ -138,6 +139,24 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
   Future<void> _startPurchase(String? planCode) async {
     if (planCode == null || planCode.isEmpty) return;
     final l10n = AppLocalizations.of(context);
+    final online = await isConnected();
+    if (!online) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.t('noInternetMessage')),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      return;
+    }
     final service = ref.read(subscriptionApiServiceProvider);
 
     try {
@@ -490,9 +509,9 @@ class _HeroBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 onTap: action,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 9,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: lightBg ? 10 : 14,
+                    vertical: lightBg ? 7 : 9,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -500,13 +519,17 @@ class _HeroBanner extends StatelessWidget {
                       Text(
                         actionText,
                         style: const TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w900,
                           color: MohajonWarm.ink,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Icon(actionIcon, size: 16, color: MohajonWarm.ink),
+                      const SizedBox(width: 5),
+                      Icon(
+                        actionIcon,
+                        size: lightBg ? 14 : 16,
+                        color: MohajonWarm.ink,
+                      ),
                     ],
                   ),
                 ),
@@ -568,10 +591,11 @@ class _HeroBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 46,
-                    height: 46,
+                    width: lightBg ? 40 : 46,
+                    height: lightBg ? 40 : 46,
                     decoration: BoxDecoration(
                       color: lightBg
                           ? Colors.white
@@ -583,43 +607,47 @@ class _HeroBanner extends StatelessWidget {
                             : Colors.white.withValues(alpha: 0.45),
                       ),
                     ),
-                    child: Icon(icon, color: contentColor, size: 24),
+                    child: Icon(
+                      icon,
+                      color: contentColor,
+                      size: lightBg ? 21 : 24,
+                    ),
                   ),
-                  const Spacer(),
-                  if (actionButton != null) ...[
-                    actionButton,
-                    const SizedBox(width: 8),
-                  ],
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      l10n.t('premiumBadge'),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6,
-                        color: Color(0xFF57534E),
+                  if (lightBg) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: contentColor,
+                        ),
                       ),
                     ),
-                  ),
+                    if (actionButton != null) ...[
+                      const SizedBox(width: 10),
+                      actionButton,
+                    ],
+                  ] else ...[
+                    const Spacer(),
+                    ?actionButton,
+                  ],
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  color: contentColor,
+              if (!lightBg) ...[
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: contentColor,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 3),
               Text(
                 body,
@@ -727,7 +755,10 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _GoldButton(label: l10n.t('subscribe'), onPressed: onSubscribe),
+              _GoldButton(
+                label: l10n.t(highlight ? 'renew' : 'subscribe'),
+                onPressed: onSubscribe,
+              ),
             ],
           ),
           const SizedBox(height: 16),

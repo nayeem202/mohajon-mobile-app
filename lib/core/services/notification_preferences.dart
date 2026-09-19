@@ -5,7 +5,7 @@ import '../../features/notifications/models/notification_model.dart';
 const notificationPushEnabledKey = 'pushEnabled';
 
 const allNotificationTypeKeys = <String>[
-  'sale', 'stock', 'expense', 'payment', 'investment', 'platform',
+  'sale', 'stock', 'expense', 'payment', 'investment', 'due', 'platform',
 ];
 
 String notificationTypeLabel(NotificationType type) {
@@ -15,6 +15,7 @@ String notificationTypeLabel(NotificationType type) {
     NotificationType.expense => 'Expenses',
     NotificationType.payment => 'Payments',
     NotificationType.investment => 'Investment',
+    NotificationType.due => 'Dues',
     NotificationType.platform || NotificationType.system => 'Platform',
     NotificationType.summary => 'Sales',
   };

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
@@ -6,7 +9,9 @@ import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/app_feedback.dart';
+import '../../../core/services/download_export_service.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../auth/providers/auth_providers.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -269,13 +274,13 @@ class _ToggleRow extends StatelessWidget {
   }
 }
 
-class _DataActionsCard extends StatelessWidget {
+class _DataActionsCard extends ConsumerWidget {
   const _DataActionsCard({required this.onPolicy});
 
   final VoidCallback onPolicy;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
     return Card(
       child: Column(
@@ -283,8 +288,8 @@ class _DataActionsCard extends StatelessWidget {
           _ActionRow(
             icon: Icons.download_outlined,
             label: 'Download My Data',
-            subtitle: 'Get a copy of your information',
-            onTap: () => _toast(context, 'Preparing your data export…'),
+            subtitle: 'Save a copy of your information',
+            onTap: () => _downloadMyData(context, ref),
           ),
           Divider(height: 1, indent: 64, endIndent: 16,
               color: colors.outlineVariant),
@@ -301,11 +306,124 @@ class _DataActionsCard extends StatelessWidget {
             label: 'Delete My Data',
             subtitle: 'Permanently remove your account data',
             destructive: true,
-            onTap: () => _confirmDelete(context),
+            onTap: () => _confirmDelete(context, ref),
           ),
         ],
       ),
     );
+  }
+
+  Future<Map<String, dynamic>> _buildExport(WidgetRef ref) async {
+    final db = ref.read(localDatabaseProvider);
+    final snapshot = <String, dynamic>{
+      'exportedAt': DateTime.now().toIso8601String(),
+      'activeShopId':
+          ref.read(shopIdProvider),
+      'collections': {
+        'products': db.products.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'customers': db.customers.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'sales': db.sales.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'customerLedgerEntries': db.customerLedgerEntries.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'payments': db.payments.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'purchases': db.purchases.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'suppliers': db.suppliers.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'vendors': db.vendors.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'vendorPurchases': db.vendorPurchases.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'vendorPayments': db.vendorPayments.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'expenses': db.expenses.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'users': db.users.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+      },
+      'profile': {
+        for (final key in const [
+          'profile_storeName',
+          'profile_ownerName',
+          'profile_phone',
+          'profile_email',
+          'profile_address',
+        ]) if (db.settings.get(key) != null) key: db.settings.get(key),
+      },
+    };
+    return snapshot;
+  }
+
+  Future<void> _downloadMyData(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(
+        content: const Text('Preparing your data export…'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24)));
+    try {
+      final json = jsonEncode(await _buildExport(ref));
+      final bytes = Uint8List.fromList(utf8.encode(json));
+      final now = DateTime.now();
+      final stamp =
+          '${now.year}${_two(now.month)}${_two(now.day)}-${_two(now.hour)}${_two(now.minute)}';
+      final path = await DownloadExportService().saveFileToDownloads(
+        fileName: 'haalkhata-data-$stamp.json',
+        mimeType: 'application/json',
+        bytes: bytes,
+      );
+      if (!context.mounted) return;
+      _toast(context, path == null
+          ? 'Your data export is ready.'
+          : 'Saved to Downloads: $path');
+    } catch (error) {
+      if (!context.mounted) return;
+      _toast(context, 'Export failed: $error');
+    }
+  }
+
+  String _two(int value) => value.toString().padLeft(2, '0');
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final colors = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete My Data'),
+        content: const Text(
+          'This permanently removes your shop data from the Haalkhata '
+          'services and this device. This action cannot be undone. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(
+        content: const Text('Deleting your data…'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24)));
+    try {
+      final db = ref.read(localDatabaseProvider);
+      try {
+        await ApiClient(db).delete('/api/v1/shops/me/data');
+      } catch (_) {
+        // Offline — the local wipe still applies; a future sync of an empty
+        // shop cannot resurrect server rows since the shop keeps no data.
+      }
+      await db.clearBusinessData();
+      await ref.read(authServiceProvider).signOut();
+    } catch (error) {
+      if (!context.mounted) return;
+      _toast(context, 'Deletion failed: $error');
+    }
   }
 
   void _toast(BuildContext context, String message) {
@@ -315,37 +433,6 @@ class _DataActionsCard extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete My Data'),
-        content: const Text(
-          'This will request permanent deletion of your account data. '
-          'This action cannot be undone. Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.error,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _toast(context, 'Data deletion request sent');
-            },
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }

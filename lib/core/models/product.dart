@@ -15,6 +15,7 @@ class Product with Syncable {
     required this.sellingPrice,
     required this.stockQty,
     required this.lowStockAlert,
+    this.expiryDate,
     required this.shopId,
     required this.updatedAt,
     this.isDeleted = false,
@@ -33,6 +34,7 @@ class Product with Syncable {
   final double sellingPrice;
   final int stockQty;
   final int lowStockAlert;
+  final DateTime? expiryDate;
   @override
   final String shopId;
   @override
@@ -49,6 +51,22 @@ class Product with Syncable {
 
   bool get isLowStock => stockQty <= lowStockAlert;
 
+  bool get isExpired {
+    final exp = expiryDate;
+    if (exp == null) return false;
+    final now = DateTime.now();
+    return exp.isBefore(DateTime(now.year, now.month, now.day));
+  }
+
+  bool get isExpiringSoon {
+    final exp = expiryDate;
+    if (exp == null || isExpired) return false;
+    final now = DateTime.now();
+    final cutoff =
+        DateTime(now.year, now.month, now.day).add(const Duration(days: 7));
+    return !exp.isAfter(cutoff);
+  }
+
   Product copyWith({
     String? productId,
     String? nameEn,
@@ -62,6 +80,7 @@ class Product with Syncable {
     double? sellingPrice,
     int? stockQty,
     int? lowStockAlert,
+    DateTime? expiryDate,
     String? shopId,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -80,6 +99,7 @@ class Product with Syncable {
       sellingPrice: sellingPrice ?? this.sellingPrice,
       stockQty: stockQty ?? this.stockQty,
       lowStockAlert: lowStockAlert ?? this.lowStockAlert,
+      expiryDate: expiryDate ?? this.expiryDate,
       shopId: shopId ?? this.shopId,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -101,6 +121,7 @@ class Product with Syncable {
     'sellingPrice': sellingPrice,
     'stockQty': stockQty,
     'lowStockAlert': lowStockAlert,
+    'expiryDate': expiryDate == null ? null : dateToJson(expiryDate!),
     'shopId': shopId,
     'updatedAt': dateToJson(updatedAt),
     'isDeleted': isDeleted,
@@ -120,6 +141,9 @@ class Product with Syncable {
     sellingPrice: (json['sellingPrice'] as num? ?? 0).toDouble(),
     stockQty: (json['stockQty'] as num? ?? 0).toInt(),
     lowStockAlert: (json['lowStockAlert'] as num? ?? 0).toInt(),
+    expiryDate: json['expiryDate'] == null
+        ? null
+        : dateFromJson(json['expiryDate']),
     shopId: (json['shopId'] ?? '') as String,
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,

@@ -509,7 +509,6 @@ class _VoiceHeroChip extends StatelessWidget {
     required this.backgroundColor,
     required this.foregroundColor,
     required this.onTap,
-    this.tooltip,
   });
 
   final IconData icon;
@@ -517,7 +516,6 @@ class _VoiceHeroChip extends StatelessWidget {
   final Color backgroundColor;
   final Color foregroundColor;
   final VoidCallback onTap;
-  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {

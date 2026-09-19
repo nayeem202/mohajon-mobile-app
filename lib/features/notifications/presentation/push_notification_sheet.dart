@@ -227,6 +227,7 @@ class _TypeSelector extends StatelessWidget {
         NotificationType.stock => l10n.t('typeStock'),
         NotificationType.expense => l10n.t('typeExpense'),
         NotificationType.investment => l10n.t('typeInvestment'),
+        NotificationType.due => l10n.t('typeDue'),
         NotificationType.system => l10n.t('typeSystem'),
         NotificationType.payment => l10n.t('typePayment'),
         NotificationType.summary => l10n.t('typeSale'),

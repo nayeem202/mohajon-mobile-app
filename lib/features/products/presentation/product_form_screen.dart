@@ -37,6 +37,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   final _sellingPrice = TextEditingController();
   final _stockQty = TextEditingController();
   final _lowStock = TextEditingController();
+  DateTime? _expiryDate;
   String _selectedCategory = 'Grocery';
   String _selectedUnit = 'pcs';
   String? _imagePath;
@@ -65,6 +66,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     _sellingPrice.text = (product?.sellingPrice ?? 0).toString();
     _stockQty.text = (product?.stockQty ?? 0).toString();
     _lowStock.text = (product?.lowStockAlert ?? 10).toString();
+    _expiryDate = product?.expiryDate;
     _selectedCategory = product?.category.isNotEmpty == true
         ? product!.category
         : 'Grocery';
@@ -443,9 +445,15 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
+const SizedBox(height: 12),
+                              _ExpiryField(
+                                value: _expiryDate,
+                                onChanged: (date) =>
+                                    setState(() => _expiryDate = date),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: MohajonWarm.tintOrange,
                                       border: Border.all(
@@ -765,6 +773,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
               sellingPrice: double.tryParse(_sellingPrice.text) ?? 0,
               stockQty: int.tryParse(_stockQty.text) ?? 0,
               lowStockAlert: int.tryParse(_lowStock.text) ?? 0,
+              expiryDate: _expiryDate,
             );
         if (mounted) Navigator.of(context).pop();
       });
@@ -776,6 +785,126 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   }
 
   Future<void> _deleteProduct() async {
+    final l10n = AppLocalizations.of(context);
+    final product = widget.product;
+    if (product == null) return;
+    final name = product.displayName(Localizations.localeOf(context).languageCode);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: true,
+          child: Material(
+            color: Colors.transparent,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                padding: const EdgeInsets.all(24),
+                width: 320,
+                decoration: BoxDecoration(
+                  color: MohajonWarm.card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: MohajonWarm.goldBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: MohajonWarm.ink.withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: const BoxDecoration(
+                        color: MohajonWarm.tintRed,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: MohajonWarm.red,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.t('deleteProductQuestion'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: MohajonWarm.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.tP('deleteProductConfirm', {'desc': name}),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: MohajonWarm.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF0ECE6),
+                                foregroundColor: const Color(0xFF525252),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide.none,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              child: Text(l10n.t('cancel')),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: FilledButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: MohajonWarm.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              child: Text(l10n.t('delete')),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (confirmed != true) return;
     try {
       await runBusyAction(() async {
         await ref
@@ -1192,6 +1321,74 @@ class _FieldLabel extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ExpiryField extends StatelessWidget {
+  const _ExpiryField({required this.value, required this.onChanged});
+
+  final DateTime? value;
+  final ValueChanged<DateTime?> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: value ?? now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 5, 12, 31),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final label = value == null
+        ? l10n.t('noExpiryDate')
+        : '${value!.day}/${value!.month}/${value!.year}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FieldLabel(label: l10n.t('expiryDate')),
+        const SizedBox(height: 8),
+        InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _pick(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: MohajonWarm.goldBorder),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.event_outlined, size: 18, color: MohajonWarm.ink),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: value == null
+                          ? MohajonWarm.ink.withValues(alpha: 0.55)
+                          : MohajonWarm.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                if (value != null)
+                  GestureDetector(
+                    onTap: () => onChanged(null),
+                    child: Icon(Icons.close, size: 16, color: MohajonWarm.red),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

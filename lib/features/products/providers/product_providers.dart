@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
@@ -55,12 +57,23 @@ class ProductService {
     required double sellingPrice,
     required int stockQty,
     required int lowStockAlert,
+    DateTime? expiryDate,
     String unit = 'pcs',
     String? imagePath,
   }) async {
     final db = _ref.read(localDatabaseProvider);
     final id = productId ?? _uuid.v4();
-    final uploadedImagePath = await FileUploadService(db).uploadIfNeeded(imagePath);
+    // Upload immediately when possible; when offline, keep the local file
+    // path so the product still saves. The sync layer uploads the photo on
+    // the next online sync and swaps in the server URL.
+    var resolvedImagePath = imagePath;
+    if (imagePath != null && imagePath.isNotEmpty && !imagePath.startsWith('http')) {
+      try {
+        resolvedImagePath = await FileUploadService(db).uploadIfNeeded(imagePath);
+      } catch (_) {
+        resolvedImagePath = imagePath;
+      }
+    }
     await db.products.put(
       Product(
         productId: id,
@@ -69,18 +82,19 @@ class ProductService {
         barcode: barcode,
         category: category,
         unit: unit,
-        imagePath: uploadedImagePath,
+        imagePath: resolvedImagePath,
         buyingPrice: buyingPrice,
         purchasePrice: purchasePrice,
         sellingPrice: sellingPrice,
         stockQty: stockQty,
         lowStockAlert: lowStockAlert,
+        expiryDate: expiryDate,
         shopId: _ref.read(shopIdProvider),
         updatedAt: DateTime.now(),
         syncStatus: SyncStatus.pending,
       ),
     );
-    await _ref.read(syncStateProvider.notifier).syncIfOnline();
+    unawaited(_ref.read(syncStateProvider.notifier).syncIfOnline());
   }
 
   Future<void> adjustStock(
@@ -103,15 +117,27 @@ class ProductService {
     await db.products.put(updated);
     if (updated.isLowStock) {
       final day = DateTime.now();
+      final message = '${updated.nameEn} has ${updated.stockQty} ${updated.unit} left.';
       _ref.read(notificationServiceProvider).add(
             type: NotificationType.stock,
             title: 'Low stock alert',
-            message: '${updated.nameEn} has ${updated.stockQty} ${updated.unit} left.',
+            message: message,
             sourceKey: 'low-stock:${updated.productId}:${day.year}-${day.month}-${day.day}',
           );
+      // Best-effort remote push so the owner's other devices learn about the
+      // low stock even when no staff account is watching this device.
+      unawaited(() async {
+        try {
+          await _ref.read(notificationServiceProvider).sendPush(
+                type: NotificationType.stock,
+                title: 'Low stock alert',
+                message: message,
+              );
+        } catch (_) {}
+      }());
     }
     if (syncAfterSave) {
-      await _ref.read(syncStateProvider.notifier).syncIfOnline();
+      unawaited(_ref.read(syncStateProvider.notifier).syncIfOnline());
     }
   }
 
@@ -127,6 +153,6 @@ class ProductService {
         syncStatus: SyncStatus.pending,
       ),
     );
-    await _ref.read(syncStateProvider.notifier).syncIfOnline();
+    unawaited(_ref.read(syncStateProvider.notifier).syncIfOnline());
   }
 }

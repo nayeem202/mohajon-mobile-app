@@ -319,10 +319,10 @@ class _HeroSection extends StatelessWidget {
         _CommerceIllustration(compact: compact),
         SizedBox(height: compact ? 8 : 14),
         Text(
-          'Login',
+          'Welcome Back',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: AuthBrand.panelText,
+            color: Colors.white,
             fontWeight: FontWeight.w900,
             letterSpacing: -1.6,
             height: 1,
@@ -330,10 +330,10 @@ class _HeroSection extends StatelessWidget {
         ),
         const SizedBox(height: 7),
         Text(
-          'Welcome to Mohajon',
+          'Sign in to your Mohajon account',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AuthBrand.panelMuted,
+            color: Colors.white.withValues(alpha: 0.78),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -351,40 +351,40 @@ class _AuthBackdrop extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            top: -120,
-            right: -90,
-            child: Container(
-              width: 330,
-              height: 330,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFFC800), Color(0xFFFFE98A)],
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 330,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0B3827), Color(0xFF2E6944)],
                 ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(64),
+                  bottomRight: Radius.circular(64),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AuthBrand.shadow.withValues(alpha: 0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
               ),
             ),
           ),
           Positioned(
-            left: -110,
-            bottom: 80,
+            top: -90,
+            right: -80,
             child: Container(
-              width: 280,
-              height: 280,
+              width: 270,
+              height: 270,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFFFFE9B8),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 26,
-            bottom: 30,
-            child: Opacity(
-              opacity: 0.045,
-              child: Image.asset(
-                'assets/brand/mohajon.png',
-                width: 150,
-                height: 150,
+                color: Color(0x223E7E51),
               ),
             ),
           ),
@@ -441,24 +441,6 @@ class _CommerceIllustration extends StatelessWidget {
               size: compact ? 48 : 58,
               rotation: .12,
             ),
-          ),
-          Container(
-            width: compact ? 98 : 118,
-            height: compact ? 98 : 118,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: AuthBrand.panelBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: AuthBrand.shadow.withValues(alpha: 0.17),
-                  blurRadius: 22,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: Image.asset('assets/brand/mohajon.png', fit: BoxFit.contain),
           ),
         ],
       ),
@@ -557,7 +539,7 @@ class _LoginCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Let\'s Get Started',
+              'Sign in to continue',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: AuthBrand.panelText,
@@ -565,7 +547,7 @@ class _LoginCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Sign in to continue to your account',
+              'Access your Mohajon account securely',
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(color: AuthBrand.panelMuted),
@@ -625,32 +607,15 @@ class _LoginCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 5),
-            Row(
-              children: [
-                Expanded(
-                  child: PrimaryButton(
-                    onPressed: isBusy ? null : onSignIn,
-                    isLoading: isBusy,
-                    compact: true,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 9),
-                  child: Text(
-                    'OR',
-                    style: TextStyle(
-                      color: AuthBrand.panelMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                SocialLoginButton(
-                  compact: true,
-                  onPressed: isBusy ? null : onGoogleSignIn,
-                ),
-              ],
+            PrimaryButton(
+              onPressed: isBusy ? null : onSignIn,
+              isLoading: isBusy,
+              compact: true,
             ),
+            const SizedBox(height: 16),
+            const _OrDivider(),
+            const SizedBox(height: 12),
+            SocialLoginButton(onPressed: isBusy ? null : onGoogleSignIn),
             if (message != null) ...[
               const SizedBox(height: 12),
               _MessageBanner(message: message!, isError: messageIsError),

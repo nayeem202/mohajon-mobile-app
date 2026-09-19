@@ -19,6 +19,11 @@ import '../../profile/models/profile.dart';
 import '../../profile/presentation/profile_overview_screen.dart';
 import '../../pos/presentation/sales_history_screen.dart';
 import '../../profile/providers/profile_providers.dart';
+import '../../customers/presentation/customer_list_screen.dart';
+import '../../products/presentation/product_list_screen.dart';
+import '../../pos/services/whatsapp_service.dart';
+import '../../settings/providers/shop_profile_providers.dart';
+import '../../../core/utils/snackbar.dart';
 import '../presentation/low_stock_products_screen.dart';
 import '../providers/dashboard_providers.dart';
 import 'models/weekly_sales.dart';
@@ -116,11 +121,20 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           )
                           .toList(),
+                      weekChangePercent: summary.weekChangePercent,
                     ),
                     const SizedBox(height: 20),
                     _RecentSalesCard(sales: summary.recentSales),
+                    if (summary.dueCustomers.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      _DueListCard(customers: summary.dueCustomers),
+                    ],
                     const SizedBox(height: 20),
                     _LowStockAlert(products: summary.lowStock),
+                    if (summary.expiringSoon.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      _ExpiryAlertCard(products: summary.expiringSoon),
+                    ],
                   ],
                 ),
               ),
@@ -779,6 +793,350 @@ class _RecentSaleRow extends StatelessWidget {
       ),
     ),
   );
+  }
+}
+
+class _DueListCard extends ConsumerWidget {
+  const _DueListCard({required this.customers});
+
+  final List<DueCustomerSummary> customers;
+
+  Future<void> _sendReminder(
+    BuildContext context,
+    WidgetRef ref,
+    DueCustomerSummary customer,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    if (customer.phone.trim().isEmpty) {
+      showAppSnackBar(context, l10n.t('whatsappNoPhone'), isError: true);
+      return;
+    }
+    final shopName = ref.read(shopProfileProvider).value?.shopName ?? '';
+    final message = WhatsAppService.dueReminderMessage(
+      customerName: customer.name,
+      dueAmount: customer.dueAmount,
+      shopName: shopName,
+      t: (key) => l10n.t(key),
+    );
+    final ok = await WhatsAppService.openChat(
+      phone: customer.phone,
+      message: message,
+    );
+    if (!ok && context.mounted) {
+      showAppSnackBar(context, l10n.t('whatsappFailed'), isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final visible = customers.take(4).toList();
+    return _SectionCard(
+      child: Column(
+        children: [
+          _SectionHeader(
+            title: l10n.t('outstandingDues'),
+            action: l10n.t('seeAll'),
+            onAction: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CustomerListScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          for (var index = 0; index < visible.length; index++) ...[
+            if (index != 0)
+              const Divider(height: 18, color: Color(0xFFF0ECE6)),
+            _DueRow(
+              customer: visible[index],
+              onRemind: () => _sendReminder(context, ref, visible[index]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DueRow extends StatelessWidget {
+  const _DueRow({required this.customer, required this.onRemind});
+
+  final DueCustomerSummary customer;
+  final VoidCallback onRemind;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final initial = customer.name.trim().isNotEmpty
+        ? customer.name.trim().substring(0, 1).toUpperCase()
+        : '?';
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFE9E6),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initial,
+            style: TextStyle(
+              color: const Color(0xFFB3423A),
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                customer.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: colors.onSurface,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                customer.phone.trim().isNotEmpty
+                    ? customer.phone
+                    : l10n.t('noPhone'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              money(customer.dueAmount),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: const Color(0xFFB3423A),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Material(
+              color: const Color(0xFF25D366),
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: onRemind,
+                child: Padding(
+                  padding: const EdgeInsets.all(7),
+                  child: const Icon(
+                    Icons.chat_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ExpiryAlertCard extends StatelessWidget {
+  const _ExpiryAlertCard({required this.products});
+
+  final List<Product> products;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final visible = products.take(4).toList();
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Color(0xFFFFEBEA)],
+        ),
+        border: Border.all(color: const Color(0xFFF3CAC4)),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6B2A22).withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFE85F4A), Color(0xFFF0755C)],
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.event_busy_rounded,
+                    color: Color(0xFFB3423A),
+                    size: 17,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.t('expiringSoon'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${products.length} ${l10n.t('items')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFB3423A),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ProductListScreen(
+                        showExpiringOnly: true,
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 5),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.t('viewAll'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Column(
+              children: [
+                for (var index = 0; index < visible.length; index++) ...[
+                  if (index != 0)
+                    const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          visible[index].nameEn,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        visible[index].isExpired
+                            ? '${l10n.t('expired')} • '
+                                '${_expiryLabel(visible[index].expiryDate)}'
+                            : _expiryLabel(visible[index].expiryDate),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: visible[index].isExpired
+                              ? const Color(0xFFB3423A)
+                              : const Color(0xFF9A6B0A),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _expiryLabel(DateTime? date) {
+    if (date == null) return '';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 

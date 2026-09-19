@@ -66,6 +66,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (cart.customerId.isNotEmpty) {
       _customerMode = _CustomerMode.existing;
     }
+    // Keep the checkout VAT selection in sync with the cart's default so the
+    // on-screen total always matches the sale that actually gets saved.
+    _vatPercent = cart.vatPercent;
   }
 
   @override

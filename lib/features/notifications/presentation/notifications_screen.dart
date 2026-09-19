@@ -644,6 +644,10 @@ class _IconCircle extends StatelessWidget {
         bgColor = MohajonWarm.tintOrange;
         iconColor = MohajonWarm.orange;
         icon = Icons.inventory_2_rounded;
+      case NotificationType.due:
+        bgColor = MohajonWarm.tintRed;
+        iconColor = MohajonWarm.red;
+        icon = Icons.schedule_rounded;
       case NotificationType.expense:
         bgColor = MohajonWarm.tintRed;
         iconColor = MohajonWarm.red;

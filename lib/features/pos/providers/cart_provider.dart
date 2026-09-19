@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
@@ -168,16 +170,30 @@ class CartController extends StateNotifier<CartState> {
     );
 
     final shopId = sale.shopId;
+    // Overshoot-safe compensation (#7): each step is applied independently so
+    // a failure in one write cannot silently inflate stock (by re-adding what
+    // was never deducted) or delete an already-recorded sale.
+    final decrementedIds = <String>{};
+    Object? firstError;
     try {
       await db.sales.put(sale);
-      for (final item in state.items) {
+    } catch (error) {
+      rethrow;
+    }
+    for (final item in state.items) {
+      try {
         await _ref.read(productServiceProvider).adjustStock(
               item.productId,
               -item.qty.round(),
               syncAfterSave: false,
             );
+        decrementedIds.add(item.productId);
+      } catch (error) {
+        firstError ??= error;
       }
-      if (paidAmount > 0 && state.customerId.isNotEmpty) {
+    }
+    if (paidAmount > 0 && state.customerId.isNotEmpty) {
+      try {
         await db.payments.put(
           Payment(
             paymentId: _uuid.v4(),
@@ -191,19 +207,38 @@ class CartController extends StateNotifier<CartState> {
             syncStatus: SyncStatus.pending,
           ),
         );
+      } catch (error) {
+        firstError ??= error;
       }
-    } catch (error) {
-      // Compensate for partially applied writes so a user retry cannot
-      // duplicate the sale, payment, or stock deduction.
+    }
+    if (firstError != null) {
+      // The sale row stays (money was received); give back only stock that was
+      // actually deducted in this run.
       for (final item in state.items) {
-        await _ref.read(productServiceProvider).adjustStock(
-              item.productId,
-              item.qty.round(),
-              syncAfterSave: false,
-            );
+        if (decrementedIds.contains(item.productId)) {
+          try {
+            await _ref.read(productServiceProvider).adjustStock(
+                  item.productId,
+                  item.qty.round(),
+                  syncAfterSave: false,
+                );
+          } catch (_) {}
+        }
       }
-      await db.sales.remove(shopId, sale.saleId);
-      rethrow;
+      throw firstError;
+    }
+    if (sale.dueAmount > 0) {
+      final message =
+          '${sale.items.first.name} and more — ৳${sale.dueAmount.toStringAsFixed(2)} due from ${sale.customerId.isEmpty ? 'walk-in' : 'customer'}';
+      unawaited(() async {
+        try {
+          await _ref.read(notificationServiceProvider).sendPush(
+                type: NotificationType.due,
+                title: 'Due payment reminder',
+                message: message,
+              );
+        } catch (_) {}
+      }());
     }
     _ref.read(notificationServiceProvider).add(
           type: NotificationType.sale,
@@ -212,7 +247,10 @@ class CartController extends StateNotifier<CartState> {
           sourceKey: 'sale:${sale.saleId}',
         );
     clear();
-    await _ref.read(syncStateProvider.notifier).syncIfOnline();
+    // Fire-and-forget: never hold the "success" screen hostage to a full
+    // sync round-trip. The dashboard sync badge reflects the real state, and
+    // auto-sync fires again on reconnect.
+    unawaited(_ref.read(syncStateProvider.notifier).syncIfOnline());
     return sale;
   }
 }

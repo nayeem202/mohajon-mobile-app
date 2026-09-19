@@ -65,7 +65,9 @@ class NotificationsController extends StateNotifier<NotificationsState> {
     _sortAndPersist();
     unawaited(_loadSharedHistory());
     _historyRefreshTimer = Timer.periodic(
-      const Duration(seconds: 3),
+      // Notifications are near-real-time via FCM; 30s polling is a cheap
+      // reconciliation net that does not hammer the service per device.
+      const Duration(seconds: 30),
       (_) => unawaited(_loadSharedHistory()),
     );
   }

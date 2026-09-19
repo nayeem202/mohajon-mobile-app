@@ -57,9 +57,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           body: Stack(
             children: [
               const DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AuthBrand.backgroundColor,
-                ),
+                decoration: BoxDecoration(color: AuthBrand.backgroundColor),
                 child: SizedBox.expand(),
               ),
               SafeArea(
@@ -70,11 +68,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                       floating: true,
                       backgroundColor: Colors.transparent,
                       elevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      color: AuthBrand.secondary,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
+                      leading: IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        color: AuthBrand.secondary,
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
@@ -148,7 +146,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Owner name',
-                    hintText: 'e.g. Ranbir Kapoor',
+                    hintText: 'e.g. Rakib Hasan',
                     prefixIcon: Icon(Icons.person_outline_rounded),
                   ),
                   validator: _required,
@@ -193,9 +191,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                       tooltip: _obscurePassword
                           ? 'Show password'
                           : 'Hide password',
-                      onPressed: () => setState(
-                        () => _obscurePassword = !_obscurePassword,
-                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_off_outlined
@@ -221,9 +218,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                       tooltip: _obscureConfirm
                           ? 'Show password'
                           : 'Hide password',
-                      onPressed: () => setState(
-                        () => _obscureConfirm = !_obscureConfirm,
-                      ),
+                      onPressed: () =>
+                          setState(() => _obscureConfirm = !_obscureConfirm),
                       icon: Icon(
                         _obscureConfirm
                             ? Icons.visibility_off_outlined
@@ -316,13 +312,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       try {
         await ref
             .read(authServiceProvider)
-                .signUpWithEmail(
-                  shopName: _shopName.text,
-                  ownerName: _ownerName.text,
-                  email: _email.text,
-                  mobile: _mobile.text,
-                  password: _password.text,
-                );
+            .signUpWithEmail(
+              shopName: _shopName.text,
+              ownerName: _ownerName.text,
+              email: _email.text,
+              mobile: _mobile.text,
+              password: _password.text,
+            );
         if (!mounted) return;
         if (AppConfig.useCustomAuth) {
           final verified = await showEmailVerificationDialog(
@@ -459,9 +455,7 @@ class _PasswordStrengthIndicator extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   height: 6,
                   decoration: BoxDecoration(
-                    color: active
-                        ? color
-                        : AuthBrand.panelBorder,
+                    color: active ? color : AuthBrand.panelBorder,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -657,22 +651,22 @@ class _VerificationNotice extends StatelessWidget {
             child: Container(
               width: 78,
               height: 78,
-decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    color: AuthBrand.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AuthBrand.primary.withValues(alpha: 0.28),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: AuthBrand.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AuthBrand.primary.withValues(alpha: 0.28),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
                   ),
-                  child: const Icon(
-                    Icons.mark_email_read_outlined,
-                    color: AuthBrand.onGold,
-                    size: 36,
-                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.mark_email_read_outlined,
+                color: AuthBrand.onGold,
+                size: 36,
+              ),
             ),
           ),
           const SizedBox(height: 16),

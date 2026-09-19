@@ -24,10 +24,14 @@ import '../../../core/app/app_providers.dart';
 
 final GlobalKey tourAddProductKey = GlobalKey();
 
-enum _StockFilter { all, low, out }
+enum _StockFilter { all, low, out, expiring, expired }
 
 class ProductListScreen extends ConsumerStatefulWidget {
-  const ProductListScreen({super.key});
+  const ProductListScreen({super.key, this.showExpiringOnly = false});
+
+  /// জরুরি মেয়াদ-সমাপ্তির alert card থেকে "view all"-এ এলে শুধু
+  /// expiring products-ই দেখাতে হবে, পুরো list না।
+  final bool showExpiringOnly;
 
   @override
   ConsumerState<ProductListScreen> createState() => _ProductListScreenState();
@@ -35,13 +39,16 @@ class ProductListScreen extends ConsumerStatefulWidget {
 
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   late final TextEditingController _searchController;
-  _StockFilter _filter = _StockFilter.all;
+  late _StockFilter _filter;
   bool _showSearch = false;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _filter = widget.showExpiringOnly
+        ? _StockFilter.expiring
+        : _StockFilter.all;
   }
 
   @override
@@ -198,6 +205,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         products.where((product) => product.isLowStock).toList(),
       _StockFilter.out =>
         products.where((product) => product.stockQty <= 0).toList(),
+      _StockFilter.expiring =>
+        products.where((product) => product.isExpiringSoon).toList(),
+      _StockFilter.expired =>
+        products.where((product) => product.isExpired).toList(),
     };
   }
 }
@@ -594,6 +605,16 @@ class _SearchAndFilters extends StatelessWidget {
                   selected: selectedFilter == _StockFilter.out,
                   onTap: () => onFilterChanged(_StockFilter.out),
                 ),
+                _FilterChip(
+                  label: l10n.t('expiringSoon'),
+                  selected: selectedFilter == _StockFilter.expiring,
+                  onTap: () => onFilterChanged(_StockFilter.expiring),
+                ),
+                _FilterChip(
+                  label: l10n.t('expired'),
+                  selected: selectedFilter == _StockFilter.expired,
+                  onTap: () => onFilterChanged(_StockFilter.expired),
+                ),
               ],
             ),
           ),
@@ -793,6 +814,21 @@ class _InventoryRow extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (product.isExpired) ...[
+                    const SizedBox(height: 4),
+                    _ExpiryBadge(
+                      text: l10n.t('expired'),
+                      color: MohajonWarm.red,
+                      background: MohajonWarm.tintRed,
+                    ),
+                  ] else if (product.isExpiringSoon) ...[
+                    const SizedBox(height: 4),
+                    _ExpiryBadge(
+                      text: l10n.t('expiringSoon'),
+                      color: MohajonWarm.orange,
+                      background: MohajonWarm.tintOrange,
+                    ),
+                  ],
                 ],
               );
 
@@ -903,4 +939,37 @@ class _InventoryRow extends StatelessWidget {
 
 String _quantity(int value) {
   return value.toString();
+}
+
+class _ExpiryBadge extends StatelessWidget {
+  const _ExpiryBadge({
+    required this.text,
+    required this.color,
+    required this.background,
+  });
+
+  final String text;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
 }

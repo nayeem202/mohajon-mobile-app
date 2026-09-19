@@ -14,6 +14,7 @@ import 'api_client.dart';
 import 'auth_backend.dart';
 import 'device_session_service.dart';
 import 'secure_http.dart';
+import 'secure_tokens.dart';
 
 /// Google Sign-In instance used by the custom auth backend.
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
@@ -54,26 +55,34 @@ class CustomAuthBackend implements AuthBackend {
   bool get isReady => true;
 
   AuthSession? _sessionFromHive() {
-    final raw = _settings.get(_kSession);
-    if (raw is! Map) return null;
+    final raw = TokenStore.get(_kSession);
+    if (raw == null) return null;
+    Map<String, dynamic> decoded;
+    try {
+      final parsed = jsonDecode(raw);
+      if (parsed is! Map<String, dynamic>) return null;
+      decoded = parsed;
+    } catch (_) {
+      return null;
+    }
     return AuthSession(
-      userId: (raw['userId'] ?? '') as String,
-      email: (raw['email'] ?? '') as String,
-      displayName: (raw['displayName'] ?? '') as String,
-      phone: (raw['phone'] ?? '') as String,
-      photoUrl: (raw['photoUrl'] ?? '') as String,
-      emailVerified: (raw['emailVerified'] ?? false) as bool,
-      isNewUser: (raw['isNewUser'] ?? false) as bool,
-      provider: (raw['provider'] ?? 'local') as String,
+      userId: (decoded['userId'] ?? '') as String,
+      email: (decoded['email'] ?? '') as String,
+      displayName: (decoded['displayName'] ?? '') as String,
+      phone: (decoded['phone'] ?? '') as String,
+      photoUrl: (decoded['photoUrl'] ?? '') as String,
+      emailVerified: (decoded['emailVerified'] ?? false) as bool,
+      isNewUser: (decoded['isNewUser'] ?? false) as bool,
+      provider: (decoded['provider'] ?? 'local') as String,
       roles:
-          (raw['roles'] as List?)?.map((e) => e.toString()).toList() ??
+          (decoded['roles'] as List?)?.map((e) => e.toString()).toList() ??
           const [],
     );
   }
 
   @override
   Future<AuthSession?> currentSession() async {
-    final access = _settings.get(_kAccessToken);
+    final access = TokenStore.get(_kAccessToken);
     if (access == null) return null;
     return _sessionFromHive();
   }
@@ -262,7 +271,7 @@ class CustomAuthBackend implements AuthBackend {
 
   @override
   Future<void> signOut() async {
-    final refreshToken = _settings.get(_kRefreshToken) as String?;
+    final refreshToken = TokenStore.get(_kRefreshToken);
     try {
       if (refreshToken != null) {
         await _post('/api/v1/auth/logout', {'refreshToken': refreshToken});
@@ -292,7 +301,7 @@ class CustomAuthBackend implements AuthBackend {
           headers: {
             'Content-Type': 'application/json',
             if (authenticated)
-              'Authorization': 'Bearer ${_settings.get(_kAccessToken)}',
+              'Authorization': 'Bearer ${TokenStore.get(_kAccessToken)}',
           },
           body: jsonEncode(body),
         ),
@@ -300,37 +309,44 @@ class CustomAuthBackend implements AuthBackend {
         body: body,
       );
     } on SocketException catch (error) {
-      throw AuthException(
-        'Cannot reach the auth service. Check that the local backend is running. '
-        '(${error.message})',
+      debugPrint('AUTH: socket error for $path: $error');
+      throw const AuthException(
+        'Cannot reach the sign-in server. Please check your internet '
+        'connection and try again.',
         code: 'AUTH_SERVICE_UNREACHABLE',
       );
     } on HandshakeException catch (error) {
-      throw AuthException(
-        'Secure connection to the auth service failed. (${error.message})',
+      debugPrint('AUTH: TLS handshake failed for $path: $error');
+      throw const AuthException(
+        'The secure connection to the sign-in server failed. Please try again.',
         code: 'AUTH_TLS_FAILED',
       );
-    } on TimeoutException {
-      throw const AuthException(
-        'The auth service took too long to respond. Please try again.',
-        code: 'AUTH_SERVICE_TIMEOUT',
-      );
+    } on AuthException {
+      // Real auth failures (invalid credentials, expired session, server-side
+      // validation…) already carry a meaningful message. Let them through
+      // untouched instead of wrapping them in a generic "client error".
+      rethrow;
     } on http.ClientException catch (error, stackTrace) {
       debugPrint(
         'AUTH: HTTP client exception message=${error.message} '
         'uri=${error.uri} full=$error',
       );
       debugPrintStack(stackTrace: stackTrace);
-      throw AuthException(
-        'Auth client error: ${error.message} '
-        '(uri: ${error.uri})',
-        code: 'AUTH_CLIENT_ERROR',
+      throw const AuthException(
+        'Cannot reach the sign-in server. Please check your internet '
+        'connection and try again.',
+        code: 'AUTH_NETWORK_UNREACHABLE',
+      );
+    } on TimeoutException {
+      throw const AuthException(
+        'The sign-in server is taking too long to respond. Please try again.',
+        code: 'AUTH_SERVICE_TIMEOUT',
       );
     } on Object catch (error, stackTrace) {
       debugPrint('AUTH: client failure for $path: $error');
       debugPrintStack(stackTrace: stackTrace);
-      throw AuthException(
-        'Auth client error: ${error.toString()}',
+      throw const AuthException(
+        'Something went wrong while signing in. Please try again.',
         code: 'AUTH_CLIENT_ERROR',
       );
     }
@@ -342,7 +358,7 @@ class CustomAuthBackend implements AuthBackend {
     Map<String, dynamic>? body,
   }) async {
     final response = await send().timeout(AppConfig.authTimeout);
-    if (response.statusCode == 401 && _settings.get(_kRefreshToken) != null) {
+    if (response.statusCode == 401 && TokenStore.get(_kRefreshToken) != null) {
       final refreshed = await _tryRefresh();
       if (refreshed) {
         final retry = await send().timeout(AppConfig.authTimeout);
@@ -352,8 +368,19 @@ class CustomAuthBackend implements AuthBackend {
     return _decode(response, path);
   }
 
-  Future<bool> _tryRefresh() async {
-    final refreshToken = _settings.get(_kRefreshToken) as String?;
+  /// Single-flight refresh: concurrent 401s share ONE refresh call. Racing
+  /// refreshes against the auth service's refresh-token rotation revokes the
+  /// token mid-flight and wipes the session.
+  Future<bool>? _refreshFuture;
+
+  Future<bool> _tryRefresh() {
+    return _refreshFuture ??= _doRefresh().whenComplete(() {
+      _refreshFuture = null;
+    });
+  }
+
+  Future<bool> _doRefresh() async {
+    final refreshToken = TokenStore.get(_kRefreshToken);
     if (refreshToken == null) return false;
     try {
       final client = await secureHttpClient();
@@ -365,8 +392,13 @@ class CustomAuthBackend implements AuthBackend {
           )
           .timeout(AppConfig.authTimeout);
       if (response.statusCode != 200) {
-        await _clearTokens();
-        _sessionController.add(null);
+        // Only wipe the session when the auth service definitively rejects
+        // the refresh token (401/403). A transient 5xx must NOT log the user
+        // out — the tokens stay and a later request retries.
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          await _clearTokens();
+          _sessionController.add(null);
+        }
         return false;
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -407,11 +439,11 @@ class CustomAuthBackend implements AuthBackend {
   Future<void> _saveTokens(Map<String, dynamic> data) async {
     final access = (data['accessToken'] ?? '') as String;
     final refresh = (data['refreshToken'] ?? '') as String;
-    await _settings.put(_kAccessToken, access);
-    await _settings.put(_kRefreshToken, refresh);
+    await TokenStore.put(_kAccessToken, access);
+    await TokenStore.put(_kRefreshToken, refresh);
     final user = data['user'];
     if (user is Map<String, dynamic>) {
-      await _settings.put(_kSession, {
+      await TokenStore.put(_kSession, jsonEncode({
         'userId': (user['userId'] ?? '') as String,
         'email': (user['email'] ?? '') as String,
         'displayName': (user['displayName'] ?? '') as String,
@@ -423,12 +455,15 @@ class CustomAuthBackend implements AuthBackend {
         'roles':
             (user['roles'] as List?)?.map((e) => e.toString()).toList() ??
             const [],
-      });
+      }));
     }
     _sessionController.add(_sessionFromHive());
   }
 
   Future<void> _clearTokens() async {
+    await TokenStore.remove(_kAccessToken);
+    await TokenStore.remove(_kRefreshToken);
+    await TokenStore.remove(_kSession);
     await _settings.delete(_kAccessToken);
     await _settings.delete(_kRefreshToken);
     await _settings.delete(_kSession);

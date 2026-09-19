@@ -46,6 +46,32 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
       )
       .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
 
+  final thisWeekStart = todayStart.subtract(const Duration(days: 6));
+  final thisWeekSales = sales
+      .where(
+        (sale) =>
+            !sale.createdAt.isBefore(thisWeekStart) &&
+            sale.createdAt.isBefore(todayEnd),
+      )
+      .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+
+  final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
+  final lastWeekSales = sales
+      .where(
+        (sale) =>
+            !sale.createdAt.isBefore(lastWeekStart) &&
+            sale.createdAt.isBefore(thisWeekStart),
+      )
+      .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+
+  final double? weekChangePercent;
+  if (lastWeekSales > 0) {
+    weekChangePercent =
+        ((thisWeekSales - lastWeekSales) / lastWeekSales) * 100;
+  } else {
+    weekChangePercent = null;
+  }
+
   final unlinkedPayments = payments.where((payment) => payment.saleId == null);
   final totalDue =
       sales.fold<double>(0, (sum, sale) => sum + sale.dueAmount) -
@@ -66,7 +92,8 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
       ? (grossProfit == 0 ? 0.0 : double.infinity)
       : grossProfit / grossLoss;
 
-  final customerDueCount = customers.where((customer) {
+  final dueCustomers = <DueCustomerSummary>[];
+  for (final customer in customers) {
     final customerSales = sales.where(
       (sale) => sale.customerId == customer.customerId,
     );
@@ -87,8 +114,19 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
           0,
           (sum, entry) => sum + entry.signedAmount,
         );
-    return due > 0;
-  }).length;
+    if (due > 0) {
+      dueCustomers.add(
+        DueCustomerSummary(
+          customerId: customer.customerId,
+          name: customer.name,
+          phone: customer.phone,
+          dueAmount: due,
+        ),
+      );
+    }
+  }
+  dueCustomers.sort((a, b) => b.dueAmount.compareTo(a.dueAmount));
+  final customerDueCount = dueCustomers.length;
 
   final customerById = {
     for (final customer in customers) customer.customerId: customer,
@@ -106,6 +144,8 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     ..sort((a, b) => b.value.compareTo(a.value));
 
   final lowStock = products.where((product) => product.isLowStock).toList();
+  final expiringSoon =
+      products.where((product) => product.isExpiringSoon).toList();
 
   final monthlySales = List<double>.filled(12, 0);
   for (final sale in sales.where((sale) => sale.createdAt.year == now.year)) {
@@ -137,8 +177,12 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
     todaySales: todaySales,
     todayTransactionCount: todayTransactionCount,
     yesterdaySales: yesterdaySales,
+    thisWeekSales: thisWeekSales,
+    lastWeekSales: lastWeekSales,
+    weekChangePercent: weekChangePercent,
     totalDue: totalDue,
     customerDueCount: customerDueCount,
+    dueCustomers: dueCustomers,
     totalStock: products
         .fold<int>(0, (sum, product) => sum + product.stockQty)
         .toDouble(),
@@ -172,6 +216,7 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
       );
     }).toList(),
     lowStock: lowStock,
+    expiringSoon: expiringSoon,
     dayWiseSales: dayWiseSales,
     monthlySales: monthlySales,
   );
@@ -182,8 +227,12 @@ class DashboardSummary {
     required this.todaySales,
     required this.todayTransactionCount,
     required this.yesterdaySales,
+    required this.thisWeekSales,
+    required this.lastWeekSales,
+    required this.weekChangePercent,
     required this.totalDue,
     required this.customerDueCount,
+    required this.dueCustomers,
     required this.totalStock,
     required this.customerCount,
     required this.grossProfit,
@@ -193,6 +242,7 @@ class DashboardSummary {
     required this.topSelling,
     required this.recentSales,
     required this.lowStock,
+    required this.expiringSoon,
     required this.dayWiseSales,
     required this.monthlySales,
   });
@@ -200,8 +250,12 @@ class DashboardSummary {
   final double todaySales;
   final int todayTransactionCount;
   final double yesterdaySales;
+  final double thisWeekSales;
+  final double lastWeekSales;
+  final double? weekChangePercent;
   final double totalDue;
   final int customerDueCount;
+  final List<DueCustomerSummary> dueCustomers;
   final double totalStock;
   final int customerCount;
   final double grossProfit;
@@ -211,6 +265,7 @@ class DashboardSummary {
   final List<TopSellingProduct> topSelling;
   final List<RecentSaleSummary> recentSales;
   final List<Product> lowStock;
+  final List<Product> expiringSoon;
   final List<DaySalesSummary> dayWiseSales;
   final List<double> monthlySales;
 }
@@ -235,6 +290,20 @@ class RecentSaleSummary {
   final DateTime createdAt;
 
   bool get isPaid => dueAmount <= 0;
+}
+
+class DueCustomerSummary {
+  const DueCustomerSummary({
+    required this.customerId,
+    required this.name,
+    required this.phone,
+    required this.dueAmount,
+  });
+
+  final String customerId;
+  final String name;
+  final String phone;
+  final double dueAmount;
 }
 
 class TopSellingProduct {

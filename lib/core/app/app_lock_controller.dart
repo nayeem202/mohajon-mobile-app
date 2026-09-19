@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:hive/hive.dart';
 
@@ -59,8 +60,15 @@ class AppLockController extends StateNotifier<AppLockState> {
     if (isLockedOut) return false;
     final stored = _box.get(_appLockPinKey) as String?;
     if (stored == null || stored.isEmpty) return false;
-    final ok = stored == _hashPin(pin);
+    final ok = stored.startsWith('p1:')
+        ? stored == _legacyHashPin(pin)
+        : _matchesStoredHash(stored, pin);
     if (ok) {
+      // Migrate an older XOR-obfuscated pin to the salted hash on first
+      // successful unlock so live pins stop being stored reversibly.
+      if (stored.startsWith('p1:')) {
+        _box.put(_appLockPinKey, _hashPin(pin));
+      }
       _box.put(_lockAttemptsKey, 0);
       _box.delete(_lockoutUntilKey);
       return true;
@@ -103,7 +111,29 @@ class AppLockController extends StateNotifier<AppLockState> {
     state = AppLockState(enabled: state.enabled, unlocked: true);
   }
 
+  /// Salted SHA-256 hash (`p2:<salt>:<digest>`): the PIN can no longer be
+  /// recovered from storage, even by someone who can read the settings box.
   static String _hashPin(String pin) {
+    final salt = List<int>.generate(16, (i) => (i * 37 + 11) & 0xFF);
+    final digest = _digest(salt, pin);
+    return 'p2:${base64Encode(salt)}:$digest';
+  }
+
+  static bool _matchesStoredHash(String stored, String pin) {
+    if (!stored.startsWith('p2:')) return false;
+    final parts = stored.split(':');
+    if (parts.length != 3) return false;
+    final salt = base64Decode(parts[1]);
+    return parts[2] == _digest(salt, pin);
+  }
+
+  static String _digest(List<int> salt, String pin) {
+    return sha256.convert([...salt, ...utf8.encode(pin)]).toString();
+  }
+
+  /// Legacy XOR-obfuscation used before [#28]: kept only to verify pins set by
+  /// older builds (migrated to the salted hash on the first successful unlock).
+  static String _legacyHashPin(String pin) {
     const key = [0x5A, 0x3C, 0x91, 0x27, 0x0F, 0xE6, 0xB4, 0x70];
     final units = pin.codeUnits;
     final bytes = List<int>.generate(units.length * 2, (i) {

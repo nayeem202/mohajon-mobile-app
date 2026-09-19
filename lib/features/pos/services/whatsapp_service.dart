@@ -1,7 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/models/sale.dart';
-import '../../../core/models/customer.dart';
 
 /// Builds WhatsApp messages (wa.me deep links) for bills and khata
 /// reminders. Deep links are free — no server-side messaging costs.
@@ -90,13 +89,13 @@ class WhatsAppService {
 
   /// Khata (due) reminder message for a customer.
   static String dueReminderMessage({
-    required Customer customer,
+    required String customerName,
     required double dueAmount,
     required String shopName,
     required String Function(String) t,
   }) {
     final buffer = StringBuffer();
-    buffer.writeln('${t('whatsappGreeting')}, ${customer.name}!');
+    buffer.writeln('${t('whatsappGreeting')}, $customerName!');
     buffer.writeln('──────────────────');
     buffer.writeln(
       '${t('whatsappDueLine1')} *$shopName* ${t('whatsappDueLine2')}',

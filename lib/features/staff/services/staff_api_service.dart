@@ -45,11 +45,25 @@ class StaffApiService {
   }
 
   Future<List<StaffMember>> fetchStaff() async {
-    final data = await _api.getJson('/api/v1/users');
-    if (data is! List) return const [];
-    return data
-        .map((e) => StaffMember.fromApi(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    try {
+      final data = await _api.getJson('/api/v1/users');
+      if (data is! List) throw const StaffApiException('Unexpected response');
+      final staff = data
+          .map((e) => StaffMember.fromApi(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      await _db.settings.put('cachedStaffList', staff.map((s) => s.toJson()).toList());
+      return staff;
+    } catch (error) {
+      // Offline: show the last known staff list so the shop can still open
+      // the team screen while disconnected.
+      final cached = _db.settings.get('cachedStaffList');
+      if (cached is List) {
+        return cached
+            .map((e) => StaffMember.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+      rethrow;
+    }
   }
 
   Future<StaffMember> createStaff({
@@ -117,8 +131,21 @@ class StaffApiService {
 
   /// Menu codes granted to the currently signed-in user. The owner gets all.
   Future<List<String>> myMenuCodes() async {
-    final data = await _api.getJson('/api/v1/users/me/menus');
-    if (data is! List) return const [];
-    return data.map((e) => e.toString()).toList();
+    try {
+      final data = await _api.getJson('/api/v1/users/me/menus');
+      if (data is! List) throw const StaffApiException('Unexpected response');
+      final codes = data.map((e) => e.toString()).toList();
+      await _db.settings.put('cachedMenuCodes', codes);
+      return codes;
+    } catch (error) {
+      // Offline: fall back to the last granted menus so staff do not lose
+      // every navigation tile the moment the connection drops. A permission
+      // change simply takes effect on the next successful fetch.
+      final cached = _db.settings.get('cachedMenuCodes');
+      if (cached is List) {
+        return cached.map((e) => e.toString()).toList();
+      }
+      rethrow;
+    }
   }
 }

@@ -6,11 +6,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/app/app_bootstrap.dart';
 import 'core/app/pos_inventory_app.dart';
 import 'core/services/fcm_service.dart';
+import 'core/services/secure_tokens.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _suppressKnownFrameworkAssertions();
+  await TokenStore.load();
   await AppBootstrap.init();
   try {
     await Firebase.initializeApp(
