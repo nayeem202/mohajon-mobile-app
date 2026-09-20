@@ -12,6 +12,7 @@ import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/services/invoice_service.dart';
+import '../../../core/services/download_export_service.dart';
 import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -325,7 +326,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            if (selectedCustomer != null)
+                            if (_customerMode == _CustomerMode.walkIn)
+                              const _WalkInCustomerNotice()
+                            else if (selectedCustomer != null)
                               _SelectedCustomerCard(
                                 customer: selectedCustomer,
                                 onClear: () {
@@ -1153,7 +1156,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 onPrint: () async {
                                                   final bytes =
                                                       await InvoiceService()
-                                                          .buildSaleInvoice(
+                                                          .buildThermalReceipt(
                                                     sale,
                                                     customerName:
                                                         selectedCustomer
@@ -1163,15 +1166,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                         selectedCustomer
                                                                 ?.phone ??
                                                             '',
-                                                    company:
-                                                        DocCompany.fromShop(
-                                                      shopProfile,
-                                                    ),
+                                                    company: DocCompany
+                                                        .fromShop(shopProfile),
                                                   );
-                                                  await Printing.sharePdf(
-                                                    bytes: bytes,
-                                                    filename:
-                                                        'invoice-${sale.saleId}.pdf',
+                                                  await Printing.layoutPdf(
+                                                    name:
+                                                        'receipt-${sale.saleId}',
+                                                    onLayout: (_) async => bytes,
+                                                  );
+                                                },
+                                                onSave: () async {
+                                                  String? path;
+                                                  try {
+                                                    final bytes = await InvoiceService()
+                                                        .buildThermalReceipt(
+                                                      sale,
+                                                      customerName:
+                                                          selectedCustomer
+                                                                  ?.name ??
+                                                              '',
+                                                      customerPhone:
+                                                          selectedCustomer
+                                                                  ?.phone ??
+                                                              '',
+                                                      company: DocCompany
+                                                          .fromShop(shopProfile),
+                                                    );
+                                                    path =
+                                                        await DownloadExportService()
+                                                            .saveFileToDownloads(
+                                                      fileName:
+                                                          'receipt-${sale.saleId}.pdf',
+                                                      mimeType:
+                                                          'application/pdf',
+                                                      bytes: bytes,
+                                                    );
+                                                  } catch (_) {
+                                                    if (!context.mounted) {
+                                                      return;
+                                                    }
+                                                    showAppSnackBar(
+                                                      context,
+                                                      l10n.t(
+                                                        'receiptSaveFailed',
+                                                      ),
+                                                      isError: true,
+                                                    );
+                                                    return;
+                                                  }
+                                                  if (!context.mounted) {
+                                                    return;
+                                                  }
+                                                  showAppSnackBar(
+                                                    context,
+                                                    l10n.tP(
+                                                      'receiptSavedAt',
+                                                      {'path': path ?? 'Download'},
+                                                    ),
                                                   );
                                                 },
                                                 whatsappPhone:
@@ -1342,6 +1393,66 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _WalkInCustomerNotice extends StatelessWidget {
+  const _WalkInCustomerNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: MohajonWarm.tintYellow,
+              borderRadius: BorderRadius.all(Radius.circular(13)),
+            ),
+            child: const Icon(
+              Icons.directions_walk_rounded,
+              color: _kInk,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.t('walkIn'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: _kInk,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  l10n.t('walkInHint'),
+                  style: const TextStyle(
+                    color: _kMuted,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

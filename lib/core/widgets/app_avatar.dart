@@ -27,17 +27,38 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = imagePath != null && imagePath!.isNotEmpty;
-    final avatar = CircleAvatar(
-      radius: radius,
-      backgroundColor: backgroundColor ?? const Color(0xFFD6F2EA),
-      backgroundImage: hasImage
-          ? imageProviderForPath(imagePath!)
-          : const AssetImage(defaultAvatarAsset),
+    final avatar = ClipOval(
+      child: SizedBox(
+        width: radius * 2,
+        height: radius * 2,
+        child: hasImage
+            ? Image(
+                image: imageProviderForPath(imagePath!),
+                fit: BoxFit.cover,
+                // Any load error (missing local file, dead remote URL)
+                // falls back to the default avatar instead of a blank circle.
+                errorBuilder: (context, error, stackTrace) =>
+                    _defaultAvatar(backgroundColor),
+              )
+            : _defaultAvatar(backgroundColor),
+      ),
     );
 
     if (onTap != null) {
       return GestureDetector(onTap: onTap, child: avatar);
     }
     return avatar;
+  }
+
+  Widget _defaultAvatar(Color? backgroundColor) {
+    return ColoredBox(
+      color: backgroundColor ?? const Color(0xFFD6F2EA),
+      child: Image(
+        image: const AssetImage(defaultAvatarAsset),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    );
   }
 }

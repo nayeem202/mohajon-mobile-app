@@ -40,6 +40,416 @@ class InvoiceService {
     return pdf.save();
   }
 
+  /// Builds an 80mm thermal-roll receipt (the long counter printer format)
+  /// used by the "Print invoice" action. Also shareable/saveable to phone.
+  Future<Uint8List> buildThermalReceipt(
+    Sale sale, {
+    String customerName = '',
+    String customerPhone = '',
+    required DocCompany company,
+  }) async {
+    final theme = await buildAppPdfTheme();
+    final pdf = pw.Document(theme: theme);
+    final now = DateTime.now();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.roll80,
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            _receiptShopHeader(company),
+            _receiptDivider(),
+            _receiptMeta(sale, now),
+            if (customerName.isNotEmpty || sale.customerId.isNotEmpty) ...[
+              _receiptDivider(),
+              _receiptCustomer(
+                sale,
+                customerName: customerName,
+                customerPhone: customerPhone,
+              ),
+            ],
+            _receiptDivider(),
+            _receiptItems(sale),
+            _receiptDivider(),
+            _receiptTotals(sale),
+            _receiptDivider(),
+            _receiptFooter(company),
+          ],
+        ),
+      ),
+    );
+    return pdf.save();
+  }
+
+  pw.Widget _receiptShopHeader(DocCompany company) {
+    return pw.Column(
+      children: [
+        pw.Text(
+          company.name,
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(
+            fontSize: 14,
+            fontWeight: pw.FontWeight.bold,
+            color: const PdfColor.fromInt(0xFF1E3A8A),
+          ),
+        ),
+        if (company.address.isNotEmpty) ...[
+          pw.SizedBox(height: 2),
+          pw.Text(
+            company.address,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+        ],
+        if (company.phone.isNotEmpty) ...[
+          pw.SizedBox(height: 1),
+          pw.Text(
+            company.phone,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+        ],
+      ],
+    );
+  }
+
+  pw.Widget _receiptDivider() => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 6),
+        child: pw.Divider(thickness: 0.8, color: PdfColors.grey400),
+      );
+
+  pw.Widget _receiptMeta(Sale sale, DateTime now) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'INVOICE',
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(
+            fontSize: 11,
+            fontWeight: pw.FontWeight.bold,
+            color: const PdfColor.fromInt(0xFF1E3A8A),
+          ),
+        ),
+        pw.SizedBox(height: 5),
+        _receiptLine(
+          'Invoice #',
+          sale.saleId,
+        ),
+        _receiptLine(
+          'Date',
+          DateFormat('MMM dd, yyyy').format(sale.createdAt),
+        ),
+        _receiptLine(
+          'Time',
+          DateFormat('hh:mm a').format(sale.createdAt),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _receiptCustomer(
+    Sale sale, {
+    String customerName = '',
+    String customerPhone = '',
+  }) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _receiptLine(
+          'Customer',
+          customerName.isNotEmpty ? customerName : sale.customerId,
+          boldValue: true,
+        ),
+        if (customerPhone.isNotEmpty)
+          _receiptLine('Phone', customerPhone),
+        _receiptLine(
+          'Status',
+          sale.paymentStatus == PaymentStatus.paid
+              ? 'PAID'
+              : sale.paymentStatus == PaymentStatus.partial
+                  ? 'PARTIAL'
+                  : 'DUE',
+          valueColor: sale.paymentStatus == PaymentStatus.paid
+              ? const PdfColor.fromInt(0xFF16A34A)
+              : sale.paymentStatus == PaymentStatus.partial
+                  ? const PdfColor.fromInt(0xFFD97706)
+                  : const PdfColor.fromInt(0xFFDC2626),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _receiptItems(Sale sale) {
+    final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Row(
+          children: [
+            pw.Expanded(
+              flex: 3,
+              child: pw.Text(
+                'Item',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: const PdfColor.fromInt(0xFF1E3A8A),
+                ),
+              ),
+            ),
+            _receiptQtyCell(
+              'Qty',
+              bold: true,
+              color: const PdfColor.fromInt(0xFF1E3A8A),
+            ),
+            _receiptMoneyCell(
+              'Price',
+              bold: true,
+              color: const PdfColor.fromInt(0xFF1E3A8A),
+            ),
+            _receiptMoneyCell(
+              'Total',
+              bold: true,
+              color: const PdfColor.fromInt(0xFF1E3A8A),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 2),
+        for (final item in sale.items)
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  flex: 3,
+                  child: pw.Text(
+                    item.name,
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+                  ),
+                ),
+                _receiptQtyCell(_qtyText(item.qty)),
+                _receiptMoneyCell(money(item.unitPrice)),
+                _receiptMoneyCell(money(item.lineTotal)),
+              ],
+            ),
+          ),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                'Subtotal',
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey700,
+                ),
+              ),
+            ),
+            pw.SizedBox(width: 8),
+            pw.SizedBox(
+              width: 52,
+              child: pw.Text(
+                money(itemsTotal),
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _receiptQtyCell(
+    String text, {
+    bool bold = false,
+    PdfColor? color,
+  }) {
+    return pw.SizedBox(
+      width: 24,
+      child: pw.Text(
+        text,
+        textAlign: pw.TextAlign.right,
+        style: pw.TextStyle(
+          fontSize: 8,
+          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+          color: color ?? PdfColors.grey800,
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _receiptMoneyCell(
+    String text, {
+    bool bold = false,
+    PdfColor? color,
+  }) {
+    return pw.SizedBox(
+      width: 46,
+      child: pw.Text(
+        text,
+        textAlign: pw.TextAlign.right,
+        style: pw.TextStyle(
+          fontSize: 8,
+          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+          color: color ?? PdfColors.grey800,
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _receiptTotals(Sale sale) {
+    final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
+    final vatAmount = itemsTotal * (sale.vatPercent / 100);
+
+    return pw.Column(
+      children: [
+        _receiptTotalRow('Subtotal', money(itemsTotal)),
+        if (sale.vatPercent > 0)
+          _receiptTotalRow('VAT (${sale.vatPercent.toStringAsFixed(1)}%)', money(vatAmount)),
+        if (sale.charge > 0) _receiptTotalRow('Charge', money(sale.charge)),
+        if (sale.discount > 0) _receiptTotalRow('Discount', '-${money(sale.discount)}'),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'TOTAL',
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: const PdfColor.fromInt(0xFF1E3A8A),
+              ),
+            ),
+            pw.Text(
+              money(sale.totalAmount),
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: const PdfColor.fromInt(0xFF1E3A8A),
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        _receiptTotalRow('Paid', money(sale.paidAmount)),
+        if (sale.dueAmount > 0)
+          _receiptTotalRow(
+            'Due',
+            money(sale.dueAmount),
+            color: const PdfColor.fromInt(0xFFDC2626),
+          ),
+      ],
+    );
+  }
+
+  pw.Widget _receiptTotalRow(String label, String value, {PdfColor? color}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey700,
+            ),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: color ?? PdfColors.grey800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _receiptLine(
+    String label,
+    String value, {
+    bool boldValue = false,
+    PdfColor? valueColor,
+  }) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            '• ',
+            style: pw.TextStyle(fontSize: 9, color: PdfColors.grey400),
+          ),
+          pw.SizedBox(
+            width: 52,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey600,
+              ),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              textAlign: pw.TextAlign.right,
+              style: pw.TextStyle(
+                fontSize: 9,
+                fontWeight: boldValue ? pw.FontWeight.bold : pw.FontWeight.normal,
+                color: valueColor ?? PdfColors.grey800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _receiptFooter(DocCompany company) {
+    return pw.Column(
+      children: [
+        pw.SizedBox(height: 4),
+        pw.Text(
+          'Thank you for your business!',
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.grey600,
+          ),
+        ),
+        pw.Text(
+          'Generated on ${DateFormat('MMM dd, yyyy hh:mm a').format(DateTime.now())}',
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
+        ),
+        pw.Text(
+          '${AppConstants.appName}  •  ${company.tagline}',
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400),
+        ),
+      ],
+    );
+  }
+
+  String _qtyText(double qty) => qty % 1 == 0 ? qty.toStringAsFixed(0) : qty.toString();
+
   pw.Widget _header(DocCompany company) {
     return pw.Column(
       children: [

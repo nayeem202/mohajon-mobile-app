@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/models/shop_profile.dart';
+import '../../../core/services/auth_backend.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 import '../models/profile.dart';
@@ -35,8 +36,7 @@ final profileProvider = Provider<Profile?>((ref) {
         : (shopProfile.effectiveOwners.first.name.isNotEmpty
             ? shopProfile.effectiveOwners.first.name
             : 'Store Owner'),
-    phone:
-        shopProfile?.phoneNumber ?? user.phone,
+    phone: _resolvePhone(shopProfile, authUser, user),
     email: shopProfile?.ownerEmail.isNotEmpty == true
         ? shopProfile!.ownerEmail
         : (authUser?.email ?? ''),
@@ -73,6 +73,18 @@ String _deriveOwnerName(AppUser user, ShopProfile? shopProfile) {
     return shopProfile.effectiveOwners.first.name;
   }
   return 'Store Owner';
+}
+
+/// Resolves the phone shown in the store info:
+/// 1. shop profile number (explicitly set by the owner),
+/// 2. the phone the user signed up / logged in with,
+/// 3. local user fallback.
+String _resolvePhone(ShopProfile? shopProfile, AuthSession? authUser, AppUser user) {
+  final shopPhone = shopProfile?.phoneNumber.trim() ?? '';
+  if (shopPhone.isNotEmpty) return shopPhone;
+  final sessionPhone = (authUser?.phone ?? '').trim();
+  if (sessionPhone.isNotEmpty) return sessionPhone;
+  return user.phone;
 }
 
 class ProfileService {

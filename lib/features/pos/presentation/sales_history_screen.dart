@@ -302,15 +302,15 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
             customer: customer,
             profile: profile,
             onPrint: () async {
-              final bytes = await InvoiceService().buildSaleInvoice(
+              final bytes = await InvoiceService().buildThermalReceipt(
                 sale,
                 customerName: customer?.name ?? '',
                 customerPhone: customer?.phone ?? '',
                 company: DocCompany.fromShop(profile),
               );
-              await Printing.sharePdf(
-                bytes: bytes,
-                filename: 'invoice-${sale.saleId}.pdf',
+              await Printing.layoutPdf(
+                name: 'receipt-${sale.saleId}',
+                onLayout: (_) async => bytes,
               );
             },
             onRecordPayment: customer == null

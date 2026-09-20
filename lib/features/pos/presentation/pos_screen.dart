@@ -128,12 +128,19 @@ class _PosScreenState extends ConsumerState<PosScreen>
                       children: [
                         _TopBar(onAvatarTap: _openProfile),
                         const SizedBox(height: 12),
-                        _VoiceBillingHero(onMic: _openVoiceBilling),
-                        const SizedBox(height: 12),
-                        _SearchBar(
-                          controller: _searchController,
-                          onChanged: (value) => setState(() => _query = value),
-                          onScan: _scanBarcode,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _SearchBar(
+                                controller: _searchController,
+                                onChanged: (value) =>
+                                    setState(() => _query = value),
+                                onScan: _scanBarcode,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            _VoiceBillingFab(onTap: _openVoiceBilling),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         _CategoryStrip(
@@ -392,157 +399,52 @@ class _CategoryStrip extends StatelessWidget {
   }
 }
 
-class _VoiceBillingHero extends StatelessWidget {
-  const _VoiceBillingHero({required this.onMic});
+class _VoiceBillingFab extends StatelessWidget {
+  const _VoiceBillingFab({required this.onTap});
 
-  final VoidCallback onMic;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0xFFFFC800), Color(0xFFFFD83D), Color(0xFFFFE36E)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: _kAmber.withValues(alpha: 0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _kInk,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'PREMIUM',
-                        style: TextStyle(
-                          color: _kAmber,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 13,
-                      color: _kBronzeText,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      l10n.t('voiceBillingTitle'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: _kInk,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  l10n.t('voiceBillingTagline'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: _kInk,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.t('voiceBillingSubtitle'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _kInk.withValues(alpha: 0.75),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          _VoiceHeroChip(
-            icon: Icons.mic_rounded,
-            label: l10n.t('voiceBillingSpeak'),
-            backgroundColor: _kInk,
-            foregroundColor: _kAmber,
-            onTap: onMic,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VoiceHeroChip extends StatelessWidget {
-  const _VoiceHeroChip({
-    required this.icon,
-    required this.label,
-    required this.backgroundColor,
-    required this.foregroundColor,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String? label;
-  final Color backgroundColor;
-  final Color foregroundColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: backgroundColor,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: foregroundColor),
-              if (label != null) ...[
-                const SizedBox(width: 5),
-                Text(
-                  label!,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: foregroundColor,
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      button: true,
+      label: l10n.t('voiceBillingTitle'),
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Material(
+          color: _kInk,
+          shape: const CircleBorder(),
+          elevation: 3,
+          shadowColor: _kInk.withValues(alpha: 0.4),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.mic_rounded, size: 22, color: _kAmber),
+                Positioned(
+                  right: 6,
+                  bottom: 5,
+                  child: Container(
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      color: _kAmber,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _kInk, width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 9,
+                      color: _kInk,
+                    ),
                   ),
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -6,16 +6,19 @@ import '../../../../core/utils/snackbar.dart';
 import '../../services/whatsapp_service.dart';
 
 /// Bottom sheet shown right after a sale completes — the shop keeper can
-/// print the invoice, send the bill on WhatsApp, or just close.
+/// print the thermal receipt, save it to the phone, send the bill on
+/// WhatsApp, or just close.
 class SaleSuccessSheet extends StatelessWidget {
   const SaleSuccessSheet({
     super.key,
     required this.onPrint,
+    required this.onSave,
     this.whatsappPhone,
     required this.whatsappMessage,
   });
 
   final VoidCallback onPrint;
+  final VoidCallback onSave;
   final String? whatsappPhone;
   final String whatsappMessage;
 
@@ -85,6 +88,29 @@ class SaleSuccessSheet extends StatelessWidget {
               icon: const Icon(Icons.print_rounded, size: 19),
               label: Text(
                 l10n.t('printInvoice'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: onSave,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: MohajonWarm.ink,
+                side: const BorderSide(color: MohajonWarm.ink),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.download_rounded, size: 19),
+              label: Text(
+                l10n.t('saveReceipt'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,

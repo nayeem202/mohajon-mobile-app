@@ -90,13 +90,9 @@ class ConnectivityBanner extends ConsumerWidget {
           null,
         );
       case SyncPhase.syncing:
-        return (
-          Icons.cloud_sync_rounded,
-          MohajonWarm.goldText,
-          l10n.t('syncingNowTitle'),
-          l10n.t('syncingData'),
-          null,
-        );
+        // The active sync is already shown by the loading overlay on Home.
+        // Keep the global banner hidden to avoid showing the same status twice.
+        return (Icons.cloud_sync_rounded, MohajonWarm.goldText, null, '', null);
       case SyncPhase.failed:
         return (
           Icons.sync_problem_rounded,

@@ -32,18 +32,18 @@ class _MoreTopBar extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 30,
-          height: 30,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: MohajonWarm.primary.withValues(alpha: 0.28),
+                color: MohajonWarm.primary.withValues(alpha: 0.32),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -52,7 +52,7 @@ class _MoreTopBar extends StatelessWidget {
           child: const Icon(
             Icons.grid_view_rounded,
             color: MohajonWarm.ink,
-            size: 17,
+            size: 18,
           ),
         ),
         const SizedBox(width: 10),
@@ -84,12 +84,6 @@ class _MoreTopBar extends StatelessWidget {
           ),
         ),
         const NotificationBell(),
-        const SizedBox(width: 14),
-        const ShopAvatar(
-          radius: 17,
-          backgroundColor: Color(0xFFFFFDF7),
-          textColor: MohajonWarm.ink,
-        ),
       ],
     );
   }
@@ -135,6 +129,127 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         false;
     final displayName = user?.displayName;
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
+
+    final operations = <_FeatureItem>[
+      _FeatureItem(
+        icon: Icons.store_rounded,
+        title: l10n.t('vendors'),
+        subtitle: l10n.t('vendorsSubtitle'),
+        color: MohajonWarm.goldText,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.vendors,
+        onTap: () => _open(const VendorListScreen()),
+        itemKey: widget.tourVendorsKey,
+      ),
+      _FeatureItem(
+        icon: Icons.payments_rounded,
+        title: l10n.t('expenses'),
+        subtitle: l10n.t('expensesSubtitle'),
+        color: MohajonWarm.orange,
+        background: MohajonWarm.tintOrange,
+        menu: MenuCodes.expenses,
+        onTap: () => _open(const ExpensesScreen()),
+        itemKey: widget.tourExpensesKey,
+      ),
+      _FeatureItem(
+        icon: Icons.people_alt_rounded,
+        title: l10n.t('investors'),
+        subtitle: l10n.t('investorsSubtitle'),
+        color: MohajonWarm.green,
+        background: MohajonWarm.tintGreen,
+        menu: MenuCodes.investors,
+        onTap: () => _open(const InvestorListScreen()),
+        itemKey: widget.tourInvestorsKey,
+      ),
+      _FeatureItem(
+        icon: Icons.group_outlined,
+        title: l10n.t('staff'),
+        subtitle: l10n.t('staffSubtitle'),
+        color: MohajonWarm.goldText,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.staff,
+        onTap: () => _open(const StaffListScreen()),
+        itemKey: widget.tourStaffKey,
+      ),
+    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+
+    final finance = <_FeatureItem>[
+      _FeatureItem(
+        icon: Icons.account_balance_rounded,
+        title: l10n.t('investments'),
+        subtitle: l10n.t('investmentsSubtitle'),
+        color: MohajonWarm.ink,
+        background: MohajonWarm.tintGreen,
+        menu: MenuCodes.investments,
+        onTap: () => _open(const InvestmentDashboardScreen()),
+        itemKey: widget.tourInvestmentsKey,
+      ),
+    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+
+    final reports = <_FeatureItem>[
+      _FeatureItem(
+        icon: Icons.pie_chart_outline_rounded,
+        title: l10n.t('reports'),
+        subtitle: l10n.t('reportsSubtitle'),
+        color: MohajonWarm.ink,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const ReportsScreen()),
+        itemKey: widget.tourReportsKey,
+      ),
+    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+
+    final appItems = <_FeatureItem>[
+      _FeatureItem(
+        icon: Icons.person_rounded,
+        title: l10n.t('myProfile'),
+        subtitle: l10n.t('myProfileSubtitle'),
+        color: MohajonWarm.goldText,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.profile,
+        onTap: () => _open(const ProfileOverviewScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.lock_outline_rounded,
+        title: l10n.t('accountSecurity'),
+        subtitle: l10n.t('accountSecurityDesc'),
+        color: MohajonWarm.red,
+        background: MohajonWarm.tintRed,
+        menu: MenuCodes.security,
+        onTap: () => _open(const AccountSecurityScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.privacy_tip_outlined,
+        title: l10n.t('privacy'),
+        subtitle: l10n.t('privacyDesc'),
+        color: MohajonWarm.orange,
+        background: MohajonWarm.tintOrange,
+        menu: MenuCodes.privacy,
+        onTap: () => _open(const PrivacySettingsScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.settings_rounded,
+        title: l10n.t('settings'),
+        subtitle: l10n.t('appPreferencesMore'),
+        color: MohajonWarm.goldText,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.settings,
+        onTap: () => _open(const SettingsScreen()),
+        itemKey: widget.tourSettingsKey,
+      ),
+    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+
+    final accountItems = <_FeatureItem>[
+      _FeatureItem(
+        icon: Icons.logout_rounded,
+        title: l10n.t('signOut'),
+        subtitle: l10n.t('signOutDesc'),
+        color: MohajonWarm.red,
+        background: MohajonWarm.tintRed,
+        destructive: true,
+        onTap: _confirmSignOut,
+      ),
+    ];
 
     return withLoadingOverlay(
       Theme(
@@ -195,151 +310,72 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
                     children: [
                       const _MoreTopBar(),
-                      const SizedBox(height: 18),
-                      _AccountHeader(
-                name: displayName?.isNotEmpty == true
-                    ? (displayName ?? l10n.t('signedInAccount'))
-                    : l10n.t('signedInAccount'),
-                email: user?.email ?? l10n.t('noEmailAvailable'),
-                        sync: sync,
-                      ),
-                      const SizedBox(height: 22),
-                      _FeatureSection(
-                        title: l10n.t('sectionOperations'),
-                        children: [
-                          _FeatureItem(
-                            icon: Icons.store_rounded,
-                            title: l10n.t('vendors'),
-                            subtitle: l10n.t('vendorsSubtitle'),
-                            color: MohajonWarm.goldText,
-                            background: MohajonWarm.tintYellow,
-                            menu: MenuCodes.vendors,
-                            onTap: () => _open(const VendorListScreen()),
-                            itemKey: widget.tourVendorsKey,
-                          ),
-                          _FeatureItem(
-                            icon: Icons.payments_rounded,
-                            title: l10n.t('expenses'),
-                            subtitle: l10n.t('expensesSubtitle'),
-                            color: MohajonWarm.orange,
-                            background: MohajonWarm.tintOrange,
-                            menu: MenuCodes.expenses,
-                            onTap: () => _open(const ExpensesScreen()),
-                            itemKey: widget.tourExpensesKey,
-                          ),
-                          _FeatureItem(
-                            icon: Icons.people_alt_rounded,
-                            title: l10n.t('investors'),
-                            subtitle: l10n.t('investorsSubtitle'),
-                            color: MohajonWarm.green,
-                            background: MohajonWarm.tintGreen,
-                            menu: MenuCodes.investors,
-                            onTap: () => _open(const InvestorListScreen()),
-                            itemKey: widget.tourInvestorsKey,
-                          ),
-                          _FeatureItem(
-                            icon: Icons.group_outlined,
-                            title: l10n.t('staff'),
-                            subtitle: l10n.t('staffSubtitle'),
-                            color: MohajonWarm.goldText,
-                            background: MohajonWarm.tintYellow,
-                            menu: MenuCodes.staff,
-                            onTap: () => _open(const StaffListScreen()),
-                            itemKey: widget.tourStaffKey,
-                          ),
-                          _FeatureItem(
-                            icon: Icons.pie_chart_outline_rounded,
-                            title: l10n.t('reports'),
-                            subtitle: l10n.t('reportsSubtitle'),
-                            color: MohajonWarm.goldText,
-                            background: MohajonWarm.tintYellow,
-                            menu: MenuCodes.reports,
-                            onTap: () => _open(const ReportsScreen()),
-                            itemKey: widget.tourReportsKey,
-                          ),
-                        ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
-                      ),
                       const SizedBox(height: 16),
-                      _FeatureSection(
-                        title: l10n.t('sectionFinance'),
-                        children: [
-                          _FeatureItem(
-                            icon: Icons.account_balance_rounded,
-                            title: l10n.t('investments'),
-                            subtitle: l10n.t('investmentsSubtitle'),
-                            color: MohajonWarm.green,
-                            background: MohajonWarm.tintGreen,
-                            menu: MenuCodes.investments,
-                            onTap: () => _open(const InvestmentDashboardScreen()),
-                            itemKey: widget.tourInvestmentsKey,
-                          ),
-                        ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
+                      _Entrance(
+                        child: _PremiumHero(
+                          name: displayName?.isNotEmpty == true
+                              ? (displayName ?? l10n.t('signedInAccount'))
+                              : l10n.t('signedInAccount'),
+                          email: user?.email ?? l10n.t('noEmailAvailable'),
+                          sync: sync,
+                          onSyncTap: _syncNow,
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _FeatureSection(
-                        title: l10n.t('sectionApp'),
-                        children: [
-                          _FeatureItem(
-                            icon: Icons.person_rounded,
-                            title: l10n.t('myProfile'),
-                            subtitle: l10n.t('myProfileSubtitle'),
-                            color: MohajonWarm.goldText,
-                            background: MohajonWarm.tintYellow,
-                            menu: MenuCodes.profile,
-                            onTap: () => _open(const ProfileOverviewScreen()),
+                      const SizedBox(height: 26),
+                      if (operations.isNotEmpty) ...[
+                        const _SectionHeader(label: 'operations', hasSubtitle: true),
+                        const SizedBox(height: 12),
+                        _Entrance(
+                          delay: const Duration(milliseconds: 90),
+                          child: _FeatureGrid(
+                            items: operations,
+                            mainAxisExtent: 144,
                           ),
-                          _FeatureItem(
-                            icon: Icons.cloud_sync_rounded,
-                            title: l10n.t('syncNow'),
-                            subtitle: _syncText(l10n, sync),
-                            color: _syncColor(context, sync.phase),
-                            onTap: _syncNow,
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                      if (finance.isNotEmpty) ...[
+                        const _SectionHeader(label: 'finance'),
+                        const SizedBox(height: 12),
+                        _Entrance(
+                          delay: const Duration(milliseconds: 160),
+                          child: _WideCard(item: finance.first),
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                      if (reports.isNotEmpty) ...[
+                        const _SectionHeader(label: 'reports'),
+                        const SizedBox(height: 12),
+                        _Entrance(
+                          delay: const Duration(milliseconds: 210),
+                          child: _WideCard(
+                            item: reports.first,
+                            palette: _WideCard.reportsPalette,
                           ),
-                          _FeatureItem(
-                            icon: Icons.lock_outline_rounded,
-                            title: l10n.t('accountSecurity'),
-                            subtitle: l10n.t('accountSecurityDesc'),
-                            color: MohajonWarm.red,
-                            background: MohajonWarm.tintRed,
-                            menu: MenuCodes.security,
-                            onTap: () => _open(const AccountSecurityScreen()),
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                      if (appItems.isNotEmpty) ...[
+                        const _SectionHeader(label: 'app'),
+                        const SizedBox(height: 12),
+                        _Entrance(
+                          delay: const Duration(milliseconds: 230),
+                          child: _FeatureGrid(
+                            items: appItems,
+                            compact: true,
+                            mainAxisExtent: 118,
                           ),
-                          _FeatureItem(
-                            icon: Icons.privacy_tip_outlined,
-                            title: l10n.t('privacy'),
-                            subtitle: l10n.t('privacyDesc'),
-                            color: MohajonWarm.orange,
-                            background: MohajonWarm.tintOrange,
-                            menu: MenuCodes.privacy,
-                            onTap: () => _open(const PrivacySettingsScreen()),
-                          ),
-                          _FeatureItem(
-                            icon: Icons.settings_rounded,
-                            title: l10n.t('settings'),
-                            subtitle: l10n.t('appPreferencesMore'),
-                            color: MohajonWarm.goldText,
-                            background: MohajonWarm.tintYellow,
-                            menu: MenuCodes.settings,
-                            onTap: () => _open(const SettingsScreen()),
-                            itemKey: widget.tourSettingsKey,
-                          ),
-                        ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      _FeatureSection(
-                        title: l10n.t('account'),
-                        children: [
-                          _FeatureItem(
-                            icon: Icons.logout_rounded,
-                            title: l10n.t('signOut'),
-                            subtitle: l10n.t('signOutDesc'),
-                            color: MohajonWarm.red,
-                            background: MohajonWarm.tintRed,
-                            destructive: true,
-                            onTap: _confirmSignOut,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                      if (accountItems.isNotEmpty) ...[
+                        const _SectionHeader(label: 'account'),
+                        const SizedBox(height: 12),
+                        _Entrance(
+                          delay: const Duration(milliseconds: 300),
+                          child: _DangerCard(item: accountItems.first),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -348,38 +384,12 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
           ),
         ),
       ),
-      label: l10n.t('processing'),
+      label: l10n.t('syncing'),
     );
   }
 
   void _open(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
-  }
-
-  Color _syncColor(BuildContext context, SyncPhase phase) {
-    return switch (phase) {
-      SyncPhase.failed => MohajonWarm.red,
-      SyncPhase.notSignedIn => MohajonWarm.orange,
-      SyncPhase.offline => MohajonWarm.muted,
-      SyncPhase.syncing => MohajonWarm.goldText,
-      SyncPhase.idle => MohajonWarm.green,
-    };
-  }
-
-  String _syncText(AppLocalizations l10n, SyncState sync) {
-    if (sync.phase == SyncPhase.notSignedIn) {
-      return l10n.t('signInToSync');
-    }
-    if (sync.phase == SyncPhase.offline) {
-      return l10n.tP('offlinePending', {'count': '${sync.pendingCount}'});
-    }
-    if (sync.phase == SyncPhase.failed) {
-      return sync.message.isEmpty ? l10n.t('syncFailed') : sync.message;
-    }
-    if (sync.phase == SyncPhase.syncing) return l10n.t('syncing');
-    return sync.message.isEmpty
-        ? l10n.tP('pendingCount', {'count': '${sync.pendingCount}'})
-        : sync.message;
   }
 
   Future<void> _syncNow() async {
@@ -522,53 +532,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
   }
 }
 
-class _FeatureSection extends StatelessWidget {
-  const _FeatureSection({required this.title, required this.children});
-
-  final String title;
-  final List<_FeatureItem> children;
-
-  @override
-  Widget build(BuildContext context) {
-    if (children.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(label: title),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: MohajonWarm.card,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: MohajonWarm.goldBorder),
-            boxShadow: [
-              BoxShadow(
-                color: MohajonWarm.ink.withValues(alpha: 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0)
-                  const Divider(
-                    height: 1,
-                    indent: 68,
-                    endIndent: 14,
-                    color: Color(0xFFF3ECDA),
-                  ),
-                _FeatureRow(item: children[i]),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
+/// Data definition of a single destination in the hub.
 class _FeatureItem {
   const _FeatureItem({
     required this.icon,
@@ -593,123 +557,73 @@ class _FeatureItem {
   final GlobalKey? itemKey;
 }
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({required this.item});
-
-  final _FeatureItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final destructive = item.destructive;
-    final color = destructive ? MohajonWarm.red : item.color;
-    final background = destructive
-        ? MohajonWarm.tintRed
-        : (item.background ?? item.color.withValues(alpha: 0.12));
-    return KeyedSubtree(
-      key: item.itemKey,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: item.onTap,
-          child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: background,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.14),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(item.icon, color: color, size: 21),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900,
-                        color: MohajonWarm.ink,
-                      ),
-                    ),
-                    if (item.subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        item.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: MohajonWarm.muted,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (item.onTap != null)
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: MohajonWarm.muted,
-                ),
-            ],
-          ),
-        ),
-      ),
-    ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.label});
+/// Premium section header — gradient pill accent + letter-spaced label + dash.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, this.hasSubtitle = false});
 
   final String label;
+  final bool hasSubtitle;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final title = switch (label) {
+      'operations' => l10n.t('sectionOperations'),
+      'finance' => l10n.t('sectionFinance'),
+      'reports' => l10n.t('reports'),
+      'app' => l10n.t('sectionApp'),
+      'account' => l10n.t('account'),
+      _ => label,
+    };
     return Row(
       children: [
         Container(
-          width: 4,
-          height: 15,
+          width: 5,
+          height: 18,
           decoration: BoxDecoration(
-            color: MohajonWarm.primary,
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [MohajonWarm.primarySoft, MohajonWarm.primary],
+            ),
             borderRadius: BorderRadius.circular(999),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.primary.withValues(alpha: 0.45),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 9),
         Text(
-          label.toUpperCase(),
+          title.toUpperCase(),
           style: const TextStyle(
             fontSize: 12,
-            letterSpacing: 0.6,
+            letterSpacing: 1.1,
             fontWeight: FontWeight.w900,
             color: MohajonWarm.ink,
           ),
         ),
-        const SizedBox(width: 10),
-        const Expanded(
-          child: DashedLine(),
-        ),
+        if (hasSubtitle) ...[
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.t('quickActionsSubtitle'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: MohajonWarm.muted,
+              ),
+            ),
+          ),
+        ] else ...[
+          const SizedBox(width: 10),
+          const Expanded(child: DashedLine()),
+        ],
       ],
     );
   }
@@ -742,16 +656,583 @@ class DashedLine extends StatelessWidget {
   }
 }
 
-class _AccountHeader extends StatelessWidget {
-  const _AccountHeader({
+/// Staggered entrance: fades + slides the child in shortly after mount.
+class _Entrance extends StatefulWidget {
+  const _Entrance({
+    required this.child,
+    this.delay = const Duration(milliseconds: 40),
+  });
+
+  final Widget child;
+  final Duration delay;
+
+  @override
+  State<_Entrance> createState() => _EntranceState();
+}
+
+class _EntranceState extends State<_Entrance> {
+  bool _shown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(widget.delay, () {
+      if (mounted) setState(() => _shown = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSlide(
+      offset: _shown ? Offset.zero : const Offset(0, 0.10),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: _shown ? 1 : 0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Subtle press-down scale micro-interaction wrapped around tappable cards.
+class _PressScale extends StatefulWidget {
+  const _PressScale({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _down ? 0.975 : 1.0,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOutCubic,
+      child: Listener(
+        onPointerDown: (_) => setState(() => _down = true),
+        onPointerUp: (_) => setState(() => _down = false),
+        onPointerCancel: (_) => setState(() => _down = false),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _FeatureGrid extends StatelessWidget {
+  const _FeatureGrid({
+    required this.items,
+    this.compact = false,
+    required this.mainAxisExtent,
+  });
+
+  final List<_FeatureItem> items;
+  final bool compact;
+  final double mainAxisExtent;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        mainAxisExtent: mainAxisExtent,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) =>
+          _PremiumTile(item: items[index], compact: compact),
+    );
+  }
+}
+
+/// Premum feature tile: glass sheen, gradient icon tile, arrow affordance.
+class _PremiumTile extends StatelessWidget {
+  const _PremiumTile({required this.item, this.compact = false});
+
+  final _FeatureItem item;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = item.destructive ? MohajonWarm.red : item.color;
+    final iconSize = compact ? 20.0 : 22.0;
+    final tileSize = compact ? 40.0 : 46.0;
+    return KeyedSubtree(
+      key: item.itemKey,
+      child: _PressScale(
+        child: GestureDetector(
+          onTap: item.onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: MohajonWarm.card,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: MohajonWarm.goldBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.ink.withValues(alpha: 0.07),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                // Soft glass sheen across the top.
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 38,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(22),
+                        ),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.60),
+                            Colors.white.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Faint tinted backdrop blob for depth.
+                Positioned(
+                  right: -22,
+                  bottom: -26,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 74,
+                      height: 74,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color.withValues(alpha: 0.06),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(compact ? 12 : 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: tileSize,
+                            height: tileSize,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  color,
+                                  color.withValues(alpha: 0.72),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                tileSize * 0.32,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.32),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              item.icon,
+                              color: Colors.white,
+                              size: iconSize,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (item.onTap != null)
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF7F2E4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 14,
+                                color: MohajonWarm.muted,
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: compact ? 10 : 12),
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: compact ? 13.5 : 14.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.2,
+                          color: MohajonWarm.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.subtitle,
+                        maxLines: compact ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: compact ? 11 : 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w600,
+                          color: MohajonWarm.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Rich finance banner — deep gradient, white text, sheen accents.
+class _WideCard extends StatelessWidget {
+  const _WideCard({required this.item, this.palette = financePalette});
+
+  final _FeatureItem item;
+  final _WidePalette palette;
+
+  static const financePalette = _WidePalette(
+    start: Color(0xFF07523C),
+    end: Color(0xFF0E8A63),
+    shadow: MohajonWarm.green,
+    icon: Color(0xFF07523C),
+  );
+
+  static const reportsPalette = _WidePalette(
+    start: Color(0xFF3A2E6B),
+    end: Color(0xFF6B58B8),
+    shadow: Color(0xFF4C3FA0),
+    icon: Color(0xFF3A2E6B),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: item.itemKey,
+      child: _PressScale(
+        child: GestureDetector(
+          onTap: item.onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [palette.start, palette.end],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: palette.shadow.withValues(alpha: 0.35),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -30,
+                  right: -22,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -34,
+                  left: 70,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 14,
+                  right: 46,
+                  child: IgnorePointer(
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 16,
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.18),
+                            Colors.white.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: MohajonWarm.ink.withValues(alpha: 0.18),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          item.icon,
+                          color: palette.icon,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              item.subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.35,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.80),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.16),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 17,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WidePalette {
+  const _WidePalette({
+    required this.start,
+    required this.end,
+    required this.shadow,
+    required this.icon,
+  });
+
+  final Color start;
+  final Color end;
+  final Color shadow;
+  final Color icon;
+}
+
+class _DangerCard extends StatelessWidget {
+  const _DangerCard({required this.item});
+
+  final _FeatureItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: item.itemKey,
+      child: _PressScale(
+        child: GestureDetector(
+          onTap: item.onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [MohajonWarm.tintRed, MohajonWarm.card],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: MohajonWarm.red.withValues(alpha: 0.22),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.red.withValues(alpha: 0.10),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: MohajonWarm.red.withValues(alpha: 0.14),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(item.icon, color: MohajonWarm.red, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: MohajonWarm.red,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: MohajonWarm.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumHero extends StatelessWidget {
+  const _PremiumHero({
     required this.name,
     required this.email,
     required this.sync,
+    this.onSyncTap,
   });
 
   final String name;
   final String email;
   final SyncState sync;
+  final VoidCallback? onSyncTap;
+
+  Color get _statusColor {
+    return switch (sync.phase) {
+      SyncPhase.failed => MohajonWarm.red,
+      SyncPhase.notSignedIn => MohajonWarm.orange,
+      SyncPhase.offline => MohajonWarm.muted,
+      SyncPhase.syncing => MohajonWarm.goldText,
+      SyncPhase.idle => MohajonWarm.green,
+    };
+  }
 
   String _syncLabel(AppLocalizations l10n) {
     return switch (sync.phase) {
@@ -766,86 +1247,260 @@ class _AccountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final statusColor = switch (sync.phase) {
-      SyncPhase.failed => MohajonWarm.red,
-      SyncPhase.notSignedIn => MohajonWarm.orange,
-      SyncPhase.offline => MohajonWarm.muted,
-      SyncPhase.syncing => MohajonWarm.goldText,
-      SyncPhase.idle => MohajonWarm.green,
-    };
+    final statusColor = _statusColor;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [MohajonWarm.tintYellow, MohajonWarm.card],
+          colors: [
+            MohajonWarm.primary,
+            MohajonWarm.primarySoft,
+            Color(0xFFFFE36E),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MohajonWarm.goldBorder),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFFFE9A8)),
         boxShadow: [
           BoxShadow(
-            color: MohajonWarm.primary.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: MohajonWarm.primary.withValues(alpha: 0.34),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          const ShopAvatar(radius: 27, backgroundColor: Colors.white),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15.5,
-                    color: MohajonWarm.ink,
-                  ),
+          Positioned(
+            top: -36,
+            right: -24,
+            child: IgnorePointer(
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.20),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  email,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: MohajonWarm.muted,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+          Positioned(
+            top: 26,
+            right: 42,
+            child: IgnorePointer(
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.14),
+                ),
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.cloud_done_rounded, size: 13, color: statusColor),
-                const SizedBox(width: 4),
-                Text(
-                  _syncLabel(l10n),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
+          ),
+          Positioned(
+            bottom: -42,
+            left: 56,
+            child: IgnorePointer(
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 14,
+            right: 14,
+            child: IgnorePointer(
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(26),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.35),
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.white, Color(0xFFFFD94D)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: MohajonWarm.ink.withValues(alpha: 0.22),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const ShopAvatar(
+                        radius: 29,
+                        backgroundColor: Color(0xFFFFF6D8),
+                        textColor: MohajonWarm.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17.5,
+                            letterSpacing: -0.3,
+                            color: MohajonWarm.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          l10n.t('hubHeroTagline'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF6E5B1E),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _PressScale(
+                    child: GestureDetector(
+                      onTap: onSyncTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.3),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: MohajonWarm.ink.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (sync.phase == SyncPhase.syncing)
+                              SizedBox(
+                                width: 13,
+                                height: 13,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: statusColor,
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.cloud_done_rounded,
+                                size: 14,
+                                color: statusColor,
+                              ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _syncLabel(l10n),
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 1.2,
+                              height: 12,
+                              color: const Color(0xFFEDE4C8),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.sync_rounded,
+                              size: 14,
+                              color: Color(0xFF6E5B1E),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF6E5B1E),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
