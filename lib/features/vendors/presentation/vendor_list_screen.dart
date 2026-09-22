@@ -899,25 +899,6 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            _RatingStars(rating: vendor.rating),
-                            const SizedBox(width: 6),
-                            Text(
-                              vendor.rating > 0
-                                  ? vendor.rating.toStringAsFixed(1)
-                                  : l10n.t('noRating'),
-                              style: TextStyle(
-                                color: vendor.rating > 0
-                                    ? const Color(0xFFF59E0B)
-                                    : MohajonWarm.muted,
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -1237,40 +1218,6 @@ class _InfoRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _RatingStars extends StatelessWidget {
-  const _RatingStars({required this.rating});
-  final double rating;
-
-  @override
-  Widget build(BuildContext context) {
-    final fullStars = rating.floor();
-    final hasHalf = rating - fullStars >= 0.5;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        if (index < fullStars) {
-          return const Icon(
-            Icons.star_rounded,
-            size: 13,
-            color: Color(0xFFF59E0B),
-          );
-        } else if (index == fullStars && hasHalf) {
-          return const Icon(
-            Icons.star_half_rounded,
-            size: 13,
-            color: Color(0xFFF59E0B),
-          );
-        }
-        return const Icon(
-          Icons.star_outline_rounded,
-          size: 13,
-          color: MohajonWarm.goldBorder,
-        );
-      }),
     );
   }
 }

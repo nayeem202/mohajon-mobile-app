@@ -32,7 +32,6 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
   final _productsCtrl = TextEditingController();
 
   String _category = '';
-  double _rating = 0;
 
   @override
   void initState() {
@@ -46,7 +45,6 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
       _addressCtrl.text = vendor.address;
       _productsCtrl.text = vendor.products;
       _category = vendor.category;
-      _rating = vendor.rating;
     }
   }
 
@@ -350,37 +348,6 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  _FieldLabel(label: l10n.t('rating')),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: List.generate(5, (index) {
-                                      final starVal = index + 1;
-                                      return IconButton(
-                                        onPressed: () => setState(
-                                          () => _rating =
-                                              starVal.toDouble(),
-                                        ),
-                                        visualDensity:
-                                            VisualDensity.compact,
-                                        icon: Icon(
-                                          index < _rating.floor()
-                                              ? Icons.star_rounded
-                                              : (index < _rating.ceil() &&
-                                                        _rating -
-                                                                index >=
-                                                            0.5
-                                                    ? Icons
-                                                          .star_half_rounded
-                                                    : Icons
-                                                          .star_outline_rounded),
-                                          color: index < _rating
-                                              ? const Color(0xFFF59E0B)
-                                              : MohajonWarm.goldBorder,
-                                          size: 30,
-                                        ),
-                                      );
-                                    }),
-                                  ),
                                 ],
                               ),
                             ],
@@ -444,7 +411,6 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
               category: _category,
               address: _addressCtrl.text.trim(),
               products: _productsCtrl.text.trim(),
-              rating: _rating,
             );
         if (mounted) {
           Navigator.of(context).pop();
