@@ -16,7 +16,7 @@ import '../../../core/widgets/async_action_state.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/app/app_lock_controller.dart';
 import '../../../core/app/app_lock_screen.dart';
-import '../../../core/app/quick_tour_screen.dart';
+import '../../../core/app/app_shell.dart';
 import '../../../core/services/download_export_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../profile/presentation/widgets/animated_section.dart';
@@ -910,10 +910,9 @@ class _AppPrefsBody extends ConsumerWidget {
           value: l10n.t('viewTourDesc'),
           onTap: () {
             Hive.box('settings').put('hasSeenTour', false);
-            Hive.box('settings').put('hasSeenOnboarding', false);
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (_) => const QuickTourScreen(includeWelcome: false),
+                builder: (_) => const AppShell(),
               ),
               (_) => false,
             );

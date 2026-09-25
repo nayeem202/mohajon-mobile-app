@@ -7,13 +7,14 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/download_export_service.dart';
+import '../../../core/services/pdf_doc.dart';
 import '../models/receipt.dart';
 
 class ReceiptPdfService {
   final _downloadExportService = DownloadExportService();
 
   Future<Uint8List> buildReceiptPdf(Receipt receipt) async {
-    final document = pw.Document();
+    final document = pw.Document(theme: await buildAppPdfTheme());
     final dateText = DateFormat('MMM dd, yyyy').format(receipt.date);
 
     document.addPage(

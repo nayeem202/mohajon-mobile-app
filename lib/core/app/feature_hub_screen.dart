@@ -7,8 +7,6 @@ import '../../features/investments/presentation/investment_dashboard_screen.dart
 import '../../features/expenses/presentation/expenses_screen.dart';
 import '../../features/profile/presentation/profile_overview_screen.dart';
 import '../../features/investors/presentation/investor_list_screen.dart';
-import '../../features/settings/presentation/account_security_screen.dart';
-import '../../features/settings/presentation/privacy_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_list_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
@@ -208,24 +206,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         background: MohajonWarm.tintYellow,
         menu: MenuCodes.profile,
         onTap: () => _open(const ProfileOverviewScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.lock_outline_rounded,
-        title: l10n.t('accountSecurity'),
-        subtitle: l10n.t('accountSecurityDesc'),
-        color: MohajonWarm.red,
-        background: MohajonWarm.tintRed,
-        menu: MenuCodes.security,
-        onTap: () => _open(const AccountSecurityScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.privacy_tip_outlined,
-        title: l10n.t('privacy'),
-        subtitle: l10n.t('privacyDesc'),
-        color: MohajonWarm.orange,
-        background: MohajonWarm.tintOrange,
-        menu: MenuCodes.privacy,
-        onTap: () => _open(const PrivacySettingsScreen()),
       ),
       _FeatureItem(
         icon: Icons.settings_rounded,

@@ -32,15 +32,20 @@ class DocCompany {
 pw.Font? _baseFont;
 pw.Font? _boldFont;
 
-/// Bengali (Kalpurush) font is used for all exported PDFs so that Bangla
-/// product/customer names render correctly without breaking glyphs.
+/// Noto Sans Bengali is embedded in every exported PDF. This is important for
+/// thermal receipts because printer/PDF viewers do not have access to the
+/// app's Flutter font files at render time.
 Future<pw.ThemeData> buildAppPdfTheme() async {
   if (_baseFont == null) {
-    final regular = await rootBundle.load('assets/fonts/Kalpurush-Regular.ttf');
+    final regular = await rootBundle.load(
+      'assets/fonts/NotoSansBengali-Regular.ttf',
+    );
     _baseFont = pw.Font.ttf(regular);
   }
   if (_boldFont == null) {
-    final bold = await rootBundle.load('assets/fonts/Kalpurush-Regular.ttf');
+    final bold = await rootBundle.load(
+      'assets/fonts/NotoSansBengali-Bold.ttf',
+    );
     _boldFont = pw.Font.ttf(bold);
   }
   return pw.ThemeData.withFont(base: _baseFont!, bold: _boldFont!);

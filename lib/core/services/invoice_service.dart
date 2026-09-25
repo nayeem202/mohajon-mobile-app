@@ -10,6 +10,15 @@ import '../utils/money.dart';
 import 'pdf_doc.dart';
 
 class InvoiceService {
+  static const _thermal80 = PdfPageFormat(
+    80 * PdfPageFormat.mm,
+    double.infinity,
+    marginTop: 4 * PdfPageFormat.mm,
+    marginBottom: 4 * PdfPageFormat.mm,
+    marginLeft: 4 * PdfPageFormat.mm,
+    marginRight: 4 * PdfPageFormat.mm,
+  );
+
   Future<Uint8List> buildSaleInvoice(
     Sale sale, {
     String customerName = '',
@@ -54,7 +63,7 @@ class InvoiceService {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.roll80,
+        pageFormat: _thermal80,
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
@@ -85,13 +94,20 @@ class InvoiceService {
   pw.Widget _receiptShopHeader(DocCompany company) {
     return pw.Column(
       children: [
+        pw.Container(
+          height: 3,
+          decoration: const pw.BoxDecoration(
+            color: PdfColor.fromInt(0xFF0F766E),
+          ),
+        ),
+        pw.SizedBox(height: 8),
         pw.Text(
           company.name,
           textAlign: pw.TextAlign.center,
           style: pw.TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: pw.FontWeight.bold,
-            color: const PdfColor.fromInt(0xFF1E3A8A),
+            color: const PdfColor.fromInt(0xFF123B36),
           ),
         ),
         if (company.address.isNotEmpty) ...[
@@ -110,6 +126,12 @@ class InvoiceService {
             style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
           ),
         ],
+        if (company.tagline.trim().isNotEmpty)
+          pw.Text(
+            company.tagline,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+          ),
       ],
     );
   }
@@ -123,16 +145,25 @@ class InvoiceService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(
-          'INVOICE',
-          textAlign: pw.TextAlign.center,
-          style: pw.TextStyle(
-            fontSize: 11,
-            fontWeight: pw.FontWeight.bold,
-            color: const PdfColor.fromInt(0xFF1E3A8A),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(vertical: 5),
+          decoration: const pw.BoxDecoration(
+            color: PdfColor.fromInt(0xFFE8F5F3),
+            borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+          ),
+          child: pw.Center(
+            child: pw.Text(
+              'SALES INVOICE',
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                letterSpacing: 1.1,
+                color: PdfColor.fromInt(0xFF0F766E),
+              ),
+            ),
           ),
         ),
-        pw.SizedBox(height: 5),
+        pw.SizedBox(height: 6),
         _receiptLine(
           'Invoice #',
           sale.saleId,
@@ -195,7 +226,7 @@ class InvoiceService {
                 style: pw.TextStyle(
                   fontSize: 8,
                   fontWeight: pw.FontWeight.bold,
-                  color: const PdfColor.fromInt(0xFF1E3A8A),
+                  color: const PdfColor.fromInt(0xFF0F766E),
                 ),
               ),
             ),
@@ -219,7 +250,7 @@ class InvoiceService {
         pw.SizedBox(height: 2),
         for (final item in sale.items)
           pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+            padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -227,7 +258,7 @@ class InvoiceService {
                   flex: 3,
                   child: pw.Text(
                     item.name,
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+                    style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey800),
                   ),
                 ),
                 _receiptQtyCell(_qtyText(item.qty)),
@@ -325,17 +356,17 @@ class InvoiceService {
             pw.Text(
               'TOTAL',
               style: pw.TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: pw.FontWeight.bold,
-                color: const PdfColor.fromInt(0xFF1E3A8A),
+                color: const PdfColor.fromInt(0xFF0F766E),
               ),
             ),
             pw.Text(
               money(sale.totalAmount),
               style: pw.TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: pw.FontWeight.bold,
-                color: const PdfColor.fromInt(0xFF1E3A8A),
+                color: const PdfColor.fromInt(0xFF0F766E),
               ),
             ),
           ],
