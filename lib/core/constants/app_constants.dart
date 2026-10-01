@@ -16,6 +16,7 @@ class HiveBoxes {
   static const payments = 'payments';
   static const customerLedgerEntries = 'customer_ledger_entries';
   static const purchases = 'purchases';
+  static const purchaseOrders = 'purchase_orders';
   static const suppliers = 'suppliers';
   static const users = 'users';
   static const settings = 'settings';

@@ -70,6 +70,11 @@ class LocalCollection<T extends Syncable> {
     );
   }
 
+  Future<void> putRawPending(String shopId, String id, Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json)..['syncStatus'] = SyncStatus.pending.value;
+    return _box.put('$shopId:$id', copy);
+  }
+
   List<T> pending() => values(includeDeleted: true)
       .where((item) => item.syncStatus == SyncStatus.pending)
       .toList();

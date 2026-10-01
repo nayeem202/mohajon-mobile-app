@@ -11,6 +11,7 @@ import '../../features/expenses/models/expense.dart';
 import '../models/payment.dart';
 import '../models/product.dart';
 import '../models/purchase.dart';
+import '../../features/purchases/models/purchase_order.dart';
 import '../models/sale.dart';
 import 'local_collection.dart';
 
@@ -72,6 +73,10 @@ class LocalDatabase {
   final LocalCollection<CustomerLedgerEntry> customerLedgerEntries;
   final LocalCollection<Payment> payments;
   final LocalCollection<Purchase> purchases;
+  final LocalCollection<PurchaseOrder> purchaseOrders = LocalCollection<PurchaseOrder>(
+    Hive.box<Map>(HiveBoxes.purchaseOrders),
+    PurchaseOrder.fromJson,
+  );
   final LocalCollection<Supplier> suppliers;
   final LocalCollection<Vendor> vendors;
   final LocalCollection<VendorPurchase> vendorPurchases;
@@ -80,6 +85,37 @@ class LocalDatabase {
   final LocalCollection<AppUser> users;
   final Box<dynamic> settings;
   Box<Map> get notifications => Hive.box<Map>(HiveBoxes.notifications);
+
+  Future<int> restoreBackup(Map<String, dynamic> backup, String shopId) async {
+    if (backup['app'] != 'Mohajon' || backup['exportedAt'] is! String) {
+      throw const FormatException('Invalid Mohajon backup file.');
+    }
+    final collections = backup['collections'] is Map
+        ? Map<String, dynamic>.from(backup['collections'] as Map)
+        : backup;
+    final targets = <String, LocalCollection<dynamic>>{
+      'products': products, 'customers': customers, 'sales': sales,
+      'customerLedgerEntries': customerLedgerEntries, 'payments': payments,
+      'purchases': purchases, 'suppliers': suppliers, 'vendors': vendors,
+      'vendorPurchases': vendorPurchases, 'vendorPayments': vendorPayments,
+      'expenses': expenses, 'users': users, 'purchaseOrders': purchaseOrders,
+    };
+    var restored = 0;
+    for (final entry in targets.entries) {
+      final rows = collections[entry.key];
+      if (rows is! List) continue;
+      for (final raw in rows) {
+        if (raw is! Map) throw FormatException('Invalid ${entry.key} record.');
+        final json = Map<String, dynamic>.from(raw);
+        final id = (json['id'] ?? json['${entry.key.substring(0, entry.key.length - (entry.key.endsWith('s') ? 1 : 0))}Id'])?.toString();
+        if (id == null || id.isEmpty) throw FormatException('Missing id in ${entry.key}.');
+        json['shopId'] = shopId;
+        await entry.value.putRawPending(shopId, id, json);
+        restored++;
+      }
+    }
+    return restored;
+  }
 
   Future<void> setActiveAccount({
     required String userId,
@@ -101,6 +137,7 @@ class LocalDatabase {
       customerLedgerEntries.clear(),
       payments.clear(),
       purchases.clear(),
+      purchaseOrders.clear(),
       suppliers.clear(),
       vendors.clear(),
       vendorPurchases.clear(),

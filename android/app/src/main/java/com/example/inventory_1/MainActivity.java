@@ -3,6 +3,7 @@ package com.example.inventory_1;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaScannerConnection;
@@ -18,6 +19,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.io.InputStream;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -29,6 +31,8 @@ public class MainActivity extends FlutterActivity {
     private static final String DEVICE_SESSION_CHANNEL = "com.example.inventory_1/device_session";
     private static final int LOCATION_PERMISSION_REQUEST = 4201;
     private Result pendingDeviceSessionResult;
+    private Result pendingFileResult;
+    private static final int PICK_BACKUP_REQUEST = 5201;
 
     @Override
     public void configureFlutterEngine(FlutterEngine flutterEngine) {
@@ -39,6 +43,14 @@ public class MainActivity extends FlutterActivity {
                 DOWNLOAD_CHANNEL
         ).setMethodCallHandler((call, result) -> {
             if (!"saveFileToDownloads".equals(call.method)) {
+                if ("pickBackupFile".equals(call.method)) {
+                    pendingFileResult = result;
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("application/json");
+                    startActivityForResult(intent, PICK_BACKUP_REQUEST);
+                    return;
+                }
                 result.notImplemented();
                 return;
             }
@@ -73,6 +85,25 @@ public class MainActivity extends FlutterActivity {
             // best-effort metadata and is handled as unavailable below.
             result.success(currentDeviceSession());
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_BACKUP_REQUEST || pendingFileResult == null) return;
+        Result result = pendingFileResult;
+        pendingFileResult = null;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) { result.success(null); return; }
+        try (InputStream stream = getContentResolver().openInputStream(data.getData())) {
+            if (stream == null) throw new IllegalStateException("Could not read backup file.");
+            java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[8192]; int read;
+            while ((read = stream.read(buffer)) != -1) output.write(buffer, 0, read);
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("fileName", data.getData().getLastPathSegment());
+            payload.put("bytes", output.toByteArray());
+            result.success(payload);
+        } catch (Exception exception) { result.error("read_failed", exception.getMessage(), null); }
     }
 
     @Override

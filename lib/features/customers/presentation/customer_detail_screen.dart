@@ -6,8 +6,8 @@ import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
+import '../../../core/models/sale.dart';
 import '../../../core/utils/money.dart';
-import '../../../core/utils/snackbar.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/app_image.dart';
@@ -18,6 +18,7 @@ import '../../pos/services/whatsapp_service.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 import '../../subscription/services/paywall_gate.dart';
 import '../services/customer_ledger_excel_service.dart';
+import '../services/due_recovery_service.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
   const CustomerDetailScreen({super.key, required this.customer});
@@ -58,9 +59,13 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
           actions: [
             if (due > 0)
               IconButton(
-                tooltip: AppLocalizations.of(context).t('sendDueReminder'),
-                onPressed: () => _sendDueReminder(customer, due),
-                icon: const Icon(Icons.chat_rounded),
+                tooltip: 'Due recovery',
+                onPressed: () => _showDueRecovery(
+                  customer: customer,
+                  due: due,
+                  sales: sales.toList(),
+                ),
+                icon: const Icon(Icons.track_changes_rounded),
               ),
             IconButton(
               tooltip: 'Edit customer',
@@ -348,31 +353,253 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
     );
   }
 
-  Future<void> _sendDueReminder(Customer customer, double due) async {
+  Future<void> _showDueRecovery({
+    required Customer customer,
+    required double due,
+    required List<dynamic> sales,
+  }) async {
+    final service = ref.read(dueRecoveryServiceProvider);
     final l10n = AppLocalizations.of(context);
-    if (customer.phone.trim().isEmpty) {
-      showAppSnackBar(context, l10n.t('whatsappNoPhone'), isError: true);
-      return;
-    }
+    await service.refreshFromServer(customer.customerId);
+    if (!mounted) return;
+    final payments = (ref.read(paymentsStreamProvider).value ?? const [])
+        .where((payment) => payment.customerId == customer.customerId)
+        .toList();
+    final typedSales = sales.whereType<dynamic>().toList();
+    var plan = service.getPlan(customer.customerId);
+    var risk = service.risk(
+      customer: customer,
+      due: due,
+      sales: typedSales.whereType<Sale>().toList(),
+      payments: payments,
+    );
     final shopName = ref.read(shopProfileProvider).value?.shopName ?? '';
-    final message = WhatsAppService.dueReminderMessage(
-      customerName: customer.name,
-      dueAmount: due,
-      shopName: shopName,
-      t: (key) => l10n.t(key),
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Future<void> refresh() async {
+              plan = service.getPlan(customer.customerId);
+              risk = service.risk(
+                customer: customer,
+                due: due,
+                sales: typedSales.whereType<Sale>().toList(),
+                payments: payments,
+              );
+              setState(() {});
+            }
+
+            Future<void> choosePromiseDate() async {
+              final picked = await showDatePicker(
+                context: context,
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                initialDate: plan.promisedPaymentDate ?? DateTime.now(),
+              );
+              if (picked == null) return;
+              await service.setPromiseDate(
+                customer.customerId,
+                DateUtils.dateOnly(picked),
+              );
+              await refresh();
+            }
+
+            Future<void> send(DueFollowUpChannel channel) async {
+              final message = WhatsAppService.dueReminderMessage(
+                customerName: customer.name,
+                dueAmount: due,
+                shopName: shopName,
+                t: (key) => l10n.t(key),
+              );
+              bool ok;
+              if (channel == DueFollowUpChannel.whatsapp) {
+                ok = await WhatsAppService.openChat(
+                  phone: customer.phone,
+                  message: message,
+                );
+              } else if (channel == DueFollowUpChannel.sms) {
+                ok = await DueRecoveryService.openSms(
+                  phone: customer.phone,
+                  message: message,
+                );
+              } else {
+                ok = await DueRecoveryService.openCall(customer.phone);
+              }
+              if (ok) {
+                await service.addFollowUp(
+                  customerId: customer.customerId,
+                  channel: channel,
+                  note: channel == DueFollowUpChannel.call
+                      ? 'Call opened'
+                      : 'Reminder opened',
+                );
+                await refresh();
+              }
+            }
+
+            final riskColor = risk.score >= 70
+                ? Colors.red
+                : risk.score >= 40
+                    ? Colors.orange
+                    : Colors.green;
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  MediaQuery.viewInsetsOf(context).bottom + 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Smart due recovery',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('${customer.name} • ${money(due)} due'),
+                      const SizedBox(height: 16),
+                      Card(
+                        color: riskColor.withValues(alpha: 0.10),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: riskColor.withValues(alpha: 0.16),
+                            child: Text(
+                              '${risk.score}',
+                              style: TextStyle(
+                                color: riskColor,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          title: Text('${risk.label} overdue risk'),
+                          subtitle: const Text(
+                            'Based on balance, overdue age, payment pattern and promise date',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: choosePromiseDate,
+                        icon: const Icon(Icons.event_available_rounded),
+                        label: Text(
+                          plan.promisedPaymentDate == null
+                              ? 'Set promised payment date'
+                              : 'Promised: ${_shortDate(plan.promisedPaymentDate!)}',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final item in [
+                            (const Duration(days: 1), 'Snooze 1 day'),
+                            (const Duration(days: 3), 'Snooze 3 days'),
+                            (const Duration(days: 7), 'Snooze 7 days'),
+                          ])
+                            ActionChip(
+                              avatar: const Icon(Icons.notifications_off_outlined, size: 16),
+                              label: Text(item.$2),
+                              onPressed: () async {
+                                await service.snooze(customer.customerId, item.$1);
+                                await refresh();
+                              },
+                            ),
+                        ],
+                      ),
+                      if (plan.isSnoozed) ...[
+                        const SizedBox(height: 6),
+                        TextButton.icon(
+                          onPressed: () async {
+                            await service.clearSnooze(customer.customerId);
+                            await refresh();
+                          },
+                          icon: const Icon(Icons.notifications_active_outlined),
+                          label: Text('Snoozed until ${_shortDate(plan.snoozedUntil!)} • Clear'),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Text(
+                        'Contact customer',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () => send(DueFollowUpChannel.whatsapp),
+                              icon: const Icon(Icons.chat_rounded),
+                              label: const Text('WhatsApp'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => send(DueFollowUpChannel.sms),
+                              icon: const Icon(Icons.sms_outlined),
+                              label: const Text('SMS'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: () => send(DueFollowUpChannel.call),
+                            icon: const Icon(Icons.call_outlined),
+                            tooltip: 'Call',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Follow-up history',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      if (plan.followUps.isEmpty)
+                        const Text('No follow-ups recorded yet.')
+                      else
+                        for (final item in plan.followUps.take(8))
+                          ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(switch (item.channel) {
+                              DueFollowUpChannel.whatsapp => Icons.chat_rounded,
+                              DueFollowUpChannel.sms => Icons.sms_outlined,
+                              DueFollowUpChannel.call => Icons.call_outlined,
+                            }),
+                            title: Text(item.channel.name.toUpperCase()),
+                            subtitle: Text(
+                              '${_shortDateTime(item.createdAt)}${item.note.isEmpty ? '' : ' • ${item.note}'}',
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
-    final ok = await WhatsAppService.openChat(
-      phone: customer.phone,
-      message: message,
-    );
-    if (!ok && mounted) {
-      showAppSnackBar(
-        context,
-        l10n.t('whatsappFailed'),
-        isError: true,
-      );
-    }
   }
+
+  String _shortDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+  String _shortDateTime(DateTime date) =>
+      '${_shortDate(date)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
   Future<void> _exportLedger(Customer customer, List<LedgerEntry> ledger) async {
     try {

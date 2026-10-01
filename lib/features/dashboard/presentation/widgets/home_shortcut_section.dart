@@ -62,65 +62,90 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.t('quickActions'),
-                style: TextStyle(
-                  color: colors.onSurface,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.2,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 330;
+        final title = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.t('quickActions'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colors.onSurface,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.2,
               ),
-              const SizedBox(height: 2),
-              Text(
-                l10n.t('quickActionsSubtitle'),
-                style: TextStyle(
-                  color: colors.onSurfaceVariant.withValues(alpha: 0.72),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              l10n.t('quickActionsSubtitle'),
+              maxLines: compact ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colors.onSurfaceVariant.withValues(alpha: 0.72),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
-        ),
-        Material(
+            ),
+          ],
+        );
+        final edit = Material(
           color: const Color(0xFFFFC800),
           borderRadius: BorderRadius.circular(999),
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
             onTap: onEdit,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.tune_rounded,
-                    size: 15,
-                    color: Color(0xFF2F3028),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    l10n.t('customize'),
-                    style: const TextStyle(
-                      color: Color(0xFF2F3028),
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 9 : 11,
+                vertical: 7,
               ),
+              child: compact
+                  ? const Icon(
+                      Icons.tune_rounded,
+                      size: 17,
+                      color: Color(0xFF2F3028),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.tune_rounded,
+                          size: 15,
+                          color: Color(0xFF2F3028),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          l10n.t('customize'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF2F3028),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
-        ),
-      ],
+        );
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [Expanded(child: title), edit]),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [Expanded(child: title), edit],
+        );
+      },
     );
   }
 }
@@ -150,23 +175,41 @@ class _ShortcutRow extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: GridView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            childAspectRatio: 0.95,
-          ),
-          children: shortcuts
-              .map(
-                (item) => _ShortcutCard(
-                  item: item,
-                  onTap: () => navigateToShortcut(context, item),
-                ),
-              )
-              .toList(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+            final columns = availableWidth >= 520
+                ? 5
+                : availableWidth >= 360
+                    ? 4
+                    : availableWidth >= 240
+                        ? 3
+                        : availableWidth >= 160
+                            ? 2
+                            : 1;
+            const gap = 4.0;
+            final width =
+                ((availableWidth - (columns - 1) * gap) / columns)
+                    .clamp(48.0, 180.0);
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: shortcuts
+                  .map(
+                    (item) => SizedBox(
+                      width: width,
+                      height: 82,
+                      child: _ShortcutCard(
+                        item: item,
+                        onTap: () => navigateToShortcut(context, item),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
       ),
     );

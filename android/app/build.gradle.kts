@@ -51,11 +51,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystoreProperties.isNotEmpty()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (keystoreProperties.isEmpty()) {
+                throw GradleException("Release signing is not configured. Provide android/key.properties before building production.")
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

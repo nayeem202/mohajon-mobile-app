@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -21,5 +20,15 @@ class DownloadExportService {
       'bytes': bytes,
     });
     return savedPath;
+  }
+
+  Future<Map<String, dynamic>?> pickBackupFile() async {
+    if (!Platform.isAndroid) return null;
+    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>('pickBackupFile');
+    if (result == null) return null;
+    return {
+      'fileName': result['fileName']?.toString() ?? 'backup.json',
+      'bytes': result['bytes'],
+    };
   }
 }

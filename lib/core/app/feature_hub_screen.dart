@@ -13,6 +13,12 @@ import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/staff/models/menu_codes.dart';
 import '../../features/staff/providers/staff_providers.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
+import '../../features/purchases/presentation/purchase_planner_screen.dart';
+import '../../features/dashboard/presentation/business_coach_screen.dart';
+import '../../features/dashboard/presentation/cashflow_radar_screen.dart';
+import '../../features/dashboard/presentation/business_guardian_screen.dart';
+import '../../features/dashboard/presentation/day_closing_screen.dart';
+import '../../features/dashboard/presentation/customer_growth_screen.dart';
 import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
 import '../theme/mohajon_warm_theme.dart';
@@ -138,6 +144,60 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         menu: MenuCodes.vendors,
         onTap: () => _open(const VendorListScreen()),
         itemKey: widget.tourVendorsKey,
+      ),
+      _FeatureItem(
+        icon: Icons.auto_awesome_rounded,
+        title: l10n.t('featureBusinessCoach'),
+        subtitle: l10n.t('featureBusinessCoachSubtitle'),
+        color: MohajonWarm.ink,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const BusinessCoachScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.auto_awesome_motion_rounded,
+        title: l10n.t('featurePurchasePlanner'),
+        subtitle: l10n.t('featurePurchasePlannerSubtitle'),
+        color: MohajonWarm.green,
+        background: MohajonWarm.tintGreen,
+        menu: MenuCodes.purchase,
+        onTap: () => _open(const PurchasePlannerScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.radar_rounded,
+        title: l10n.t('featureCashflowRadar'),
+        subtitle: l10n.t('featureCashflowRadarSubtitle'),
+        color: MohajonWarm.green,
+        background: MohajonWarm.tintGreen,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const CashflowRadarScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.shield_rounded,
+        title: l10n.t('featureBusinessGuardian'),
+        subtitle: l10n.t('featureBusinessGuardianSubtitle'),
+        color: MohajonWarm.red,
+        background: MohajonWarm.tintRed,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const BusinessGuardianScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.fact_check_rounded,
+        title: l10n.t('featureDayClosing'),
+        subtitle: l10n.t('featureDayClosingSubtitle'),
+        color: MohajonWarm.orange,
+        background: MohajonWarm.tintOrange,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const DayClosingScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.insights_rounded,
+        title: l10n.t('featureCustomerGrowth'),
+        subtitle: l10n.t('featureCustomerGrowthSubtitle'),
+        color: MohajonWarm.ink,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const CustomerGrowthScreen()),
       ),
       _FeatureItem(
         icon: Icons.payments_rounded,

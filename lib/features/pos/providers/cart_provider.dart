@@ -163,6 +163,8 @@ class CartController extends StateNotifier<CartState> {
           : paidAmount > 0
               ? PaymentStatus.partial
               : PaymentStatus.due,
+      paymentMethod: state.paymentMethod,
+      staffId: _ref.read(currentUserProvider)?.userId,
       shopId: _ref.read(shopIdProvider),
       createdAt: now,
       updatedAt: now,

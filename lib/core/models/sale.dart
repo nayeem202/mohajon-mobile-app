@@ -1,4 +1,5 @@
 import '../utils/date_time_json.dart';
+import 'payment.dart';
 import 'syncable.dart';
 
 enum PaymentStatus { paid, partial, due }
@@ -65,6 +66,8 @@ class Sale with Syncable {
     this.discount = 0,
     this.vatPercent = 0,
     this.charge = 0,
+    this.paymentMethod = PaymentMethod.cash,
+    this.staffId,
     this.isDeleted = false,
     this.syncStatus = SyncStatus.pending,
   });
@@ -75,6 +78,8 @@ class Sale with Syncable {
   final double discount;
   final double vatPercent;
   final double charge;
+  final PaymentMethod paymentMethod;
+  final String? staffId;
   final double totalAmount;
   final double paidAmount;
   final double dueAmount;
@@ -98,6 +103,8 @@ class Sale with Syncable {
     double? paidAmount,
     double? dueAmount,
     PaymentStatus? paymentStatus,
+    PaymentMethod? paymentMethod,
+    String? staffId,
     DateTime? updatedAt,
     SyncStatus? syncStatus,
   }) {
@@ -112,6 +119,8 @@ class Sale with Syncable {
       paidAmount: paidAmount ?? this.paidAmount,
       dueAmount: dueAmount ?? this.dueAmount,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      staffId: staffId ?? this.staffId,
       shopId: shopId,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -132,6 +141,8 @@ class Sale with Syncable {
     'paidAmount': paidAmount,
     'dueAmount': dueAmount,
     'paymentStatus': paymentStatus.value,
+    'paymentMethod': paymentMethod.value,
+    'staffId': staffId,
     'shopId': shopId,
     'createdAt': dateToJson(createdAt),
     'updatedAt': dateToJson(updatedAt),
@@ -154,6 +165,8 @@ class Sale with Syncable {
     paidAmount: (json['paidAmount'] as num? ?? 0).toDouble(),
     dueAmount: (json['dueAmount'] as num? ?? 0).toDouble(),
     paymentStatus: PaymentStatusX.parse(json['paymentStatus']),
+    paymentMethod: PaymentMethodX.parse(json['paymentMethod']),
+    staffId: json['staffId'] as String?,
     shopId: (json['shopId'] ?? '') as String,
     createdAt: dateFromJson(json['createdAt']),
     updatedAt: dateFromJson(json['updatedAt']),

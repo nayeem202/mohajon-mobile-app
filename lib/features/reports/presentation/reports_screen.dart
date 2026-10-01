@@ -18,6 +18,7 @@ import 'product_sales_screen.dart';
 import 'profit_loss_screen.dart';
 import 'sales_summary_screen.dart';
 import 'vat_report_screen.dart';
+import 'operational_report_screen.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -29,6 +30,54 @@ class ReportsScreen extends ConsumerStatefulWidget {
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   List<ReportItem> _allItems(AppLocalizations l10n) {
     return [
+    ReportItem(
+      id: 'cash_closing',
+      icon: Icons.point_of_sale_rounded,
+      title: l10n.t('reportCashClosing'),
+      description: l10n.t('cashClosingReportDesc'),
+      startColor: Color(0xFFB45309),
+      endColor: Color(0xFFFBBF24),
+    ),
+    ReportItem(
+      id: 'purchase_supplier',
+      icon: Icons.local_shipping_rounded,
+      title: l10n.t('reportPurchaseSupplier'),
+      description: l10n.t('purchaseSupplierReportDesc'),
+      startColor: Color(0xFF7C3AED),
+      endColor: Color(0xFFC4B5FD),
+    ),
+    ReportItem(
+      id: 'stock_movement',
+      icon: Icons.swap_vert_rounded,
+      title: l10n.t('reportStockMovement'),
+      description: l10n.t('stockMovementReportDesc'),
+      startColor: Color(0xFF2563EB),
+      endColor: Color(0xFF93C5FD),
+    ),
+    ReportItem(
+      id: 'customer_credit',
+      icon: Icons.account_balance_wallet_rounded,
+      title: l10n.t('reportCustomerCredit'),
+      description: l10n.t('customerCreditReportDesc'),
+      startColor: Color(0xFFDC2626),
+      endColor: Color(0xFFFCA5A5),
+    ),
+    ReportItem(
+      id: 'sales_profit',
+      icon: Icons.insights_rounded,
+      title: l10n.t('reportSalesProfit'),
+      description: l10n.t('salesProfitReportDesc'),
+      startColor: Color(0xFF059669),
+      endColor: Color(0xFF6EE7B7),
+    ),
+    ReportItem(
+      id: 'audit_activity',
+      icon: Icons.fact_check_rounded,
+      title: l10n.t('reportAuditActivity'),
+      description: l10n.t('auditActivityReportDesc'),
+      startColor: Color(0xFF9333EA),
+      endColor: Color(0xFFD8B4FE),
+    ),
     ReportItem(
       id: 'sales_summary',
       icon: Icons.bar_chart_rounded,
@@ -116,7 +165,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       description: l10n.t('staffPerformanceDesc'),
       startColor: Color(0xFF64748B),
       endColor: Color(0xFFCBD5E1),
-      available: false,
+      available: true,
     ),
   ];
   }
@@ -233,6 +282,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       'payment_methods' => const PaymentMethodsScreen(),
       'due_payments' => const DuePaymentsScreen(),
       'vat_report' => const VatReportScreen(),
+      'cash_closing' => const OperationalReportScreen(type: OperationalReportType.cashClosing),
+      'purchase_supplier' => const OperationalReportScreen(type: OperationalReportType.purchaseSupplier),
+      'stock_movement' => const OperationalReportScreen(type: OperationalReportType.stockMovement),
+      'customer_credit' => const OperationalReportScreen(type: OperationalReportType.customerCredit),
+      'sales_profit' => const OperationalReportScreen(type: OperationalReportType.salesProfit),
+      'staff_performance' => const OperationalReportScreen(type: OperationalReportType.staffPerformance),
+      'audit_activity' => const OperationalReportScreen(type: OperationalReportType.auditActivity),
       _ => null,
     };
     if (screen == null) return;

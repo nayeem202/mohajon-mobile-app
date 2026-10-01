@@ -42,7 +42,10 @@ class AuthService {
   Future<bool> restoreSession() async {
     final session = await backend.currentSession();
     if (session == null) return false;
-    await _establishLocalSession(session);
+    // Startup must never wait for the network. The splash screen can open
+    // the local account immediately; the app shell already starts a guarded
+    // background sync after navigation.
+    await _establishLocalSession(session, syncNow: false);
     return true;
   }
 
@@ -213,7 +216,10 @@ class AuthService {
 
   /// Bridges a backend session into the app's local (Hive) account state:
   /// active account, AppUser record and currentUserProvider.
-  Future<void> _establishLocalSession(AuthSession session) async {
+  Future<void> _establishLocalSession(
+    AuthSession session, {
+    bool syncNow = true,
+  }) async {
     if (session.userId.isEmpty) return;
     final shopId = await backend.resolveShopId(session);
     final db = _ref.read(localDatabaseProvider);
@@ -231,9 +237,11 @@ class AuthService {
     _ref.read(currentUserProvider.notifier).state = appUser;
     await _prepareProfileForSession(session);
     await _fillMissingProfileFromSession(session);
-    final syncService = SyncService(db);
-    if (await syncService.isOnline) {
-      await syncService.sync(shopId: shopId);
+    if (syncNow) {
+      final syncService = SyncService(db);
+      if (await syncService.isOnline) {
+        await syncService.sync(shopId: shopId);
+      }
     }
   }
 

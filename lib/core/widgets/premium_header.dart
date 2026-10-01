@@ -15,6 +15,7 @@ class PremiumHeader extends StatelessWidget {
     required this.icon,
     this.onBack,
     this.showBack = true,
+    this.trailing,
   });
 
   final String title;
@@ -22,6 +23,9 @@ class PremiumHeader extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onBack;
   final bool showBack;
+
+  /// Optional action rendered just before the notification bell.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +123,10 @@ class PremiumHeader extends StatelessWidget {
             ],
           ),
         ),
+        if (trailing != null) ...[
+          trailing!,
+          const SizedBox(width: 14),
+        ],
         const NotificationBell(),
         const SizedBox(width: 14),
         const ShopAvatar(
@@ -201,7 +209,7 @@ class SectionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) trailing!,
+              ?trailing,
             ],
           ),
           const SizedBox(height: 14),

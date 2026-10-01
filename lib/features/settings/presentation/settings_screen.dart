@@ -1464,6 +1464,37 @@ class _DataBackupBody extends ConsumerWidget {
         ),
         _Divider(),
         _NavRow(
+          icon: Icons.restore_rounded,
+          label: 'Restore Backup',
+          value: '',
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Restore backup?'),
+                content: const Text('Backup records will be restored locally and synced as pending changes. Existing records with the same id may be replaced.'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+                  FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Restore')),
+                ],
+              ),
+            );
+            if (confirmed != true || !context.mounted) return;
+            try {
+              final picked = await DownloadExportService().pickBackupFile();
+              if (picked == null || picked['bytes'] is! Uint8List) return;
+              final decoded = jsonDecode(utf8.decode(picked['bytes'] as Uint8List));
+              if (decoded is! Map<String, dynamic>) throw const FormatException('Invalid backup format.');
+              final restored = await ref.read(localDatabaseProvider).restoreBackup(decoded, ref.read(shopIdProvider));
+              await ref.read(syncStateProvider.notifier).syncIfOnline();
+              if (context.mounted) onToast('Restored $restored records. Sync will finish in the background.');
+            } catch (error) {
+              if (context.mounted) onToast('Restore failed: $error');
+            }
+          },
+        ),
+        _Divider(),
+        _NavRow(
           icon: Icons.cleaning_services_outlined,
           label: l10n.t('clearCache'),
           value: '',

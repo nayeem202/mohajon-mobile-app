@@ -155,7 +155,7 @@ class _PosScreenState extends ConsumerState<PosScreen>
                   const SizedBox(height: 14),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: KeyedSubtree(
                         key: tourProductGridKey,
                         child: _ProductGrid(
@@ -170,7 +170,9 @@ class _PosScreenState extends ConsumerState<PosScreen>
                     SafeArea(
                       top: false,
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        // Keep the checkout bar aligned with the product
+                        // panel above on every phone width.
+                        padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
                         child: KeyedSubtree(
                           key: tourCheckoutKey,
                           child: _CheckoutBar(
@@ -528,7 +530,11 @@ class _ProductGrid extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _kCard,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFFEF8), Color(0xFFFFF7D6)],
+        ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _kBorder),
         boxShadow: [
@@ -543,8 +549,9 @@ class _ProductGrid extends StatelessWidget {
           ? const _CatalogEmptyState()
           : GridView.builder(
               padding: EdgeInsets.zero,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 150,
+                mainAxisExtent: 190,
                 childAspectRatio: 0.66,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,

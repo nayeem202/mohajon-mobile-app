@@ -8,6 +8,7 @@ import '../models/syncable.dart';
 import '../offline/local_collection.dart';
 import '../offline/local_database.dart';
 import 'api_client.dart';
+import '../../features/purchases/models/purchase_order.dart';
 
 enum SyncPhase { idle, syncing, offline, notSignedIn, failed }
 
@@ -90,7 +91,8 @@ class SyncService {
           _db.vendorPurchases.pending().length +
           _db.vendorPayments.pending().length +
           _db.expenses.pending().length +
-          _db.users.pending().length;
+          _db.users.pending().length +
+          _db.purchaseOrders.pending().length;
     }
     var total = _db.products.pendingForShop(shopId).length +
         _db.customers.pendingForShop(shopId).length +
@@ -103,7 +105,8 @@ class SyncService {
         _db.vendorPurchases.pendingForShop(shopId).length +
         _db.vendorPayments.pendingForShop(shopId).length +
         _db.expenses.pendingForShop(shopId).length +
-        _db.users.pendingForShop(shopId).length;
+        _db.users.pendingForShop(shopId).length +
+        _db.purchaseOrders.pendingForShop(shopId).length;
     var quarantined = 0;
     for (final (name, _) in _collections) {
       final block = _db.settings.get(_quarantineKey(shopId, name));
@@ -211,6 +214,9 @@ class SyncService {
           forceFull: forceFullProducts && name == 'products',
         );
       }
+      // Purchase orders use a transactional endpoint because their item rows
+      // are nested. Keeping this in the same sync cycle prevents device drift.
+      await _syncPurchaseOrders(shopId);
 
       return SyncState(
         phase: SyncPhase.idle,
@@ -223,6 +229,38 @@ class SyncService {
         message: error.toString(),
         pendingCount: pendingCount(shopId: shopId),
       );
+    }
+  }
+
+  Future<void> _syncPurchaseOrders(String shopId) async {
+    try {
+      final remote = await _api.getJson('/api/v1/purchase-orders');
+      if (remote is List) {
+        for (final raw in remote.whereType<Map>()) {
+          final order = PurchaseOrder.fromJson(raw).copyWith(
+            shopId: shopId,
+            synced: true,
+            syncStatus: SyncStatus.synced,
+          );
+          await _db.purchaseOrders.put(order);
+        }
+      }
+    } catch (_) {
+      // A temporary endpoint failure must not discard local orders.
+    }
+    for (final order in _db.purchaseOrders
+        .valuesForShop(shopId, includeDeleted: true)
+        .where((item) => !item.synced && !item.isDeleted)) {
+      try {
+        await _api.post('/api/v1/purchase-orders', order.toJson());
+        await _db.purchaseOrders.put(order.copyWith(
+          synced: true,
+          syncStatus: SyncStatus.synced,
+          updatedAt: DateTime.now(),
+        ));
+      } catch (_) {
+        // Keep the pending record for the next retry. No local data is removed.
+      }
     }
   }
 
