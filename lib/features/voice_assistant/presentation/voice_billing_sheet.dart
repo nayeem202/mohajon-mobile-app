@@ -10,6 +10,7 @@ import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/network_guard.dart';
 import '../../pos/providers/cart_provider.dart';
+import '../../products/providers/product_providers.dart';
 import '../models/voice_bill.dart';
 import '../services/gemini_billing_client.dart';
 import '../services/voice_assistant_service.dart';
@@ -161,14 +162,14 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet>
 
   Future<void> _addToCart() async {
     final l10n = AppLocalizations.of(context);
-    final db = ref.read(localDatabaseProvider);
-    final shopId = ref.read(shopIdProvider);
     final cart = ref.read(cartProvider.notifier);
     final items = _items;
     var added = 0;
     var unresolved = 0;
     for (final item in items) {
-      final Product? product = db.products.getForShop(shopId, item.productId);
+      final Product? product = ref
+          .read(productServiceProvider)
+          .getActiveBranchProduct(item.productId);
       if (product == null) {
         unresolved++;
         continue;

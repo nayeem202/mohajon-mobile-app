@@ -894,14 +894,17 @@ class _AppPrefsBody extends ConsumerWidget {
           icon: Icons.attach_money_rounded,
           label: l10n.t('currencySettings'),
           value: l10n.t('currencyValue'),
-          onTap: () => onToast(l10n.t('currencyComing')),
+          // Currency is intentionally fixed to BDT for this Bangladesh-first
+          // product. Do not expose a dead tap target in production.
+          onTap: null,
         ),
         _Divider(),
         _NavRow(
           icon: Icons.calendar_today_rounded,
           label: l10n.t('dateFormatSettings'),
           value: l10n.t('dateFormatValue'),
-          onTap: () => onToast(l10n.t('dateFormatComing')),
+          // Keep the report/invoice date format consistent across devices.
+          onTap: null,
         ),
         _Divider(),
         _NavRow(

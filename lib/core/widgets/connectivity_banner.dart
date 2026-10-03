@@ -6,14 +6,9 @@ import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
 import '../theme/mohajon_warm_theme.dart';
 
-/// Persistent, global banner shown above every tab that tells the user the
-/// current online/offline + sync state at a glance.
-///
-/// * Offline  -> amber bar "Offline mode" (+ pending changes count).
-/// * Syncing  -> gold bar "Syncing data..." (Internet came back / manual).
-/// * Idle     -> hidden when everything is synced, subtle bar when there are
-///               unsynced local changes pending.
-/// * Failed   -> red bar with a Retry action.
+/// Compact global connectivity indicator shown above every tab.
+/// It deliberately avoids a large explanatory banner: the icon/status chip
+/// is enough for everyday use, while tapping it retries a pending sync.
 class ConnectivityBanner extends ConsumerWidget {
   const ConnectivityBanner({super.key});
 
@@ -22,58 +17,82 @@ class ConnectivityBanner extends ConsumerWidget {
     final state = ref.watch(syncStateProvider);
     final l10n = AppLocalizations.of(context);
 
-    final (icon, color, title, subtitle, onTap) = _style(
+    final (icon, color, label, onTap) = _style(
       state,
       l10n,
       () => ref.read(syncStateProvider.notifier).syncNow(),
     );
 
-    if (title == null) return const SizedBox.shrink();
+    if (label == null) return const SizedBox.shrink();
 
-    return Material(
-      color: color.withValues(alpha: 0.20),
+    return ColoredBox(
+      color: MohajonWarm.primary,
       child: SafeArea(
-        bottom: false,
         top: true,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: color.withValues(alpha: 0.35)),
+        bottom: false,
+        child: Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 2, 8, 0),
+            child: Material(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(999),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width - 16,
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 17),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
                 ),
-                if (onTap != null) ...[
-                  const SizedBox(width: 6),
-                  Icon(Icons.refresh_rounded, color: color, size: 15),
-                ],
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (state.phase == SyncPhase.syncing)
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: color,
+                        ),
+                      )
+                    else
+                      Icon(icon, color: color, size: 15),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(width: 5),
+                      Icon(Icons.refresh_rounded, color: color, size: 14),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
-    );
+            ),
+          ),
+        ),
+      );
   }
 
-  (IconData, Color, String?, String, VoidCallback?) _style(
+  (IconData, Color, String?, VoidCallback?) _style(
     SyncState state,
     AppLocalizations l10n,
     VoidCallback syncNow,
@@ -83,24 +102,23 @@ class ConnectivityBanner extends ConsumerWidget {
         return (
           Icons.cloud_off_rounded,
           const Color(0xFFBE3A1A),
-          l10n.t('offlineModeTitle'),
           state.pendingCount > 0
-              ? l10n.tP('offlineModePending', {'count': '${state.pendingCount}'})
-              : l10n.t('offlineModeDesc'),
-          null,
+              ? l10n.tP('pendingSyncShort', {'count': '${state.pendingCount}'})
+              : l10n.t('offlineShort'),
+          syncNow,
         );
       case SyncPhase.syncing:
-        // The active sync is already shown by the loading overlay on Home.
-        // Keep the global banner hidden to avoid showing the same status twice.
-        return (Icons.cloud_sync_rounded, MohajonWarm.goldText, null, '', null);
+        return (
+          Icons.cloud_sync_rounded,
+          MohajonWarm.goldText,
+          l10n.t('syncing'),
+          null,
+        );
       case SyncPhase.failed:
         return (
           Icons.sync_problem_rounded,
           MohajonWarm.red,
-          l10n.t('syncFailed'),
-          state.message.isEmpty
-              ? l10n.t('syncFailedRetryHint')
-              : state.message,
+          l10n.t('retrySyncShort'),
           syncNow,
         );
       case SyncPhase.idle:
@@ -108,14 +126,13 @@ class ConnectivityBanner extends ConsumerWidget {
           return (
             Icons.cloud_upload_outlined,
             const Color(0xFFB45309),
-            null,
-            l10n.tP('unsyncedChanges', {'count': '${state.pendingCount}'}),
+            l10n.tP('pendingSyncShort', {'count': '${state.pendingCount}'}),
             syncNow,
           );
         }
-        return (Icons.cloud_done_rounded, MohajonWarm.green, null, '', null);
+        return (Icons.cloud_done_rounded, MohajonWarm.green, l10n.t('syncedShort'), syncNow);
       case SyncPhase.notSignedIn:
-        return (Icons.cloud_off_rounded, MohajonWarm.muted, null, '', null);
+        return (Icons.cloud_off_rounded, MohajonWarm.muted, null, null);
     }
   }
 }

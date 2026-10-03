@@ -35,6 +35,9 @@ class SyncService {
 
   static const _collections = [
     ('products', 'products'),
+    // Batch rows must reach the server before an offline sale references
+    // their allocation IDs. The backend uses the same order.
+    ('productBatches', 'productBatches'),
     ('customers', 'customers'),
     ('sales', 'sales'),
     ('customerLedgerEntries', 'customerLedgerEntries'),
@@ -46,6 +49,10 @@ class SyncService {
     ('vendorPayments', 'vendorPayments'),
     ('expenses', 'expenses'),
     ('users', 'users'),
+    ('stockAdjustments', 'stockAdjustments'),
+    ('supplierReturns', 'supplierReturns'),
+    ('saleReturns', 'saleReturns'),
+    ('auditEvents', 'auditEvents'),
   ];
 
   Future<bool> get isOnline async {
@@ -68,10 +75,7 @@ class SyncService {
         return false;
       }
       // Confirm the business service itself is reachable.
-      await _api.get(
-        '/api/v1/shops/me',
-        timeout: const Duration(seconds: 6),
-      );
+      await _api.get('/api/v1/shops/me', timeout: const Duration(seconds: 6));
       return true;
     } catch (_) {
       return false;
@@ -92,9 +96,15 @@ class SyncService {
           _db.vendorPayments.pending().length +
           _db.expenses.pending().length +
           _db.users.pending().length +
+          _db.stockAdjustments.pending().length +
+          _db.supplierReturns.pending().length +
+          _db.auditEvents.pending().length +
+          _db.productBatches.pending().length +
+          _db.saleReturns.pending().length +
           _db.purchaseOrders.pending().length;
     }
-    var total = _db.products.pendingForShop(shopId).length +
+    var total =
+        _db.products.pendingForShop(shopId).length +
         _db.customers.pendingForShop(shopId).length +
         _db.sales.pendingForShop(shopId).length +
         _db.customerLedgerEntries.pendingForShop(shopId).length +
@@ -106,6 +116,11 @@ class SyncService {
         _db.vendorPayments.pendingForShop(shopId).length +
         _db.expenses.pendingForShop(shopId).length +
         _db.users.pendingForShop(shopId).length +
+        _db.stockAdjustments.pendingForShop(shopId).length +
+        _db.supplierReturns.pendingForShop(shopId).length +
+        _db.auditEvents.pendingForShop(shopId).length +
+        _db.productBatches.pendingForShop(shopId).length +
+        _db.saleReturns.pendingForShop(shopId).length +
         _db.purchaseOrders.pendingForShop(shopId).length;
     var quarantined = 0;
     for (final (name, _) in _collections) {
@@ -198,6 +213,10 @@ class SyncService {
     }
 
     try {
+      // Replay compound customer merges before ordinary row pushes. This
+      // prevents the duplicate tombstone from making the server-side merge
+      // endpoint appear to be a permanent failure.
+      await _syncCustomerMerges(shopId);
       for (final (name, _) in _collections) {
         await _pushCollection(shopId, name);
       }
@@ -217,6 +236,11 @@ class SyncService {
       // Purchase orders use a transactional endpoint because their item rows
       // are nested. Keeping this in the same sync cycle prevents device drift.
       await _syncPurchaseOrders(shopId);
+      // Due recovery plans are stored in the settings box because they are
+      // customer-level metadata rather than a normal business collection.
+      // They still need the same offline-first push/pull guarantee as sales
+      // and payments, otherwise reminder history can remain device-local.
+      await _syncDueRecovery(shopId);
 
       return SyncState(
         phase: SyncPhase.idle,
@@ -248,18 +272,108 @@ class SyncService {
     } catch (_) {
       // A temporary endpoint failure must not discard local orders.
     }
-    for (final order in _db.purchaseOrders
-        .valuesForShop(shopId, includeDeleted: true)
-        .where((item) => !item.synced && !item.isDeleted)) {
+    for (final order
+        in _db.purchaseOrders
+            .valuesForShop(shopId, includeDeleted: true)
+            .where((item) => !item.synced && !item.isDeleted)) {
       try {
         await _api.post('/api/v1/purchase-orders', order.toJson());
-        await _db.purchaseOrders.put(order.copyWith(
-          synced: true,
-          syncStatus: SyncStatus.synced,
-          updatedAt: DateTime.now(),
-        ));
+        await _db.purchaseOrders.put(
+          order.copyWith(
+            synced: true,
+            syncStatus: SyncStatus.synced,
+            updatedAt: DateTime.now(),
+          ),
+        );
       } catch (_) {
         // Keep the pending record for the next retry. No local data is removed.
+      }
+    }
+  }
+
+  Future<void> _syncDueRecovery(String shopId) async {
+    final prefix = 'dueRecovery.$shopId.';
+    final keys = _db.settings.keys
+        .whereType<String>()
+        .where((key) => key.startsWith(prefix))
+        .toList();
+    for (final key in keys) {
+      final customerId = key.substring(prefix.length);
+      if (customerId.isEmpty) continue;
+      final raw = _db.settings.get(key);
+      if (raw is! Map) continue;
+      final plan = Map<String, dynamic>.from(raw);
+      try {
+        final remoteBefore = await _api.get(
+          '/api/v1/customers/$customerId/due-recovery',
+        );
+        final localUpdatedAt = DateTime.tryParse('${plan['updatedAt'] ?? ''}');
+        final remoteUpdatedAt =
+            DateTime.tryParse('${remoteBefore['updatedAt'] ?? ''}');
+        final remoteIsNewer = remoteUpdatedAt != null &&
+            (localUpdatedAt == null || remoteUpdatedAt.isAfter(localUpdatedAt));
+        if (!remoteIsNewer) {
+          await _api.put(
+            '/api/v1/customers/$customerId/due-recovery',
+            {
+              'promisedPaymentDate': plan['promisedPaymentDate'],
+              'snoozedUntil': plan['snoozedUntil'],
+            },
+          );
+        }
+        final followUps = plan['followUps'];
+        if (followUps is List) {
+          for (final rawFollowUp in followUps.whereType<Map>()) {
+            final followUp = Map<String, dynamic>.from(rawFollowUp);
+            await _api.post(
+              '/api/v1/customers/$customerId/due-recovery/follow-ups',
+              {
+                'id': followUp['id'],
+                'channel': followUp['channel'],
+                'note': followUp['note'] ?? '',
+                'status': followUp['status'] ?? 'opened',
+                'failureReason': followUp['failureReason'] ?? '',
+                'providerMessageId': followUp['providerMessageId'] ?? '',
+              },
+            );
+          }
+        }
+        final remote = await _api.get(
+          '/api/v1/customers/$customerId/due-recovery',
+        );
+        await _db.settings.put(key, Map<String, dynamic>.from(remote));
+      } catch (_) {
+        // Keep the local plan intact. The next background sync retries it.
+      }
+    }
+  }
+
+  Future<void> _syncCustomerMerges(String shopId) async {
+    final prefix = 'customerMerge.$shopId.';
+    final keys = _db.settings.keys
+        .whereType<String>()
+        .where((key) => key.startsWith(prefix))
+        .toList();
+    for (final key in keys) {
+      final raw = _db.settings.get(key);
+      if (raw is! Map) {
+        await _db.settings.delete(key);
+        continue;
+      }
+      final primaryId = '${raw['primaryId'] ?? ''}'.trim();
+      final duplicateId = '${raw['duplicateId'] ?? ''}'.trim();
+      if (primaryId.isEmpty || duplicateId.isEmpty) {
+        await _db.settings.delete(key);
+        continue;
+      }
+      try {
+        await _api.post('/api/v1/customers/merge', {
+          'primaryId': primaryId,
+          'duplicateId': duplicateId,
+        });
+        await _db.settings.delete(key);
+      } catch (_) {
+        // Keep the merge operation durable until the server accepts it.
       }
     }
   }
@@ -278,6 +392,11 @@ class SyncService {
       'vendorPayments' => _db.vendorPayments,
       'expenses' => _db.expenses,
       'users' => _db.users,
+      'stockAdjustments' => _db.stockAdjustments,
+      'supplierReturns' => _db.supplierReturns,
+      'auditEvents' => _db.auditEvents,
+      'productBatches' => _db.productBatches,
+      'saleReturns' => _db.saleReturns,
       _ => throw ArgumentError('Unknown collection: $name'),
     };
   }
@@ -297,13 +416,16 @@ class SyncService {
     final retryable = <String>{};
     quarantined.forEach((id, reason) {
       final lastTried = DateTime.tryParse(tried[id] ?? '');
-      if (lastTried == null || now.difference(lastTried) >= _quarantineRetryAfter) {
+      if (lastTried == null ||
+          now.difference(lastTried) >= _quarantineRetryAfter) {
         retryable.add(id);
       }
     });
     final active = items
-        .where((item) =>
-            !quarantined.containsKey(item.id) || retryable.contains(item.id))
+        .where(
+          (item) =>
+              !quarantined.containsKey(item.id) || retryable.contains(item.id),
+        )
         .toList();
     if (active.isEmpty) return;
 
@@ -315,14 +437,19 @@ class SyncService {
     final uploadedImageIds = <String>{};
     for (final item in active) {
       final doc = item.toJson()..['syncStatus'] = SyncStatus.synced.value;
+      // Customer loyalty is server-authoritative and is changed atomically by
+      // sale sync. Do not let a stale offline customer row overwrite it.
+      if (name == 'customers') doc.remove('loyaltyPoints');
       if (name == 'products') {
         final imagePath = doc['imagePath'];
         if (imagePath is String &&
             imagePath.isNotEmpty &&
             !imagePath.startsWith('http')) {
           try {
-            final json =
-                await _api.uploadFile('/api/v1/files', File(imagePath));
+            final json = await _api.uploadFile(
+              '/api/v1/files',
+              File(imagePath),
+            );
             final url = (json['url'] ?? '').toString();
             if (url.isNotEmpty) {
               doc['imagePath'] = url.startsWith('http')
@@ -426,12 +553,13 @@ class SyncService {
         timeout: _pullTimeout,
       );
       final serverValue = DateTime.tryParse('${response['serverNow']}');
-      if (serverValue != null && (serverNow == null || serverValue.isAfter(serverNow))) {
+      if (serverValue != null &&
+          (serverNow == null || serverValue.isAfter(serverNow))) {
         serverNow = serverValue;
       }
-      final documents = (response['documents'] as List?)
-          ?.cast<Map<String, dynamic>>() ??
-      const <Map<String, dynamic>>[];
+      final documents =
+          (response['documents'] as List?)?.cast<Map<String, dynamic>>() ??
+          const <Map<String, dynamic>>[];
       var newest = after;
       for (final doc in documents) {
         if (doc['shopId'] != shopId) continue;

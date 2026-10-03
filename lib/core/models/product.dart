@@ -16,7 +16,11 @@ class Product with Syncable {
     required this.stockQty,
     required this.lowStockAlert,
     this.expiryDate,
+    this.batchNumber = '',
+    this.sku = '',
+    this.variantName = '',
     required this.shopId,
+    this.branchId,
     required this.updatedAt,
     this.isDeleted = false,
     this.syncStatus = SyncStatus.pending,
@@ -35,8 +39,12 @@ class Product with Syncable {
   final int stockQty;
   final int lowStockAlert;
   final DateTime? expiryDate;
+  final String batchNumber;
+  final String sku;
+  final String variantName;
   @override
   final String shopId;
+  final String? branchId;
   @override
   final DateTime updatedAt;
   final bool isDeleted;
@@ -46,8 +54,10 @@ class Product with Syncable {
   @override
   String get id => productId;
 
-  String displayName(String languageCode) =>
-      languageCode == 'bn' && nameBn.isNotEmpty ? nameBn : nameEn;
+  String displayName(String languageCode) {
+    final base = languageCode == 'bn' && nameBn.isNotEmpty ? nameBn : nameEn;
+    return variantName.trim().isEmpty ? base : '$base · $variantName';
+  }
 
   bool get isLowStock => stockQty <= lowStockAlert;
 
@@ -81,7 +91,11 @@ class Product with Syncable {
     int? stockQty,
     int? lowStockAlert,
     DateTime? expiryDate,
+    String? batchNumber,
+    String? sku,
+    String? variantName,
     String? shopId,
+    String? branchId,
     DateTime? updatedAt,
     bool? isDeleted,
     SyncStatus? syncStatus,
@@ -100,7 +114,11 @@ class Product with Syncable {
       stockQty: stockQty ?? this.stockQty,
       lowStockAlert: lowStockAlert ?? this.lowStockAlert,
       expiryDate: expiryDate ?? this.expiryDate,
+      batchNumber: batchNumber ?? this.batchNumber,
+      sku: sku ?? this.sku,
+      variantName: variantName ?? this.variantName,
       shopId: shopId ?? this.shopId,
+      branchId: branchId ?? this.branchId,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -122,7 +140,11 @@ class Product with Syncable {
     'stockQty': stockQty,
     'lowStockAlert': lowStockAlert,
     'expiryDate': expiryDate == null ? null : dateToJson(expiryDate!),
+    'batchNumber': batchNumber,
+    'sku': sku,
+    'variantName': variantName,
     'shopId': shopId,
+    'branchId': branchId,
     'updatedAt': dateToJson(updatedAt),
     'isDeleted': isDeleted,
     'syncStatus': syncStatus.value,
@@ -144,7 +166,11 @@ class Product with Syncable {
     expiryDate: json['expiryDate'] == null
         ? null
         : dateFromJson(json['expiryDate']),
+    batchNumber: (json['batchNumber'] ?? '') as String,
+    sku: (json['sku'] ?? '') as String,
+    variantName: (json['variantName'] ?? '') as String,
     shopId: (json['shopId'] ?? '') as String,
+    branchId: (json['branchId'] ?? '${(json['shopId'] ?? '') as String}-main') as String,
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,
     syncStatus: SyncStatusX.parse(json['syncStatus']),

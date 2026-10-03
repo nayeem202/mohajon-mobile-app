@@ -7,6 +7,8 @@ class Profile {
     required this.email,
     required this.address,
     this.imagePath,
+    this.tin = '',
+    this.bin = '',
   });
 
   final String userId;
@@ -16,6 +18,8 @@ class Profile {
   final String email;
   final String address;
   final String? imagePath;
+  final String tin;
+  final String bin;
 
   Profile copyWith({
     String? userId,
@@ -25,6 +29,8 @@ class Profile {
     String? email,
     String? address,
     Object? imagePath = const Object(),
+    String? tin,
+    String? bin,
   }) {
     return Profile(
       userId: userId ?? this.userId,
@@ -34,6 +40,8 @@ class Profile {
       email: email ?? this.email,
       address: address ?? this.address,
       imagePath: identical(imagePath, const Object()) ? this.imagePath : imagePath as String?,
+      tin: tin ?? this.tin,
+      bin: bin ?? this.bin,
     );
   }
 
@@ -45,6 +53,8 @@ class Profile {
     'email': email,
     'address': address,
     if (imagePath != null) 'imagePath': imagePath,
+    'tin': tin,
+    'bin': bin,
   };
 
   factory Profile.fromJson(Map<dynamic, dynamic> json) => Profile(
@@ -55,5 +65,7 @@ class Profile {
     email: (json['email'] ?? '') as String,
     address: (json['address'] ?? '') as String,
     imagePath: json['imagePath'] as String?,
+    tin: (json['tin'] ?? '') as String,
+    bin: (json['bin'] ?? '') as String,
   );
 }

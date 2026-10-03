@@ -106,7 +106,7 @@ class PremiumHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   color: MohajonWarm.ink,
                 ),
               ),
@@ -204,7 +204,7 @@ class SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontSize: 14,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -234,7 +234,7 @@ class FieldLabel extends StatelessWidget {
         style: const TextStyle(
           color: MohajonWarm.ink,
           fontSize: 12.5,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
         children: [
           TextSpan(text: label),

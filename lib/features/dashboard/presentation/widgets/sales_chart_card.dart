@@ -18,7 +18,9 @@ class SalesChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final sales = data ?? WeeklySalesData.demoData();
+    // Empty/loading data must never be presented as real sales. Demo chart
+    // values are intentionally not used in production UI.
+    final sales = data ?? const <WeeklySalesData>[];
     final hasData = sales.any((d) => d.sales > 0);
 
     return Container(

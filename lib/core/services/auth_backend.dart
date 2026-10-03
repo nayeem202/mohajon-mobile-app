@@ -83,6 +83,11 @@ abstract class AuthBackend {
 
   Future<AuthSession> signInWithGoogle();
 
+  /// Sign in with a Facebook user access token obtained by the app from the
+  /// Facebook SDK. The token is verified server-side; nothing about the user is
+  /// trusted from the client.
+  Future<AuthSession> signInWithFacebook();
+
   /// Send a verification code for [email].
   Future<void> sendEmailVerificationCode(String email);
 

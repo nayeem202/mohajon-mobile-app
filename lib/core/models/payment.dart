@@ -43,6 +43,8 @@ class Payment with Syncable {
     required this.createdAt,
     required this.updatedAt,
     this.saleId,
+    this.staffId,
+    this.branchId,
     this.isDeleted = false,
     this.syncStatus = SyncStatus.pending,
   });
@@ -50,6 +52,8 @@ class Payment with Syncable {
   final String paymentId;
   final String customerId;
   final String? saleId;
+  final String? staffId;
+  final String? branchId;
   final double amount;
   final PaymentMethod paymentMethod;
   @override
@@ -69,6 +73,8 @@ class Payment with Syncable {
     'paymentId': paymentId,
     'customerId': customerId,
     'saleId': saleId,
+    'staffId': staffId,
+    'branchId': branchId,
     'amount': amount,
     'paymentMethod': paymentMethod.value,
     'shopId': shopId,
@@ -82,6 +88,10 @@ class Payment with Syncable {
     paymentId: json['paymentId'] as String,
     customerId: (json['customerId'] ?? '') as String,
     saleId: json['saleId'] as String?,
+    staffId: json['staffId'] as String?,
+    branchId: json['branchId'] == null
+        ? '${(json['shopId'] ?? '') as String}-main'
+        : json['branchId'] as String?,
     amount: (json['amount'] as num? ?? 0).toDouble(),
     paymentMethod: PaymentMethodX.parse(json['paymentMethod']),
     shopId: (json['shopId'] ?? '') as String,

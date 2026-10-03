@@ -235,7 +235,7 @@ class _CustomerLedgerDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _headerRow(l10n),
-                    ...entries.map((e) => _entryRow(e)).toList(),
+                    ...entries.map((e) => _entryRow(e)),
                     _totalRow(totalDebit, totalCredit, lastBalance, l10n),
                   ],
                 ),

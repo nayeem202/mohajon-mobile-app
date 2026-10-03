@@ -8,6 +8,7 @@ import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/snackbar.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/app_image.dart';
@@ -429,16 +430,15 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
               } else {
                 ok = await DueRecoveryService.openCall(customer.phone);
               }
-              if (ok) {
-                await service.addFollowUp(
-                  customerId: customer.customerId,
-                  channel: channel,
-                  note: channel == DueFollowUpChannel.call
-                      ? 'Call opened'
-                      : 'Reminder opened',
-                );
-                await refresh();
-              }
+              await service.addFollowUp(
+                customerId: customer.customerId,
+                channel: channel,
+                status: ok ? 'opened' : 'failed',
+                note: channel == DueFollowUpChannel.call
+                    ? (ok ? 'Call opened' : 'Could not open call')
+                    : (ok ? 'Reminder opened' : 'Could not open messaging app'),
+              );
+              await refresh();
             }
 
             final riskColor = risk.score >= 70
@@ -579,9 +579,64 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                               DueFollowUpChannel.sms => Icons.sms_outlined,
                               DueFollowUpChannel.call => Icons.call_outlined,
                             }),
-                            title: Text(item.channel.name.toUpperCase()),
+                            title: Row(
+                              children: [
+                                Text(item.channel.name.toUpperCase()),
+                                const SizedBox(width: 8),
+                                Text(
+                                  switch (item.status) {
+                                    'queued' => l10n.t('reminderQueued'),
+                                    'sent' => l10n.t('reminderSent'),
+                                    'delivered' => l10n.t('reminderDelivered'),
+                                    'opened' => l10n.t('reminderOpened'),
+                                    'failed' => l10n.t('reminderFailed'),
+                                    _ => item.status,
+                                  },
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: item.status == 'failed'
+                                        ? Colors.red
+                                        : item.status == 'delivered'
+                                            ? Colors.green
+                                            : Colors.blueGrey,
+                                  ),
+                                ),
+                              ],
+                            ),
                             subtitle: Text(
                               '${_shortDateTime(item.createdAt)}${item.note.isEmpty ? '' : ' • ${item.note}'}',
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              tooltip: 'Update delivery status',
+                              onSelected: (status) async {
+                                try {
+                                  await service.updateFollowUpStatus(
+                                    customerId: customer.customerId,
+                                    followUpId: item.id,
+                                    status: status,
+                                  );
+                                  await refresh();
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    showAppSnackBar(
+                                      context,
+                                      'Could not update reminder status',
+                                      isError: true,
+                                    );
+                                  }
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                PopupMenuItem(
+                                  value: 'delivered',
+                                  child: Text(l10n.t('markReminderDelivered')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'failed',
+                                  child: Text(l10n.t('markReminderFailed')),
+                                ),
+                              ],
                             ),
                           ),
                     ],

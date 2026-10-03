@@ -32,6 +32,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
+  final _tinController = TextEditingController();
+  final _binController = TextEditingController();
 
   final _storeNameFocus = FocusNode();
   final _ownerNameFocus = FocusNode();
@@ -57,6 +59,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       widget.profile.phone,
       widget.profile.email,
       widget.profile.address,
+      widget.profile.tin,
+      widget.profile.bin,
     );
     final oldHash = Object.hash(
       oldWidget.profile.storeName,
@@ -64,6 +68,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       oldWidget.profile.phone,
       oldWidget.profile.email,
       oldWidget.profile.address,
+      oldWidget.profile.tin,
+      oldWidget.profile.bin,
     );
     if (hash != oldHash) {
       _currentProfile = widget.profile;
@@ -91,6 +97,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
     _phoneFocus.dispose();
     _emailFocus.dispose();
     _addressFocus.dispose();
+    _tinController.dispose();
+    _binController.dispose();
     super.dispose();
   }
 
@@ -215,6 +223,20 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                                 focusNode: _addressFocus,
                                 textInputAction: TextInputAction.newline,
                               ),
+                              const SizedBox(height: 14),
+                              ProfileTextField(
+                                label: l10n.t('tinNumber'),
+                                controller: _tinController,
+                                hint: l10n.t('tinHint'),
+                                prefixIcon: Icons.receipt_long_outlined,
+                              ),
+                              const SizedBox(height: 14),
+                              ProfileTextField(
+                                label: l10n.t('binNumber'),
+                                controller: _binController,
+                                hint: l10n.t('binHint'),
+                                prefixIcon: Icons.business_center_outlined,
+                              ),
                             ] else ...[
                               _InfoTile(
                                 icon: Icons.phone_outlined,
@@ -235,6 +257,20 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                                 color: MohajonWarm.red,
                                 label: l10n.t('address'),
                                 value: p.address,
+                              ),
+                              const SizedBox(height: 14),
+                              _InfoTile(
+                                icon: Icons.receipt_long_outlined,
+                                color: MohajonWarm.orange,
+                                label: l10n.t('tinNumber'),
+                                value: p.tin,
+                              ),
+                              const SizedBox(height: 14),
+                              _InfoTile(
+                                icon: Icons.business_center_outlined,
+                                color: MohajonWarm.green,
+                                label: l10n.t('binNumber'),
+                                value: p.bin,
                               ),
                             ],
                           ],
@@ -293,6 +329,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
     _phoneController.text = _currentProfile.phone;
     _emailController.text = _currentProfile.email;
     _addressController.text = _currentProfile.address;
+    _tinController.text = _currentProfile.tin;
+    _binController.text = _currentProfile.bin;
   }
 
   Future<void> _saveProfile() async {
@@ -304,6 +342,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
     final phone = _phoneController.text;
     final email = _emailController.text;
     final address = _addressController.text;
+    final tin = _tinController.text;
+    final bin = _binController.text;
 
     final errors = _validate(storeName, ownerName, phone, email, address);
     if (errors.isNotEmpty) {
@@ -317,6 +357,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       phone: phone,
       email: email,
       address: address,
+      tin: tin,
+      bin: bin,
     );
 
     setState(() => _isSaving = true);
@@ -325,6 +367,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
             shopName: storeName,
             location: address,
             phoneNumber: phone,
+            tin: tin,
+            bin: bin,
           );
       await ref.read(profileRepositoryProvider).saveProfile(updated);
       ref.read(profileVersionProvider.notifier).state++;

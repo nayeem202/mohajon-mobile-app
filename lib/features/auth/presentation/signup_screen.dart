@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/async_action_state.dart';
 import 'auth_brand.dart';
 import 'email_verification_dialog.dart';
@@ -33,7 +34,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   @override
   void initState() {
     super.initState();
-    _password.addListener(() => setState(() {}));
+    _password.addListener(_refresh);
+    _email.addListener(_refresh);
+  }
+
+  /// Live feedback for the password meter and the email confirmation tick.
+  void _refresh() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -47,6 +54,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     super.dispose();
   }
 
+  bool get _emailLooksValid {
+    final text = _email.text.trim();
+    return text.contains('@') && text.contains('.') && text.length > 5;
+  }
+
   @override
   Widget build(BuildContext context) {
     final authTheme = AuthBrand.theme(Theme.of(context));
@@ -54,40 +66,60 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       Theme(
         data: authTheme,
         child: Scaffold(
+          backgroundColor: AuthBrand.backgroundColor,
           body: Stack(
             children: [
-              const DecoratedBox(
-                decoration: BoxDecoration(color: AuthBrand.backgroundColor),
-                child: SizedBox.expand(),
-              ),
+              const Positioned.fill(child: AuthDecorativeBackdrop()),
               SafeArea(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverAppBar(
-                      pinned: false,
-                      floating: true,
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      leading: IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        color: AuthBrand.secondary,
-                        onPressed: () => Navigator.of(context).maybePop(),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 520),
-                            child: _submitted
-                                ? _VerificationNotice(email: _email.text.trim())
-                                : _buildForm(context),
+                // The photo header supplies its own top inset so it can run
+                // edge-to-edge, under the status bar, instead of leaving a
+                // strip of page gradient above it.
+                top: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxHeight < 740;
+                    return SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.only(bottom: compact ? 22 : 34),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 460),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              AuthPhotoHeader(
+                                topInset: MediaQuery.paddingOf(context).top,
+                                minHeight: compact ? 150 : 170,
+                                child: const AuthBackButton(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    AuthHeading(
+                                      title: 'Register',
+                                      subtitle: 'Create your new account',
+                                      topPadding: compact ? 2 : 8,
+                                    ),
+                                    _submitted
+                                        ? _VerificationNotice(
+                                            email: _email.text.trim(),
+                                          )
+                                        : _buildForm(context),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -99,189 +131,182 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   }
 
   Widget _buildForm(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _AuthHero(
-          icon: Icons.storefront_rounded,
-          badge: 'Create account',
-          title: 'Set up your shop',
-          subtitle: 'Start managing sales, inventory and customers in minutes.',
-        ),
-        const SizedBox(height: 18),
-        Container(
-          decoration: BoxDecoration(
-            color: AuthBrand.panelBackground,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AuthBrand.panelBorder),
-            boxShadow: [
-              BoxShadow(
-                color: AuthBrand.shadow.withValues(alpha: 0.06),
-                blurRadius: 28,
-                spreadRadius: -8,
-                offset: const Offset(0, 14),
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _field(
+            controller: _shopName,
+            hint: 'Shop name',
+            icon: Icons.storefront_outlined,
+            textInputAction: TextInputAction.next,
+            validator: _required,
+          ),
+          const SizedBox(height: 14),
+          _field(
+            controller: _ownerName,
+            hint: 'Full name',
+            icon: Icons.person_outline_rounded,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.name],
+            validator: _required,
+          ),
+          const SizedBox(height: 14),
+          _field(
+            controller: _email,
+            hint: 'Email address',
+            icon: Icons.alternate_email_rounded,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            // Small green tick once the address looks usable.
+            suffix: _emailLooksValid
+                ? const Padding(
+                    padding: EdgeInsets.only(right: 12),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: AuthBrand.primary,
+                      size: 20,
+                    ),
+                  )
+                : null,
+            validator: _emailValidator,
+          ),
+          const SizedBox(height: 14),
+          _field(
+            controller: _mobile,
+            hint: 'Mobile number',
+            icon: Icons.phone_iphone_rounded,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.telephoneNumber],
+            validator: _required,
+          ),
+          const SizedBox(height: 14),
+          _field(
+            controller: _password,
+            hint: 'Password',
+            icon: Icons.lock_outline_rounded,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.newPassword],
+            suffixIcon: IconButton(
+              tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 21,
               ),
-            ],
-          ),
-          padding: const EdgeInsets.all(22),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _shopName,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Shop name',
-                    hintText: 'e.g. Bondhu Stores',
-                    prefixIcon: Icon(Icons.store_outlined),
-                  ),
-                  validator: _required,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _ownerName,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Owner name',
-                    hintText: 'e.g. Rakib Hasan',
-                    prefixIcon: Icon(Icons.person_outline_rounded),
-                  ),
-                  validator: _required,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'you@example.com',
-                    prefixIcon: Icon(Icons.alternate_email_rounded),
-                  ),
-                  validator: _emailValidator,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _mobile,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  decoration: const InputDecoration(
-                    labelText: 'Mobile number',
-                    hintText: '+8801XXXXXXXXX',
-                    prefixIcon: Icon(Icons.phone_iphone_rounded),
-                  ),
-                  validator: _required,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _password,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.newPassword],
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'At least 6 characters',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    suffixIcon: IconButton(
-                      tooltip: _obscurePassword
-                          ? 'Show password'
-                          : 'Hide password',
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                      ),
-                    ),
-                  ),
-                  validator: _passwordValidator,
-                ),
-                if (_password.text.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _PasswordStrengthIndicator(password: _password.text),
-                ],
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _confirmPassword,
-                  obscureText: _obscureConfirm,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm password',
-                    prefixIcon: const Icon(Icons.lock_reset_rounded),
-                    suffixIcon: IconButton(
-                      tooltip: _obscureConfirm
-                          ? 'Show password'
-                          : 'Hide password',
-                      onPressed: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
-                      icon: Icon(
-                        _obscureConfirm
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value != _password.text) {
-                      return 'Passwords do not match.';
-                    }
-                    return null;
-                  },
-                ),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  child: _message == null
-                      ? const SizedBox(height: 0)
-                      : Padding(
-                          padding: const EdgeInsets.only(top: 14),
-                          child: _MessageBanner(
-                            message: _message!,
-                            isError: _messageIsError,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 18),
-                _PrimaryActionButton(
-                  onPressed: _signup,
-                  isBusy: isBusy,
-                  icon: Icons.mark_email_read_outlined,
-                  label: 'Send verification email',
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Already have an account?',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: const Text(
-                        'Sign in',
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ),
+            validator: _passwordValidator,
           ),
-        ),
-      ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _password.text.isEmpty
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: _PasswordStrengthIndicator(password: _password.text),
+                  ),
+          ),
+          const SizedBox(height: 14),
+          _field(
+            controller: _confirmPassword,
+            hint: 'Confirm password',
+            icon: Icons.lock_reset_rounded,
+            obscureText: _obscureConfirm,
+            textInputAction: TextInputAction.done,
+            suffixIcon: IconButton(
+              tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
+              onPressed: () =>
+                  setState(() => _obscureConfirm = !_obscureConfirm),
+              icon: Icon(
+                _obscureConfirm
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 21,
+              ),
+            ),
+            validator: (value) {
+              if (value != _password.text) {
+                return 'Passwords do not match.';
+              }
+              return null;
+            },
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _message == null
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: _MessageBanner(
+                      message: _message!,
+                      isError: _messageIsError,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 20),
+          _PrimaryActionButton(
+            onPressed: _signup,
+            isBusy: isBusy,
+            icon: Icons.person_add_alt_1_rounded,
+            label: 'Create account',
+          ),
+          const SizedBox(height: 4),
+          AuthFooterLink(
+            prompt: 'Already have an account?',
+            action: 'Sign in',
+            onPressed: isBusy ? null : () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(height: 22),
+          const AuthOrDivider(label: 'Or continue with'),
+          const SizedBox(height: 18),
+          SocialAuthRow(
+            onGoogle: isBusy ? null : _continueWithGoogle,
+            onFacebook: isBusy ? null : _continueWithFacebook,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Single entry point for every signup field so the styling can never drift
+  /// between the six inputs.
+  Widget _field({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    Iterable<String>? autofillHints,
+    bool obscureText = false,
+    Widget? suffix,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      autofillHints: autofillHints,
+      obscureText: obscureText,
+      validator: validator,
+      decoration: AuthFieldDecoration(
+        hint: hint,
+        icon: icon,
+        locale: Localizations.localeOf(context),
+        suffix: suffix,
+        suffixIcon: suffixIcon,
+      ),
     );
   }
 
@@ -305,8 +330,39 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     return null;
   }
 
+  Future<void> _continueWithGoogle() async {
+    await runBusyAction(() async {
+      setState(() => _message = null);
+      try {
+        await ref.read(authServiceProvider).signInWithGoogle();
+      } catch (error) {
+        _showError(authErrorMessage(error));
+      }
+    });
+  }
+
+  Future<void> _continueWithFacebook() async {
+    await runBusyAction(() async {
+      setState(() => _message = null);
+      try {
+        await ref.read(authServiceProvider).signInWithFacebook();
+      } catch (error) {
+        _showError(authErrorMessage(error));
+      }
+    });
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _message = message;
+      _messageIsError = true;
+    });
+  }
+
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     await runBusyAction(() async {
       setState(() => _message = null);
       try {
@@ -333,94 +389,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         }
         if (mounted) setState(() => _submitted = true);
       } catch (error) {
-        if (mounted) {
-          setState(() {
-            _message = authErrorMessage(error);
-            _messageIsError = true;
-          });
-        }
+        _showError(authErrorMessage(error));
       }
     });
-  }
-}
-
-class _AuthHero extends StatelessWidget {
-  const _AuthHero({
-    required this.icon,
-    required this.badge,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String badge;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: Container(
-            width: 78,
-            height: 78,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: AuthBrand.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: AuthBrand.primary.withValues(alpha: 0.28),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: AuthBrand.onGold, size: 36),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AuthBrand.secondary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: AuthBrand.secondary.withValues(alpha: 0.18),
-              ),
-            ),
-            child: Text(
-              badge,
-              style: const TextStyle(
-                color: AuthBrand.secondary,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -432,8 +403,8 @@ class _PasswordStrengthIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = _score(password);
-    final labels = ['Too weak', 'Weak', 'Okay', 'Strong', 'Excellent'];
-    final colors = [
+    const labels = ['Too weak', 'Weak', 'Okay', 'Strong', 'Excellent'];
+    const colors = [
       AuthBrand.danger,
       AuthBrand.primaryDeep,
       AuthBrand.primary,
@@ -453,9 +424,9 @@ class _PasswordStrengthIndicator extends StatelessWidget {
                 padding: EdgeInsets.only(right: i == 3 ? 0 : 6),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: 6,
+                  height: 5,
                   decoration: BoxDecoration(
-                    color: active ? color : AuthBrand.panelBorder,
+                    color: active ? color : AuthBrand.fieldBorder,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -463,16 +434,17 @@ class _PasswordStrengthIndicator extends StatelessWidget {
             );
           }),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 7),
         Row(
           children: [
             Icon(Icons.shield_outlined, color: color, size: 14),
             const SizedBox(width: 6),
             Text(
               'Password strength: $label',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w800,
+              style: const TextStyle(
+                color: AuthBrand.panelMuted,
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
               ),
             ),
           ],
@@ -505,71 +477,93 @@ class _PrimaryActionButton extends StatelessWidget {
     required this.icon,
     required this.label,
     this.isBusy = false,
-    this.busyLabel,
   });
 
   final VoidCallback? onPressed;
   final IconData icon;
   final String label;
   final bool isBusy;
-  final String? busyLabel;
 
   @override
   Widget build(BuildContext context) {
     final disabled = isBusy || onPressed == null;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AuthBrand.buttonRadius,
       child: Ink(
+        height: 58,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          gradient: disabled
-              ? const LinearGradient(
-                  colors: [Color(0xFF2A2A22), Color(0xFF262621)],
-                )
-              : AuthBrand.gradient,
+          borderRadius: AuthBrand.buttonRadius,
+          gradient: disabled ? null : AuthBrand.gradient,
+          color: disabled ? AuthBrand.buttonDisabled : null,
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: AuthBrand.primary.withValues(alpha: 0.28),
-                    blurRadius: 20,
+                    color: AuthBrand.buttonGlow.withValues(alpha: .38),
+                    blurRadius: 22,
                     offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: AuthBrand.buttonGlow.withValues(alpha: .20),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ],
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AuthBrand.buttonRadius,
           onTap: disabled ? null : onPressed,
           child: SizedBox(
-            height: 54,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            height: 58,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  isBusy ? (busyLabel ?? 'Sending...') : label,
-                  style: TextStyle(
-                    color: disabled
-                        ? Colors.white.withValues(alpha: 0.5)
-                        : AuthBrand.onGold,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                    letterSpacing: 0.2,
+                if (!disabled)
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: AuthBrand.buttonSheen,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                isBusy
-                    ? SizedBox(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isBusy)
+                      const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: disabled
-                              ? Colors.white.withValues(alpha: 0.5)
-                              : AuthBrand.primaryDeep,
+                          color: AuthBrand.onGradient,
                         ),
                       )
-                    : Icon(icon, color: AuthBrand.onGold, size: 20),
+                    else
+                      Icon(
+                        icon,
+                        color: AuthBrand.onGradient.withValues(
+                          alpha: disabled ? .45 : 1,
+                        ),
+                        size: 20,
+                      ),
+                    const SizedBox(width: 10),
+                    Text(
+                      isBusy ? 'Creating account...' : label,
+                      style: AppType.heading(
+                        TextStyle(
+                          color: AuthBrand.onGradient.withValues(
+                            alpha: disabled ? .5 : 1,
+                          ),
+                          fontSize: 16,
+                          letterSpacing: .5,
+                        ),
+                        locale: Localizations.localeOf(context),
+                        weight: AppType.buttonWeight,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -592,9 +586,9 @@ class _MessageBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.14),
+        color: tone.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: tone.withValues(alpha: 0.38)),
+        border: Border.all(color: tone.withValues(alpha: .25)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,10 +602,11 @@ class _MessageBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: TextStyle(
                 color: tone,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
+                fontSize: 13.5,
               ),
             ),
           ),
@@ -631,32 +626,24 @@ class _VerificationNotice extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: AuthBrand.panelBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AuthBrand.panelBorder),
-        boxShadow: [
-          BoxShadow(
-            color: AuthBrand.shadow.withValues(alpha: 0.06),
-            blurRadius: 28,
-            spreadRadius: -8,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        color: AuthBrand.fieldFill,
+        borderRadius: AuthBrand.panelRadius,
+        border: Border.all(color: AuthBrand.fieldBorder),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
             child: Container(
-              width: 78,
-              height: 78,
+              width: 68,
+              height: 68,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
+                shape: BoxShape.circle,
                 color: AuthBrand.primary,
                 boxShadow: [
                   BoxShadow(
-                    color: AuthBrand.primary.withValues(alpha: 0.28),
+                    color: AuthBrand.primary.withValues(alpha: .28),
                     blurRadius: 18,
                     offset: const Offset(0, 10),
                   ),
@@ -664,27 +651,28 @@ class _VerificationNotice extends StatelessWidget {
               ),
               child: const Icon(
                 Icons.mark_email_read_outlined,
-                color: AuthBrand.onGold,
-                size: 36,
+                color: Colors.white,
+                size: 32,
               ),
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Verify your email',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.3,
+            style: TextStyle(
+              color: AuthBrand.panelText,
+              fontSize: 22,
+              letterSpacing: -.4,
             ),
           ),
           const SizedBox(height: 10),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          Text.rich(
+            TextSpan(
+              style: TextStyle(
                 color: colors.onSurface,
-                height: 1.4,
+                height: 1.45,
+                fontSize: 13.5,
               ),
               children: [
                 const TextSpan(text: 'We sent a verification email to\n'),
@@ -698,20 +686,21 @@ class _VerificationNotice extends StatelessWidget {
                 ),
               ],
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AuthBrand.secondary.withValues(alpha: 0.06),
+              color: AuthBrand.secondary.withValues(alpha: .06),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AuthBrand.secondary.withValues(alpha: 0.18),
+                color: AuthBrand.secondary.withValues(alpha: .18),
               ),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.tips_and_updates_outlined,
                   color: AuthBrand.secondary,
                   size: 18,
@@ -719,10 +708,11 @@ class _VerificationNotice extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Tip: check your spam folder if you don\'t see the email.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    "Tip: check your spam folder if you don't see the email.",
+                    style: const TextStyle(
                       color: AuthBrand.secondary,
                       fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
                     ),
                   ),
                 ),

@@ -8,6 +8,8 @@ import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/app/app_providers.dart';
+import '../../../core/constants/shop_category_templates.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/action_button.dart';
@@ -38,21 +40,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   final _stockQty = TextEditingController();
   final _lowStock = TextEditingController();
   DateTime? _expiryDate;
+  final _batchNumber = TextEditingController();
+  final _sku = TextEditingController();
+  final _variantName = TextEditingController();
   String _selectedCategory = 'Grocery';
   String _selectedUnit = 'pcs';
   String? _imagePath;
   final _picker = ImagePicker();
-
-  static const _categories = [
-    'Grocery',
-    'Beverages',
-    'Personal Care',
-    'Rice',
-    'Dairy',
-    'Meat',
-    'Vegetables',
-    'Health',
-  ];
 
   static const _units = ['pcs', 'kg', 'g', 'L', 'ml', 'dozen', 'box', 'pack'];
 
@@ -67,6 +61,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     _stockQty.text = (product?.stockQty ?? 0).toString();
     _lowStock.text = (product?.lowStockAlert ?? 10).toString();
     _expiryDate = product?.expiryDate;
+    _batchNumber.text = product?.batchNumber ?? '';
+    _sku.text = product?.sku ?? '';
+    _variantName.text = product?.variantName ?? '';
     _selectedCategory = product?.category.isNotEmpty == true
         ? product!.category
         : 'Grocery';
@@ -82,6 +79,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     _sellingPrice.dispose();
     _stockQty.dispose();
     _lowStock.dispose();
+    _batchNumber.dispose();
+    _sku.dispose();
+    _variantName.dispose();
     super.dispose();
   }
 
@@ -452,6 +452,44 @@ const SizedBox(height: 12),
                                     setState(() => _expiryDate = date),
                               ),
                               const SizedBox(height: 12),
+                              _FieldLabel(label: l10n.t('batchNumber')),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _batchNumber,
+                                textCapitalization: TextCapitalization.characters,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.qr_code_2_rounded, size: 20),
+                                  hintText: l10n.t('batchNumberHint'),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _sku,
+                                      textCapitalization: TextCapitalization.characters,
+                                      decoration: InputDecoration(
+                                        prefixIcon: const Icon(Icons.inventory_2_outlined, size: 20),
+                                        labelText: l10n.t('sku'),
+                                        hintText: l10n.t('skuHint'),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _variantName,
+                                      decoration: InputDecoration(
+                                        prefixIcon: const Icon(Icons.tune_rounded, size: 20),
+                                        labelText: l10n.t('variant'),
+                                        hintText: l10n.t('variantHint'),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
@@ -603,9 +641,13 @@ const SizedBox(height: 12),
   }
 
   List<String> _categoryOptions() {
+    final type = ref.read(localDatabaseProvider).settings.get(
+          'profile_businessType',
+        ) as String?;
+    final template = ShopCategoryTemplates.forId(type);
     final categories = <String>[
-      ..._categories,
-      if (!_categories.contains(_selectedCategory) &&
+      ...template.categories,
+      if (!template.categories.contains(_selectedCategory) &&
           _selectedCategory.isNotEmpty)
         _selectedCategory,
     ];
@@ -774,6 +816,9 @@ const SizedBox(height: 12),
               stockQty: int.tryParse(_stockQty.text) ?? 0,
               lowStockAlert: int.tryParse(_lowStock.text) ?? 0,
               expiryDate: _expiryDate,
+              batchNumber: _batchNumber.text.trim(),
+              sku: _sku.text.trim(),
+              variantName: _variantName.text.trim(),
             );
         if (mounted) Navigator.of(context).pop();
       });

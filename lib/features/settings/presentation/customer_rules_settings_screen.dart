@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../customers/providers/customer_providers.dart';
+import '../providers/shop_profile_providers.dart';
 
 class CustomerRulesSettingsScreen extends ConsumerStatefulWidget {
   const CustomerRulesSettingsScreen({super.key});
@@ -15,6 +18,11 @@ class _CustomerRulesSettingsScreenState
     extends ConsumerState<CustomerRulesSettingsScreen> {
   final _vipThresholdCtrl = TextEditingController();
   final _regularThresholdCtrl = TextEditingController();
+  final _offerPointsCtrl = TextEditingController();
+  final _offerPercentCtrl = TextEditingController();
+  final _offerMaxCtrl = TextEditingController();
+  final _offerMinimumCtrl = TextEditingController();
+  bool _offerEnabled = true;
   bool _isSaving = false;
 
   @override
@@ -25,17 +33,48 @@ class _CustomerRulesSettingsScreenState
         (settings.get('customerVipThreshold') as num? ?? 10000).toString();
     _regularThresholdCtrl.text =
         (settings.get('customerRegularThreshold') as num? ?? 1000).toString();
+    _offerEnabled = settings.get('loyaltyOfferEnabled', defaultValue: true) as bool;
+    _offerPointsCtrl.text = (settings.get('loyaltyOfferPoints', defaultValue: 100) as num).toString();
+    _offerPercentCtrl.text = (settings.get('loyaltyOfferPercent', defaultValue: 5) as num).toString();
+    _offerMaxCtrl.text = (settings.get('loyaltyOfferMaxDiscount', defaultValue: 100) as num).toString();
+    _offerMinimumCtrl.text = (settings.get('loyaltyOfferMinimumPurchase', defaultValue: 0) as num).toString();
+    Future<void>(() async {
+      try {
+        final profile = await ref.read(shopProfileProvider.future);
+        if (!mounted || profile == null) return;
+        await settings.put('loyaltyOfferEnabled', profile.loyaltyOfferEnabled);
+        await settings.put('loyaltyOfferPoints', profile.loyaltyOfferPoints);
+        await settings.put('loyaltyOfferPercent', profile.loyaltyOfferPercent);
+        await settings.put('loyaltyOfferMaxDiscount', profile.loyaltyOfferMaxDiscount);
+        await settings.put('loyaltyOfferMinimumPurchase', profile.loyaltyOfferMinimumPurchase);
+        ref.invalidate(loyaltyOfferProvider);
+        setState(() {
+          _offerEnabled = profile.loyaltyOfferEnabled;
+          _offerPointsCtrl.text = '${profile.loyaltyOfferPoints}';
+          _offerPercentCtrl.text = '${profile.loyaltyOfferPercent}';
+          _offerMaxCtrl.text = '${profile.loyaltyOfferMaxDiscount}';
+          _offerMinimumCtrl.text = '${profile.loyaltyOfferMinimumPurchase}';
+        });
+      } catch (_) {
+        // Local settings remain the offline source of truth.
+      }
+    });
   }
 
   @override
   void dispose() {
     _vipThresholdCtrl.dispose();
     _regularThresholdCtrl.dispose();
+    _offerPointsCtrl.dispose();
+    _offerPercentCtrl.dispose();
+    _offerMaxCtrl.dispose();
+    _offerMinimumCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Customer Rules')),
       body: ListView(
@@ -160,6 +199,36 @@ class _CustomerRulesSettingsScreenState
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: _offerEnabled,
+                    onChanged: (value) => setState(() => _offerEnabled = value),
+                    title: Text(l10n.t('loyaltyOfferSettingsTitle'), style: const TextStyle(fontWeight: FontWeight.w900)),
+                    subtitle: Text(l10n.t('loyaltyOfferSettingsSubtitle')),
+                  ),
+                  const SizedBox(height: 8),
+                  _FieldLabel(label: l10n.t('loyaltyOfferPointsLabel')),
+                  TextFormField(controller: _offerPointsCtrl, keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  _FieldLabel(label: l10n.t('loyaltyOfferPercentLabel')),
+                  TextFormField(controller: _offerPercentCtrl, keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  _FieldLabel(label: l10n.t('loyaltyOfferMaxLabel')),
+                  TextFormField(controller: _offerMaxCtrl, keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  _FieldLabel(label: l10n.t('loyaltyOfferMinimumLabel')),
+                  TextFormField(controller: _offerMinimumCtrl, keyboardType: TextInputType.number),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -180,11 +249,39 @@ class _CustomerRulesSettingsScreenState
       );
       return;
     }
+    final points = int.tryParse(_offerPointsCtrl.text.trim());
+    final percent = double.tryParse(_offerPercentCtrl.text.trim());
+    final maxDiscount = double.tryParse(_offerMaxCtrl.text.trim());
+    final minimumPurchase = double.tryParse(_offerMinimumCtrl.text.trim());
+    if (points == null || points <= 0 || percent == null || percent < 0 || percent > 100 ||
+        maxDiscount == null || maxDiscount < 0 || minimumPurchase == null || minimumPurchase < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).t('loyaltyOfferInvalid'))),
+      );
+      return;
+    }
     final settings = ref.read(localDatabaseProvider).settings;
     setState(() => _isSaving = true);
     try {
       await settings.put('customerVipThreshold', vip);
       await settings.put('customerRegularThreshold', regular);
+      await settings.put('loyaltyOfferEnabled', _offerEnabled);
+      await settings.put('loyaltyOfferPoints', points);
+      await settings.put('loyaltyOfferPercent', percent);
+      await settings.put('loyaltyOfferMaxDiscount', maxDiscount);
+      await settings.put('loyaltyOfferMinimumPurchase', minimumPurchase);
+      ref.invalidate(loyaltyOfferProvider);
+      try {
+        await ref.read(shopProfileServiceProvider).updateLoyaltyOffer(
+              enabled: _offerEnabled,
+              pointsRequired: points,
+              discountPercent: percent,
+              maxDiscount: maxDiscount,
+              minimumPurchase: minimumPurchase,
+            );
+      } catch (_) {
+        // Preserve the local rule and retry when the owner saves again online.
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

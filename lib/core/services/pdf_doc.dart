@@ -12,6 +12,8 @@ class DocCompany {
     this.address = '',
     this.phone = '',
     this.email = '',
+    this.tin = '',
+    this.bin = '',
   });
 
   final String name;
@@ -19,13 +21,19 @@ class DocCompany {
   final String address;
   final String phone;
   final String email;
+  final String tin;
+  final String bin;
 
   factory DocCompany.fromShop(ShopProfile? shop) => DocCompany(
-        name: AppConstants.appName,
+        name: (shop?.shopName ?? '').trim().isEmpty
+            ? AppConstants.appName
+            : shop!.shopName.trim(),
         tagline: 'Smart POS & Inventory Management',
         address: (shop?.location ?? '').trim(),
         phone: (shop?.phoneNumber ?? '').trim(),
         email: (shop?.ownerEmail ?? '').trim(),
+        tin: (shop?.tin ?? '').trim(),
+        bin: (shop?.bin ?? '').trim(),
       );
 }
 
@@ -86,6 +94,8 @@ pw.Widget buildCompanyColumn(DocCompany company) {
           company.email,
           style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
         ),
+      if (company.tin.isNotEmpty) pw.Text('TIN: ${company.tin}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+      if (company.bin.isNotEmpty) pw.Text('BIN: ${company.bin}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
     ],
   );
 }

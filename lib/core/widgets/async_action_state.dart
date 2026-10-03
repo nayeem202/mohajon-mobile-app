@@ -20,6 +20,6 @@ mixin AsyncActionState<T extends StatefulWidget> on State<T> {
   }
 
   Widget withLoadingOverlay(Widget child, {String label = 'Please wait...'}) {
-    return LoadingOverlay(child: child, loading: _busy, label: label);
+    return LoadingOverlay(loading: _busy, label: label, child: child);
   }
 }

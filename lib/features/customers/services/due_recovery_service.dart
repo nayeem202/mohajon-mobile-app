@@ -20,12 +20,22 @@ class DueFollowUp {
     required this.channel,
     required this.createdAt,
     this.note = '',
+    this.status = 'opened',
+    this.statusChangedAt,
+    this.failureReason = '',
+    this.providerMessageId = '',
   });
 
   final String id;
   final DueFollowUpChannel channel;
   final DateTime createdAt;
   final String note;
+  final DateTime? statusChangedAt;
+  final String failureReason;
+  final String providerMessageId;
+  /// Local launch status. WhatsApp/SMS deep links cannot confirm delivery;
+  /// they only confirm that the handoff to the external app succeeded.
+  final String status;
 
   factory DueFollowUp.fromJson(Map<dynamic, dynamic> json) => DueFollowUp(
         id: (json['id'] ?? '') as String,
@@ -36,6 +46,12 @@ class DueFollowUp {
         createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
             DateTime.now(),
         note: (json['note'] ?? '') as String,
+        status: (json['status'] ?? 'opened') as String,
+        statusChangedAt: json['statusChangedAt'] == null
+            ? null
+            : DateTime.tryParse(json['statusChangedAt'].toString()),
+        failureReason: (json['failureReason'] ?? '') as String,
+        providerMessageId: (json['providerMessageId'] ?? '') as String,
       );
 
   Map<String, dynamic> toJson() => {
@@ -43,7 +59,29 @@ class DueFollowUp {
         'channel': channel.name,
         'createdAt': createdAt.toIso8601String(),
         'note': note,
+        'status': status,
+        'statusChangedAt': statusChangedAt?.toIso8601String(),
+        'failureReason': failureReason,
+        'providerMessageId': providerMessageId,
       };
+
+  DueFollowUp copyWith({
+    String? status,
+    DateTime? statusChangedAt,
+    String? failureReason,
+    String? providerMessageId,
+  }) {
+    return DueFollowUp(
+      id: id,
+      channel: channel,
+      createdAt: createdAt,
+      note: note,
+      status: status ?? this.status,
+      statusChangedAt: statusChangedAt ?? this.statusChangedAt,
+      failureReason: failureReason ?? this.failureReason,
+      providerMessageId: providerMessageId ?? this.providerMessageId,
+    );
+  }
 }
 
 class DueRecoveryPlan {
@@ -51,11 +89,13 @@ class DueRecoveryPlan {
     this.promisedPaymentDate,
     this.snoozedUntil,
     this.followUps = const [],
+    this.updatedAt,
   });
 
   final DateTime? promisedPaymentDate;
   final DateTime? snoozedUntil;
   final List<DueFollowUp> followUps;
+  final DateTime? updatedAt;
 
   bool get isSnoozed =>
       snoozedUntil != null && snoozedUntil!.isAfter(DateTime.now());
@@ -65,6 +105,7 @@ class DueRecoveryPlan {
     return DueRecoveryPlan(
       promisedPaymentDate: DueRecoveryService._date(json['promisedPaymentDate']),
       snoozedUntil: DueRecoveryService._date(json['snoozedUntil']),
+      updatedAt: DueRecoveryService._date(json['updatedAt']),
       followUps: rawFollowUps is List
           ? rawFollowUps
               .whereType<Map>()
@@ -77,6 +118,7 @@ class DueRecoveryPlan {
   Map<String, dynamic> toJson() => {
         'promisedPaymentDate': promisedPaymentDate?.toIso8601String(),
         'snoozedUntil': snoozedUntil?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
         'followUps': followUps.map((item) => item.toJson()).toList(),
       };
 
@@ -84,6 +126,7 @@ class DueRecoveryPlan {
     Object? promisedPaymentDate = _keep,
     Object? snoozedUntil = _keep,
     List<DueFollowUp>? followUps,
+    Object? updatedAt = _keep,
   }) {
     return DueRecoveryPlan(
       promisedPaymentDate: identical(promisedPaymentDate, _keep)
@@ -93,6 +136,9 @@ class DueRecoveryPlan {
           ? this.snoozedUntil
           : snoozedUntil as DateTime?,
       followUps: followUps ?? this.followUps,
+      updatedAt: identical(updatedAt, _keep)
+          ? this.updatedAt
+          : updatedAt as DateTime?,
     );
   }
 }
@@ -132,14 +178,15 @@ class DueRecoveryService {
   }
 
   Future<void> savePlan(String customerId, DueRecoveryPlan plan) async {
-    await _db.settings.put(_key(customerId), plan.toJson());
+    final timestamped = plan.copyWith(updatedAt: DateTime.now());
+    await _db.settings.put(_key(customerId), timestamped.toJson());
     if (!await isConnected()) return;
     try {
       await _api.put(
         '/api/v1/customers/$customerId/due-recovery',
         {
-          'promisedPaymentDate': plan.promisedPaymentDate?.toIso8601String(),
-          'snoozedUntil': plan.snoozedUntil?.toIso8601String(),
+          'promisedPaymentDate': timestamped.promisedPaymentDate?.toIso8601String(),
+          'snoozedUntil': timestamped.snoozedUntil?.toIso8601String(),
         },
       );
     } catch (_) {
@@ -167,6 +214,9 @@ class DueRecoveryService {
     required String customerId,
     required DueFollowUpChannel channel,
     String note = '',
+    String status = 'opened',
+    String failureReason = '',
+    String providerMessageId = '',
   }) async {
     final current = getPlan(customerId);
     final item = DueFollowUp(
@@ -174,6 +224,10 @@ class DueRecoveryService {
       channel: channel,
       createdAt: DateTime.now(),
       note: note.trim(),
+      status: status,
+      statusChangedAt: DateTime.now(),
+      failureReason: failureReason.trim(),
+      providerMessageId: providerMessageId.trim(),
     );
     await savePlan(
       customerId,
@@ -187,11 +241,52 @@ class DueRecoveryService {
             'id': item.id,
             'channel': channel.name,
             'note': note.trim(),
+            'status': status,
+            'failureReason': failureReason.trim(),
+            'providerMessageId': providerMessageId.trim(),
           },
         );
       } catch (_) {
         // Local history is retained until the next explicit refresh.
       }
+    }
+  }
+
+  Future<void> updateFollowUpStatus({
+    required String customerId,
+    required String followUpId,
+    required String status,
+    String failureReason = '',
+    String providerMessageId = '',
+  }) async {
+    const allowed = {'queued', 'sent', 'delivered', 'opened', 'failed'};
+    final normalized = status.trim().toLowerCase();
+    if (!allowed.contains(normalized)) {
+      throw StateError('Unsupported follow-up status.');
+    }
+    final current = getPlan(customerId);
+    final index = current.followUps.indexWhere((item) => item.id == followUpId);
+    if (index < 0) throw StateError('Follow-up was not found.');
+    final updated = current.followUps[index].copyWith(
+      status: normalized,
+      statusChangedAt: DateTime.now(),
+      failureReason: failureReason.trim(),
+      providerMessageId: providerMessageId.trim(),
+    );
+    final followUps = [...current.followUps]..[index] = updated;
+    await savePlan(customerId, current.copyWith(followUps: followUps));
+    if (!await isConnected()) return;
+    try {
+      await _api.patch(
+        '/api/v1/customers/$customerId/due-recovery/follow-ups/$followUpId/status',
+        {
+          'status': normalized,
+          'failureReason': failureReason.trim(),
+          'providerMessageId': providerMessageId.trim(),
+        },
+      );
+    } catch (_) {
+      // The local status remains the offline source of truth until refresh.
     }
   }
 
@@ -201,25 +296,30 @@ class DueRecoveryService {
   Future<void> refreshFromServer(String customerId) async {
     if (!await isConnected()) return;
     final hasLocal = _db.settings.containsKey(_key(customerId));
-    final local = getPlan(customerId);
-    try {
-      final remote = await _api.get(
-        '/api/v1/customers/$customerId/due-recovery',
-      );
-      if (!hasLocal) {
+      final local = getPlan(customerId);
+      try {
+        final remote = await _api.get(
+          '/api/v1/customers/$customerId/due-recovery',
+        );
+        if (!hasLocal) {
         await _db.settings.put(
           _key(customerId),
           DueRecoveryPlan.fromJson(remote).toJson(),
         );
-        return;
+          return;
+        }
+      final remoteUpdatedAt = _date(remote['updatedAt']);
+      final localIsStale = remoteUpdatedAt != null &&
+          (local.updatedAt == null || remoteUpdatedAt.isAfter(local.updatedAt!));
+      if (!localIsStale) {
+        await _api.put(
+          '/api/v1/customers/$customerId/due-recovery',
+          {
+            'promisedPaymentDate': local.promisedPaymentDate?.toIso8601String(),
+            'snoozedUntil': local.snoozedUntil?.toIso8601String(),
+          },
+        );
       }
-      await _api.put(
-        '/api/v1/customers/$customerId/due-recovery',
-        {
-          'promisedPaymentDate': local.promisedPaymentDate?.toIso8601String(),
-          'snoozedUntil': local.snoozedUntil?.toIso8601String(),
-        },
-      );
       for (final item in local.followUps) {
         await _api.post(
           '/api/v1/customers/$customerId/due-recovery/follow-ups',
@@ -227,6 +327,9 @@ class DueRecoveryService {
             'id': item.id,
             'channel': item.channel.name,
             'note': item.note,
+            'status': item.status,
+            'failureReason': item.failureReason,
+            'providerMessageId': item.providerMessageId,
           },
         );
       }

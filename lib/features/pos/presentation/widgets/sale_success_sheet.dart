@@ -15,12 +15,14 @@ class SaleSuccessSheet extends StatelessWidget {
     required this.onSave,
     this.whatsappPhone,
     required this.whatsappMessage,
+    this.onDigitalInvoice,
   });
 
   final VoidCallback onPrint;
   final VoidCallback onSave;
   final String? whatsappPhone;
   final String whatsappMessage;
+  final Future<void> Function()? onDigitalInvoice;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +98,25 @@ class SaleSuccessSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
+          if (onDigitalInvoice != null)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: onDigitalInvoice,
+                icon: const Icon(Icons.link_rounded, size: 19),
+                label: Text(
+                  l10n.t('shareDigitalInvoice'),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: MohajonWarm.green,
+                  side: const BorderSide(color: MohajonWarm.green),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          if (onDigitalInvoice != null) const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             height: 48,

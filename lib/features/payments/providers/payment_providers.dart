@@ -6,12 +6,17 @@ import '../../../core/models/payment.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/services/audit_service.dart';
 import '../../notifications/models/notification_model.dart';
 import '../../notifications/providers/notification_providers.dart';
+import '../../branches/providers/branch_providers.dart';
 
 final paymentsProvider = StreamProvider<List<Payment>>((ref) {
   final shopId = ref.watch(shopIdProvider);
-  return ref.watch(localDatabaseProvider).payments.watchForShop(shopId);
+  final branchId = ref.watch(currentBranchIdProvider) ?? '$shopId-main';
+  return ref.watch(localDatabaseProvider).payments.watchForShop(shopId).map(
+        (payments) => payments.where((payment) => payment.branchId == null || payment.branchId == branchId).toList(),
+      );
 });
 
 final paymentServiceProvider = Provider<PaymentService>((ref) {
@@ -60,11 +65,14 @@ class PaymentService {
         syncStatus: SyncStatus.pending,
       ));
     }
+    final paymentId = _uuid.v4();
     await db.payments.put(
           Payment(
-            paymentId: _uuid.v4(),
+            paymentId: paymentId,
             customerId: customerId,
             saleId: saleId,
+            staffId: _ref.read(currentUserProvider)?.userId,
+            branchId: db.settings.get('activeBranchId') as String? ?? '$shopId-main',
             amount: amountRounded,
             paymentMethod: method,
             shopId: shopId,
@@ -78,6 +86,17 @@ class PaymentService {
           title: 'Payment received',
           message: '৳${amountRounded.toStringAsFixed(2)} payment recorded.',
           sourceKey: 'payment:${now.microsecondsSinceEpoch}',
+        );
+    await _ref.read(auditServiceProvider).record(
+          action: 'PAYMENT_RECORDED',
+          entityType: 'payment',
+          entityId: paymentId,
+          details: {
+            'amount': amountRounded,
+            'method': method.value,
+            'customerId': customerId,
+            'saleId': saleId,
+          },
         );
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
   }

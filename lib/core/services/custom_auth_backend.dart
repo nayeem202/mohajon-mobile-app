@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart' show debugPrint, debugPrintStack;
+import 'package:flutter/foundation.dart'
+    show debugPrint, debugPrintStack, kIsWeb;
+import 'package:flutter/services.dart' show PlatformException;
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
@@ -40,6 +43,16 @@ class CustomAuthBackend implements AuthBackend {
 
   static const _googleServerClientId =
       '273885941339-5eigr18p3tp5lt8h5ait4k2ae5oi6lbl.apps.googleusercontent.com';
+
+  /// Facebook App ID from the Meta developer console (Settings > Basic), passed
+  /// in at build time with `--dart-define=FACEBOOK_APP_ID=...`.
+  ///
+  /// Left blank, Facebook sign-in reports that it is not configured instead of
+  /// letting the native SDK fail with an error the user cannot act on. The same
+  /// value has to reach the Android manifest for the native SDK to initialise,
+  /// so it is declared in one place here and mirrored in
+  /// `android/app/src/main/AndroidManifest.xml`.
+  static const _facebookAppId = String.fromEnvironment('FACEBOOK_APP_ID');
 
   static const _kAccessToken = 'auth_access_token';
   static const _kRefreshToken = 'auth_refresh_token';
@@ -203,6 +216,83 @@ class CustomAuthBackend implements AuthBackend {
         'Google sign-in failed: ${error.description ?? error.code.name}',
         code: error.code.name,
       );
+    }
+  }
+
+  @override
+  Future<AuthSession> signInWithFacebook() async {
+    if (_facebookAppId.isEmpty) {
+      throw const AuthException(
+        'Facebook sign-in is not configured in this build. '
+        'Add a Facebook App ID to enable it.',
+        code: 'FACEBOOK_NOT_CONFIGURED',
+      );
+    }
+    final token = await _requestFacebookToken();
+    if (token == null) {
+      // The user closed the Facebook dialog. Treated as a cancellation rather
+      // than an error, so no scary message appears for an intentional exit.
+      throw const AuthException(
+        'Facebook sign-in was cancelled.',
+        code: 'FACEBOOK_CANCELLED',
+      );
+    }
+    final session = await _deviceSessionService.currentSession();
+    final response = await _post('/api/v1/auth/facebook', {
+      'accessToken': token,
+      'deviceId': session.sessionId,
+      'deviceName': session.deviceName,
+    });
+    return _handleTokenResponse(response);
+  }
+
+  /// Returns a Facebook user access token, or null when the user dismissed the
+  /// login dialog. The native SDK owns the token lifecycle, so the token is
+  /// requested fresh each time rather than cached.
+  Future<String?> _requestFacebookToken() async {
+    final facebookAuth = FacebookAuth.instance;
+    // Only the web build needs the JavaScript SDK primed by hand; on Android
+    // the native SDK starts itself from the manifest configuration.
+    if (kIsWeb) {
+      await facebookAuth.webAndDesktopInitialize(
+        appId: _facebookAppId,
+        cookie: true,
+        xfbml: false,
+        version: 'v21.0',
+      );
+    }
+
+    LoginResult result;
+    try {
+      result = await facebookAuth.login();
+    } on PlatformException catch (error) {
+      // The plugin reports cancellations and failures as platform exceptions;
+      // its own converter turns them back into the same result shape.
+      result = LoginResult.getResultFromException(error);
+    }
+
+    switch (result.status) {
+      case LoginStatus.success:
+        final token = result.accessToken?.tokenString;
+        if (token == null || token.isEmpty) {
+          throw const AuthException(
+            'Facebook did not return a usable session. Please try again.',
+            code: 'FACEBOOK_NO_TOKEN',
+          );
+        }
+        return token;
+      case LoginStatus.cancelled:
+        return null;
+      case LoginStatus.operationInProgress:
+        throw const AuthException(
+          'Facebook sign-in is already in progress.',
+          code: 'FACEBOOK_BUSY',
+        );
+      case LoginStatus.failed:
+        throw AuthException(
+          result.message ?? 'Facebook sign-in failed. Please try again.',
+          code: 'FACEBOOK_FAILED',
+        );
     }
   }
 
@@ -443,19 +533,22 @@ class CustomAuthBackend implements AuthBackend {
     await TokenStore.put(_kRefreshToken, refresh);
     final user = data['user'];
     if (user is Map<String, dynamic>) {
-      await TokenStore.put(_kSession, jsonEncode({
-        'userId': (user['userId'] ?? '') as String,
-        'email': (user['email'] ?? '') as String,
-        'displayName': (user['displayName'] ?? '') as String,
-        'phone': (user['phoneNumber'] ?? '') as String,
-        'photoUrl': (user['photoUrl'] ?? '') as String,
-        'emailVerified': (user['emailVerified'] ?? false) as bool,
-        'isNewUser': (user['isNewUser'] ?? false) as bool,
-        'provider': (user['provider'] ?? 'local') as String,
-        'roles':
-            (user['roles'] as List?)?.map((e) => e.toString()).toList() ??
-            const [],
-      }));
+      await TokenStore.put(
+        _kSession,
+        jsonEncode({
+          'userId': (user['userId'] ?? '') as String,
+          'email': (user['email'] ?? '') as String,
+          'displayName': (user['displayName'] ?? '') as String,
+          'phone': (user['phoneNumber'] ?? '') as String,
+          'photoUrl': (user['photoUrl'] ?? '') as String,
+          'emailVerified': (user['emailVerified'] ?? false) as bool,
+          'isNewUser': (user['isNewUser'] ?? false) as bool,
+          'provider': (user['provider'] ?? 'local') as String,
+          'roles':
+              (user['roles'] as List?)?.map((e) => e.toString()).toList() ??
+              const [],
+        }),
+      );
     }
     _sessionController.add(_sessionFromHive());
   }

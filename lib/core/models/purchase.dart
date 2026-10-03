@@ -54,12 +54,16 @@ class PurchaseItem {
     required this.name,
     required this.qty,
     required this.unitCost,
+    this.batchNumber = '',
+    this.expiryDate,
   });
 
   final String productId;
   final String name;
   final double qty;
   final double unitCost;
+  final String batchNumber;
+  final DateTime? expiryDate;
 
   double get lineTotal => qty * unitCost;
 
@@ -68,6 +72,8 @@ class PurchaseItem {
     'name': name,
     'qty': qty,
     'unitCost': unitCost,
+    'batchNumber': batchNumber,
+    'expiryDate': expiryDate == null ? null : dateToJson(expiryDate!),
   };
 
   factory PurchaseItem.fromJson(Map<dynamic, dynamic> json) => PurchaseItem(
@@ -75,6 +81,8 @@ class PurchaseItem {
     name: (json['name'] ?? '') as String,
     qty: (json['qty'] as num? ?? 0).toDouble(),
     unitCost: (json['unitCost'] as num? ?? 0).toDouble(),
+    batchNumber: (json['batchNumber'] ?? '') as String,
+    expiryDate: json['expiryDate'] == null ? null : dateFromJson(json['expiryDate']),
   );
 }
 
@@ -86,6 +94,8 @@ class Purchase with Syncable {
     required this.totalAmount,
     required this.paidAmount,
     required this.shopId,
+    this.branchId,
+    this.staffId,
     required this.createdAt,
     required this.updatedAt,
     this.isDeleted = false,
@@ -99,6 +109,8 @@ class Purchase with Syncable {
   final double paidAmount;
   @override
   final String shopId;
+  final String? branchId;
+  final String? staffId;
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
@@ -119,6 +131,8 @@ class Purchase with Syncable {
     'totalAmount': totalAmount,
     'paidAmount': paidAmount,
     'shopId': shopId,
+    'branchId': branchId,
+    'staffId': staffId,
     'createdAt': dateToJson(createdAt),
     'updatedAt': dateToJson(updatedAt),
     'isDeleted': isDeleted,
@@ -137,6 +151,8 @@ class Purchase with Syncable {
     totalAmount: (json['totalAmount'] as num? ?? 0).toDouble(),
     paidAmount: (json['paidAmount'] as num? ?? 0).toDouble(),
     shopId: (json['shopId'] ?? '') as String,
+    branchId: (json['branchId'] ?? '${(json['shopId'] ?? '') as String}-main') as String,
+    staffId: json['staffId'] as String?,
     createdAt: dateFromJson(json['createdAt']),
     updatedAt: dateFromJson(json['updatedAt']),
     isDeleted: json['isDeleted'] == true,

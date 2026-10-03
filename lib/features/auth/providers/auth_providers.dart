@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/services/auth_backend.dart';
@@ -34,6 +36,7 @@ class AuthService {
   static const _kProfilePhone = 'profile_phone';
   static const _kProfileEmail = 'profile_email';
   static const _kProfileUserId = 'profile_userId';
+  static const kProfileBusinessType = 'profile_businessType';
 
   AuthBackend get backend => _ref.read(authBackendProvider);
 
@@ -55,6 +58,7 @@ class AuthService {
     required String email,
     required String mobile,
     required String password,
+    String businessType = 'general',
   }) async {
     if (!backend.isReady) {
       throw const AuthMessageException(
@@ -66,13 +70,14 @@ class AuthService {
       email: email,
       phone: mobile,
       password: password,
-      metadata: {'shopName': shopName.trim()},
+      metadata: {'shopName': shopName.trim(), 'businessType': businessType},
     );
     await _persistSignupProfile(
       shopName: shopName,
       ownerName: ownerName,
       email: email,
       mobile: mobile,
+      businessType: businessType,
     );
   }
 
@@ -84,6 +89,7 @@ class AuthService {
     required String ownerName,
     required String email,
     required String mobile,
+    required String businessType,
   }) async {
     final settings = _ref.read(localDatabaseProvider).settings;
     await Future.wait([
@@ -91,6 +97,7 @@ class AuthService {
       settings.put(_kProfileOwnerName, ownerName.trim()),
       settings.put(_kProfilePhone, mobile.trim()),
       settings.put(_kProfileEmail, email.trim().toLowerCase()),
+      settings.put(kProfileBusinessType, businessType),
     ]);
   }
 
@@ -129,6 +136,16 @@ class AuthService {
     await _establishLocalSession(session);
   }
 
+  Future<void> signInWithFacebook() async {
+    if (!backend.isReady) {
+      throw const AuthMessageException(
+        'Facebook sign-in is not available right now. Please try again later.',
+      );
+    }
+    final session = await backend.signInWithFacebook();
+    await _establishLocalSession(session);
+  }
+
   Future<void> signOut() async {
     final db = _ref.read(localDatabaseProvider);
     final syncService = SyncService(db);
@@ -154,6 +171,8 @@ class AuthService {
       _kProfilePhone,
       _kProfileEmail,
       _kProfileUserId,
+      kProfileBusinessType,
+      'profile_setupComplete',
       'profile_address',
       'profile_imagePath',
     ]);
@@ -235,6 +254,10 @@ class AuthService {
     );
     await db.users.put(appUser);
     _ref.read(currentUserProvider.notifier).state = appUser;
+    // Remembered across sign-outs on purpose: the login screen uses it to tell
+    // a returning customer apart from a first-time one, and "welcome back"
+    // should stop being the greeting for someone who has genuinely been here.
+    Hive.box<dynamic>(HiveBoxes.settings).put('hasSignedInBefore', true);
     await _prepareProfileForSession(session);
     await _fillMissingProfileFromSession(session);
     if (syncNow) {
@@ -263,6 +286,8 @@ class AuthService {
         _kProfileEmail,
         'profile_address',
         'profile_imagePath',
+        kProfileBusinessType,
+        'profile_setupComplete',
       ]);
     }
     await settings.put(_kProfileUserId, session.userId);

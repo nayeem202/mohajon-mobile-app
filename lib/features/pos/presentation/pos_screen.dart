@@ -202,7 +202,10 @@ class _PosScreenState extends ConsumerState<PosScreen>
           product.nameEn.toLowerCase().contains(query) ||
           product.nameBn.toLowerCase().contains(query) ||
           product.category.toLowerCase().contains(query) ||
-          product.barcode.toLowerCase().contains(query);
+          product.barcode.toLowerCase().contains(query) ||
+          product.sku.toLowerCase().contains(query) ||
+          product.variantName.toLowerCase().contains(query) ||
+          product.batchNumber.toLowerCase().contains(query);
       final matchesCategory = _selectedCategory == 'All Products' ||
           product.category == _selectedCategory;
       return matchesQuery && matchesCategory;
@@ -660,7 +663,7 @@ class _ProductCard extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               Text(
-                product.nameEn,
+                product.displayName(Localizations.localeOf(context).languageCode),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(

@@ -4,11 +4,17 @@ import 'package:uuid/uuid.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/purchase.dart';
 import '../../../core/models/syncable.dart';
+import '../models/supplier_return.dart';
 import '../../../features/products/providers/product_providers.dart';
+import '../../../core/services/audit_service.dart';
+import '../../branches/providers/branch_providers.dart';
 
 final purchasesProvider = StreamProvider<List<Purchase>>((ref) {
   final shopId = ref.watch(shopIdProvider);
-  return ref.watch(localDatabaseProvider).purchases.watchForShop(shopId);
+  final branchId = ref.watch(currentBranchIdProvider) ?? '$shopId-main';
+  return ref.watch(localDatabaseProvider).purchases.watchForShop(shopId).map(
+        (items) => items.where((item) => (item.branchId ?? '$shopId-main') == branchId).toList(),
+      );
 });
 
 final purchaseServiceProvider = Provider<PurchaseService>((ref) {
@@ -40,7 +46,7 @@ class PurchaseService {
       if (item.qty <= 0) {
         throw StateError('Quantity must be greater than zero.');
       }
-      if (db.products.getForShop(shopId, item.productId) == null) {
+      if (_ref.read(productServiceProvider).getActiveBranchProduct(item.productId) == null) {
         throw StateError('Product "${item.name}" not found.');
       }
     }
@@ -56,6 +62,8 @@ class PurchaseService {
         totalAmount: total,
         paidAmount: paidAmount,
         shopId: shopId,
+        branchId: db.settings.get('activeBranchId') as String? ?? '$shopId-main',
+        staffId: db.settings.get('activeUserId') as String? ?? 'local-owner',
         createdAt: now,
         updatedAt: now,
         syncStatus: SyncStatus.pending,
@@ -64,6 +72,7 @@ class PurchaseService {
 
     final productService = _ref.read(productServiceProvider);
     final applied = <String, int>{};
+    final receivedBatches = <PurchaseItem>[];
     try {
       for (final item in items) {
         await productService.adjustStock(
@@ -73,6 +82,14 @@ class PurchaseService {
         );
         applied[item.productId] =
             (applied[item.productId] ?? 0) + item.qty.round();
+        await productService.receiveBatch(
+          productId: item.productId,
+          quantity: item.qty.round(),
+          unitCost: item.unitCost,
+          batchNumber: item.batchNumber,
+          expiryDate: item.expiryDate,
+        );
+        receivedBatches.add(item);
       }
     } catch (error) {
       // Roll back stock increments already applied so a partial failure
@@ -88,9 +105,160 @@ class PurchaseService {
           // best-effort rollback; original error takes precedence
         }
       }
+      for (final item in receivedBatches) {
+        try {
+          await productService.reverseReceivedBatch(
+            productId: item.productId,
+            quantity: item.qty.round(),
+            batchNumber: item.batchNumber,
+            expiryDate: item.expiryDate,
+          );
+        } catch (_) {}
+      }
       await db.purchases.remove(shopId, purchaseId);
       rethrow;
     }
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
+  }
+
+  Future<void> receiveOrder({
+    required String orderId,
+    required Map<String, double> quantities,
+    double paidAmount = 0,
+  }) async {
+    final db = _ref.read(localDatabaseProvider);
+    final shopId = _ref.read(shopIdProvider);
+    final branchId = db.settings.get('activeBranchId') as String? ?? '$shopId-main';
+    final order = db.purchaseOrders.valuesForShop(shopId).where((item) =>
+        item.orderId == orderId && (item.branchId ?? '$shopId-main') == branchId).firstOrNull;
+    if (order == null || order.isDeleted) throw StateError('Purchase order not found.');
+    final received = Map<String, double>.from(order.receivedQty);
+    final items = <PurchaseItem>[];
+    for (final item in order.items) {
+      final requested = quantities[item.productId] ?? 0;
+      final already = received[item.productId] ?? 0;
+      final remaining = item.qty - already;
+      if (requested < 0 || requested > remaining) {
+        throw StateError('Received quantity exceeds the remaining order quantity.');
+      }
+      if (requested > 0) {
+        items.add(PurchaseItem(
+          productId: item.productId,
+          name: item.name,
+          qty: requested,
+          unitCost: item.unitCost,
+          batchNumber: item.batchNumber,
+          expiryDate: item.expiryDate,
+        ));
+        received[item.productId] = already + requested;
+      }
+    }
+    if (items.isEmpty) throw StateError('Enter at least one received quantity.');
+    await addPurchase(
+      supplierId: order.supplierId,
+      items: items,
+      paidAmount: paidAmount,
+    );
+    await _ref.read(auditServiceProvider).record(
+          action: 'PURCHASE_RECEIVED',
+          entityType: 'purchase_order',
+          entityId: orderId,
+          details: {'items': items.map((item) => item.toJson()).toList()},
+        );
+    final complete = order.items.every(
+      (item) => (received[item.productId] ?? 0) >= item.qty,
+    );
+    await db.purchaseOrders.put(order.copyWith(
+      receivedQty: received,
+      status: complete ? 'RECEIVED' : 'PARTIALLY_RECEIVED',
+      updatedAt: DateTime.now(),
+      synced: false,
+      syncStatus: SyncStatus.pending,
+    ));
+    await _ref.read(syncStateProvider.notifier).syncIfOnline();
+  }
+
+  Future<SupplierReturn> returnFromOrder({
+    required String orderId,
+    required Map<String, double> quantities,
+    required String reason,
+  }) async {
+    if (reason.trim().length < 3) {
+      throw StateError('Enter a reason for the supplier return.');
+    }
+    final db = _ref.read(localDatabaseProvider);
+    final shopId = _ref.read(shopIdProvider);
+    final branchId = db.settings.get('activeBranchId') as String? ?? '$shopId-main';
+    final order = db.purchaseOrders.valuesForShop(shopId).where((item) =>
+        item.orderId == orderId && (item.branchId ?? '$shopId-main') == branchId).firstOrNull;
+    if (order == null || order.isDeleted) throw StateError('Purchase order not found.');
+    final alreadyReturned = <String, double>{};
+    for (final item in db.supplierReturns.valuesForShop(shopId).where(
+          (item) => (item.branchId ?? '$shopId-main') == branchId,
+        )) {
+      if (item.orderId != orderId || item.isDeleted) continue;
+      for (final returned in item.items) {
+        alreadyReturned[returned.productId] =
+            (alreadyReturned[returned.productId] ?? 0) + returned.qty;
+      }
+    }
+    final items = <SupplierReturnItem>[];
+    for (final item in order.items) {
+      final qty = quantities[item.productId] ?? 0;
+      final received = order.receivedQty[item.productId] ?? 0;
+      final available = received - (alreadyReturned[item.productId] ?? 0);
+      if (!qty.isFinite || qty < 0 || qty != qty.floorToDouble() || qty > available) {
+        throw StateError('Return quantity exceeds received quantity.');
+      }
+      if (!item.unitCost.isFinite || item.unitCost < 0) {
+        throw StateError('Supplier return unit cost is invalid.');
+      }
+      if (qty > 0) {
+        items.add(SupplierReturnItem(
+          productId: item.productId,
+          name: item.name,
+          qty: qty,
+          unitCost: item.unitCost,
+        ));
+      }
+    }
+    if (items.isEmpty) throw StateError('Enter at least one return quantity.');
+    for (final item in items) {
+      final product = _ref.read(productServiceProvider).getActiveBranchProduct(item.productId);
+      if (product == null || product.stockQty < item.qty.round()) {
+        throw StateError('${item.name} does not have enough stock to return.');
+      }
+    }
+    for (final item in items) {
+      await _ref.read(productServiceProvider).adjustStock(
+            item.productId,
+            -item.qty.round(),
+            syncAfterSave: false,
+          );
+    }
+    final actor = _ref.read(currentUserProvider);
+    final now = DateTime.now();
+    final result = SupplierReturn(
+      returnId: _uuid.v4(),
+      orderId: orderId,
+      supplierId: order.supplierId,
+      items: items,
+      totalAmount: items.fold<double>(0, (sum, item) => sum + item.qty * item.unitCost),
+      reason: reason.trim(),
+      actorId: actor?.userId ?? 'unknown',
+      shopId: shopId,
+      branchId: branchId,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await db.supplierReturns.put(result);
+    await _ref.read(auditServiceProvider).record(
+          action: 'SUPPLIER_RETURN_CREATED',
+          entityType: 'supplier_return',
+          entityId: result.returnId,
+          details: {'orderId': orderId, 'amount': result.totalAmount, 'reason': reason.trim()},
+        );
+    await _ref.read(syncStateProvider.notifier).syncIfOnline();
+    return result;
   }
 }

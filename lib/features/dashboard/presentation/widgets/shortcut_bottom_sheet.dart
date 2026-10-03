@@ -845,7 +845,7 @@ class _ReorderList extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(22, 4, 22, 22),
       itemCount: selected.length,
       buildDefaultDragHandles: true,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         ref
             .read(selectedShortcutIdsProvider.notifier)
             .reorder(oldIndex, newIndex);

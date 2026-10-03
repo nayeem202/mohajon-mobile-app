@@ -11,6 +11,8 @@ class Customer with Syncable {
     this.notes = '',
     this.imagePath,
     this.totalSpent = 0.0,
+    this.creditLimit = 0.0,
+    this.loyaltyPoints = 0,
     this.tag = '',
     required this.shopId,
     required this.updatedAt,
@@ -26,6 +28,9 @@ class Customer with Syncable {
   final String notes;
   final String? imagePath;
   final double totalSpent;
+  /// Zero means no credit limit configured.
+  final double creditLimit;
+  final int loyaltyPoints;
   final String tag;
   @override
   final String shopId;
@@ -47,6 +52,8 @@ class Customer with Syncable {
     String? notes,
     String? imagePath,
     double? totalSpent,
+    double? creditLimit,
+    int? loyaltyPoints,
     String? tag,
     String? shopId,
     DateTime? updatedAt,
@@ -62,6 +69,8 @@ class Customer with Syncable {
       notes: notes ?? this.notes,
       imagePath: imagePath ?? this.imagePath,
       totalSpent: totalSpent ?? this.totalSpent,
+      creditLimit: creditLimit ?? this.creditLimit,
+      loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       tag: tag ?? this.tag,
       shopId: shopId ?? this.shopId,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -80,6 +89,8 @@ class Customer with Syncable {
     'notes': notes,
     if (imagePath != null) 'imagePath': imagePath,
     'totalSpent': totalSpent,
+    'creditLimit': creditLimit,
+    'loyaltyPoints': loyaltyPoints,
     'tag': tag,
     'shopId': shopId,
     'updatedAt': dateToJson(updatedAt),
@@ -96,6 +107,8 @@ class Customer with Syncable {
     notes: (json['notes'] ?? '') as String,
     imagePath: json['imagePath'] as String?,
     totalSpent: (json['totalSpent'] as num? ?? 0).toDouble(),
+    creditLimit: (json['creditLimit'] as num? ?? 0).toDouble(),
+    loyaltyPoints: (json['loyaltyPoints'] as num? ?? 0).toInt().clamp(0, 1 << 30),
     tag: (json['tag'] ?? '') as String,
     shopId: (json['shopId'] ?? '') as String,
     updatedAt: dateFromJson(json['updatedAt']),

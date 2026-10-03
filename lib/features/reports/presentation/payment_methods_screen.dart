@@ -13,6 +13,7 @@ import '../../../core/widgets/shop_avatar.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../payments/providers/payment_providers.dart';
 import '../../settings/providers/shop_profile_providers.dart';
+import '../../pos/services/sale_return_service.dart';
 import '../models/table_report.dart';
 import '../services/payment_methods_excel_service.dart';
 import '../services/payment_methods_pdf_service.dart';
@@ -56,10 +57,16 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
         !value.isAfter(DateTime(end.year, end.month, end.day, 23, 59, 59));
   }
 
-  ({List<Map<String, Object?>> rows, int paymentCount, double received,
-      ReportTableData table}) _compute() {
+  ({
+    List<Map<String, Object?>> rows,
+    int paymentCount,
+    double received,
+    ReportTableData table,
+  })
+  _compute() {
     final payments = ref.watch(paymentsProvider).value ?? const <Payment>[];
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
+    final returns = ref.watch(saleReturnsProvider).value ?? const [];
 
     final byMethod = <String, Map<String, Object?>>{};
     for (final payment in payments) {
@@ -77,11 +84,20 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
     for (final sale in sales) {
       if (!_inRange(sale.createdAt)) continue;
       final hasCustomer =
-          sale.customerId.isNotEmpty && sale.customerId.toLowerCase() != 'walk_in';
+          sale.customerId.isNotEmpty &&
+          sale.customerId.toLowerCase() != 'walk_in';
       if (!hasCustomer && sale.paidAmount > 0) {
         walkInCount++;
         walkInAmount += sale.paidAmount;
       }
+    }
+    for (final value in returns) {
+      if (!_inRange(value.createdAt) || value.isDeleted) continue;
+      final key = value.refundMethod.toLowerCase();
+      final entry = byMethod.putIfAbsent(key, () {
+        return <String, Object?>{'count': 0, 'amount': 0.0};
+      });
+      entry['amount'] = (entry['amount'] as double) - value.refundAmount;
     }
     if (walkInCount > 0) {
       byMethod['cash_walk_in'] = {
@@ -91,15 +107,20 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
       };
     }
 
-    final rows = byMethod.entries
-        .map((entry) => <String, Object?>{
-              'method': entry.key,
-              'count': entry.value['count'],
-              'amount': entry.value['amount'],
-              'walkIn': entry.value['walkIn'] ?? false,
-            })
-        .toList()
-      ..sort((a, b) => (b['amount'] as double).compareTo(a['amount'] as double));
+    final rows =
+        byMethod.entries
+            .map(
+              (entry) => <String, Object?>{
+                'method': entry.key,
+                'count': entry.value['count'],
+                'amount': entry.value['amount'],
+                'walkIn': entry.value['walkIn'] ?? false,
+              },
+            )
+            .toList()
+          ..sort(
+            (a, b) => (b['amount'] as double).compareTo(a['amount'] as double),
+          );
 
     final paymentCount = rows.fold<int>(
       0,
@@ -155,28 +176,34 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
   }
 
   Future<void> _exportXlsx() => runExport(
-        isXlsx: true,
-        task: () async {
-          final data = _compute();
-          await PaymentMethodsExcelService()
-              .savePaymentMethods(table: data.table, range: _range);
-        },
-        message: AppLocalizations.of(context)
-            .tP('exportedAsXlsx', {'report': AppLocalizations.of(context).t('reportPaymentMethods')}),
+    isXlsx: true,
+    task: () async {
+      final data = _compute();
+      await PaymentMethodsExcelService().savePaymentMethods(
+        table: data.table,
+        range: _range,
       );
+    },
+    message: AppLocalizations.of(context).tP('exportedAsXlsx', {
+      'report': AppLocalizations.of(context).t('reportPaymentMethods'),
+    }),
+  );
 
   Future<void> _exportPdf() => runExport(
-        isXlsx: false,
-        task: () async {
-          final data = _compute();
-          final company =
-              DocCompany.fromShop(ref.read(shopProfileProvider).value);
-          await PaymentMethodsPdfService()
-              .savePaymentMethods(table: data.table, range: _range, company: company);
-        },
-        message: AppLocalizations.of(context)
-            .tP('exportedAsPdf', {'report': AppLocalizations.of(context).t('reportPaymentMethods')}),
+    isXlsx: false,
+    task: () async {
+      final data = _compute();
+      final company = DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      await PaymentMethodsPdfService().savePaymentMethods(
+        table: data.table,
+        range: _range,
+        company: company,
       );
+    },
+    message: AppLocalizations.of(context).tP('exportedAsPdf', {
+      'report': AppLocalizations.of(context).t('reportPaymentMethods'),
+    }),
+  );
 
   IconData _methodIcon(String key) {
     switch (key) {
@@ -215,7 +242,9 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
   }
 
   String _methodLabel(String key) {
-    if (key == 'cash_walk_in') return AppLocalizations.of(context).t('cashWalkIn');
+    if (key == 'cash_walk_in') {
+      return AppLocalizations.of(context).t('cashWalkIn');
+    }
     return PaymentMethodX.parse(key).displayName;
   }
 
@@ -247,144 +276,151 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
             statusBarColor: MohajonWarm.primary,
             statusBarIconBrightness: Brightness.dark,
           ),
-          actions: const [
-            NotificationBell(),
-            SizedBox(width: 6),
-            ShopAvatar(),
-          ],
+          actions: const [NotificationBell(), SizedBox(width: 6), ShopAvatar()],
         ),
         body: DecoratedBox(
           decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             top: false,
             child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: ReportSummaryCard(
-                  label: l10n.t('paymentsLabel'),
-                  value: '${data.paymentCount}',
-                  valueColor: MohajonWarm.goldText,
-                  icon: Icons.payments_rounded,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: l10n.t('paymentsLabel'),
+                        value: '${data.paymentCount}',
+                        valueColor: MohajonWarm.goldText,
+                        icon: Icons.payments_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: l10n.t('receivedLabel'),
+                        value: money(data.received),
+                        valueColor: const Color(0xFF059669),
+                        icon: Icons.call_received_rounded,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ReportSummaryCard(
-                  label: l10n.t('receivedLabel'),
-                  value: money(data.received),
-                  valueColor: const Color(0xFF059669),
-                  icon: Icons.call_received_rounded,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: l10n.t('methodsUsed'),
+                        value: '${data.rows.length}',
+                        valueColor: const Color(0xFFF97316),
+                        icon: Icons.bolt_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: l10n.t('topMethod'),
+                        value: data.rows.isEmpty
+                            ? '—'
+                            : _methodLabel('${data.rows.first['method']}'),
+                        valueColor: const Color(0xFF9A3412),
+                        icon: Icons.emoji_events_outlined,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ReportSummaryCard(
-                  label: l10n.t('methodsUsed'),
-                  value: '${data.rows.length}',
-                  valueColor: const Color(0xFFF97316),
-                  icon: Icons.bolt_rounded,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ReportSummaryCard(
-                  label: l10n.t('topMethod'),
-                  value: data.rows.isEmpty ? '—' : _methodLabel('${data.rows.first['method']}'),
-                  valueColor: const Color(0xFF9A3412),
-                  icon: Icons.emoji_events_outlined,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ReportRangeSelector(
-            range: _range,
-            onPickRange: _pickRange,
-            onThisMonth: () => setState(() => _range = reportMonthRange(DateTime.now())),
-            onLastMonth: () => setState(() => _range = reportPreviousMonthRange(DateTime.now())),
-            onLast30Days: () => setState(() => _range = reportLast30DaysRange(DateTime.now())),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: ReportExportButton(
-                  label: l10n.t('downloadXlsx'),
-                  icon: Icons.table_chart_outlined,
-                  color: const Color(0xFF059669),
-                  isBusy: exportingXlsx,
-                  onTap: _exportXlsx,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ReportExportButton(
-                  label: l10n.t('downloadPdf'),
-                  icon: Icons.picture_as_pdf_rounded,
-                  color: const Color(0xFFF97316),
-                  isBusy: exportingPdf,
-                  onTap: _exportPdf,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.t('collectionsByMethod'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF101828),
+                const SizedBox(height: 14),
+                ReportRangeSelector(
+                  range: _range,
+                  onPickRange: _pickRange,
+                  onThisMonth: () =>
+                      setState(() => _range = reportMonthRange(DateTime.now())),
+                  onLastMonth: () => setState(
+                    () => _range = reportPreviousMonthRange(DateTime.now()),
+                  ),
+                  onLast30Days: () => setState(
+                    () => _range = reportLast30DaysRange(DateTime.now()),
                   ),
                 ),
-              ),
-              Text(
-                l10n.tP('totalWithCount', {'amount': money(data.received)}),
-                style: const TextStyle(
-                  color: Color(0xFF667085),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportExportButton(
+                        label: l10n.t('downloadXlsx'),
+                        icon: Icons.table_chart_outlined,
+                        color: const Color(0xFF059669),
+                        isBusy: exportingXlsx,
+                        onTap: _exportXlsx,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportExportButton(
+                        label: l10n.t('downloadPdf'),
+                        icon: Icons.picture_as_pdf_rounded,
+                        color: const Color(0xFFF97316),
+                        isBusy: exportingPdf,
+                        onTap: _exportPdf,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          for (final row in data.rows) ...[
-            ReportRowTile(
-              icon: _methodIcon('${row['method']}'),
-              iconColor: _methodColor('${row['method']}'),
-              title: _methodLabel('${row['method']}'),
-              subtitle: l10n.tP('xPayments', {'count': '${row['count']}'}),
-              trailing: money(row['amount'] as double),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (data.rows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  l10n.t('noPaymentsInPeriod'),
-                  style: const TextStyle(
-                    color: Color(0xFF98A2B3),
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.t('collectionsByMethod'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF101828),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      l10n.tP('totalWithCount', {
+                        'amount': money(data.received),
+                      }),
+                      style: const TextStyle(
+                        color: Color(0xFF667085),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                for (final row in data.rows) ...[
+                  ReportRowTile(
+                    icon: _methodIcon('${row['method']}'),
+                    iconColor: _methodColor('${row['method']}'),
+                    title: _methodLabel('${row['method']}'),
+                    subtitle: l10n.tP('xPayments', {
+                      'count': '${row['count']}',
+                    }),
+                    trailing: money(row['amount'] as double),
                   ),
-                ),
-              ),
+                  const SizedBox(height: 8),
+                ],
+                if (data.rows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        l10n.t('noPaymentsInPeriod'),
+                        style: const TextStyle(
+                          color: Color(0xFF98A2B3),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
-        ),
-        ),
+          ),
         ),
       ),
     );

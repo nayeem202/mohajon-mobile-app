@@ -9,16 +9,16 @@ import '../../features/profile/presentation/profile_overview_screen.dart';
 import '../../features/investors/presentation/investor_list_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_list_screen.dart';
+import '../../features/staff/presentation/audit_timeline_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/staff/models/menu_codes.dart';
 import '../../features/staff/providers/staff_providers.dart';
 import '../../features/vendors/presentation/vendor_list_screen.dart';
 import '../../features/purchases/presentation/purchase_planner_screen.dart';
-import '../../features/dashboard/presentation/business_coach_screen.dart';
-import '../../features/dashboard/presentation/cashflow_radar_screen.dart';
-import '../../features/dashboard/presentation/business_guardian_screen.dart';
+import '../../features/dashboard/presentation/business_health_screen.dart';
 import '../../features/dashboard/presentation/day_closing_screen.dart';
 import '../../features/dashboard/presentation/customer_growth_screen.dart';
+import '../../features/branches/presentation/branches_screen.dart';
 import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
 import '../theme/mohajon_warm_theme.dart';
@@ -146,13 +146,22 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         itemKey: widget.tourVendorsKey,
       ),
       _FeatureItem(
-        icon: Icons.auto_awesome_rounded,
-        title: l10n.t('featureBusinessCoach'),
-        subtitle: l10n.t('featureBusinessCoachSubtitle'),
+        icon: Icons.account_tree_rounded,
+        title: l10n.t('branches'),
+        subtitle: l10n.t('branchesSubtitle'),
+        color: MohajonWarm.green,
+        background: MohajonWarm.tintGreen,
+        menu: MenuCodes.settings,
+        onTap: () => _open(const BranchesScreen()),
+      ),
+      _FeatureItem(
+        icon: Icons.monitor_heart_rounded,
+        title: l10n.t('businessHealth'),
+        subtitle: l10n.t('businessHealthSubtitle'),
         color: MohajonWarm.ink,
         background: MohajonWarm.tintYellow,
         menu: MenuCodes.reports,
-        onTap: () => _open(const BusinessCoachScreen()),
+        onTap: () => _open(const BusinessHealthScreen()),
       ),
       _FeatureItem(
         icon: Icons.auto_awesome_motion_rounded,
@@ -162,24 +171,6 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         background: MohajonWarm.tintGreen,
         menu: MenuCodes.purchase,
         onTap: () => _open(const PurchasePlannerScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.radar_rounded,
-        title: l10n.t('featureCashflowRadar'),
-        subtitle: l10n.t('featureCashflowRadarSubtitle'),
-        color: MohajonWarm.green,
-        background: MohajonWarm.tintGreen,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const CashflowRadarScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.shield_rounded,
-        title: l10n.t('featureBusinessGuardian'),
-        subtitle: l10n.t('featureBusinessGuardianSubtitle'),
-        color: MohajonWarm.red,
-        background: MohajonWarm.tintRed,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const BusinessGuardianScreen()),
       ),
       _FeatureItem(
         icon: Icons.fact_check_rounded,
@@ -228,6 +219,15 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         menu: MenuCodes.staff,
         onTap: () => _open(const StaffListScreen()),
         itemKey: widget.tourStaffKey,
+      ),
+      _FeatureItem(
+        icon: Icons.history_rounded,
+        title: l10n.t('auditTimeline'),
+        subtitle: l10n.t('noAuditEvents'),
+        color: MohajonWarm.ink,
+        background: MohajonWarm.tintYellow,
+        menu: MenuCodes.reports,
+        onTap: () => _open(const AuditTimelineScreen()),
       ),
     ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
 
@@ -367,9 +367,8 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                         const SizedBox(height: 12),
                         _Entrance(
                           delay: const Duration(milliseconds: 90),
-                          child: _FeatureGrid(
+                          child: _IconFeaturePanel(
                             items: operations,
-                            mainAxisExtent: 144,
                           ),
                         ),
                         const SizedBox(height: 22),
@@ -650,7 +649,7 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              l10n.t('quickActionsSubtitle'),
+              l10n.t('sectionOperationsSubtitle'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -792,6 +791,119 @@ class _FeatureGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) =>
           _PremiumTile(item: items[index], compact: compact),
+    );
+  }
+}
+
+/// Compact, colorful feature launcher inspired by modern mobile wallet hubs.
+/// The panel keeps the More screen scannable while preserving the warm
+/// Mohajon visual language and responsive behavior on narrow phones.
+class _IconFeaturePanel extends StatelessWidget {
+  const _IconFeaturePanel({required this.items});
+
+  final List<_FeatureItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth < 340 ? 3 : 4;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(8, 18, 8, 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.92)),
+            boxShadow: [
+              BoxShadow(
+                color: MohajonWarm.ink.withValues(alpha: 0.07),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 14,
+              mainAxisExtent: 102,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) => _IconFeatureTile(item: items[index]),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _IconFeatureTile extends StatelessWidget {
+  const _IconFeatureTile({required this.item});
+
+  final _FeatureItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = item.destructive ? MohajonWarm.red : item.color;
+    final background = item.background ?? MohajonWarm.tintYellow;
+    return KeyedSubtree(
+      key: item.itemKey,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: item.onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        background,
+                      ],
+                    ),
+                    border: Border.all(color: color.withValues(alpha: 0.12)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.16),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Icon(item.icon, color: color, size: 27),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 11.5,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

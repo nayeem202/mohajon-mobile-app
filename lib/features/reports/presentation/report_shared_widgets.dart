@@ -90,6 +90,7 @@ BoxDecoration reportCardDecoration({double radius = 14}) {
 
 class ReportSummaryCard extends StatelessWidget {
   const ReportSummaryCard({
+    super.key,
     required this.label,
     required this.value,
     required this.valueColor,
@@ -110,15 +111,17 @@ class ReportSummaryCard extends StatelessWidget {
     if (l.contains('profit')) return Icons.trending_up_rounded;
     if (l.contains('revenue') ||
         l.contains('sales') ||
-        l.contains('vatable'))
+        l.contains('vatable')) {
       return Icons.attach_money_rounded;
+    }
     if (l.contains('expense')) return Icons.receipt_long_rounded;
     if (l.contains('pay')) return Icons.payments_rounded;
     if (l.contains('receive')) return Icons.call_received_rounded;
     if (l.contains('method') ||
         l.contains('transaction') ||
-        l.contains('active'))
+        l.contains('active')) {
       return Icons.bolt_rounded;
+    }
     if (l.contains('due') || l.contains('rate')) return Icons.percent_rounded;
     if (l.contains('vat') || l.contains('total')) return Icons.calculate_rounded;
     return Icons.bar_chart_rounded;
@@ -232,6 +235,7 @@ class ReportSummaryCard extends StatelessWidget {
 
 class ReportRangeSelector extends StatelessWidget {
   const ReportRangeSelector({
+    super.key,
     required this.range,
     required this.onPickRange,
     required this.onThisMonth,
@@ -384,6 +388,7 @@ class _PresetChip extends StatelessWidget {
 
 class ReportExportButton extends StatelessWidget {
   const ReportExportButton({
+    super.key,
     required this.label,
     required this.icon,
     required this.color,
@@ -447,6 +452,7 @@ class ReportExportButton extends StatelessWidget {
 
 class ReportRowTile extends StatelessWidget {
   const ReportRowTile({
+    super.key,
     required this.title,
     required this.subtitle,
     required this.trailing,

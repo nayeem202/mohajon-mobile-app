@@ -35,9 +35,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen>
       duration: const Duration(milliseconds: 420),
     )..forward();
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    Future.microtask(
-      () => ref.read(expenseServiceProvider).seedDemoExpenses(),
-    );
   }
 
   @override

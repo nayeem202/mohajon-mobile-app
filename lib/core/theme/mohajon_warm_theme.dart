@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_typography.dart';
+
 /// Shared design tokens extracted from the Home (dashboard) screen so every
 /// main tab feels like one product.
 class MohajonWarm {
@@ -36,13 +38,24 @@ class MohajonWarm {
   );
 
   static ThemeData theme(ThemeData base) {
+    // Only a ThemeData is available here, so the locale comes from the
+    // platform. The root theme has already applied the correct families per
+    // slot, so this re-run is mostly for the styles this file overrides.
+    final locale = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .locales
+        .firstOrNull;
     return base.copyWith(
-      textTheme: base.textTheme.copyWith(
-        bodyLarge: base.textTheme.bodyLarge?.copyWith(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: ink,
+      textTheme: AppType.textTheme(
+        base.textTheme.copyWith(
+          bodyLarge: base.textTheme.bodyLarge?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: ink,
+          ),
         ),
+        locale,
       ),
       colorScheme: base.colorScheme.copyWith(
         primary: primary,
@@ -73,11 +86,22 @@ class MohajonWarm {
           horizontal: 14,
           vertical: 14,
         ),
-        hintStyle: const TextStyle(
-          color: muted,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0,
+        hintStyle: AppType.body(
+          const TextStyle(
+            color: muted,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+          ),
+          locale: locale,
+        ),
+        labelStyle: AppType.body(
+          const TextStyle(
+            color: muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+          locale: locale,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -99,10 +123,9 @@ class MohajonWarm {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: red, width: 1.6),
         ),
-        errorStyle: const TextStyle(
-          color: red,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+        errorStyle: AppType.body(
+          const TextStyle(color: red, fontSize: 11, fontWeight: FontWeight.w500),
+          locale: locale,
         ),
       ),
       floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
@@ -114,11 +137,10 @@ class MohajonWarm {
       dividerTheme: base.dividerTheme.copyWith(
         color: const Color(0xFFF3ECDA),
       ),
-      dropdownMenuTheme: const DropdownMenuThemeData(
-        textStyle: TextStyle(
-          color: ink,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
+      dropdownMenuTheme: DropdownMenuThemeData(
+        textStyle: AppType.body(
+          const TextStyle(color: ink, fontWeight: FontWeight.w500, fontSize: 13),
+          locale: locale,
         ),
       ),
     );

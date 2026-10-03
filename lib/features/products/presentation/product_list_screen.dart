@@ -15,6 +15,7 @@ import '../../../core/widgets/nav_bar/nav_bar_aware_fab_location.dart';
 import '../providers/product_providers.dart';
 import '../services/barcode_label_service.dart';
 import 'product_form_screen.dart';
+import 'stock_adjustment_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../../staff/models/menu_codes.dart';
@@ -104,7 +105,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
                     children: [
-                      const _StockTopBar(),
+                      _StockTopBar(onAdjustmentTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StockAdjustmentScreen()))),
                       const SizedBox(height: 18),
                       _StockStats(
                         totalProducts: items.length,
@@ -214,7 +215,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 }
 
 class _StockTopBar extends StatelessWidget {
-  const _StockTopBar();
+  const _StockTopBar({required this.onAdjustmentTap});
+
+  final VoidCallback onAdjustmentTap;
 
   @override
   Widget build(BuildContext context) {
@@ -272,6 +275,11 @@ class _StockTopBar extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: l10n.t('stockAdjustments'),
+            onPressed: onAdjustmentTap,
+            icon: const Icon(Icons.tune_rounded),
           ),
           const NotificationBell(),
           const SizedBox(width: 14),
@@ -756,7 +764,7 @@ class _InventoryRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    product.nameEn,
+                    product.displayName(Localizations.localeOf(context).languageCode),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -914,7 +922,7 @@ class _InventoryRow extends StatelessWidget {
           [
             BarcodeLabel(
               code: product.barcode,
-              name: product.nameEn,
+              name: product.displayName(Localizations.localeOf(context).languageCode),
               price: product.sellingPrice,
             ),
           ],

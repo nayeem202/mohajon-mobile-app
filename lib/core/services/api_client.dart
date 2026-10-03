@@ -22,6 +22,14 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode, $code): $message';
 }
 
+/// Outcome of a refresh-token exchange, which decides whether the stored
+/// session survives.
+///
+/// The distinction matters: a rejected token is dead forever and the user must
+/// sign in again, while an unreachable auth service says nothing about the
+/// token's validity and must not cost the user their session.
+enum _RefreshOutcome { refreshed, rejected, unreachable }
+
 /// HTTP client for the Haalkhata business service.
 ///
 /// Attaches the stored JWT access token, transparently refreshes it when a
@@ -87,10 +95,8 @@ class ApiClient {
     var response = await client
         .get(_uri(path, query), headers: _headers())
         .timeout(timeout ?? _timeout);
-    if ((response.statusCode == 401 || response.statusCode == 403) &&
-        TokenStore.get(_kRefreshToken) != null) {
-      final refreshed = await _tryRefresh();
-      if (refreshed) {
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      if (await _recoverFromUnauthorized()) {
         response = await client
             .get(_uri(path, query), headers: _headers())
             .timeout(timeout ?? _timeout);
@@ -179,10 +185,8 @@ class ApiClient {
     }
 
     var response = await sendUpload();
-    if ((response.statusCode == 401 || response.statusCode == 403) &&
-        TokenStore.get(_kRefreshToken) != null) {
-      final refreshed = await _tryRefresh();
-      if (refreshed) response = await sendUpload();
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      if (await _recoverFromUnauthorized()) response = await sendUpload();
     }
     final data = _decode(response, path);
     return (data is Map<String, dynamic>) ? data : const {};
@@ -190,6 +194,8 @@ class ApiClient {
 
   Map<String, String> _headers({bool json = false}) => {
     'Authorization': 'Bearer ${accessToken ?? ''}',
+    if ((_settings.get('activeBranchId') as String?)?.isNotEmpty == true)
+      'X-Branch-Id': _settings.get('activeBranchId') as String,
     if (json) 'Content-Type': 'application/json',
   };
 
@@ -199,31 +205,61 @@ class ApiClient {
     Duration? timeout,
   }) async {
     var response = await send().timeout(timeout ?? _timeout);
-    if ((response.statusCode == 401 || response.statusCode == 403) &&
-        TokenStore.get(_kRefreshToken) != null) {
-      final refreshed = await _tryRefresh();
-      if (refreshed) {
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      if (await _recoverFromUnauthorized()) {
         response = await send().timeout(timeout ?? _timeout);
       }
     }
     return _decode(response, path);
   }
 
+  /// Recovers from a 401/403, or gives up and signs the session out.
+  ///
+  /// Returns `true` when a fresh access token was stored and the request is
+  /// worth replaying. Returns `false` once the session has been wiped, which is
+  /// the only way out of the "no refresh token, still holding an access token"
+  /// state: without this, a request whose refresh token is missing fails the
+  /// guard below, never clears anything, and 401-loops until the app is killed.
+  ///
+  /// Wiping is deliberately left to the caller so [onSessionInvalidated] fires
+  /// exactly once for a dead session rather than once per rejected request.
+  Future<bool> _recoverFromUnauthorized() async {
+    if (TokenStore.get(_kRefreshToken) == null) {
+      // Nothing left to recover with: the access token is dead and there is no
+      // way to mint a replacement, so this session can never succeed.
+      await _clearTokens();
+      return false;
+    }
+    switch (await _tryRefresh()) {
+      case _RefreshOutcome.refreshed:
+        return true;
+      case _RefreshOutcome.rejected:
+        // The auth service refused the refresh token. It is spent for good.
+        await _clearTokens();
+        return false;
+      case _RefreshOutcome.unreachable:
+        // Offline or the auth service is down. Keep the session so a later
+        // request can still recover once connectivity returns — signing out
+        // here would punish a flaky network with a lost session.
+        return false;
+    }
+  }
+
   /// Single-flight refresh: when many requests hit 401/403 at once (e.g.
   /// parallel polling), they all await this ONE refresh instead of racing.
   /// Racing causes the auth service's refresh-token rotation to revoke the
   /// token mid-flight and wipe the session.
-  Future<bool>? _refreshFuture;
+  Future<_RefreshOutcome>? _refreshFuture;
 
-  Future<bool> _tryRefresh() {
+  Future<_RefreshOutcome> _tryRefresh() {
     return _refreshFuture ??= _doRefresh().whenComplete(() {
       _refreshFuture = null;
     });
   }
 
-  Future<bool> _doRefresh() async {
+  Future<_RefreshOutcome> _doRefresh() async {
     final refreshToken = TokenStore.get(_kRefreshToken);
-    if (refreshToken == null) return false;
+    if (refreshToken == null) return _RefreshOutcome.rejected;
     try {
       final client = await secureHttpClient();
       final response = await client
@@ -233,23 +269,23 @@ class ApiClient {
             body: jsonEncode({'refreshToken': refreshToken}),
           )
           .timeout(_timeout);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        // The auth service looked at the token and refused it.
+        return _RefreshOutcome.rejected;
+      }
       if (response.statusCode != 200) {
-        // Only wipe the session when the server definitively rejects the
-        // refresh token. Transient failures keep tokens so we can retry.
-        if (response.statusCode == 401 || response.statusCode == 403) {
-          await _clearTokens();
-        }
-        return false;
+        // Some other failure (5xx, bad gateway). The token may still be good.
+        return _RefreshOutcome.unreachable;
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final access = (data['accessToken'] ?? '') as String;
       final refresh = (data['refreshToken'] ?? '') as String;
       await TokenStore.put(_kAccessToken, access);
       await TokenStore.put(_kRefreshToken, refresh);
-      return true;
+      return _RefreshOutcome.refreshed;
     } catch (_) {
       // Network/timeout error — keep tokens and let a later request retry.
-      return false;
+      return _RefreshOutcome.unreachable;
     }
   }
 
@@ -271,14 +307,24 @@ class ApiClient {
 
   /// Wipes tokens from the keychain first, then any legacy plaintext Hive
   /// copies so a downgraded build can never re-read a stale token.
+  ///
+  /// [onSessionInvalidated] only fires when there was actually a session to
+  /// wipe, so the pollers that all discover the same dead session at once
+  /// produce one sign-out instead of one per in-flight request.
   Future<void> _clearTokens() async {
+    final hadSession = TokenStore.get(_kAccessToken) != null ||
+        TokenStore.get(_kRefreshToken) != null ||
+        TokenStore.get(_kSession) != null ||
+        _settings.get(_kAccessToken) != null ||
+        _settings.get(_kRefreshToken) != null ||
+        _settings.get(_kSession) != null;
     await TokenStore.remove(_kAccessToken);
     await TokenStore.remove(_kRefreshToken);
     await TokenStore.remove(_kSession);
     await _settings.delete(_kAccessToken);
     await _settings.delete(_kRefreshToken);
     await _settings.delete(_kSession);
-    onSessionInvalidated?.call();
+    if (hadSession) onSessionInvalidated?.call();
   }
 }
 

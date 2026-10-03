@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint, debugPrintStack;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hive/hive.dart';
 
-import '../../../core/app/app_providers.dart';
-import '../../../core/app/app_shell.dart';
+import '../../../core/app/authenticated_entry.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/auth_backend.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../providers/auth_providers.dart';
 import 'auth_brand.dart';
@@ -33,8 +33,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _obscurePassword = true;
   bool _rememberMe = true;
   String? _message;
-  bool _messageIsError = true;
+  final bool _messageIsError = true;
   late final AnimationController _entrance;
+
+  /// Whether this device has ever held a Mohajon session.
+  ///
+  /// Read once up front so the greeting does not flip while the user types.
+  late final bool _isReturningUser = _hasSignedInBefore();
+
+  /// "Welcome back" is only true for someone who has been here before; a first
+  /// time visitor is greeted as a newcomer instead of being told they are
+  /// returning to an app they have never used.
+  static bool _hasSignedInBefore() {
+    try {
+      return Hive.box<dynamic>(
+            HiveBoxes.settings,
+          ).get('hasSignedInBefore', defaultValue: false) ==
+          true;
+    } catch (_) {
+      // Storage not open yet; treat as a first-time visitor rather than
+      // failing the screen.
+      return false;
+    }
+  }
 
   @override
   void initState() {
@@ -61,25 +82,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       Theme(
         data: AuthBrand.theme(Theme.of(context)),
         child: Scaffold(
+          backgroundColor: AuthBrand.backgroundColor,
           body: Stack(
             children: [
-              const Positioned.fill(child: _AuthBackdrop()),
+              const Positioned.fill(child: AuthDecorativeBackdrop()),
               SafeArea(
+                // The photo header supplies its own top inset so it can run
+                // edge-to-edge, under the status bar, instead of leaving a
+                // strip of page gradient above it.
+                top: false,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final compact = constraints.maxHeight < 720;
+                    final compact = constraints.maxHeight < 740;
                     return SingleChildScrollView(
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.fromLTRB(
-                        20,
-                        compact ? 12 : 20,
-                        20,
-                        24,
-                      ),
+                      padding: EdgeInsets.only(bottom: compact ? 22 : 34),
                       child: Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
+                          constraints: const BoxConstraints(maxWidth: 460),
                           child: FadeTransition(
                             opacity: CurvedAnimation(
                               parent: _entrance,
@@ -88,31 +109,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                SizedBox(height: compact ? 2 : 10),
-                                _HeroSection(compact: compact),
-                                SizedBox(height: compact ? 14 : 20),
-                                _LoginCard(
-                                  formKey: _formKey,
-                                  email: _email,
-                                  password: _password,
-                                  emailFocus: _emailFocus,
-                                  passwordFocus: _passwordFocus,
-                                  obscurePassword: _obscurePassword,
-                                  rememberMe: _rememberMe,
-                                  message: _message,
-                                  messageIsError: _messageIsError,
-                                  onTogglePassword: () => setState(
-                                    () => _obscurePassword = !_obscurePassword,
-                                  ),
-                                  onRememberChanged: (value) =>
-                                      setState(() => _rememberMe = value),
-                                  onForgotPassword: _openForgotPassword,
-                                  onSignIn: _signIn,
-                                  onGoogleSignIn: _signInWithGoogle,
-                                  onSignup: _openSignup,
-                                  isBusy: isBusy,
+                                AuthPhotoHeader(
+                                  topInset: MediaQuery.paddingOf(context).top,
+                                  minHeight: compact ? 150 : 170,
+                                  child: const _BrandDisc(),
                                 ),
-                                SizedBox(height: compact ? 18 : 26),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: AuthHeading(
+                                    title: _isReturningUser
+                                        ? 'Welcome back'
+                                        : 'Welcome to Mohajon',
+                                    subtitle: _isReturningUser
+                                        ? 'Sign in to pick up where you left off'
+                                        : 'Sign in, or create a free account',
+                                    topPadding: compact ? 2 : 8,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: _LoginForm(
+                                    formKey: _formKey,
+                                    email: _email,
+                                    password: _password,
+                                    emailFocus: _emailFocus,
+                                    passwordFocus: _passwordFocus,
+                                    obscurePassword: _obscurePassword,
+                                    rememberMe: _rememberMe,
+                                    message: _message,
+                                    messageIsError: _messageIsError,
+                                    onTogglePassword: () => setState(
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    ),
+                                    onRememberChanged: (value) =>
+                                        setState(() => _rememberMe = value),
+                                    onForgotPassword: _openForgotPassword,
+                                    onSignIn: _signIn,
+                                    onGoogleSignIn: _signInWithGoogle,
+                                    onFacebookSignIn: _signInWithFacebook,
+                                    onSignup: _openSignup,
+                                    isBusy: isBusy,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -187,6 +230,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
   }
 
+  Future<void> _signInWithFacebook() async {
+    await runBusyAction(() async {
+      setState(() => _message = null);
+      try {
+        await ref.read(authServiceProvider).signInWithFacebook();
+        if (mounted) _openApp();
+      } catch (error) {
+        _showMessage(authErrorMessage(error));
+      }
+    });
+  }
+
   void _showMessage(String message, {bool isError = true}) {
     if (!mounted) return;
     setState(() => _message = null);
@@ -194,12 +249,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        backgroundColor: isError
-            ? const Color(0xFFD64545)
-            : const Color(0xFF238B57),
+        backgroundColor: isError ? AuthBrand.danger : MohajonWarm.green,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         content: Row(
           children: [
@@ -227,9 +280,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   void _openApp() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => AppShell(key: ValueKey(ref.read(shopIdProvider))),
-      ),
+      MaterialPageRoute(builder: (_) => const AuthenticatedEntry()),
     );
   }
 
@@ -249,239 +300,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-class _LanguageSelector extends StatelessWidget {
-  const _LanguageSelector();
+/// Brand mark shown in the header circle. Login is usually the entry route, so
+/// there is nothing to go "back" to - the disc keeps the header balanced
+/// instead of showing a dead arrow.
+class _BrandDisc extends StatelessWidget {
+  const _BrandDisc();
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {},
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AuthBrand.panelBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: AuthBrand.shadow.withValues(alpha: 0.10),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.language_rounded,
-                  color: AuthBrand.panelText,
-                  size: 19,
-                ),
-                SizedBox(width: 7),
-                Text(
-                  'English',
-                  style: TextStyle(
-                    color: AuthBrand.panelText,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(width: 5),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: AuthBrand.panelMuted,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroSection extends StatelessWidget {
-  const _HeroSection({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(height: compact ? 2 : 8),
-        _CommerceIllustration(compact: compact),
-        SizedBox(height: compact ? 8 : 14),
-        Text(
-          'Welcome Back',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.6,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          'Sign in to your Mohajon account',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white.withValues(alpha: 0.78),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AuthBackdrop extends StatelessWidget {
-  const _AuthBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 330,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF0B3827), Color(0xFF2E6944)],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(64),
-                  bottomRight: Radius.circular(64),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AuthBrand.shadow.withValues(alpha: 0.18),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: -90,
-            right: -80,
-            child: Container(
-              width: 270,
-              height: 270,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0x223E7E51),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CommerceIllustration extends StatelessWidget {
-  const _CommerceIllustration({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final height = compact ? 128.0 : 164.0;
-    return SizedBox(
-      height: height,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: compact ? 220 : 280,
-            height: height * .78,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AuthBrand.secondarySoft,
-                  AuthBrand.secondarySoft.withValues(alpha: 0),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: compact ? 30 : 66,
-            bottom: 16,
-            child: _IllustrationTile(
-              color: const Color(0xFFE4F6E8),
-              iconColor: const Color(0xFF2BA05A),
-              icon: Icons.inventory_2_rounded,
-              size: compact ? 48 : 58,
-              rotation: -.12,
-            ),
-          ),
-          Positioned(
-            right: compact ? 28 : 62,
-            bottom: 19,
-            child: _IllustrationTile(
-              color: const Color(0xFFFFEED7),
-              iconColor: AuthBrand.gold,
-              icon: Icons.shopping_cart_rounded,
-              size: compact ? 48 : 58,
-              rotation: .12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IllustrationTile extends StatelessWidget {
-  const _IllustrationTile({
-    required this.color,
-    required this.iconColor,
-    required this.icon,
-    required this.size,
-    required this.rotation,
-  });
-
-  final Color color;
-  final Color iconColor;
-  final IconData icon;
-  final double size;
-  final double rotation;
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: rotation,
+    return Semantics(
+      label: 'Mohajon',
       child: Container(
-        width: size,
-        height: size,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(18),
+          color: Colors.white.withValues(alpha: .90),
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0x1A5C4400)),
         ),
-        child: Icon(icon, color: iconColor, size: size * .48),
+        child: const Icon(
+          Icons.storefront_rounded,
+          size: 19,
+          color: AuthBrand.primary,
+        ),
       ),
     );
   }
 }
 
-class _LoginCard extends StatelessWidget {
-  const _LoginCard({
+class _LoginForm extends StatelessWidget {
+  const _LoginForm({
     required this.formKey,
     required this.email,
     required this.password,
@@ -496,6 +344,7 @@ class _LoginCard extends StatelessWidget {
     required this.onForgotPassword,
     required this.onSignIn,
     required this.onGoogleSignIn,
+    required this.onFacebookSignIn,
     required this.onSignup,
     required this.isBusy,
   });
@@ -514,130 +363,160 @@ class _LoginCard extends StatelessWidget {
   final VoidCallback onForgotPassword;
   final VoidCallback onSignIn;
   final VoidCallback onGoogleSignIn;
+  final VoidCallback onFacebookSignIn;
   final VoidCallback onSignup;
   final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AuthBrand.panelBorder),
-        boxShadow: [
-          BoxShadow(
-            color: AuthBrand.shadow.withValues(alpha: 0.14),
-            blurRadius: 30,
-            offset: const Offset(0, 14),
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LoginTextField(
+            controller: email,
+            focusNode: emailFocus,
+            hintText: 'Email address',
+            icon: Icons.person_outline_rounded,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            onSubmitted: (_) => passwordFocus.requestFocus(),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your email address';
+              }
+              if (!value.contains('@') || !value.contains('.')) {
+                return 'Please enter a valid email address';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          LoginTextField(
+            controller: password,
+            focusNode: passwordFocus,
+            hintText: 'Password',
+            icon: Icons.lock_outline_rounded,
+            obscureText: obscurePassword,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
+            onSubmitted: (_) => onSignIn(),
+            onToggleVisibility: onTogglePassword,
+            validator: (value) => value == null || value.isEmpty
+                ? 'Please enter your password'
+                : null,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _RememberToggle(
+                value: rememberMe,
+                enabled: !isBusy,
+                onChanged: onRememberChanged,
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: onForgotPassword,
+                style: TextButton.styleFrom(
+                  foregroundColor: AuthBrand.primaryDeep,
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Forgot Password ?',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          PrimaryButton(onPressed: isBusy ? null : onSignIn, isLoading: isBusy),
+          if (message != null) ...[
+            const SizedBox(height: 14),
+            _MessageBanner(message: message!, isError: messageIsError),
+          ],
+          const SizedBox(height: 4),
+          AuthFooterLink(
+            prompt: "Don't have an account?",
+            action: 'Sign up',
+            onPressed: isBusy ? null : onSignup,
+          ),
+          const SizedBox(height: 22),
+          const AuthOrDivider(label: 'Or continue with'),
+          const SizedBox(height: 18),
+          SocialAuthRow(
+            onGoogle: isBusy ? null : onGoogleSignIn,
+            onFacebook: isBusy ? null : onFacebookSignIn,
           ),
         ],
       ),
-      child: Form(
-        key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Sign in to continue',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: AuthBrand.panelText,
+    );
+  }
+}
+
+/// Compact circular check used for "Remember me" instead of the stock square
+/// Material checkbox, which looked heavy next to the soft sage fields.
+class _RememberToggle extends StatelessWidget {
+  const _RememberToggle({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      checked: value,
+      enabled: enabled,
+      label: 'Remember me',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: enabled ? () => onChanged(!value) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: value ? AuthBrand.primary : Colors.transparent,
+                  border: Border.all(
+                    color: value
+                        ? AuthBrand.primary
+                        : AuthBrand.panelMuted.withValues(alpha: .55),
+                    width: 1.6,
+                  ),
+                ),
+                child: value
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : null,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Access your Mohajon account securely',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AuthBrand.panelMuted),
-            ),
-            const SizedBox(height: 20),
-            LoginTextField(
-              controller: email,
-              focusNode: emailFocus,
-              hintText: 'Email address',
-              icon: Icons.person_outline_rounded,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              onSubmitted: (_) => passwordFocus.requestFocus(),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty)
-                  return 'Please enter your email address';
-                if (!value.contains('@') || !value.contains('.'))
-                  return 'Please enter a valid email address';
-                return null;
-              },
-            ),
-            const SizedBox(height: 14),
-            LoginTextField(
-              controller: password,
-              focusNode: passwordFocus,
-              hintText: 'Password',
-              icon: Icons.lock_outline_rounded,
-              obscureText: obscurePassword,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => onSignIn(),
-              onToggleVisibility: onTogglePassword,
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Please enter your password'
-                  : null,
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Checkbox(
-                  value: rememberMe,
-                  onChanged: isBusy
-                      ? null
-                      : (value) => onRememberChanged(value ?? false),
+              const SizedBox(width: 9),
+              const Text(
+                'Remember me',
+                style: TextStyle(
+                  color: AuthBrand.panelMuted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
                 ),
-                const Text(
-                  'Remember me',
-                  style: TextStyle(
-                    color: AuthBrand.panelMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: onForgotPassword,
-                  child: const Text('Forgot Password?'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            PrimaryButton(
-              onPressed: isBusy ? null : onSignIn,
-              isLoading: isBusy,
-              compact: true,
-            ),
-            const SizedBox(height: 16),
-            const _OrDivider(),
-            const SizedBox(height: 12),
-            SocialLoginButton(onPressed: isBusy ? null : onGoogleSignIn),
-            if (message != null) ...[
-              const SizedBox(height: 12),
-              _MessageBanner(message: message!, isError: messageIsError),
+              ),
             ],
-            const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Don't have an account?",
-                  style: TextStyle(color: AuthBrand.panelMuted),
-                ),
-                TextButton(
-                  onPressed: isBusy ? null : onSignup,
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -654,6 +533,7 @@ class LoginTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.textInputAction,
+    this.autofillHints,
     this.onSubmitted,
     this.onToggleVisibility,
     this.validator,
@@ -666,6 +546,7 @@ class LoginTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+  final Iterable<String>? autofillHints;
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onToggleVisibility;
   final String? Function(String?)? validator;
@@ -678,41 +559,26 @@ class LoginTextField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
+      autofillHints: autofillHints,
       onFieldSubmitted: onSubmitted,
       validator: validator,
-      decoration: InputDecoration(
-        hintText: hintText,
-        prefixIcon: _FieldIcon(icon: icon),
+      decoration: AuthFieldDecoration(
+        hint: hintText,
+        icon: icon,
+        locale: Localizations.localeOf(context),
         suffixIcon: onToggleVisibility == null
             ? null
             : IconButton(
+                tooltip: obscureText ? 'Show password' : 'Hide password',
                 onPressed: onToggleVisibility,
                 icon: Icon(
                   obscureText
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
+                  size: 21,
                 ),
               ),
       ),
-    );
-  }
-}
-
-class _FieldIcon extends StatelessWidget {
-  const _FieldIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(9),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AuthBrand.secondarySoft,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(icon, color: AuthBrand.primary, size: 22),
     );
   }
 }
@@ -722,12 +588,12 @@ class PrimaryButton extends StatefulWidget {
     super.key,
     required this.onPressed,
     this.isLoading = false,
-    this.compact = false,
+    this.label = 'Login',
   });
 
   final VoidCallback? onPressed;
   final bool isLoading;
-  final bool compact;
+  final String label;
 
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();
@@ -744,144 +610,68 @@ class _PrimaryButtonState extends State<PrimaryButton> {
       duration: const Duration(milliseconds: 120),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: AuthBrand.buttonRadius,
         child: Ink(
-          height: widget.compact ? 52 : 56,
+          height: 58,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: AuthBrand.buttonRadius,
             gradient: enabled ? AuthBrand.gradient : null,
             color: enabled ? null : AuthBrand.buttonDisabled,
             boxShadow: enabled
                 ? [
+                    // Warm gold glow, tight and low: the button sits on the
+                    // cream page rather than floating over it.
                     BoxShadow(
-                      color: AuthBrand.primary.withValues(alpha: .22),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      color: AuthBrand.buttonGlow.withValues(alpha: .38),
+                      blurRadius: 22,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: AuthBrand.buttonGlow.withValues(alpha: .20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
                   ]
                 : null,
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: AuthBrand.buttonRadius,
             onTap: enabled ? widget.onPressed : null,
             onHighlightChanged: (value) => setState(() => _pressed = value),
-            child: Center(
-              child: widget.isLoading
-                  ? const SizedBox(
-                      width: 23,
-                      height: 23,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.login_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Login',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (enabled)
+                  const DecoratedBox(
+                    decoration: BoxDecoration(gradient: AuthBrand.buttonSheen),
+                  ),
+                Center(
+                  child: widget.isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AuthBrand.onGradient,
+                          ),
+                        )
+                      : Text(
+                          widget.label,
+                          style: AppType.heading(
+                            const TextStyle(
+                              color: AuthBrand.onGradient,
+                              fontSize: 16,
+                              letterSpacing: .6,
+                            ),
+                            locale: Localizations.localeOf(context),
+                            weight: AppType.buttonWeight,
                           ),
                         ),
-                      ],
-                    ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class SocialLoginButton extends StatelessWidget {
-  const SocialLoginButton({
-    super.key,
-    required this.onPressed,
-    this.compact = false,
-  });
-
-  final VoidCallback? onPressed;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    if (compact) {
-      return SizedBox(
-        width: 48,
-        height: 52,
-        child: IconButton(
-          onPressed: onPressed,
-          tooltip: 'Continue with Google',
-          padding: EdgeInsets.zero,
-          icon: const _GoogleIcon(),
-        ),
-      );
-    }
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: const _GoogleIcon(),
-      label: compact
-          ? const SizedBox.shrink()
-          : const Text('Continue with Google'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: compact ? const Size(52, 52) : const Size.fromHeight(52),
-        padding: compact ? EdgeInsets.zero : null,
-        backgroundColor: Colors.white,
-        foregroundColor: AuthBrand.panelText,
-        side: const BorderSide(color: AuthBrand.panelBorder),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-    );
-  }
-}
-
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            'OR',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AuthBrand.panelMuted,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider()),
-      ],
-    );
-  }
-}
-
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: SvgPicture.asset(
-        'assets/brand/google_g.svg',
-        width: 22,
-        height: 22,
-        fit: BoxFit.contain,
       ),
     );
   }
@@ -895,7 +685,7 @@ class _MessageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isError ? AuthBrand.danger : const Color(0xFF2BA05A);
+    final color = isError ? AuthBrand.danger : MohajonWarm.green;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -917,120 +707,6 @@ class _MessageBanner extends StatelessWidget {
             child: Text(
               message,
               style: TextStyle(color: color, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeatureStrip extends StatelessWidget {
-  const _FeatureStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    const items = [
-      (
-        Icons.bar_chart_rounded,
-        'Sales',
-        'Track sales\nin real-time',
-        Color(0xFFE1EBFF),
-      ),
-      (
-        Icons.inventory_2_rounded,
-        'Inventory',
-        'Manage stock\neffortlessly',
-        Color(0xFFDDF7EB),
-      ),
-      (
-        Icons.groups_rounded,
-        'Customers',
-        'Build stronger\nrelationships',
-        Color(0xFFFFECD8),
-      ),
-      (
-        Icons.pie_chart_rounded,
-        'Analytics',
-        'Grow with\ninsights',
-        Color(0xFFEDE3FF),
-      ),
-    ];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .82),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AuthBrand.panelBorder),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < items.length; i++)
-            Expanded(
-              child: _FeatureItem(
-                icon: items[i].$1,
-                title: items[i].$2,
-                subtitle: items[i].$3,
-                background: items[i].$4,
-                showDivider: i != items.length - 1,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeatureItem extends StatelessWidget {
-  const _FeatureItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.background,
-    required this.showDivider,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color background;
-  final bool showDivider;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: showDivider
-            ? const Border(right: BorderSide(color: AuthBrand.panelBorder))
-            : null,
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(icon, color: AuthBrand.primary, size: 21),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AuthBrand.panelText,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AuthBrand.panelMuted,
-              fontSize: 8.5,
-              height: 1.25,
             ),
           ),
         ],

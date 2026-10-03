@@ -68,12 +68,16 @@ class _VatReportScreenState extends ConsumerState<VatReportScreen>
       if (sale.vatPercent <= 0 || !_inRange(sale.createdAt)) continue;
       final subtotal =
           sale.items.fold<double>(0, (sum, item) => sum + item.lineTotal);
-      final vat = subtotal * (sale.vatPercent / 100);
+      // VAT is charged on the discount-adjusted taxable value, matching the
+      // checkout calculation and preventing over-reporting when a discount
+      // was applied.
+      final taxable = (subtotal - sale.discount).clamp(0, double.infinity).toDouble();
+      final vat = taxable * (sale.vatPercent / 100);
       rows.add(<String, Object?>{
         'date': sale.createdAt,
-        'invoice': sale.saleId,
+        'invoice': sale.invoiceNumber.isNotEmpty ? sale.invoiceNumber : sale.saleId,
         'customer': _customerLabel(customerById[sale.customerId], sale),
-        'subtotal': subtotal,
+        'subtotal': taxable,
         'vatPercent': sale.vatPercent,
         'vat': vat,
       });

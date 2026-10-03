@@ -131,6 +131,8 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen>
             name: product.nameEn,
             qty: double.tryParse(_qty.text) ?? 0,
             unitCost: double.tryParse(_cost.text) ?? product.purchasePrice,
+            batchNumber: product.batchNumber,
+            expiryDate: product.expiryDate,
           ),
         ],
       );

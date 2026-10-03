@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'app_typography.dart';
+
 class AppTheme {
   const AppTheme._();
 
-  /// Kalpurush for Bangla; Roboto (Android standard) for English and others.
-  static String fontFamilyFor(Locale? locale) {
-    final code = locale?.languageCode ?? 'en';
-    return code == 'bn' ? 'Kalpurush' : 'Roboto';
-  }
+  /// Primary family for a plain `Text` in [locale]. Headings use Poppins and
+  /// body copy Inter, so this returns the data voice - see [AppType].
+  static String fontFamilyFor(Locale? locale) => AppType.dataFamily(locale);
 
   static ThemeData light([Locale? locale]) {
     final fontFamily = fontFamilyFor(locale);
@@ -39,16 +39,16 @@ class AppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFF7FBFF),
       visualDensity: VisualDensity.standard,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Color(0xFF0C2540),
-        titleTextStyle: TextStyle(
-          color: Color(0xFF0C2540),
-          fontSize: 22,
-          fontWeight: FontWeight.w900,
+        foregroundColor: const Color(0xFF0C2540),
+        titleTextStyle: AppType.heading(
+          const TextStyle(color: Color(0xFF0C2540), fontSize: 22),
+          locale: locale,
+          letterSpacing: -0.3,
         ),
       ),
       cardTheme: CardThemeData(
@@ -68,7 +68,38 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          textStyle: AppType.heading(
+            const TextStyle(fontSize: 15),
+            locale: locale,
+            weight: AppType.buttonWeight,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          textStyle: AppType.heading(
+            const TextStyle(fontSize: 15),
+            locale: locale,
+            weight: AppType.buttonWeight,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          textStyle: AppType.heading(
+            const TextStyle(fontSize: 14),
+            locale: locale,
+            weight: AppType.buttonWeight,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          textStyle: AppType.heading(
+            const TextStyle(fontSize: 16),
+            locale: locale,
+            weight: AppType.buttonWeight,
+          ),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -83,6 +114,20 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
+        ),
+        // Labels and input text both sit in the data voice.
+        labelStyle: AppType.body(
+          const TextStyle(fontSize: 14),
+          locale: locale,
+          weight: FontWeight.w500,
+        ),
+        hintStyle: AppType.body(
+          const TextStyle(fontSize: 14),
+          locale: locale,
+        ),
+        prefixStyle: AppType.body(
+          const TextStyle(fontSize: 14),
+          locale: locale,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -99,21 +144,27 @@ class AppTheme {
       ),
     );
     return base.copyWith(
-      textTheme: base.textTheme.apply(
-        bodyColor: scheme.onSurface,
-        displayColor: scheme.onSurface,
-        fontFamily: fontFamily,
+      textTheme: AppType.textTheme(
+        base.textTheme.apply(
+          bodyColor: scheme.onSurface,
+          displayColor: scheme.onSurface,
+          fontFamily: fontFamily,
+        ),
+        locale,
       ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
         backgroundColor: Colors.white,
         indicatorColor: scheme.primary.withValues(alpha: 0.14),
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => TextStyle(
-            fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w800
-                : FontWeight.w600,
-            fontSize: 12,
+          (states) => AppType.body(
+            TextStyle(
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+              fontSize: 12,
+            ),
+            locale: locale,
           ),
         ),
       ),
@@ -127,9 +178,9 @@ class AppTheme {
         selectedColor: scheme.primary.withValues(alpha: 0.14),
         side: BorderSide(color: scheme.outlineVariant),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        labelStyle: TextStyle(
-          color: scheme.onSurface,
-          fontWeight: FontWeight.w700,
+        labelStyle: AppType.body(
+          TextStyle(color: scheme.onSurface, fontWeight: FontWeight.w500),
+          locale: locale,
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -153,9 +204,9 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF062349),
-        contentTextStyle: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
+        contentTextStyle: AppType.body(
+          const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+          locale: locale,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         behavior: SnackBarBehavior.floating,

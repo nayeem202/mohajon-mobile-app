@@ -263,7 +263,7 @@ class _InvestmentCardState extends ConsumerState<InvestmentCard>
                     message: l10n.t('paidOutPctTooltip'),
                     child: Text(
                       l10n.tP('clearedPct',
-                          {'n': '${totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}'}),
+                          {'n': totalDue > 0 ? (totalPaid / totalDue * 100).toStringAsFixed(0) : '0'}),
                       style: TextStyle(
                           color: MohajonWarm.goldText,
                           fontSize: 11,

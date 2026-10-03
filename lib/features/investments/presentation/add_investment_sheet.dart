@@ -126,7 +126,7 @@ class _AddInvestmentSheetState extends ConsumerState<AddInvestmentSheet>
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _categoryId.isEmpty ? null : _categoryId,
+                          initialValue: _categoryId.isEmpty ? null : _categoryId,
                           style: const TextStyle(
                               fontSize: 14, color: MohajonWarm.ink),
                           decoration: InputDecoration(

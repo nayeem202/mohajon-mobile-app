@@ -7,12 +7,16 @@ class PurchaseOrderItem {
     required this.name,
     required this.qty,
     required this.unitCost,
+    this.batchNumber = '',
+    this.expiryDate,
   });
 
   final String productId;
   final String name;
   final double qty;
   final double unitCost;
+  final String batchNumber;
+  final DateTime? expiryDate;
 
   double get total => qty * unitCost;
 
@@ -21,6 +25,8 @@ class PurchaseOrderItem {
         'name': name,
         'qty': qty,
         'unitCost': unitCost,
+        'batchNumber': batchNumber,
+        'expiryDate': expiryDate == null ? null : dateToJson(expiryDate!),
       };
 
   factory PurchaseOrderItem.fromJson(Map<dynamic, dynamic> json) =>
@@ -29,6 +35,8 @@ class PurchaseOrderItem {
         name: (json['name'] ?? '') as String,
         qty: (json['qty'] as num? ?? 0).toDouble(),
         unitCost: (json['unitCost'] as num? ?? 0).toDouble(),
+        batchNumber: (json['batchNumber'] ?? '') as String,
+        expiryDate: json['expiryDate'] == null ? null : dateFromJson(json['expiryDate']),
       );
 }
 
@@ -40,11 +48,13 @@ class PurchaseOrder with Syncable {
     required this.totalAmount,
     required this.status,
     required this.shopId,
+    this.branchId,
     required this.createdAt,
     required this.updatedAt,
     this.notes = '',
     this.isDeleted = false,
     this.synced = false,
+    this.receivedQty = const {},
     this.syncStatus = SyncStatus.pending,
   });
 
@@ -56,11 +66,15 @@ class PurchaseOrder with Syncable {
   final String notes;
   @override
   final String shopId;
+  final String? branchId;
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
   final bool isDeleted;
   final bool synced;
+  /// Cumulative received quantity by product ID. Keeps partial receiving
+  /// idempotent at the order level and survives offline sync.
+  final Map<String, double> receivedQty;
   @override
   final SyncStatus syncStatus;
 
@@ -76,10 +90,12 @@ class PurchaseOrder with Syncable {
         'status': status,
         'notes': notes,
         'shopId': shopId,
+        'branchId': branchId,
         'createdAt': dateToJson(createdAt),
         'updatedAt': dateToJson(updatedAt),
         'isDeleted': isDeleted,
         'synced': synced,
+        'receivedQty': receivedQty,
         'syncStatus': syncStatus.value,
       };
 
@@ -94,30 +110,43 @@ class PurchaseOrder with Syncable {
         status: (json['status'] ?? 'DRAFT') as String,
         notes: (json['notes'] ?? '') as String,
         shopId: (json['shopId'] ?? '') as String,
+        branchId: (json['branchId'] ?? '${(json['shopId'] ?? '') as String}-main') as String,
         createdAt: dateFromJson(json['createdAt']),
         updatedAt: dateFromJson(json['updatedAt']),
         isDeleted: json['isDeleted'] == true,
         synced: json['synced'] == true,
+        receivedQty: (json['receivedQty'] is Map)
+            ? Map<String, double>.from(
+                (json['receivedQty'] as Map).map(
+                  (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
+                ),
+              )
+            : const {},
         syncStatus: SyncStatusX.parse(json['syncStatus']),
       );
 
   PurchaseOrder copyWith({
     String? shopId,
+    String? branchId,
     bool? synced,
     DateTime? updatedAt,
     SyncStatus? syncStatus,
+    String? status,
+    Map<String, double>? receivedQty,
   }) => PurchaseOrder(
         orderId: orderId,
         supplierId: supplierId,
         items: items,
         totalAmount: totalAmount,
-        status: status,
+        status: status ?? this.status,
         notes: notes,
         shopId: shopId ?? this.shopId,
+        branchId: branchId ?? this.branchId,
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted,
         synced: synced ?? this.synced,
         syncStatus: syncStatus ?? this.syncStatus,
+        receivedQty: receivedQty ?? this.receivedQty,
       );
 }

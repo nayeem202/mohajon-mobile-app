@@ -11,6 +11,8 @@ class Expense with Syncable {
     required this.date,
     this.notes = '',
     required this.shopId,
+    this.branchId,
+    this.staffId,
     required this.updatedAt,
     this.isDeleted = false,
     this.syncStatus = SyncStatus.pending,
@@ -25,6 +27,8 @@ class Expense with Syncable {
   final String notes;
   @override
   final String shopId;
+  final String? branchId;
+  final String? staffId;
   @override
   final DateTime updatedAt;
   final bool isDeleted;
@@ -43,6 +47,8 @@ class Expense with Syncable {
     DateTime? date,
     String? notes,
     String? shopId,
+    String? branchId,
+    String? staffId,
     DateTime? updatedAt,
     bool? isDeleted,
     SyncStatus? syncStatus,
@@ -56,6 +62,8 @@ class Expense with Syncable {
       date: date ?? this.date,
       notes: notes ?? this.notes,
       shopId: shopId ?? this.shopId,
+      branchId: branchId ?? this.branchId,
+      staffId: staffId ?? this.staffId,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -72,6 +80,8 @@ class Expense with Syncable {
         'date': dateToJson(date),
         'notes': notes,
         'shopId': shopId,
+        'branchId': branchId,
+        'staffId': staffId,
         'updatedAt': dateToJson(updatedAt),
         'isDeleted': isDeleted,
         'syncStatus': syncStatus.value,
@@ -86,9 +96,10 @@ class Expense with Syncable {
         date: dateFromJson(json['date']),
         notes: (json['notes'] ?? '') as String,
         shopId: (json['shopId'] ?? '') as String,
+        branchId: (json['branchId'] ?? '${(json['shopId'] ?? '') as String}-main') as String,
+        staffId: json['staffId'] as String?,
         updatedAt: dateFromJson(json['updatedAt']),
         isDeleted: json['isDeleted'] == true,
         syncStatus: SyncStatusX.parse(json['syncStatus']),
       );
 }
-

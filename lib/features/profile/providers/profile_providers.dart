@@ -62,11 +62,6 @@ final profileErrorProvider = Provider<String?>((ref) {
   return null;
 });
 
-String _resolveUserId(Ref ref) {
-  final user = ref.read(currentUserProvider);
-  return user?.userId ?? 'local-user';
-}
-
 String _deriveOwnerName(AppUser user, ShopProfile? shopProfile) {
   if (user.name.isNotEmpty) return user.name;
   if (shopProfile != null && shopProfile.effectiveOwners.isNotEmpty) {

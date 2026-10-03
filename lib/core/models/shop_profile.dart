@@ -36,6 +36,13 @@ class ShopProfile {
     this.ownerEmail = '',
     this.createdAt,
     this.imagePath = '',
+    this.tin = '',
+    this.bin = '',
+    this.loyaltyOfferEnabled = true,
+    this.loyaltyOfferPoints = 100,
+    this.loyaltyOfferPercent = 5,
+    this.loyaltyOfferMaxDiscount = 100,
+    this.loyaltyOfferMinimumPurchase = 0,
   });
 
   final String shopId;
@@ -48,6 +55,13 @@ class ShopProfile {
   final String ownerEmail;
   final DateTime? createdAt;
   final String imagePath;
+  final String tin;
+  final String bin;
+  final bool loyaltyOfferEnabled;
+  final int loyaltyOfferPoints;
+  final double loyaltyOfferPercent;
+  final double loyaltyOfferMaxDiscount;
+  final double loyaltyOfferMinimumPurchase;
 
   List<ShopOwner> get effectiveOwners {
     if (owners.isNotEmpty) return owners;
@@ -77,6 +91,13 @@ class ShopProfile {
     if (createdAt != null) 'createdAt': dateToJson(createdAt!),
     'imagePath': imagePath,
     'updatedAt': dateToJson(updatedAt),
+    'tin': tin,
+    'bin': bin,
+    'loyaltyOfferEnabled': loyaltyOfferEnabled,
+    'loyaltyOfferPoints': loyaltyOfferPoints,
+    'loyaltyOfferPercent': loyaltyOfferPercent,
+    'loyaltyOfferMaxDiscount': loyaltyOfferMaxDiscount,
+    'loyaltyOfferMinimumPurchase': loyaltyOfferMinimumPurchase,
   };
 
   factory ShopProfile.fromJson(Map<dynamic, dynamic> json) {
@@ -96,6 +117,13 @@ class ShopProfile {
       location: (json['location'] ?? '') as String,
       phoneNumber: (json['phoneNumber'] ?? '') as String,
       imagePath: (json['imagePath'] ?? '') as String,
+      tin: (json['tin'] ?? '') as String,
+      bin: (json['bin'] ?? '') as String,
+      loyaltyOfferEnabled: json['loyaltyOfferEnabled'] != false,
+      loyaltyOfferPoints: (json['loyaltyOfferPoints'] as num? ?? 100).toInt(),
+      loyaltyOfferPercent: (json['loyaltyOfferPercent'] as num? ?? 5).toDouble(),
+      loyaltyOfferMaxDiscount: (json['loyaltyOfferMaxDiscount'] as num? ?? 100).toDouble(),
+      loyaltyOfferMinimumPurchase: (json['loyaltyOfferMinimumPurchase'] as num? ?? 0).toDouble(),
       owners: owners,
       createdAt: json['createdAt'] == null
           ? null

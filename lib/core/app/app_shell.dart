@@ -12,7 +12,6 @@ import '../../features/subscription/services/paywall_service.dart';
 import '../../features/voice_assistant/presentation/hambot_sheet.dart';
 import '../constants/app_constants.dart';
 import '../localization/app_localizations.dart';
-import '../widgets/connectivity_banner.dart';
 import '../widgets/nav_bar/animated_bottom_nav_bar.dart';
 import '../widgets/nav_bar/nav_destination.dart';
 import 'feature_hub_screen.dart';
@@ -393,7 +392,6 @@ if (tabs.isEmpty) {
         backgroundColor: Colors.transparent,
         body: Column(
           children: [
-            const ConnectivityBanner(),
             Expanded(
               child: Row(
                 children: [

@@ -119,6 +119,13 @@ class StaffApiService {
     await _api.delete('/api/v1/users/$userId');
   }
 
+  Future<void> assignToBranch({
+    required String branchId,
+    required String userId,
+  }) async {
+    await _api.post('/api/v1/branches/$branchId/members/$userId', {});
+  }
+
   /// Toggles a staff member's active/inactive status. An inactive staff member
   /// is blocked from signing in (the auth service rejects disabled accounts).
   Future<StaffMember> updateStaffStatus({

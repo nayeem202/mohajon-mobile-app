@@ -64,8 +64,6 @@ class _CustomerProfileScreenState
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return withLoadingOverlay(
       Scaffold(
         appBar: AppBar(
@@ -173,7 +171,7 @@ class _CustomerProfileScreenState
                   onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     prefixIcon: Padding(
-                      padding: const EdgeInsets.only(bottom: 80),
+                      padding: EdgeInsets.only(bottom: 80),
                       child: Icon(Icons.notes_outlined),
                     ),
                     hintText: 'Any special notes about this client...',

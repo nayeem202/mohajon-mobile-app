@@ -8,7 +8,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../constants/app_constants.dart';
 import 'app_providers.dart';
-import 'app_shell.dart';
+import 'authenticated_entry.dart';
 import 'quick_tour_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -23,7 +23,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     Future.microtask(() async {
-      final signedIn = await ref.read(authServiceProvider).restoreSession();
+      // Startup must have a hard upper bound. A corrupted/locked secure
+      // storage or a slow local Hive operation must never leave the user on
+      // the splash screen forever. Falling back to login is safe: no
+      // business data is cleared and the stored session can be retried.
+      var signedIn = false;
+      try {
+        signedIn = await ref
+            .read(authServiceProvider)
+            .restoreSession()
+            .timeout(const Duration(seconds: 6), onTimeout: () => false);
+      } catch (_) {
+        signedIn = false;
+      }
       if (signedIn) {
         // Refresh data in the background instead of blocking the UI, so
         // relaunching the app enters the home screen immediately.
@@ -32,10 +44,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       await Future<void>.delayed(const Duration(milliseconds: 200));
       if (mounted) {
         final session = ref.read(authStateProvider).value;
-        final shopId = ref.read(shopIdProvider);
         final Widget next;
         if (session != null) {
-          next = AppShell(key: ValueKey(shopId));
+          next = const AuthenticatedEntry();
         } else {
           final hasSeenOnboarding =
               Hive.box(HiveBoxes.settings).get('hasSeenOnboarding', defaultValue: false) as bool;

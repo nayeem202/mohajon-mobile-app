@@ -17,6 +17,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     with AsyncActionState<ForgotPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _email;
   String? _message;
   bool _sent = false;
@@ -36,44 +37,52 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   @override
   Widget build(BuildContext context) {
     return withLoadingOverlay(
-      Scaffold(
-        body: Stack(
-          children: [
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                color: AuthBrand.backgroundColor,
-              ),
-              child: SizedBox.expand(),
-            ),
-            SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    pinned: false,
-                    floating: true,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      color: AuthBrand.secondary,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      Theme(
+        data: AuthBrand.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: AuthBrand.backgroundColor,
+          body: Stack(
+            children: [
+              const Positioned.fill(child: AuthDecorativeBackdrop()),
+              SafeArea(
+                // The photo header supplies its own top inset so it can run
+                // edge-to-edge, under the status bar, instead of leaving a
+                // strip of page gradient above it.
+                top: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxHeight < 740;
+                    return SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.only(bottom: compact ? 22 : 34),
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 460),
-                          child: _buildCard(context),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              AuthPhotoHeader(
+                                topInset: MediaQuery.paddingOf(context).top,
+                                minHeight: compact ? 150 : 170,
+                                child: const AuthBackButton(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: _buildCard(context),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       label: 'Sending...',
@@ -81,140 +90,92 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   }
 
   Widget _buildCard(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: Container(
-            width: 78,
-            height: 78,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: _sent ? AuthBrand.secondary : AuthBrand.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: (_sent ? AuthBrand.secondary : AuthBrand.primary)
-                      .withValues(alpha: 0.25),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AuthHeading(
+            title: _sent ? 'Email on its way' : 'Reset password',
+            subtitle: _sent
+                ? 'Open the email and follow the link to set a new password.'
+                : 'Enter your registered email and we will send you a reset link.',
+          ),
+          TextFormField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.email],
+            enabled: !_sent,
+            decoration: AuthFieldDecoration(
+              hint: 'Email address',
+              icon: Icons.alternate_email_rounded,
             ),
-            child: Icon(
-              _sent
-                  ? Icons.mark_email_read_outlined
-                  : Icons.lock_reset_rounded,
-              color: _sent ? AuthBrand.onGold.withValues(alpha: 0.9) : AuthBrand.onGold,
-              size: 36,
-            ),
+            validator: _validateEmail,
+            onFieldSubmitted: (_) => _send(),
           ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          _sent ? 'Email on its way' : 'Reset password',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _sent
-              ? 'Open the email and follow the link to set a new password.'
-              : 'Enter your registered email and we will send a password reset link.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: colors.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 22),
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: AuthBrand.panelBackground,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AuthBrand.panelBorder),
-            boxShadow: [
-              BoxShadow(
-                color: AuthBrand.shadow.withValues(alpha: 0.06),
-                blurRadius: 28,
-                spreadRadius: -8,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-                enabled: !_sent,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'you@example.com',
-                  prefixIcon: const Icon(Icons.alternate_email_rounded),
-                ),
-              ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                child: _message == null
-                    ? const SizedBox(height: 0)
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 14),
-                        child: _MessageBanner(
-                          message: _message!,
-                          isError: !_sent,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: 18),
-              _PrimaryActionButton(
-                onPressed: _sent ? () => Navigator.of(context).maybePop() : _send,
-                isBusy: isBusy,
-                icon: _sent
-                    ? Icons.arrow_back_rounded
-                    : Icons.send_rounded,
-                label: _sent ? 'Back to sign in' : 'Send reset email',
-                busyLabel: 'Sending...',
-              ),
-              if (!_sent) ...[
-                const SizedBox(height: 10),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.login_rounded, size: 18),
-                    label: const Text('Back to sign in'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AuthBrand.secondary,
-                    ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _message == null
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: _MessageBanner(message: _message!, isError: !_sent),
                   ),
-                ),
-              ],
-            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 18),
+          _PrimaryActionButton(
+            onPressed: _sent ? () => Navigator.of(context).maybePop() : _send,
+            isBusy: isBusy,
+            icon: _sent ? Icons.arrow_back_rounded : Icons.send_rounded,
+            label: _sent ? 'Back to sign in' : 'Send reset email',
+            busyLabel: 'Sending...',
+          ),
+          if (!_sent) ...[
+            const SizedBox(height: 6),
+            AuthFooterLink(
+              prompt: 'Remembered your password?',
+              action: 'Sign in',
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
+  /// Rejects an empty or malformed address before it can reach the API.
+  ///
+  /// Without this the field submitted whatever happened to be typed, including
+  /// nothing at all, and the backend replied with a bare "Invalid request
+  /// payload" that named neither the field nor the problem.
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return 'Please enter your email address';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
   Future<void> _send() async {
+    if (_sent) return;
+    // Validating again here, rather than relying on the field alone, means the
+    // action button and the keyboard's done key behave identically and the
+    // request is never fired with an unusable address.
+    final form = _formKey.currentState;
+    if (form != null && !form.validate()) return;
+    final email = _email.text.trim();
     await runBusyAction(() async {
-      setState(() {
-        _message = null;
-        _sent = false;
-      });
+      setState(() => _message = null);
       try {
-        await ref.read(authServiceProvider).sendPasswordResetEmail(_email.text);
+        await ref.read(authServiceProvider).sendPasswordResetEmail(email);
         if (mounted) {
           setState(() {
             _sent = true;
-            _message = 'Password reset email sent to ${_email.text.trim()}.';
+            _message = 'Password reset email sent to $email.';
           });
         }
       } catch (error) {
@@ -244,57 +205,73 @@ class _PrimaryActionButton extends StatelessWidget {
     final disabled = isBusy || onPressed == null;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AuthBrand.buttonRadius,
       child: Ink(
+        height: 58,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          gradient: disabled
-              ? const LinearGradient(
-                  colors: [Color(0xFF2A2A22), Color(0xFF262621)],
-                )
-              : AuthBrand.gradient,
+          borderRadius: AuthBrand.buttonRadius,
+          gradient: disabled ? null : AuthBrand.gradient,
+          color: disabled ? AuthBrand.buttonDisabled : null,
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: AuthBrand.primary.withValues(alpha: 0.28),
-                    blurRadius: 20,
+                    color: AuthBrand.buttonGlow.withValues(alpha: .38),
+                    blurRadius: 22,
                     offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: AuthBrand.buttonGlow.withValues(alpha: .20),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ],
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AuthBrand.buttonRadius,
           onTap: disabled ? null : onPressed,
           child: SizedBox(
-            height: 54,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            height: 58,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  isBusy ? (busyLabel ?? 'Sending...') : label,
-                  style: TextStyle(
-                    color: disabled
-                        ? Colors.white.withValues(alpha: 0.5)
-                        : AuthBrand.onGold,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                    letterSpacing: 0.2,
+                if (!disabled)
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: AuthBrand.buttonSheen,
+                      ),
+                    ),
                   ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      isBusy ? (busyLabel ?? 'Sending...') : label,
+                      style: TextStyle(
+                        color: disabled
+                            ? AuthBrand.onGradient.withValues(alpha: 0.40)
+                            : AuthBrand.onGradient,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15.5,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    isBusy
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: disabled
+                                  ? AuthBrand.onGradient.withValues(alpha: 0.40)
+                                  : AuthBrand.onGradient,
+                            ),
+                          )
+                        : Icon(icon, color: Colors.white, size: 20),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                isBusy
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: disabled
-                              ? Colors.white.withValues(alpha: 0.5)
-                              : AuthBrand.primaryDeep,
-                        ),
-                      )
-                    : Icon(icon, color: AuthBrand.onGold, size: 20),
               ],
             ),
           ),
@@ -317,9 +294,9 @@ class _MessageBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.14),
+        color: tone.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: tone.withValues(alpha: 0.38)),
+        border: Border.all(color: tone.withValues(alpha: .25)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,10 +310,11 @@ class _MessageBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: TextStyle(
                 color: tone,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
+                fontSize: 13.5,
               ),
             ),
           ),

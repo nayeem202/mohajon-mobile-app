@@ -18,37 +18,66 @@ extension PaymentStatusX on PaymentStatus {
 
 class SaleItem {
   const SaleItem({
+    this.saleItemId = '',
     required this.productId,
     required this.name,
     required this.qty,
     required this.unitPrice,
     required this.purchasePrice,
+    this.batchAllocations = const [],
   });
 
+  final String saleItemId;
   final String productId;
   final String name;
   final double qty;
   final double unitPrice;
   final double purchasePrice;
+  final List<SaleBatchAllocation> batchAllocations;
 
   double get lineTotal => qty * unitPrice;
   double get profit => qty * (unitPrice - purchasePrice);
 
   Map<String, dynamic> toJson() => {
+    'saleItemId': saleItemId,
     'productId': productId,
     'name': name,
     'qty': qty,
     'unitPrice': unitPrice,
     'purchasePrice': purchasePrice,
+    'batchAllocations': batchAllocations.map((item) => item.toJson()).toList(),
   };
 
   factory SaleItem.fromJson(Map<dynamic, dynamic> json) => SaleItem(
+    saleItemId: (json['saleItemId'] ?? json['id'] ?? '') as String,
     productId: json['productId'] as String,
     name: (json['name'] ?? '') as String,
     qty: (json['qty'] as num? ?? 0).toDouble(),
     unitPrice: (json['unitPrice'] as num? ?? 0).toDouble(),
     purchasePrice: (json['purchasePrice'] as num? ?? 0).toDouble(),
+    batchAllocations: ((json['batchAllocations'] as List?) ?? const [])
+        .map(
+          (item) => SaleBatchAllocation.fromJson(
+            Map<dynamic, dynamic>.from(item as Map),
+          ),
+        )
+        .toList(),
   );
+}
+
+class SaleBatchAllocation {
+  const SaleBatchAllocation({required this.batchId, required this.quantity});
+
+  final String batchId;
+  final int quantity;
+
+  Map<String, dynamic> toJson() => {'batchId': batchId, 'quantity': quantity};
+
+  factory SaleBatchAllocation.fromJson(Map<dynamic, dynamic> json) =>
+      SaleBatchAllocation(
+        batchId: (json['batchId'] ?? '') as String,
+        quantity: (json['quantity'] as num? ?? 0).toInt(),
+      );
 }
 
 class Sale with Syncable {
@@ -63,16 +92,24 @@ class Sale with Syncable {
     required this.shopId,
     required this.createdAt,
     required this.updatedAt,
+    this.invoiceNumber = '',
     this.discount = 0,
     this.vatPercent = 0,
     this.charge = 0,
     this.paymentMethod = PaymentMethod.cash,
     this.staffId,
+    this.branchId,
+    this.discountStaffId,
+    this.voidedByStaffId,
+    this.voidedAt,
+    this.loyaltyPointsRedeemed = 0,
+    this.loyaltyPointsEarned = 0,
     this.isDeleted = false,
     this.syncStatus = SyncStatus.pending,
   });
 
   final String saleId;
+  final String invoiceNumber;
   final String customerId;
   final List<SaleItem> items;
   final double discount;
@@ -80,6 +117,12 @@ class Sale with Syncable {
   final double charge;
   final PaymentMethod paymentMethod;
   final String? staffId;
+  final String? branchId;
+  final String? discountStaffId;
+  final String? voidedByStaffId;
+  final DateTime? voidedAt;
+  final int loyaltyPointsRedeemed;
+  final int loyaltyPointsEarned;
   final double totalAmount;
   final double paidAmount;
   final double dueAmount;
@@ -100,27 +143,44 @@ class Sale with Syncable {
       items.fold<double>(0, (total, item) => total + item.profit) - discount;
 
   Sale copyWith({
+    List<SaleItem>? items,
+    double? totalAmount,
     double? paidAmount,
     double? dueAmount,
     PaymentStatus? paymentStatus,
     PaymentMethod? paymentMethod,
     String? staffId,
+    String? branchId,
+    String? discountStaffId,
+    String? voidedByStaffId,
+    DateTime? voidedAt,
+    int? loyaltyPointsRedeemed,
+    int? loyaltyPointsEarned,
+    String? invoiceNumber,
     DateTime? updatedAt,
     SyncStatus? syncStatus,
   }) {
     return Sale(
       saleId: saleId,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       customerId: customerId,
-      items: items,
+      items: items ?? this.items,
       discount: discount,
       vatPercent: vatPercent,
       charge: charge,
-      totalAmount: totalAmount,
+      totalAmount: totalAmount ?? this.totalAmount,
       paidAmount: paidAmount ?? this.paidAmount,
       dueAmount: dueAmount ?? this.dueAmount,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       staffId: staffId ?? this.staffId,
+      branchId: branchId ?? this.branchId,
+      discountStaffId: discountStaffId ?? this.discountStaffId,
+      voidedByStaffId: voidedByStaffId ?? this.voidedByStaffId,
+      voidedAt: voidedAt ?? this.voidedAt,
+      loyaltyPointsRedeemed:
+          loyaltyPointsRedeemed ?? this.loyaltyPointsRedeemed,
+      loyaltyPointsEarned: loyaltyPointsEarned ?? this.loyaltyPointsEarned,
       shopId: shopId,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -132,6 +192,7 @@ class Sale with Syncable {
   @override
   Map<String, dynamic> toJson() => {
     'saleId': saleId,
+    'invoiceNumber': invoiceNumber,
     'customerId': customerId,
     'items': items.map((item) => item.toJson()).toList(),
     'discount': discount,
@@ -143,6 +204,12 @@ class Sale with Syncable {
     'paymentStatus': paymentStatus.value,
     'paymentMethod': paymentMethod.value,
     'staffId': staffId,
+    'branchId': branchId,
+    'discountStaffId': discountStaffId,
+    'voidedByStaffId': voidedByStaffId,
+    'voidedAt': voidedAt == null ? null : dateToJson(voidedAt!),
+    'loyaltyPointsRedeemed': loyaltyPointsRedeemed,
+    'loyaltyPointsEarned': loyaltyPointsEarned,
     'shopId': shopId,
     'createdAt': dateToJson(createdAt),
     'updatedAt': dateToJson(updatedAt),
@@ -152,6 +219,7 @@ class Sale with Syncable {
 
   factory Sale.fromJson(Map<dynamic, dynamic> json) => Sale(
     saleId: json['saleId'] as String,
+    invoiceNumber: (json['invoiceNumber'] ?? '') as String,
     customerId: (json['customerId'] ?? '') as String,
     items: ((json['items'] as List?) ?? const [])
         .map(
@@ -167,6 +235,14 @@ class Sale with Syncable {
     paymentStatus: PaymentStatusX.parse(json['paymentStatus']),
     paymentMethod: PaymentMethodX.parse(json['paymentMethod']),
     staffId: json['staffId'] as String?,
+    branchId: json['branchId'] == null
+        ? '${(json['shopId'] ?? '') as String}-main'
+        : json['branchId'] as String?,
+    discountStaffId: json['discountStaffId'] as String?,
+    voidedByStaffId: json['voidedByStaffId'] as String?,
+    voidedAt: json['voidedAt'] == null ? null : dateFromJson(json['voidedAt']),
+    loyaltyPointsRedeemed: (json['loyaltyPointsRedeemed'] as num? ?? 0).toInt(),
+    loyaltyPointsEarned: (json['loyaltyPointsEarned'] as num? ?? 0).toInt(),
     shopId: (json['shopId'] ?? '') as String,
     createdAt: dateFromJson(json['createdAt']),
     updatedAt: dateFromJson(json['updatedAt']),

@@ -186,7 +186,7 @@ class CustomerLedgerExcelService {
   </sheetData>
   <mergeCells count="2">
     <mergeCell ref="A1:E1"/>
-    <mergeCell ref="A${rowIndex}:E$rowIndex"/>
+    <mergeCell ref="A$rowIndex:E$rowIndex"/>
   </mergeCells>
   <autoFilter ref="A6:E$lastLedgerRow"/>
 </worksheet>

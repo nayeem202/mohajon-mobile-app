@@ -10,6 +10,7 @@ import '../../../core/models/syncable.dart';
 import '../models/expense.dart';
 import '../../notifications/models/notification_model.dart';
 import '../../notifications/providers/notification_providers.dart';
+import '../../branches/providers/branch_providers.dart';
 
 final expenseCategoriesProvider = Provider<List<ExpenseCategory>>((ref) {
   return const [
@@ -58,7 +59,10 @@ final expenseServiceProvider = Provider<ExpenseService>((ref) {
 
 final expensesProvider = StreamProvider<List<Expense>>((ref) {
   final shopId = ref.watch(shopIdProvider);
-  return ref.watch(localDatabaseProvider).expenses.watchForShop(shopId);
+  final branchId = ref.watch(currentBranchIdProvider) ?? '$shopId-main';
+  return ref.watch(localDatabaseProvider).expenses.watchForShop(shopId).map(
+        (items) => items.where((item) => (item.branchId ?? '$shopId-main') == branchId).toList(),
+      );
 });
 
 final expenseMonthFilterProvider = StateProvider<DateTime>((ref) {
@@ -324,6 +328,7 @@ class ExpenseService {
     required DateTime date,
     String notes = '',
   }) async {
+    final db = _ref.read(localDatabaseProvider);
     final now = DateTime.now();
     final expense = Expense(
       expenseId: _uuid.v4(),
@@ -334,6 +339,8 @@ class ExpenseService {
       date: date,
       notes: notes,
       shopId: _ref.read(shopIdProvider),
+      branchId: db.settings.get('activeBranchId') as String? ?? '${_ref.read(shopIdProvider)}-main',
+      staffId: db.settings.get('activeUserId') as String? ?? 'local-owner',
       updatedAt: now,
       syncStatus: SyncStatus.pending,
     );
@@ -375,7 +382,9 @@ class ExpenseService {
   Future<void> deleteExpense(String expenseId) async {
     final db = _ref.read(localDatabaseProvider);
     final shopId = _ref.read(shopIdProvider);
-    final existing = db.expenses.getForShop(shopId, expenseId);
+    final branchId = db.settings.get('activeBranchId') as String? ?? '$shopId-main';
+    final existing = db.expenses.valuesForShop(shopId).where((item) =>
+        item.expenseId == expenseId && (item.branchId ?? '$shopId-main') == branchId).firstOrNull;
     if (existing == null) return;
     await db.expenses.put(
       existing.copyWith(

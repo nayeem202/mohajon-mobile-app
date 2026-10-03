@@ -25,4 +25,9 @@ class HiveBoxes {
   static const vendorPayments = 'vendor_payments';
   static const expenses = 'expenses';
   static const notifications = 'notifications';
+  static const stockAdjustments = 'stock_adjustments';
+  static const supplierReturns = 'supplier_returns';
+  static const auditEvents = 'audit_events';
+  static const productBatches = 'product_batches';
+  static const saleReturns = 'sale_returns';
 }

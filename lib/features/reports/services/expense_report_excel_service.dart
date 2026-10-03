@@ -210,9 +210,9 @@ class ExpenseReportExcelService {
   <mergeCells count="3">
     <mergeCell ref="A1:D1"/>
     <mergeCell ref="A2:D2"/>
-    <mergeCell ref="A${dataRow}:D${dataRow}"/>
+    <mergeCell ref="A$dataRow:D$dataRow"/>
   </mergeCells>
-  <autoFilter ref="A8:D${lastDataRow}"/>
+  <autoFilter ref="A8:D$lastDataRow"/>
 </worksheet>
 ''';
   }

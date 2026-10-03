@@ -126,6 +126,10 @@ class InvoiceService {
             style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
           ),
         ],
+        if (company.tin.isNotEmpty)
+          pw.Text('TIN: ${company.tin}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+        if (company.bin.isNotEmpty)
+          pw.Text('BIN: ${company.bin}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
         if (company.tagline.trim().isNotEmpty)
           pw.Text(
             company.tagline,
@@ -166,7 +170,7 @@ class InvoiceService {
         pw.SizedBox(height: 6),
         _receiptLine(
           'Invoice #',
-          sale.saleId,
+          sale.invoiceNumber.isNotEmpty ? sale.invoiceNumber : sale.saleId,
         ),
         _receiptLine(
           'Date',
@@ -340,7 +344,8 @@ class InvoiceService {
 
   pw.Widget _receiptTotals(Sale sale) {
     final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final vatAmount = itemsTotal * (sale.vatPercent / 100);
+    final taxable = (itemsTotal - sale.discount).clamp(0, double.infinity).toDouble();
+    final vatAmount = taxable * (sale.vatPercent / 100);
 
     return pw.Column(
       children: [
@@ -546,7 +551,7 @@ class InvoiceService {
           pw.Expanded(
             child: pw.Row(
               children: [
-                _metaBadge('Invoice #', sale.saleId),
+                _metaBadge('Invoice #', sale.invoiceNumber.isNotEmpty ? sale.invoiceNumber : sale.saleId),
                 pw.SizedBox(width: 16),
                 _metaBadge(
                   'Date',
@@ -753,7 +758,8 @@ class InvoiceService {
 
   pw.Widget _summarySection(Sale sale) {
     final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final vatAmount = itemsTotal * (sale.vatPercent / 100);
+    final taxable = (itemsTotal - sale.discount).clamp(0, double.infinity).toDouble();
+    final vatAmount = taxable * (sale.vatPercent / 100);
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),

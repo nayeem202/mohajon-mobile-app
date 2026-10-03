@@ -8,6 +8,7 @@ import '../../../core/utils/snackbar.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/models/customer.dart';
+import '../../../core/app/app_providers.dart';
 import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
@@ -19,9 +20,11 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/utils/money.dart';
 import '../../products/providers/product_providers.dart';
+import '../../customers/providers/customer_providers.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 import '../providers/cart_provider.dart';
 import '../services/whatsapp_service.dart';
+import '../services/digital_invoice_service.dart';
 import 'widgets/sale_success_sheet.dart';
 
 const _kAmber = Color(0xFFFFC800);
@@ -59,6 +62,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   double _vatPercent = 0;
   String _customerQuery = '';
   bool _isCheckingOut = false;
+  bool _useLoyaltyReward = false;
 
   @override
   void initState() {
@@ -103,9 +107,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return customer.name.toLowerCase().contains(query) ||
           customer.phone.toLowerCase().contains(query);
     }).toList();
+    final loyalty = selectedCustomer == null
+        ? null
+        : ref.watch(customerLoyaltyProvider(selectedCustomer.customerId));
+    final loyaltyOffer = ref.watch(loyaltyOfferProvider);
 
     final vatAmount = cart.subtotal * (_vatPercent / 100);
-    final discountAmount = _discountAmount(cart.subtotal, vatAmount);
+    final manualDiscountAmount = _discountAmount(cart.subtotal, vatAmount);
+    final loyaltyDiscount = _useLoyaltyReward &&
+            loyaltyOffer.enabled &&
+            loyalty?.points != null &&
+            loyalty!.points >= loyaltyOffer.pointsRequired &&
+            cart.subtotal >= loyaltyOffer.minimumPurchase
+        ? ((cart.subtotal + vatAmount) * loyaltyOffer.discountPercent / 100)
+            .clamp(0, loyaltyOffer.maxDiscount)
+            .toDouble()
+        : 0.0;
+    final discountAmount = (manualDiscountAmount + loyaltyDiscount)
+        .clamp(0, cart.subtotal + vatAmount)
+        .toDouble();
     final total = (cart.subtotal + vatAmount - discountAmount).clamp(
       0,
       double.infinity,
@@ -855,6 +875,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     ),
                                     onChanged: (_) => setState(() {}),
                                   ),
+                                  if (loyaltyOffer.enabled &&
+                                      loyalty?.points != null &&
+                                      loyalty!.points >= loyaltyOffer.pointsRequired &&
+                                      cart.subtotal >= loyaltyOffer.minimumPurchase) ...[
+                                    const SizedBox(height: 8),
+                                    SwitchListTile.adaptive(
+                                      contentPadding: EdgeInsets.zero,
+                                      value: _useLoyaltyReward,
+                                      onChanged: (value) => setState(() => _useLoyaltyReward = value),
+                                      title: Text(l10n.t('useLoyaltyReward'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                                      subtitle: Text(l10n.t('loyaltyRewardOffer'), style: const TextStyle(fontSize: 11, color: _kMuted)),
+                                      secondary: const Icon(Icons.stars_rounded, color: MohajonWarm.goldText),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1120,6 +1154,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           controller.setDiscount(
                                             discountAmount,
                                           );
+                                          controller.setLoyaltyPointsRedeemed(
+                                            _useLoyaltyReward ? 100 : 0,
+                                          );
                                           controller.setPaymentMethod(
                                             _paymentMethod,
                                           );
@@ -1147,7 +1184,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 selectedCustomer?.name ?? '',
                                             t: (key) => l10n.t(key),
                                           );
-                                          if (mounted) {
+                                          if (context.mounted) {
                                             await showModalBottomSheet<void>(
                                               context: context,
                                               backgroundColor: Colors.transparent,
@@ -1228,12 +1265,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 whatsappPhone:
                                                     selectedCustomer?.phone,
                                                 whatsappMessage: billMessage,
+                                                onDigitalInvoice: () async {
+                                                  try {
+                                                    final uri = await DigitalInvoiceService(
+                                                      ref.read(localDatabaseProvider),
+                                                    ).createLink(sale);
+                                                    if (!context.mounted) return;
+                                                    if (uri == null) {
+                                                      showAppSnackBar(context, l10n.t('digitalInvoiceUnavailable'), isError: true);
+                                                      return;
+                                                    }
+                                                    final ok = await WhatsAppService.openChat(
+                                                      phone: selectedCustomer?.phone ?? '',
+                                                      message: '${l10n.t('digitalInvoiceMessage')}\n$uri',
+                                                    );
+                                                    if (!ok && context.mounted) {
+                                                      showAppSnackBar(context, l10n.t('whatsappFailed'), isError: true);
+                                                    }
+                                                  } catch (_) {
+                                                    if (context.mounted) {
+                                                      showAppSnackBar(context, l10n.t('digitalInvoiceUnavailable'), isError: true);
+                                                    }
+                                                  }
+                                                },
                                               ),
                                             );
                                           }
-                                          if (mounted) navigator.pop();
+                                          if (context.mounted) navigator.pop();
                                         } catch (error) {
-                                          if (mounted) {
+                                          if (context.mounted) {
                                             showAppSnackBar(
                                               context,
                                               friendlyErrorMessage(error),
@@ -1241,7 +1301,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             );
                                           }
                                         } finally {
-                                          if (mounted) {
+                                          if (context.mounted) {
                                             setState(
                                               () => _isCheckingOut = false,
                                             );

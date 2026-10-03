@@ -20,18 +20,124 @@ class AppLocalizations {
       'appName': 'Mohajon',
       'featureBusinessCoach': 'Business Coach',
       'featureBusinessCoachSubtitle': 'Daily actions for better profit',
+      'creditControl': 'Credit control',
+      'creditLimit': 'Credit limit',
+      'creditLimitHint': 'Leave empty for no limit',
+      'creditLimitHelp':
+          'A due sale will be blocked when this customer crosses the limit.',
+      'invalidAmount': 'Enter a valid amount',
+      'duplicateCustomers': 'Duplicate customers',
+      'duplicateCustomersHelp':
+          'Review matching customers before merging their history.',
+      'noDuplicateCustomers': 'No likely duplicate customers found.',
+      'mergeCustomers': 'Merge customers',
+      'mergeCustomersConfirm':
+          'Move all history from {source} into {target}? The source profile will be archived.',
+      'customersMerged': 'Customer history merged successfully.',
+      'merge': 'Merge',
+      'loyaltyTitle': 'Loyalty & offers',
+      'loyaltyRewardReady':
+          'Reward threshold reached — apply an offer on the next sale.',
+      'loyaltyNextReward': '{points} points to the next reward',
+      'useLoyaltyReward': 'Use loyalty reward',
+      'loyaltyRewardOffer': 'Redeem 100 points for 5% off (up to ৳100).',
+      'loyaltyOfferSettingsTitle': 'Repeat-customer offer',
+      'loyaltyOfferSettingsSubtitle':
+          'Configure the offline-safe loyalty offer used at checkout.',
+      'loyaltyOfferPointsLabel': 'Points required',
+      'loyaltyOfferPercentLabel': 'Discount percentage',
+      'loyaltyOfferMaxLabel': 'Maximum discount (৳)',
+      'loyaltyOfferMinimumLabel': 'Minimum purchase (৳)',
+      'loyaltyOfferInvalid': 'Enter valid offer values.',
+      'reminderOpened': 'opened',
+      'reminderFailed': 'failed',
+      'reminderQueued': 'queued',
+      'reminderSent': 'sent',
+      'reminderDelivered': 'delivered',
+      'markReminderDelivered': 'Mark delivered',
+      'markReminderFailed': 'Mark failed',
+      'staffAttribution': 'Recorded by staff',
+      'stockAdjustments': 'Stock adjustments',
+      'requestStockAdjustment': 'Request stock adjustment',
+      'adjustmentQuantity': 'Quantity change',
+      'adjustmentReason': 'Reason',
+      'submitAdjustment': 'Submit adjustment',
+      'adjustmentHistory': 'Adjustment history',
+      'noAdjustments': 'No stock adjustments recorded.',
+      'adjustmentFormInvalid':
+          'Select a product, enter a non-zero quantity and a reason.',
+      'adjustmentSubmitted': 'Adjustment submitted for owner approval.',
+      'adjustmentApproved': 'Stock adjustment approved and applied.',
+      'purchaseOrders': 'Purchase orders',
+      'receivePurchase': 'Receive purchase',
+      'receivedQuantity': 'Received quantity',
+      'receive': 'Receive',
+      'purchaseReceived': 'Purchase received and stock updated.',
+      'supplierReturn': 'Supplier return',
+      'returnQuantity': 'Return quantity',
+      'returnReason': 'Return reason',
+      'returnToSupplier': 'Return to supplier',
+      'supplierReturnSaved': 'Supplier return saved and stock updated.',
+      'saleReturn': 'Sale return',
+      'returnSale': 'Return items',
+      'refundMethod': 'Refund method',
+      'refundReason': 'Refund reason',
+      'refundCash': 'Cash',
+      'refundBkash': 'bKash',
+      'refundNagad': 'Nagad',
+      'refundBank': 'Bank',
+      'refundOther': 'Other',
+      'saleReturnSaved': 'Sale return saved and stock restored.',
+      'shareDigitalInvoice': 'Share digital invoice',
+      'digitalInvoiceMessage': 'Your digital invoice:',
+      'digitalInvoiceUnavailable':
+          'Digital invoice link is unavailable. Save or share the PDF instead.',
+      'tinNumber': 'TIN number',
+      'binNumber': 'BIN number',
+      'tinHint': 'Optional tax identification number',
+      'binHint': 'Optional business identification number',
+      'auditTimeline': 'Audit timeline',
+      'noAuditEvents': 'No audit activity recorded yet.',
+      'importCustomers': 'Import customers',
+      'import': 'Import',
+      'importCustomersHint': 'Paste CSV with name,phone,email,address columns',
+      'importFromFile': 'Choose CSV file',
+      'importCustomersResult':
+          'Imported {created}; skipped duplicates: {skipped}.',
+      'batchNumber': 'Batch number',
+      'batchNumberHint': 'Optional batch or lot reference',
+      'sku': 'SKU',
+      'skuHint': 'Optional stock keeping unit',
+      'variant': 'Variant',
+      'variantHint': 'e.g. 500ml / Red / Large',
+      'businessHealth': 'Business Health',
+      'businessHealthSubtitle':
+          'One place for insights, risks, and cash outlook',
+      'businessHealthBrief': 'Your business at a glance',
+      'businessHealthBriefDesc':
+          'Review today’s actions, risk signals, and upcoming cash pressure from one clear hub.',
+      'businessHealthTools': 'Tools',
+      'businessHealthHealthy': 'Your business looks healthy today.',
+      'businessHealthNeedsAttention': 'A few areas need your attention today.',
+      'businessHealthScore': 'Health score',
+      'businessHealthDueRisk': 'Due risk',
+      'businessHealthLowStock': 'Low stock',
+      'businessHealthInsights': 'Insights',
+      'businessHealthTopActions': 'Top actions',
       'featurePurchasePlanner': 'Purchase Planner',
       'featurePurchasePlannerSubtitle': 'Smart reorder recommendations',
       'featureCashflowRadar': 'Cashflow Radar',
       'featureCashflowRadarSubtitle': 'Forecast cash gaps before they happen',
       'featureBusinessGuardian': 'Business Guardian',
-      'featureBusinessGuardianSubtitle': 'Protect sales, cash, and stock activity',
+      'featureBusinessGuardianSubtitle':
+          'Protect sales, cash, and stock activity',
       'featureDayClosing': 'Day Closing',
       'featureDayClosingSubtitle': 'Reconcile cash before closing shop',
       'featureCustomerGrowth': 'Customer Growth',
       'featureCustomerGrowthSubtitle': 'Turn customer data into repeat sales',
       'coachTitle': 'Mohajon Business Coach',
-      'coachTodayBrief': 'Today’s data has been turned into practical business actions.',
+      'coachTodayBrief':
+          'Today’s data has been turned into practical business actions.',
       'coachSyncing': 'Syncing with server...',
       'coachHistorySaved': 'Saved history: {count}',
       'coachNoWarning': 'No urgent warning today',
@@ -73,7 +179,8 @@ class AppLocalizations {
       'dayClosingVariance': 'Variance: {amount}',
       'dayClosingReconciliation': 'Cash reconciliation',
       'growthTitle': 'Customer Growth Engine',
-      'growthBrief': 'Turn customer data into repeat sales with practical actions.',
+      'growthBrief':
+          'Turn customer data into repeat sales with practical actions.',
       'growthSegments': 'Customer segments',
       'growthActions': 'Recommended actions',
       'growthNone': 'No urgent growth action today.',
@@ -96,21 +203,27 @@ class AppLocalizations {
       'cashflowSustainable': 'Cash position is currently sustainable.',
       'cashflowGap': 'Cash gap may appear within the next 30 days.',
       'guardianLargeSale': 'Large sale recorded',
-      'guardianLargeSaleBody': 'Confirm the payment and stock movement for this sale.',
+      'guardianLargeSaleBody':
+          'Confirm the payment and stock movement for this sale.',
       'guardianDeletion': 'A record was deleted',
       'guardianDeletionBody': 'Review this deletion in the audit timeline.',
       'guardianLargeExpense': 'Large expense needs review',
       'growthInactiveTitle': 'Bring back inactive customers',
-      'growthInactiveBody': 'Send a personalized offer to customers who have not purchased in 60 days.',
+      'growthInactiveBody':
+          'Send a personalized offer to customers who have not purchased in 60 days.',
       'growthVipTitle': 'Protect VIP relationships',
-      'growthVipBody': 'Offer early access or a loyalty reward to your highest-value customers.',
+      'growthVipBody':
+          'Offer early access or a loyalty reward to your highest-value customers.',
       'growthRiskTitle': 'Collect dues before offering credit',
-      'growthRiskBody': 'Follow up with high-value customers before extending more credit.',
+      'growthRiskBody':
+          'Follow up with high-value customers before extending more credit.',
       'purchaseRefresh': 'Refresh pending orders',
       'purchaseBrief': 'Inventory decision brief',
-      'purchaseBriefDesc': 'Uses the last 30 days of sales, current stock and purchase cost history.',
+      'purchaseBriefDesc':
+          'Uses the last 30 days of sales, current stock and purchase cost history.',
       'purchaseBudget': 'Maximum purchase budget',
-      'purchaseBudgetHint': 'Leave unchanged to use this month’s estimated available cash.',
+      'purchaseBudgetHint':
+          'Leave unchanged to use this month’s estimated available cash.',
       'purchaseCashBudget': 'Cash budget',
       'purchaseRecommended': 'Recommended',
       'purchaseHealthy': 'Stock looks healthy',
@@ -184,7 +297,8 @@ class AppLocalizations {
       'searchClientHint': 'Search client by name or phone...',
       'noClientsYet': 'No clients yet',
       'noClientMatch': 'No matching clients',
-      'noClientsYetHint': 'Add clients from the Clients screen to select them here.',
+      'noClientsYetHint':
+          'Add clients from the Clients screen to select them here.',
       'tryDifferentName': 'Try a different name or phone number.',
       'reviewItemsPayment': 'Review items & payment',
       'custom': 'Custom',
@@ -202,6 +316,7 @@ class AppLocalizations {
       'staff': 'Staff',
       'login': 'Phone login',
       'sectionOperations': 'Operations',
+      'sectionOperationsSubtitle': 'Tools to run your business',
       'sectionFinance': 'Finance',
       'sectionApp': 'App',
       'productsDesc': 'Stock, pricing, and barcodes',
@@ -221,9 +336,18 @@ class AppLocalizations {
       'signOutMiddle': 'Sign Out',
       'ownerName': 'Owner Name',
       'appTagline': 'Smart shop management',
-      'noFeaturesAssigned': 'No app features have been assigned to this account.\nPlease contact the shop owner.',
+      'noFeaturesAssigned':
+          'No app features have been assigned to this account.\nPlease contact the shop owner.',
       'offlineFirstCloud': 'Offline first, cloud ready',
       'moreDesc': 'Everything in one place',
+      'branches': 'Branches',
+      'branchesSubtitle': 'Switch the active branch and manage locations',
+      'assignStaff': 'Assign staff',
+      'staffAssigned': 'Staff assigned to branch',
+      'addBranch': 'Add branch',
+      'branchName': 'Branch name',
+      'branchAddress': 'Address',
+      'noBranches': 'No branches available yet.',
       'hubHeroTagline': 'Your business, one touch away',
       'account': 'Account',
       'signedInAccount': 'Signed in account',
@@ -242,20 +366,27 @@ class AppLocalizations {
       'syncingData': 'Syncing data...',
       'syncedKey': 'All synced',
       'offlineModeTitle': 'Offline mode',
-      'offlineModeDesc': 'Working on this device. Data syncs automatically when Internet is back.',
+      'offlineModeDesc':
+          'Working on this device. Data syncs automatically when Internet is back.',
       'offlineModePending': 'Offline • {count} changes not synced yet',
+      'offlineShort': 'Offline',
+      'syncedShort': 'Synced',
+      'pendingSyncShort': '{count} pending',
+      'retrySyncShort': 'Retry sync',
       'syncingNowTitle': 'Syncing',
       'syncFailedRetryHint': 'Tap to try again',
       'unsyncedChanges': '{count} changes not synced — sync now',
       'internetAndSync': 'Internet & Sync',
       'internetAndSyncDesc': 'Online/offline working & data sync',
       'connectivityHowWorks': 'How it works',
-      'connectivityHowWorksDesc': 'Data is saved on this device first. When Internet is available it automatically syncs to the cloud — nothing gets lost.',
+      'connectivityHowWorksDesc':
+          'Data is saved on this device first. When Internet is available it automatically syncs to the cloud — nothing gets lost.',
       'offlineWorksTitle': 'Works offline',
       'onlineNeedsTitle': 'Needs online',
       'badgeOffline': 'Offline',
       'badgeOnline': 'Online',
-      'offlineFeatureEntry': 'Product, sale, due/khata, purchase & expense entries',
+      'offlineFeatureEntry':
+          'Product, sale, due/khata, purchase & expense entries',
       'offlineFeatureReports': 'View reports & calculations',
       'offlineFeatureBackup': 'Safe on-device data storage',
       'onlineFeatureSync': 'Cloud sync & backup synchronization',
@@ -289,14 +420,18 @@ class AppLocalizations {
       'renew': 'Renew',
       'resumePayment': 'Resume',
       'paymentPending': 'Payment pending',
-      'pendingPaymentNotice': 'A payment is in progress. Resume to complete it.',
+      'pendingPaymentNotice':
+          'A payment is in progress. Resume to complete it.',
       'noActivePlan': 'No active plan',
-      'noActivePlanNotice': 'Choose a plan below to keep your business running.',
+      'noActivePlanNotice':
+          'Choose a plan below to keep your business running.',
       'trialActiveTitle': 'Free trial active',
-      'trialActiveNotice': 'Your free trial is running. Subscribe to keep all features.',
+      'trialActiveNotice':
+          'Your free trial is running. Subscribe to keep all features.',
       'trialDaysLeft': 'Trial days left',
       'paywallTitle': 'Trial period is over',
-      'paywallBody': 'You can still view all reports and history. To add new entries, please subscribe.',
+      'paywallBody':
+          'You can still view all reports and history. To add new entries, please subscribe.',
       'paywallPriceHint': 'Start anytime for just 29৳ per month.',
       'whatsappBillTitle': 'Bill',
       'whatsappFullyPaid': 'Fully paid',
@@ -315,6 +450,7 @@ class AppLocalizations {
       'receiptSavedAt': 'Receipt saved to {path}',
       'receiptSaveFailed': 'Could not save the receipt',
       'close': 'Close',
+      'assign': 'Assign',
       'subscribeNow': 'Subscribe',
       'subscribe': 'Subscribe',
       'price': 'Price',
@@ -329,7 +465,8 @@ class AppLocalizations {
       'paymentCouldNotStart': 'Payment could not be started. Please try again.',
       'paymentFailed': 'Payment failed. Please try again.',
       'paymentCancelled': 'Payment cancelled',
-      'paymentCancelledNotice': 'You cancelled the payment. You can subscribe again anytime.',
+      'paymentCancelledNotice':
+          'You cancelled the payment. You can subscribe again anytime.',
       'couldNotLoadPlans': 'Could not load subscription plans.',
       'ok': 'OK',
       'currentPlan': 'Current plan',
@@ -506,9 +643,12 @@ class AppLocalizations {
       'optionalNote': 'Optional Note',
       'monthlyPayoutHint': 'e.g. Monthly payout',
       'howPayoutsWork': 'How Payouts Work',
-      'payoutHelp1': '• Reduces Outstanding Capital: The payout amount is subtracted from the investment outstanding balance.',
-      'payoutHelp2': '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.',
-      'payoutHelp3': '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
+      'payoutHelp1':
+          '• Reduces Outstanding Capital: The payout amount is subtracted from the investment outstanding balance.',
+      'payoutHelp2':
+          '• Reduces Net Due: The investor\'s remaining amount (investment + profit - paid) decreases by the payout amount.',
+      'payoutHelp3':
+          '• The total paid out for the investment increases, bringing the investor closer to full settlement.',
       'savePayout': 'Save Payout',
       'payoutRecordedSuccess': 'Payout recorded successfully',
       'failed': 'Failed',
@@ -631,7 +771,8 @@ class AppLocalizations {
       'fullName': 'Full Name',
       'fullNameHint': 'e.g. Rahim Uddin',
       'specialNotesHint': 'Any special notes about this client...',
-      'newClientInfo': 'New clients start with zero dues and zero visits. Their purchase history will update automatically as you add sales.',
+      'newClientInfo':
+          'New clients start with zero dues and zero visits. Their purchase history will update automatically as you add sales.',
       'saveClient': 'Save Client',
       'updateClient': 'Update Client',
       'savingCustomer': 'Saving customer...',
@@ -704,7 +845,8 @@ class AppLocalizations {
       'keepAccountSecure': 'Keep your account secure',
       'updateYourPassword': 'Update your password',
       'createPassword': 'Create a password',
-      'gmailPasswordInfo': 'Your account uses Gmail. Set a password to also sign in with email and password.',
+      'gmailPasswordInfo':
+          'Your account uses Gmail. Set a password to also sign in with email and password.',
       'currentPasswordField': 'Current password',
       'newPasswordField': 'New password',
       'confirmPasswordField': 'Confirm password',
@@ -724,8 +866,10 @@ class AppLocalizations {
       'deleteNotification': 'Delete notification?',
       'deleteForMe': 'Delete for me',
       'deleteForEveryone': 'Delete for everyone',
-      'deleteChoiceMessage': 'Choose whether to remove it only for you or for everyone in this shop.',
-      'deleteChoiceMessageOnlyYou': 'This notification will be removed only for you.',
+      'deleteChoiceMessage':
+          'Choose whether to remove it only for you or for everyone in this shop.',
+      'deleteChoiceMessageOnlyYou':
+          'This notification will be removed only for you.',
       'notAllowedDeleteEveryone': 'You are not allowed to delete for everyone.',
       'chipAll': 'All',
       'chipShop': 'Shop',
@@ -734,7 +878,8 @@ class AppLocalizations {
       'tabUnread': 'Unread',
       'unreadNew': '{n} new',
       'noNotificationsYet': 'No notifications yet',
-      'noNotificationsHint': 'We\u2019ll notify you when something important happens.',
+      'noNotificationsHint':
+          'We\u2019ll notify you when something important happens.',
       'minutesAgo': '{n} minutes ago',
       'pushNewNotification': 'Push New Notification',
       'sendNotification': 'Send Notification',
@@ -754,10 +899,13 @@ class AppLocalizations {
       'typePayment': 'Payment',
       'titleRequired': 'Title is required',
       'messageRequired': 'Message is required',
-      'sessionExpiredRetry': 'Your session has expired. Please log in again, then retry.',
-      'fcmNotConfigured': 'Push notifications are not configured on the server yet.',
+      'sessionExpiredRetry':
+          'Your session has expired. Please log in again, then retry.',
+      'fcmNotConfigured':
+          'Push notifications are not configured on the server yet.',
       'fcmConfigInvalid': 'The server Firebase configuration is invalid.',
-      'unableSendNotification': 'Unable to send notification. Check your connection and try again.',
+      'unableSendNotification':
+          'Unable to send notification. Check your connection and try again.',
       'controlAlerts': 'Control what alerts you receive',
       'onKey': 'On',
       'offKey': 'Off',
@@ -808,7 +956,8 @@ class AppLocalizations {
       'appLock': 'App Lock',
       'requirePinToOpen': 'Require PIN to open app',
       'createPinTitle': 'Create a PIN',
-      'createPinSubtitle': 'Enter a 4-digit PIN. You will need it every time you open the app.',
+      'createPinSubtitle':
+          'Enter a 4-digit PIN. You will need it every time you open the app.',
       'confirmPinTitle': 'Confirm your PIN',
       'confirmPinSubtitle': 'Enter the same 4-digit PIN again to confirm.',
       'enterPinTitle': 'Enter your PIN',
@@ -834,7 +983,8 @@ class AppLocalizations {
       'appVersion': 'App Version',
       'termsOfService': 'Terms of Service',
       'privacyPolicy': 'Privacy Policy',
-      'termsBody': '''Welcome to Mohajon. By using this application you agree to the following terms.
+      'termsBody':
+          '''Welcome to Mohajon. By using this application you agree to the following terms.
 
 1. Account
 You are responsible for keeping your login credentials safe. Do not share your password or PIN with anyone.
@@ -852,7 +1002,8 @@ We strive to keep the service available at all times but do not guarantee uninte
 We may update these terms from time to time. Continued use of the app after changes means you accept the revised terms.
 
 For questions about these terms, contact our support team from the Settings screen.''',
-      'privacyBody': '''Your privacy matters to us. This policy explains what we collect and how we use it.
+      'privacyBody':
+          '''Your privacy matters to us. This policy explains what we collect and how we use it.
 
 1. Information We Collect
 We collect the account details you provide (name, email, phone) and the business records you create inside the app, such as sales, purchases, and customer ledgers.
@@ -868,7 +1019,8 @@ Data is stored securely and protected in transit. You can request export or dele
 
 5. Contact
 If you have any privacy questions, reach out via the Contact Support option in Settings.''',
-      'privacyPolicyBody': '''Your privacy matters to us. This policy explains what we collect and how we use it.
+      'privacyPolicyBody':
+          '''Your privacy matters to us. This policy explains what we collect and how we use it.
 
 1. Information We Collect
 We collect the account details you provide (name, email, phone) and the business records you create inside the app, such as sales, purchases, and customer ledgers.
@@ -908,7 +1060,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'updateProduct': 'Update Product',
       'savingProduct': 'Saving product...',
       'updatingProduct': 'Updating product...',
-      'lowStockHelp': 'When stock falls below the minimum alert level, you will receive a low-stock notification on the Home dashboard.',
+      'lowStockHelp':
+          'When stock falls below the minimum alert level, you will receive a low-stock notification on the Home dashboard.',
       'productImage': 'Product Image',
       'tapToUploadImage': 'Tap to upload image',
       'clearPhotoHelp': 'Clear photo helps identify products faster',
@@ -918,7 +1071,7 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'catPersonalCare': 'Personal Care',
       'catRice': 'Rice',
       'catDairy': 'Dairy',
-'catMeat': 'Meat',
+      'catMeat': 'Meat',
       'catVegetables': 'Vegetables',
       'catHealth': 'Health',
       'netPnL': 'Net P&L',
@@ -928,7 +1081,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'grossLoss': 'Gross Loss',
       'netProfitLoss': 'Net Profit / Loss',
       'profitLossMethods': 'Profit / Loss Sharing Methods',
-      'proportionalDesc': 'Profit automatically calculated according to contribution.',
+      'proportionalDesc':
+          'Profit automatically calculated according to contribution.',
       'fixedRate': 'Fixed Rate',
       'fixedRateDesc': 'Manual percentage regardless of contribution.',
       'howPaidOutCalculated': 'How Paid Out Is Calculated',
@@ -971,8 +1125,10 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'staffSummaryInactive': ', {inactive} inactive',
       'noStaffMatch': 'No staff match your search',
       'noStaffMembersYet': 'No staff members yet',
-      'noStaffHint': 'Add your team members and choose\nwhich menus they can access',
-'couldNotLoadStaff': 'Could not load staff.\nPlease check your connection.',
+      'noStaffHint':
+          'Add your team members and choose\nwhich menus they can access',
+      'couldNotLoadStaff':
+          'Could not load staff.\nPlease check your connection.',
       'retry': 'Retry',
       'shopStaff': 'Shop Staff',
       'teamAndPermissions': 'Team & permissions',
@@ -997,18 +1153,22 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'minPassword': 'Minimum 6 characters',
       'passwordIsRequired': 'Password is required',
       'passwordTooShort': 'Password must be at least 6 characters',
-      'emailPasswordUnchanged': 'Email and password stay unchanged while editing.',
+      'emailPasswordUnchanged':
+          'Email and password stay unchanged while editing.',
       'role': 'Role',
       'saveChanges': 'Save Changes',
       'createStaffMember': 'Create Staff Member',
       'creating': 'Creating...',
       'menuAccess': 'Menu Access',
-      'menuAccessHelp': 'Grant access by section. Tap the box on the right to allow or remove the whole group, or expand a section to pick individual menus.',
+      'menuAccessHelp':
+          'Grant access by section. Tap the box on the right to allow or remove the whole group, or expand a section to pick individual menus.',
       'sectionMainMenu': 'Main Menu',
-      'couldNotLoadRolesMenus': 'Could not load roles and menus.\nPlease check your connection.',
+      'couldNotLoadRolesMenus':
+          'Could not load roles and menus.\nPlease check your connection.',
       'tapToAddStaffPhoto': 'Tap to add staff photo',
       'removeStaffMember': 'Remove Staff Member?',
-      'removeStaffConfirm': 'This staff member will lose access to the shop. This action cannot be undone.',
+      'removeStaffConfirm':
+          'This staff member will lose access to the shop. This action cannot be undone.',
       'removeAction': 'Remove',
       'takeAPhoto': 'Take a photo',
       'removePhoto': 'Remove photo',
@@ -1028,17 +1188,23 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'phoneCopied': 'Phone number copied',
       'faqTitle': 'Frequently Asked Questions',
       'faqAddProductQ': 'How do I add a new product?',
-      'faqAddProductA': 'Go to the Stock tab, tap the + button, then enter the product name, price, and stock quantity.',
+      'faqAddProductA':
+          'Go to the Stock tab, tap the + button, then enter the product name, price, and stock quantity.',
       'faqSaleQ': 'How do I record a sale?',
-      'faqSaleA': 'Open the Sales (POS) tab, tap products to add them to the cart, choose a customer, and complete checkout.',
+      'faqSaleA':
+          'Open the Sales (POS) tab, tap products to add them to the cart, choose a customer, and complete checkout.',
       'faqDueQ': 'How does customer credit and due payment work?',
-      'faqDueA': 'When a client buys on credit, the amount is added to their due balance. You can track and collect it from the Clients tab.',
+      'faqDueA':
+          'When a client buys on credit, the amount is added to their due balance. You can track and collect it from the Clients tab.',
       'faqOfflineQ': 'Can I use the app without internet?',
-      'faqOfflineA': 'Yes. Sales, stock, and client records work offline on your device and sync automatically when you are back online.',
+      'faqOfflineA':
+          'Yes. Sales, stock, and client records work offline on your device and sync automatically when you are back online.',
       'faqSyncQ': 'When does my data sync?',
-      'faqSyncA': 'Your data syncs to your account automatically when you have an internet connection, or you can tap Sync Now from the More tab.',
+      'faqSyncA':
+          'Your data syncs to your account automatically when you have an internet connection, or you can tap Sync Now from the More tab.',
       'faqStaffQ': 'How do I give staff access?',
-      'faqStaffA': 'Open the More tab, go to Staff, and add a staff member with the permissions you want them to have.',
+      'faqStaffA':
+          'Open the More tab, go to Staff, and add a staff member with the permissions you want them to have.',
       'couldNotUploadImage': 'Could not upload profile image',
       'signOutConfirm': 'Are you sure you want to sign out of your account?',
       'storeInformation': 'Store Information',
@@ -1069,15 +1235,20 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'shareCalculatedByContribution': 'Share calculated by contribution.',
       'quickTour': 'Quick Tour',
       'welcomeToMohajon': 'Welcome to মহাজন',
-      'tourWelcomeDesc': 'Your complete business management companion. Let us show you around.',
+      'tourWelcomeDesc':
+          'Your complete business management companion. Let us show you around.',
       'tourDashboardTitle': 'Dashboard',
-      'tourDashboardDesc': 'See your business at a glance — sales, stock levels, and daily stats.',
+      'tourDashboardDesc':
+          'See your business at a glance — sales, stock levels, and daily stats.',
       'tourPosTitle': 'Point of Sale',
-      'tourPosDesc': 'Create new sales, add products to cart, and process payments quickly.',
+      'tourPosDesc':
+          'Create new sales, add products to cart, and process payments quickly.',
       'tourStockTitle': 'Stock Management',
-      'tourStockDesc': 'Track inventory, update product details, and manage stock levels.',
+      'tourStockDesc':
+          'Track inventory, update product details, and manage stock levels.',
       'tourClientsTitle': 'Clients',
-      'tourClientsDesc': 'Manage your customers, track due balances, and view purchase history.',
+      'tourClientsDesc':
+          'Manage your customers, track due balances, and view purchase history.',
       'skip': 'Skip',
       'next': 'Next',
       'finish': 'Finish',
@@ -1086,31 +1257,43 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'viewTourDesc': 'Revisit the app walkthrough',
       'skipAll': 'Skip All',
       'tourStepHome': 'Home Dashboard',
-      'tourStepHomeDesc': 'See your daily sales, stock levels, and business stats at a glance.',
+      'tourStepHomeDesc':
+          'See your daily sales, stock levels, and business stats at a glance.',
       'tourStepSales': 'Point of Sale',
-      'tourStepSalesDesc': 'Create new sales, search products, and process customer payments.',
+      'tourStepSalesDesc':
+          'Create new sales, search products, and process customer payments.',
       'tourStepStock': 'Stock Management',
-      'tourStepStockDesc': 'Track inventory, view stock levels, and add new products.',
+      'tourStepStockDesc':
+          'Track inventory, view stock levels, and add new products.',
       'tourStepClients': 'Clients',
-      'tourStepClientsDesc': 'Manage customers, track due balances, and view purchase history.',
+      'tourStepClientsDesc':
+          'Manage customers, track due balances, and view purchase history.',
       'tourStepMore': 'More Options',
-      'tourStepMoreDesc': 'Access vendors, expenses, investors, staff, reports, and settings.',
+      'tourStepMoreDesc':
+          'Access vendors, expenses, investors, staff, reports, and settings.',
       'tourStepStats': 'Business Overview',
-      'tourStepStatsDesc': 'Quick stats showing total products, clients, and outstanding dues.',
+      'tourStepStatsDesc':
+          'Quick stats showing total products, clients, and outstanding dues.',
       'tourStepProductGrid': 'Product Grid',
-      'tourStepProductGridDesc': 'Tap a product to add it to cart. Use search to find items quickly.',
+      'tourStepProductGridDesc':
+          'Tap a product to add it to cart. Use search to find items quickly.',
       'tourStepCheckout': 'Checkout',
-      'tourStepCheckoutDesc': 'Review cart items, apply discounts, and complete the sale.',
+      'tourStepCheckoutDesc':
+          'Review cart items, apply discounts, and complete the sale.',
       'tourStepAddProduct': 'Add Product',
-      'tourStepAddProductDesc': 'Tap here to add a new product with name, price, and stock details.',
+      'tourStepAddProductDesc':
+          'Tap here to add a new product with name, price, and stock details.',
       'tourStepAddClient': 'Add Client',
-      'tourStepAddClientDesc': 'Tap here to add a new customer with contact information.',
+      'tourStepAddClientDesc':
+          'Tap here to add a new customer with contact information.',
       'tourMoreVendors': 'Vendors',
-      'tourMoreVendorsDesc': 'Manage your vendor list and supplier information.',
+      'tourMoreVendorsDesc':
+          'Manage your vendor list and supplier information.',
       'tourMoreExpenses': 'Expenses',
       'tourMoreExpensesDesc': 'Track and categorize business expenses.',
       'tourMoreInvestors': 'Investors',
-      'tourMoreInvestorsDesc': 'View and manage your investor profiles and contributions.',
+      'tourMoreInvestorsDesc':
+          'View and manage your investor profiles and contributions.',
       'tourMoreStaff': 'Staff',
       'tourMoreStaffDesc': 'Manage staff accounts, roles, and permissions.',
       'tourMoreReports': 'Reports',
@@ -1118,7 +1301,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'tourMoreInvestments': 'Investments',
       'tourMoreInvestmentsDesc': 'Track investment portfolios and returns.',
       'tourMoreSettings': 'Settings',
-      'tourMoreSettingsDesc': 'Configure app preferences, security, and privacy.',
+      'tourMoreSettingsDesc':
+          'Configure app preferences, security, and privacy.',
       'reportSalesSummary': 'Sales Summary',
       'reportCustomerLedger': 'Customer Ledger',
       'reportInventory': 'Inventory Report',
@@ -1210,9 +1394,11 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'noTransactionsInPeriod': 'No transactions in this period',
       'noPaymentsInPeriod': 'No payments in this period',
       'noDuesAllClear': 'No dues recorded. All clear!',
-      'noCustomerData': 'No customer data yet.\nStart by adding customers and recording sales.',
+      'noCustomerData':
+          'No customer data yet.\nStart by adding customers and recording sales.',
       'noLedgerEntries': 'No ledger entries found for this customer.',
-      'customersOweNotice': 'Customers owe this amount against open sale invoices. Collect dues to keep the books clean.',
+      'customersOweNotice':
+          'Customers owe this amount against open sale invoices. Collect dues to keep the books clean.',
       'unknownCustomer': 'Unknown customer',
       'cashWalkIn': 'Cash (Walk-in)',
       'settled': 'Settled',
@@ -1265,34 +1451,142 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'hambotQuickAsk': 'Ask Mohajon AI',
       'voiceBillingHint': 'Say it like: "3 kg rice, 2 kg sugar, 1 litre oil"',
       'voiceBillingListening': 'Listening… your order will appear here',
-      'voiceBillingIdle': 'Tap the mic and say, e.g. "3 kg rice, 2 kg sugar, 1 litre oil"',
+      'voiceBillingIdle':
+          'Tap the mic and say, e.g. "3 kg rice, 2 kg sugar, 1 litre oil"',
       'voiceBillingSpeak': 'Speak',
       'voiceBillingStop': 'Stop',
       'voiceBillingRun': 'Match items',
       'voiceBillingProcessing': 'Matching...',
-      'voiceBillingUnavailable': 'Voice recognition is unavailable. Check microphone permission.',
+      'voiceBillingUnavailable':
+          'Voice recognition is unavailable. Check microphone permission.',
       'voiceBillingNoSpeech': 'Nothing heard. Try again clearly.',
       'voiceBillingNoMatch': 'No products matched. Try again.',
-      'voiceBillingAiError': 'Could not match items right now. Check connection and try again.',
+      'voiceBillingAiError':
+          'Could not match items right now. Check connection and try again.',
       'voiceBillingItemsFound': '{count} items found',
       'voiceBillingAddToCart': 'Add to cart',
       'voiceBillingAdded': '{count} items added to cart',
-      'voiceBillingAddedSome': '{count} items added, but some could not be found',
+      'voiceBillingAddedSome':
+          '{count} items added, but some could not be found',
       'voiceBillingAddFailed': 'Could not add to cart',
       'noInternetTitle': 'No Internet Connection',
-      'noInternetMessage': 'This feature needs the internet. Turn on your internet and retry.',
+      'noInternetMessage':
+          'This feature needs the internet. Turn on your internet and retry.',
       'hambotSubtitle': 'Ask anything about your shop — voice or text',
       'hambotHint': 'Ask a question…',
       'hambotSpeaking': '🎤 Spoken question…',
       'hambotNoAnswer': 'I don\'t have that data yet. Try another question.',
-      'hambotAiError': 'Could not reach the assistant right now. Check your connection and try again.',
-      'hambotQuotaExhausted': 'The AI answering helper has reached its daily limit. Please try again later today or tomorrow.',
+      'hambotAiError':
+          'Could not reach the assistant right now. Check your connection and try again.',
+      'hambotQuotaExhausted':
+          'The AI answering helper has reached its daily limit. Please try again later today or tomorrow.',
     },
 
     'bn': {
       'appName': 'মহাজন',
       'featureBusinessCoach': 'বিজনেস কোচ',
       'featureBusinessCoachSubtitle': 'লাভ বাড়ানোর দৈনিক পরামর্শ',
+      'creditControl': 'বাকির নিয়ন্ত্রণ',
+      'creditLimit': 'বাকির সীমা',
+      'creditLimitHint': 'সীমা না চাইলে খালি রাখুন',
+      'creditLimitHelp': 'এই সীমা অতিক্রম করলে নতুন বাকি বিক্রি বন্ধ হবে।',
+      'invalidAmount': 'সঠিক পরিমাণ লিখুন',
+      'duplicateCustomers': 'ডুপ্লিকেট কাস্টমার',
+      'duplicateCustomersHelp':
+          'মার্জ করার আগে মিল থাকা কাস্টমারগুলো যাচাই করুন।',
+      'noDuplicateCustomers': 'সম্ভাব্য ডুপ্লিকেট কাস্টমার পাওয়া যায়নি।',
+      'mergeCustomers': 'কাস্টমার মার্জ করুন',
+      'mergeCustomersConfirm':
+          '{source}-এর সব ইতিহাস {target}-এ নেওয়া হবে। পুরনো প্রোফাইল আর্কাইভ হবে—চালিয়ে যাবেন?',
+      'customersMerged': 'কাস্টমারের ইতিহাস সফলভাবে মার্জ হয়েছে।',
+      'merge': 'মার্জ',
+      'loyaltyTitle': 'লয়্যালটি ও অফার',
+      'loyaltyRewardReady': 'রিওয়ার্ড পাওয়ার যোগ্য — পরের বিক্রয়ে অফার দিন।',
+      'loyaltyNextReward': 'পরের রিওয়ার্ডে আরও {points} পয়েন্ট দরকার',
+      'useLoyaltyReward': 'লয়্যালটি রিওয়ার্ড ব্যবহার করুন',
+      'loyaltyRewardOffer': '১০০ পয়েন্টে ৫% ছাড় (সর্বোচ্চ ৳১০০)।',
+      'loyaltyOfferSettingsTitle': 'রিপিট কাস্টমার অফার',
+      'loyaltyOfferSettingsSubtitle':
+          'চেকআউটে ব্যবহৃত অফলাইন-সেফ লয়্যালটি অফার কনফিগার করুন।',
+      'loyaltyOfferPointsLabel': 'প্রয়োজনীয় পয়েন্ট',
+      'loyaltyOfferPercentLabel': 'ছাড়ের শতাংশ',
+      'loyaltyOfferMaxLabel': 'সর্বোচ্চ ছাড় (৳)',
+      'loyaltyOfferMinimumLabel': 'ন্যূনতম কেনাকাটা (৳)',
+      'loyaltyOfferInvalid': 'সঠিক অফার ভ্যালু দিন।',
+      'reminderOpened': 'খোলা হয়েছে',
+      'reminderFailed': 'ব্যর্থ',
+      'reminderQueued': 'অপেক্ষমাণ',
+      'reminderSent': 'পাঠানো হয়েছে',
+      'reminderDelivered': 'পৌঁছেছে',
+      'markReminderDelivered': 'পৌঁছেছে হিসেবে চিহ্নিত করুন',
+      'markReminderFailed': 'ব্যর্থ হিসেবে চিহ্নিত করুন',
+      'staffAttribution': 'দায়িত্বপ্রাপ্ত স্টাফ',
+      'stockAdjustments': 'স্টক সমন্বয়',
+      'requestStockAdjustment': 'স্টক সমন্বয়ের অনুরোধ',
+      'adjustmentQuantity': 'পরিমাণ পরিবর্তন',
+      'adjustmentReason': 'কারণ',
+      'submitAdjustment': 'সমন্বয় জমা দিন',
+      'adjustmentHistory': 'সমন্বয়ের ইতিহাস',
+      'noAdjustments': 'কোনো স্টক সমন্বয় নেই।',
+      'adjustmentFormInvalid': 'পণ্য, শূন্য নয় এমন পরিমাণ এবং কারণ দিন।',
+      'adjustmentSubmitted': 'মালিকের অনুমোদনের জন্য অনুরোধ জমা হয়েছে।',
+      'adjustmentApproved': 'স্টক সমন্বয় অনুমোদিত ও প্রয়োগ হয়েছে।',
+      'purchaseOrders': 'ক্রয় অর্ডার',
+      'receivePurchase': 'ক্রয় গ্রহণ করুন',
+      'receivedQuantity': 'প্রাপ্ত পরিমাণ',
+      'receive': 'গ্রহণ',
+      'purchaseReceived': 'ক্রয় গ্রহণ হয়েছে এবং স্টক আপডেট হয়েছে।',
+      'supplierReturn': 'সাপ্লায়ার রিটার্ন',
+      'returnQuantity': 'ফেরত পরিমাণ',
+      'returnReason': 'ফেরতের কারণ',
+      'returnToSupplier': 'সাপ্লায়ারকে ফেরত দিন',
+      'supplierReturnSaved':
+          'সাপ্লায়ার রিটার্ন সেভ হয়েছে এবং স্টক আপডেট হয়েছে।',
+      'saleReturn': 'বিক্রয় ফেরত',
+      'returnSale': 'পণ্য ফেরত দিন',
+      'refundMethod': 'ফেরতের পদ্ধতি',
+      'refundReason': 'ফেরতের কারণ',
+      'refundCash': 'ক্যাশ',
+      'refundBkash': 'বিকাশ',
+      'refundNagad': 'নগদ',
+      'refundBank': 'ব্যাংক',
+      'refundOther': 'অন্যান্য',
+      'saleReturnSaved': 'বিক্রয় ফেরত সেভ হয়েছে এবং স্টক পুনরায় যোগ হয়েছে।',
+      'shareDigitalInvoice': 'ডিজিটাল ইনভয়েস শেয়ার করুন',
+      'digitalInvoiceMessage': 'আপনার ডিজিটাল ইনভয়েস:',
+      'digitalInvoiceUnavailable':
+          'ডিজিটাল ইনভয়েস লিংক পাওয়া যায়নি। PDF সেভ বা শেয়ার করুন।',
+      'tinNumber': 'টিআইএন নম্বর',
+      'binNumber': 'বিআইএন নম্বর',
+      'tinHint': 'ঐচ্ছিক ট্যাক্স আইডেন্টিফিকেশন নম্বর',
+      'binHint': 'ঐচ্ছিক ব্যবসায়িক আইডেন্টিফিকেশন নম্বর',
+      'auditTimeline': 'অডিট টাইমলাইন',
+      'noAuditEvents': 'এখনো কোনো অডিট কার্যক্রম নেই।',
+      'importCustomers': 'কাস্টমার ইমপোর্ট',
+      'import': 'ইমপোর্ট',
+      'importCustomersHint': 'name,phone,email,address কলামসহ CSV পেস্ট করুন',
+      'importFromFile': 'CSV ফাইল বাছাই করুন',
+      'importCustomersResult':
+          '{created} জন ইমপোর্ট হয়েছে; ডুপ্লিকেট বাদ: {skipped}।',
+      'batchNumber': 'ব্যাচ নম্বর',
+      'batchNumberHint': 'ঐচ্ছিক ব্যাচ বা লট নম্বর',
+      'sku': 'SKU',
+      'skuHint': 'ঐচ্ছিক স্টক কিপিং ইউনিট',
+      'variant': 'ভ্যারিয়েন্ট',
+      'variantHint': 'যেমন: ৫০০ml / লাল / বড়',
+      'businessHealth': 'বিজনেস হেলথ',
+      'businessHealthSubtitle': 'পরামর্শ, ঝুঁকি ও ক্যাশ পূর্বাভাস এক জায়গায়',
+      'businessHealthBrief': 'এক নজরে আপনার ব্যবসা',
+      'businessHealthBriefDesc':
+          'আজকের করণীয়, ঝুঁকির সংকেত ও সম্ভাব্য ক্যাশ চাপ এক জায়গা থেকে দেখুন।',
+      'businessHealthTools': 'টুল',
+      'businessHealthHealthy': 'আজ আপনার ব্যবসার অবস্থা ভালো।',
+      'businessHealthNeedsAttention': 'আজ কয়েকটি বিষয়ে আপনার মনোযোগ দরকার।',
+      'businessHealthScore': 'স্বাস্থ্য স্কোর',
+      'businessHealthDueRisk': 'বাকি ঝুঁকি',
+      'businessHealthLowStock': 'কম স্টক',
+      'businessHealthInsights': 'ইনসাইট',
+      'businessHealthTopActions': 'প্রধান করণীয়',
       'featurePurchasePlanner': 'ক্রয় পরিকল্পনা',
       'featurePurchasePlannerSubtitle': 'স্মার্ট পুনঃক্রয় পরামর্শ',
       'featureCashflowRadar': 'ক্যাশফ্লো রাডার',
@@ -1302,7 +1596,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'featureDayClosing': 'দিনের হিসাব বন্ধ',
       'featureDayClosingSubtitle': 'দোকান বন্ধের আগে ক্যাশ মিলিয়ে নিন',
       'featureCustomerGrowth': 'কাস্টমার গ্রোথ',
-      'featureCustomerGrowthSubtitle': 'কাস্টমার ডেটা থেকে পুনরায় বিক্রয় বাড়ান',
+      'featureCustomerGrowthSubtitle':
+          'কাস্টমার ডেটা থেকে পুনরায় বিক্রয় বাড়ান',
       'coachTitle': 'মহাজন বিজনেস কোচ',
       'coachTodayBrief': 'আজকের ডেটা দেখে ব্যবসার জন্য করণীয় সাজানো হয়েছে।',
       'coachSyncing': 'সার্ভারের সাথে সিঙ্ক হচ্ছে...',
@@ -1346,7 +1641,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'dayClosingVariance': 'পার্থক্য: {amount}',
       'dayClosingReconciliation': 'ক্যাশের মিল',
       'growthTitle': 'কাস্টমার গ্রোথ ইঞ্জিন',
-      'growthBrief': 'বাস্তব পরামর্শের মাধ্যমে কাস্টমার ডেটাকে পুনরায় বিক্রয়ে পরিণত করুন।',
+      'growthBrief':
+          'বাস্তব পরামর্শের মাধ্যমে কাস্টমার ডেটাকে পুনরায় বিক্রয়ে পরিণত করুন।',
       'growthSegments': 'কাস্টমার সেগমেন্ট',
       'growthActions': 'প্রস্তাবিত পদক্ষেপ',
       'growthNone': 'আজ কোনো জরুরি গ্রোথ পদক্ষেপ নেই।',
@@ -1374,14 +1670,18 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'guardianDeletionBody': 'অডিট টাইমলাইনে এই মুছে ফেলার ঘটনা দেখুন।',
       'guardianLargeExpense': 'বড় খরচ পর্যালোচনা করুন',
       'growthInactiveTitle': 'নিষ্ক্রিয় কাস্টমার ফিরিয়ে আনুন',
-      'growthInactiveBody': '৬০ দিন কেনাকাটা না করা কাস্টমারকে ব্যক্তিগত অফার পাঠান।',
+      'growthInactiveBody':
+          '৬০ দিন কেনাকাটা না করা কাস্টমারকে ব্যক্তিগত অফার পাঠান।',
       'growthVipTitle': 'VIP সম্পর্ক ধরে রাখুন',
-      'growthVipBody': 'উচ্চ-মূল্যের কাস্টমারকে আগাম সুবিধা বা loyalty reward দিন।',
+      'growthVipBody':
+          'উচ্চ-মূল্যের কাস্টমারকে আগাম সুবিধা বা loyalty reward দিন।',
       'growthRiskTitle': 'নতুন ক্রেডিটের আগে বকেয়া আদায় করুন',
-      'growthRiskBody': 'আরও বাকি দেওয়ার আগে উচ্চ-মূল্যের কাস্টমারের সাথে follow-up করুন।',
+      'growthRiskBody':
+          'আরও বাকি দেওয়ার আগে উচ্চ-মূল্যের কাস্টমারের সাথে follow-up করুন।',
       'purchaseRefresh': 'অপেক্ষমাণ অর্ডার রিফ্রেশ করুন',
       'purchaseBrief': 'ইনভেন্টরি সিদ্ধান্তের সারাংশ',
-      'purchaseBriefDesc': 'গত ৩০ দিনের বিক্রয়, বর্তমান স্টক ও ক্রয়মূল্যের ইতিহাস ব্যবহার করা হচ্ছে।',
+      'purchaseBriefDesc':
+          'গত ৩০ দিনের বিক্রয়, বর্তমান স্টক ও ক্রয়মূল্যের ইতিহাস ব্যবহার করা হচ্ছে।',
       'purchaseBudget': 'সর্বোচ্চ ক্রয় বাজেট',
       'purchaseBudgetHint': 'এই মাসের সম্ভাব্য ক্যাশ ব্যবহার করতে ফাঁকা রাখুন।',
       'purchaseCashBudget': 'ক্যাশ বাজেট',
@@ -1404,10 +1704,10 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'customer': 'কাস্টমার',
       'customers': 'কাস্টমার',
       'clients': 'ক্লায়েন্ট',
-        'due': 'বাকি',
-        'advance': 'অগ্রিম',
-        'receivedInAdvance': 'অগ্রিম পেয়েছি',
-        'products': 'পণ্য',
+      'due': 'বাকি',
+      'advance': 'অগ্রিম',
+      'receivedInAdvance': 'অগ্রিম পেয়েছি',
+      'products': 'পণ্য',
       'purchase': 'ক্রয়',
       'investments': 'বিনিয়োগ',
       'settings': 'সেটিংস',
@@ -1457,7 +1757,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'searchClientHint': 'নাম বা ফোন দিয়ে ক্লায়েন্ট খুঁজুন...',
       'noClientsYet': 'এখনো কোনো ক্লায়েন্ট নেই',
       'noClientMatch': 'কোনো মিলে যাওয়া ক্লায়েন্ট নেই',
-      'noClientsYetHint': 'এখানে নির্বাচন করতে Clients স্ক্রিন থেকে ক্লায়েন্ট যোগ করুন।',
+      'noClientsYetHint':
+          'এখানে নির্বাচন করতে Clients স্ক্রিন থেকে ক্লায়েন্ট যোগ করুন।',
       'tryDifferentName': 'অন্য নাম বা ফোন নম্বর চেষ্টা করুন।',
       'reviewItemsPayment': 'পণ্য ও পেমেন্ট পর্যালোচনা',
       'custom': 'নিজস্ব',
@@ -1475,6 +1776,7 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'staff': 'স্টাফ',
       'login': 'ফোন লগইন',
       'sectionOperations': 'অপারেশন',
+      'sectionOperationsSubtitle': 'ব্যবসা পরিচালনার প্রয়োজনীয় টুল',
       'sectionFinance': 'ফাইন্যান্স',
       'sectionApp': 'অ্যাপ',
       'productsDesc': 'স্টক, দাম ও বারকোড',
@@ -1494,9 +1796,18 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'signOutMiddle': 'সাইন আউট',
       'ownerName': 'মালিকের নাম',
       'appTagline': 'স্মার্ট দোকান ব্যবস্থাপনা',
-      'noFeaturesAssigned': 'এই অ্যাকাউন্টে কোনো অ্যাপ ফিচার বরাদ্দ করা হয়নি।\nদোকানের মালিকের সাথে যোগাযোগ করুন।',
+      'noFeaturesAssigned':
+          'এই অ্যাকাউন্টে কোনো অ্যাপ ফিচার বরাদ্দ করা হয়নি।\nদোকানের মালিকের সাথে যোগাযোগ করুন।',
       'offlineFirstCloud': 'অফলাইন-প্রথম, ক্লাউড প্রস্তুত',
       'moreDesc': 'সবকিছু এক জায়গায়',
+      'branches': 'শাখা',
+      'branchesSubtitle': 'সক্রিয় শাখা বদলান এবং লোকেশন পরিচালনা করুন',
+      'assignStaff': 'স্টাফ বরাদ্দ করুন',
+      'staffAssigned': 'শাখায় স্টাফ বরাদ্দ হয়েছে',
+      'addBranch': 'শাখা যোগ করুন',
+      'branchName': 'শাখার নাম',
+      'branchAddress': 'ঠিকানা',
+      'noBranches': 'এখনো কোনো শাখা নেই।',
       'hubHeroTagline': 'আপনার ব্যবসা, এক টাচ-এ',
       'account': 'অ্যাকাউন্ট',
       'signedInAccount': 'সাইন-ইন করা অ্যাকাউন্ট',
@@ -1515,15 +1826,21 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'syncingData': 'ডেটা সিঙ্ক হচ্ছে...',
       'syncedKey': 'সব সিঙ্ক হয়েছে',
       'offlineModeTitle': 'অফলাইন মোড',
-      'offlineModeDesc': 'এই ডিভাইসেই কাজ চলছে। ইন্টারনেট এলে ডেটা অটো সিঙ্ক হবে।',
+      'offlineModeDesc':
+          'এই ডিভাইসেই কাজ চলছে। ইন্টারনেট এলে ডেটা অটো সিঙ্ক হবে।',
       'offlineModePending': 'অফলাইন • {count} টি পরিবর্তন এখনো সিঙ্ক হয়নি',
+      'offlineShort': 'অফলাইন',
+      'syncedShort': 'সিঙ্ক হয়েছে',
+      'pendingSyncShort': '{count} টি অপেক্ষমাণ',
+      'retrySyncShort': 'আবার সিঙ্ক করুন',
       'syncingNowTitle': 'সিঙ্ক চলছে',
       'syncFailedRetryHint': 'আবার চেষ্টা করতে ট্যাপ করুন',
       'unsyncedChanges': '{count} টি পরিবর্তন সিঙ্ক হয়নি — সিঙ্ক করুন',
       'internetAndSync': 'ইন্টারনেট ও সিঙ্ক',
       'internetAndSyncDesc': 'অনলাইন/অফলাইন কাজ ও ডেটা সিঙ্ক',
       'connectivityHowWorks': 'কিভাবে কাজ করে',
-      'connectivityHowWorksDesc': 'এই অ্যাপে আগে ডেটা এই ডিভাইসেই সংরক্ষিত হয়। ইন্টারনেট কল করলেই ক্লাউডের সাথে অটো সিঙ্ক হয়, আর হারিয়ে যায় না।',
+      'connectivityHowWorksDesc':
+          'এই অ্যাপে আগে ডেটা এই ডিভাইসেই সংরক্ষিত হয়। ইন্টারনেট কল করলেই ক্লাউডের সাথে অটো সিঙ্ক হয়, আর হারিয়ে যায় না।',
       'offlineWorksTitle': 'অফলাইনে চলে',
       'onlineNeedsTitle': 'অনলাইন লাগে',
       'badgeOffline': 'অফলাইন',
@@ -1564,12 +1881,15 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'paymentPending': 'পেমেন্ট অপেক্ষমাণ',
       'pendingPaymentNotice': 'একটি পেমেন্ট চলছে। সম্পন্ন করতে আবার শুরু করুন।',
       'noActivePlan': 'কোনো সক্রিয় প্ল্যান নেই',
-      'noActivePlanNotice': 'ব্যবসা চালু রাখতে নিচে একটি প্ল্যান নির্বাচন করুন।',
+      'noActivePlanNotice':
+          'ব্যবসা চালু রাখতে নিচে একটি প্ল্যান নির্বাচন করুন।',
       'trialActiveTitle': 'ফ্রি ট্রায়াল চলছে',
-      'trialActiveNotice': 'আপনার ফ্রি ট্রায়াল চলছে। সব ফিচার ব্যবহার করতে সাবস্ক্রাইব করুন।',
+      'trialActiveNotice':
+          'আপনার ফ্রি ট্রায়াল চলছে। সব ফিচার ব্যবহার করতে সাবস্ক্রাইব করুন।',
       'trialDaysLeft': 'ট্রায়াল বাকি',
       'paywallTitle': 'ট্রায়াল শেষ হয়ে গেছে',
-      'paywallBody': 'রিপোর্ট ও পুরোনো হিসাব দেখতে পারবেন। নতুন এন্ট্রি দিতে সাবস্ক্রাইব করুন।',
+      'paywallBody':
+          'রিপোর্ট ও পুরোনো হিসাব দেখতে পারবেন। নতুন এন্ট্রি দিতে সাবস্ক্রাইব করুন।',
       'paywallPriceHint': 'প্রতি মাস মাত্র ২৯ টাকায় চালু করুন যেকোনো সময়।',
       'whatsappBillTitle': 'বিল',
       'whatsappFullyPaid': 'পুরোপুরি পরিশোধিত',
@@ -1588,6 +1908,7 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'receiptSavedAt': 'রশিদ সংরক্ষিত হয়েছে: {path}',
       'receiptSaveFailed': 'রশিদ সংরক্ষণ করা যায়নি',
       'close': 'বন্ধ করুন',
+      'assign': 'বরাদ্দ করুন',
       'subscribeNow': 'সাবস্ক্রাইব',
       'subscribe': 'সাবস্ক্রাইব',
       'price': 'মূল্য',
@@ -1602,7 +1923,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'paymentCouldNotStart': 'পেমেন্ট শুরু করা যায়নি। আবার চেষ্টা করুন।',
       'paymentFailed': 'পেমেন্ট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
       'paymentCancelled': 'পেমেন্ট বাতিল হয়েছে',
-      'paymentCancelledNotice': 'আপনি পেমেন্ট বাতিল করেছেন। যেকোনো সময় আবার সাবস্ক্রাইব করতে পারবেন।',
+      'paymentCancelledNotice':
+          'আপনি পেমেন্ট বাতিল করেছেন। যেকোনো সময় আবার সাবস্ক্রাইব করতে পারবেন।',
       'couldNotLoadPlans': 'সাবস্ক্রিপশন প্ল্যান লোড করা যায়নি।',
       'ok': 'ঠিক আছে',
       'currentPlan': 'বর্তমান প্ল্যান',
@@ -1779,9 +2101,12 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'optionalNote': 'ঐচ্ছিক নোট',
       'monthlyPayoutHint': 'যেমন: মাসিক পেআউট',
       'howPayoutsWork': 'পেআউট কীভাবে কাজ করে',
-      'payoutHelp1': '• বকেয়া মূলধন কমায়: বিনিয়োগের বকেয়া ভারসাম্য থেকে পেআউটের পরিমাণ বিয়োগ করা হয়।',
-      'payoutHelp2': '• নিট বাকি কমায়: বিনিয়োগকারীর অবশিষ্ট পরিমাণ (বিনিয়োগ + লাভ - পরিশোধিত) পেআউটের পরিমাণে কমে।',
-      'payoutHelp3': '• বিনিয়োগের মোট পরিশোধিত পরিমাণ বাড়ে, যা বিনিয়োগকারীকে পূর্ণ নিষ্পত্তির কাছাকাছি নিয়ে যায়।',
+      'payoutHelp1':
+          '• বকেয়া মূলধন কমায়: বিনিয়োগের বকেয়া ভারসাম্য থেকে পেআউটের পরিমাণ বিয়োগ করা হয়।',
+      'payoutHelp2':
+          '• নিট বাকি কমায়: বিনিয়োগকারীর অবশিষ্ট পরিমাণ (বিনিয়োগ + লাভ - পরিশোধিত) পেআউটের পরিমাণে কমে।',
+      'payoutHelp3':
+          '• বিনিয়োগের মোট পরিশোধিত পরিমাণ বাড়ে, যা বিনিয়োগকারীকে পূর্ণ নিষ্পত্তির কাছাকাছি নিয়ে যায়।',
       'savePayout': 'পেআউট সংরক্ষণ করুন',
       'payoutRecordedSuccess': 'পেআউট সফলভাবে রেকর্ড হয়েছে',
       'failed': 'ব্যর্থ হয়েছে',
@@ -1903,7 +2228,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'fullName': 'পুরো নাম',
       'fullNameHint': 'যেমন: রহিম উদ্দিন',
       'specialNotesHint': 'এই কাস্টমার সম্পর্কে কোনো বিশেষ নোট...',
-      'newClientInfo': 'নতুন কাস্টমার শূন্য বাকি এবং শূন্য ভিজিট দিয়ে শুরু করে। আপনি বিক্রি যোগ করলে তাদের কেনাকাটার ইতিহাস স্বয়ংক্রিয়ভাবে আপডেট হবে।',
+      'newClientInfo':
+          'নতুন কাস্টমার শূন্য বাকি এবং শূন্য ভিজিট দিয়ে শুরু করে। আপনি বিক্রি যোগ করলে তাদের কেনাকাটার ইতিহাস স্বয়ংক্রিয়ভাবে আপডেট হবে।',
       'saveClient': 'কাস্টমার সংরক্ষণ করুন',
       'updateClient': 'কাস্টমার আপডেট করুন',
       'savingCustomer': 'কাস্টমার সংরক্ষণ হচ্ছে...',
@@ -1976,7 +2302,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'keepAccountSecure': 'আপনার অ্যাকাউন্ট নিরাপদ রাখুন',
       'updateYourPassword': 'আপনার পাসওয়ার্ড আপডেট করুন',
       'createPassword': 'একটি পাসওয়ার্ড তৈরি করুন',
-      'gmailPasswordInfo': 'আপনার অ্যাকাউন্ট Gmail ব্যবহার করে। ইমেইল ও পাসওয়ার্ড দিয়ে সাইন-ইন করতে একটি পাসওয়ার্ড সেট করুন।',
+      'gmailPasswordInfo':
+          'আপনার অ্যাকাউন্ট Gmail ব্যবহার করে। ইমেইল ও পাসওয়ার্ড দিয়ে সাইন-ইন করতে একটি পাসওয়ার্ড সেট করুন।',
       'currentPasswordField': 'বর্তমান পাসওয়ার্ড',
       'newPasswordField': 'নতুন পাসওয়ার্ড',
       'confirmPasswordField': 'পাসওয়ার্ড নিশ্চিত করুন',
@@ -1985,8 +2312,10 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'atLeast6Chars': 'অন্তত ৬টি অক্ষর ব্যবহার করুন।',
       'passwordsDoNotMatch': 'পাসওয়ার্ড মিলছে না।',
       'passwordUpdated': 'পাসওয়ার্ড আপডেট হয়েছে।',
-      'passwordLoginEnabled': 'এই অ্যাকাউন্টের জন্য পাসওয়ার্ড লগইন চালু হয়েছে।',
-      'existingPwDesc': 'আপনার বর্তমান পাসওয়ার্ড লিখুন এবং একটি নতুন পাসওয়ার্ড বেছে নিন।',
+      'passwordLoginEnabled':
+          'এই অ্যাকাউন্টের জন্য পাসওয়ার্ড লগইন চালু হয়েছে।',
+      'existingPwDesc':
+          'আপনার বর্তমান পাসওয়ার্ড লিখুন এবং একটি নতুন পাসওয়ার্ড বেছে নিন।',
       'settingsTitle': 'সেটিংস',
       'settingsSubtitle': 'অ্যাপ পছন্দ ও আরও',
       'notifications': 'বিজ্ঞপ্তি',
@@ -1996,7 +2325,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'deleteNotification': 'বিজ্ঞপ্তি মুছবেন?',
       'deleteForMe': 'শুধু আমার জন্য মুছুন',
       'deleteForEveryone': 'সবার জন্য মুছুন',
-      'deleteChoiceMessage': 'এটি শুধু আপনার জন্য নাকি এই দোকানের সবার জন্য মুছতে চান তা নির্বাচন করুন।',
+      'deleteChoiceMessage':
+          'এটি শুধু আপনার জন্য নাকি এই দোকানের সবার জন্য মুছতে চান তা নির্বাচন করুন।',
       'deleteChoiceMessageOnlyYou': 'এই বিজ্ঞপ্তি শুধু আপনার জন্য মুছে যাবে।',
       'notAllowedDeleteEveryone': 'আপনাকে সবার জন্য মুছতে দেওয়া হয়নি।',
       'chipAll': 'সব',
@@ -2026,10 +2356,12 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'typePayment': 'পেমেন্ট',
       'titleRequired': 'শিরোনাম আবশ্যক',
       'messageRequired': 'বার্তা আবশ্যক',
-      'sessionExpiredRetry': 'আপনার সেশন মেয়াদোত্তীর্ণ হয়েছে। আবার লগ ইন করুন, তারপর পুনরায় চেষ্টা করুন।',
+      'sessionExpiredRetry':
+          'আপনার সেশন মেয়াদোত্তীর্ণ হয়েছে। আবার লগ ইন করুন, তারপর পুনরায় চেষ্টা করুন।',
       'fcmNotConfigured': 'সার্ভারে এখনো পুশ বিজ্ঞপ্তি কনফিগার করা হয়নি।',
       'fcmConfigInvalid': 'সার্ভারের ফায়ারবেস কনফিগারেশন সঠিক নয়।',
-      'unableSendNotification': 'বিজ্ঞপ্তি পাঠানো যাচ্ছে না। সংযোগ পরীক্ষা করুন এবং আবার চেষ্টা করুন।',
+      'unableSendNotification':
+          'বিজ্ঞপ্তি পাঠানো যাচ্ছে না। সংযোগ পরীক্ষা করুন এবং আবার চেষ্টা করুন।',
       'controlAlerts': 'আপনি কী সতর্কতা পেতে চান তা নিয়ন্ত্রণ করুন',
       'onKey': 'চালু',
       'offKey': 'বন্ধ',
@@ -2065,7 +2397,7 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'currencySettings': 'মুদ্রা',
       'currencyValue': 'বিডিটি (৳)',
       'dateFormatSettings': 'তারিখ বিন্যাস',
-      'dateFormatValue': 'ঠএ/ঠএ/বছর',
+      'dateFormatValue': 'দিন/মাস/বছর',
       'languageComing': 'ভাষা সেটিংস শীঘ্রই আসছে',
       'currencyComing': 'মুদ্রা সেটিংস শীঘ্রই আসছে',
       'dateFormatComing': 'তারিখ বিন্যাস সেটিংস শীঘ্রই আসছে',
@@ -2080,7 +2412,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'appLock': 'অ্যাপ লক',
       'requirePinToOpen': 'অ্যাপ খুলতে পিআইএন প্রয়োজন',
       'createPinTitle': 'পিআইএন তৈরি করুন',
-      'createPinSubtitle': '৪ সংখ্যার পিআইএন দিন। প্রতিবার অ্যাপ খুললে এটি প্রয়োজন হবে।',
+      'createPinSubtitle':
+          '৪ সংখ্যার পিআইএন দিন। প্রতিবার অ্যাপ খুললে এটি প্রয়োজন হবে।',
       'confirmPinTitle': 'পিআইএন নিশ্চিত করুন',
       'confirmPinSubtitle': 'নিশ্চিত করতে আবার একই ৪ সংখ্যার পিআইএন দিন।',
       'enterPinTitle': 'পিআইএন দিন',
@@ -2091,7 +2424,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'changePinTitle': 'পিআইএন পরিবর্তন',
       'changeAppPin': 'পিআইএন পরিবর্তন',
       'wrongPin': 'ভুল পিআইএন, আবার চেষ্টা করুন',
-      'lockoutMessage': 'অনেকবার চেষ্টা করা হয়েছে। {seconds} সেকেন্ড পরে আবার চেষ্টা করুন।',
+      'lockoutMessage':
+          'অনেকবার চেষ্টা করা হয়েছে। {seconds} সেকেন্ড পরে আবার চেষ্টা করুন।',
       'pinMismatch': 'পিআইএন মিলছে না, আবার চেষ্টা করুন',
       'pinSet': 'পিআইএন সফলভাবে সেট হয়েছে',
       'pinChanged': 'পিআইএন সফলভাবে পরিবর্তিত হয়েছে',
@@ -2106,7 +2440,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'appVersion': 'অ্যাপ ভার্সন',
       'termsOfService': 'ব্যবহারের শর্তাবলি',
       'privacyPolicy': 'গোপনীয়তা নীতি',
-      'termsBody': '''মোহাজনে স্বাগতম। এই অ্যাপ্লিকেশনটি ব্যবহার করে আপনি নিচের শর্তাবলিতে সম্মত হচ্ছেন।
+      'termsBody':
+          '''মোহাজনে স্বাগতম। এই অ্যাপ্লিকেশনটি ব্যবহার করে আপনি নিচের শর্তাবলিতে সম্মত হচ্ছেন।
 
 ১. অ্যাকাউন্ট
 আপনার লগইন তথ্য নিরাপদে রাখার দায়িত্ব আপনার। পাসওয়ার্ড বা পিন কারও সাথে শেয়ার করবেন না।
@@ -2124,7 +2459,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
 সময়ে সময়ে আমরা এই শর্তাবলি আপডেট করতে পারি। পরিবর্তনের পরও অ্যাপ ব্যবহার করলে আপনি সংশোধিত শর্তাবলি মেনে নিয়েছেন বলে গণ্য হবে।
 
 এই শর্তাবলি সম্পর্কে প্রশ্ন থাকলে সেটিংস স্ক্রিন থেকে আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।''',
-      'privacyBody': '''আপনার গোপনীয়তা আমাদের কাছে গুরুত্বপূর্ণ। এই নীতিমালাটি ব্যাখ্যা করে আমরা কী সংগ্রহ করি এবং কীভাবে ব্যবহার করি।
+      'privacyBody':
+          '''আপনার গোপনীয়তা আমাদের কাছে গুরুত্বপূর্ণ। এই নীতিমালাটি ব্যাখ্যা করে আমরা কী সংগ্রহ করি এবং কীভাবে ব্যবহার করি।
 
 ১. আমরা যে তথ্য সংগ্রহ করি
 আপনি যে অ্যাকাউন্টের বিবরণ দেন (নাম, ইমেইল, ফোন) এবং অ্যাপের ভেতরে তৈরি ব্যবসায়িক রেকর্ড — যেমন বিক্রয়, ক্রয় ও কাস্টমার খাতা — আমরা সংগ্রহ করি।
@@ -2140,7 +2476,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
 
 ৫. যোগাযোগ
 গোপনীয়তা নিয়ে কোনো প্রশ্ন থাকলে সেটিংসের 'কন্টাক্ট সাপোর্ট' অপশনের মাধ্যমে যোগাযোগ করুন।''',
-      'privacyPolicyBody': '''আপনার গোপনীয়তা আমাদের কাছে গুরুত্বপূর্ণ। এই নীতিমালাটি ব্যাখ্যা করে আমরা কী সংগ্রহ করি এবং কীভাবে ব্যবহার করি।
+      'privacyPolicyBody':
+          '''আপনার গোপনীয়তা আমাদের কাছে গুরুত্বপূর্ণ। এই নীতিমালাটি ব্যাখ্যা করে আমরা কী সংগ্রহ করি এবং কীভাবে ব্যবহার করি।
 
 ১. আমরা যে তথ্য সংগ্রহ করি
 আপনি যে অ্যাকাউন্টের বিবরণ দেন (নাম, ইমেইল, ফোন) এবং অ্যাপের ভেতরে তৈরি ব্যবসায়িক রেকর্ড — যেমন বিক্রয়, ক্রয় ও কাস্টমার খাতা — আমরা সংগ্রহ করি।
@@ -2180,7 +2517,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'updateProduct': 'পণ্য আপডেট করুন',
       'savingProduct': 'পণ্য সংরক্ষণ হচ্ছে...',
       'updatingProduct': 'পণ্য আপডেট হচ্ছে...',
-      'lowStockHelp': 'স্টক যখন সর্বনিম্ন সতর্কতা স্তরের নিচে নামবে, তখন হোম ড্যাশবোর্ডে কম-স্টক বিজ্ঞপ্তি পাবেন।',
+      'lowStockHelp':
+          'স্টক যখন সর্বনিম্ন সতর্কতা স্তরের নিচে নামবে, তখন হোম ড্যাশবোর্ডে কম-স্টক বিজ্ঞপ্তি পাবেন।',
       'productImage': 'পণ্যের ছবি',
       'tapToUploadImage': 'ছবি আপলোড করতে ট্যাপ করুন',
       'clearPhotoHelp': 'পরিষ্কার ছবি পণ্য দ্রুত শনাক্ত করতে সাহায্য করে',
@@ -2207,7 +2545,8 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'investmentPlusProfit': 'বিনিয়োগ + মুনাফা',
       'sumOfPayouts': 'মোট পরিশোধের সমষ্টি',
       'totalDueMinusPaid': 'মোট বাকি – পরিশোধ',
-      'noInvestorsFound': 'কোনো বিনিয়োগকারী পাওয়া যায়নি। শুরু করতে একজন যোগ করুন।',
+      'noInvestorsFound':
+          'কোনো বিনিয়োগকারী পাওয়া যায়নি। শুরু করতে একজন যোগ করুন।',
       'capitalAndPayouts': 'পুঁজি ও পরিশোধ',
       'paidOut': 'পরিশোধিত',
       'editInvestor': 'বিনিয়োগকারী সম্পাদনা',
@@ -2243,21 +2582,26 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'staffSummaryInactive': ', {inactive} জন নিষ্ক্রিয়',
       'noStaffMatch': 'আপনার অনুসন্ধানের সাথে কোনো স্টাফ মিলছে না',
       'noStaffMembersYet': 'এখনো কোনো স্টাফ সদস্য নেই',
-      'noStaffHint': 'আপনার টিম সদস্যদের যোগ করুন এবং বেছে নিন\nকোন মেনু তারা অ্যাক্সেস করতে পারবে',
-      'couldNotLoadStaff': 'স্টাফ লোড করা যায়নি।\nদয়া করে আপনার সংযোগ পরীক্ষা করুন।',
+      'noStaffHint':
+          'আপনার টিম সদস্যদের যোগ করুন এবং বেছে নিন\nকোন মেনু তারা অ্যাক্সেস করতে পারবে',
+      'couldNotLoadStaff':
+          'স্টাফ লোড করা যায়নি।\nদয়া করে আপনার সংযোগ পরীক্ষা করুন।',
       'retry': 'আবার চেষ্টা করুন',
       'shopStaff': 'দোকানের স্টাফ',
       'teamAndPermissions': 'টিম ও অনুমতি',
       'staffAdded': 'স্টাফ সদস্য যোগ করা হয়েছে',
       'staffDeleted': '{name} মুছে ফেলা হয়েছে',
       'staffActivated': '{name} সক্রিয় করা হয়েছে',
-      'staffDeactivated': '{name} নিষ্ক্রিয় করা হয়েছে — তারা আর সাইন ইন করতে পারবে না',
+      'staffDeactivated':
+          '{name} নিষ্ক্রিয় করা হয়েছে — তারা আর সাইন ইন করতে পারবে না',
       'staffUpdated': '{name} হালনাগাদ করা হয়েছে',
-      'couldNotUpdateStatus': 'স্ট্যাটাস হালনাগাদ করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
+      'couldNotUpdateStatus':
+          'স্ট্যাটাস হালনাগাদ করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
       'staffPhoto': 'স্টাফের ছবি',
       'pleaseSelectRole': 'দয়া করে একটি ভূমিকা নির্বাচন করুন',
       'selectAtLeastMenu': 'কমপক্ষে একটি মেনু অ্যাক্সেস নির্বাচন করুন',
-      'couldNotSaveStaff': 'স্টাফ সদস্য সংরক্ষণ করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
+      'couldNotSaveStaff':
+          'স্টাফ সদস্য সংরক্ষণ করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
       'editStaffMember': 'স্টাফ সদস্য সম্পাদনা',
       'addStaffMember': 'স্টাফ সদস্য যোগ করুন',
       'staffDetails': 'স্টাফের বিবরণ',
@@ -2269,18 +2613,22 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'minPassword': 'সর্বনিম্ন ৬ অক্ষর',
       'passwordIsRequired': 'পাসওয়ার্ড আবশ্যক',
       'passwordTooShort': 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে',
-      'emailPasswordUnchanged': 'সম্পাদনার সময় ইমেইল এবং পাসওয়ার্ড অপরিবর্তিত থাকে।',
+      'emailPasswordUnchanged':
+          'সম্পাদনার সময় ইমেইল এবং পাসওয়ার্ড অপরিবর্তিত থাকে।',
       'role': 'ভূমিকা',
       'saveChanges': 'পরিবর্তন সংরক্ষণ',
       'createStaffMember': 'স্টাফ সদস্য তৈরি করুন',
       'creating': 'তৈরি হচ্ছে...',
       'menuAccess': 'মেনু অ্যাক্সেস',
-      'menuAccessHelp': 'বিভাগ অনুযায়ী অ্যাক্সেস দিন। ডান পাশের বক্সে ট্যাপ করে পুরো গ্রুপ অনুমতি বা সরিয়ে ফেলুন, অথবা পৃথক মেনু বাছতে একটি বিভাগ প্রসারিত করুন।',
+      'menuAccessHelp':
+          'বিভাগ অনুযায়ী অ্যাক্সেস দিন। ডান পাশের বক্সে ট্যাপ করে পুরো গ্রুপ অনুমতি বা সরিয়ে ফেলুন, অথবা পৃথক মেনু বাছতে একটি বিভাগ প্রসারিত করুন।',
       'sectionMainMenu': 'প্রধান মেনু',
-      'couldNotLoadRolesMenus': 'ভূমিকা ও মেনু লোড করা যায়নি।\nদয়া করে আপনার সংযোগ পরীক্ষা করুন।',
+      'couldNotLoadRolesMenus':
+          'ভূমিকা ও মেনু লোড করা যায়নি।\nদয়া করে আপনার সংযোগ পরীক্ষা করুন।',
       'tapToAddStaffPhoto': 'স্টাফের ছবি যোগ করতে ট্যাপ করুন',
       'removeStaffMember': 'স্টাফ সদস্য সরাবেন?',
-      'removeStaffConfirm': 'এই স্টাফ সদস্য দোকানের অ্যাক্সেস হারাবেন। এই কাজটি ফিরিয়ে আনা যাবে না।',
+      'removeStaffConfirm':
+          'এই স্টাফ সদস্য দোকানের অ্যাক্সেস হারাবেন। এই কাজটি ফিরিয়ে আনা যাবে না।',
       'removeAction': 'সরান',
       'takeAPhoto': 'ছবি তুলুন',
       'helpAndSupport': 'সাহায্য ও সাপোর্ট',
@@ -2299,20 +2647,27 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'phoneCopied': 'ফোন নম্বর কপি হয়েছে',
       'faqTitle': 'সাধারণ জিজ্ঞাসা',
       'faqAddProductQ': 'আমি কীভাবে নতুন পণ্য যোগ করব?',
-      'faqAddProductA': 'স্টক ট্যাবে যান, + বোতামে ট্যাপ করুন, তারপর পণ্যের নাম, দাম এবং স্টক পরিমাণ লিখুন।',
+      'faqAddProductA':
+          'স্টক ট্যাবে যান, + বোতামে ট্যাপ করুন, তারপর পণ্যের নাম, দাম এবং স্টক পরিমাণ লিখুন।',
       'faqSaleQ': 'আমি কীভাবে বিক্রয় রেকর্ড করব?',
-      'faqSaleA': 'বিক্রয় (POS) ট্যাব খুলুন, কার্টে পণ্য যোগ করতে ট্যাপ করুন, গ্রাহক নির্বাচন করুন এবং চেকআউট সম্পন্ন করুন।',
+      'faqSaleA':
+          'বিক্রয় (POS) ট্যাব খুলুন, কার্টে পণ্য যোগ করতে ট্যাপ করুন, গ্রাহক নির্বাচন করুন এবং চেকআউট সম্পন্ন করুন।',
       'faqDueQ': 'গ্রাহকের ধার এবং বাকি পেমেন্ট কীভাবে কাজ করে?',
-      'faqDueA': 'যখন কোনও ক্লায়েন্ট ধারে কেনে, পরিমাণটি তার বাকি ব্যালেন্সে যোগ হয়। ক্লায়েন্ট ট্যাব থেকে আপনি তা ট্র্যাক এবং আদায় করতে পারেন।',
+      'faqDueA':
+          'যখন কোনও ক্লায়েন্ট ধারে কেনে, পরিমাণটি তার বাকি ব্যালেন্সে যোগ হয়। ক্লায়েন্ট ট্যাব থেকে আপনি তা ট্র্যাক এবং আদায় করতে পারেন।',
       'faqOfflineQ': 'ইন্টারনেট ছাড়া অ্যাপ ব্যবহার করতে পারব কি?',
-      'faqOfflineA': 'হ্যাঁ। বিক্রয়, স্টক এবং ক্লায়েন্ট রেকর্ড ইন্টারনেট ছাড়াই আপনার ডিভাইসে কাজ করে এবং অনলাইনে ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হয়।',
+      'faqOfflineA':
+          'হ্যাঁ। বিক্রয়, স্টক এবং ক্লায়েন্ট রেকর্ড ইন্টারনেট ছাড়াই আপনার ডিভাইসে কাজ করে এবং অনলাইনে ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হয়।',
       'faqSyncQ': 'আমার ডেটা কখন সিঙ্ক হয়?',
-      'faqSyncA': 'ইন্টারনেট সংযোগ থাকলে আপনার ডেটা স্বয়ংক্রিয়ভাবে আপনার অ্যাকাউন্টে সিঙ্ক হয়; অথবা আরও ট্যাব থেকে "এখনই সিঙ্ক" ট্যাপ করতে পারেন।',
+      'faqSyncA':
+          'ইন্টারনেট সংযোগ থাকলে আপনার ডেটা স্বয়ংক্রিয়ভাবে আপনার অ্যাকাউন্টে সিঙ্ক হয়; অথবা আরও ট্যাব থেকে "এখনই সিঙ্ক" ট্যাপ করতে পারেন।',
       'faqStaffQ': 'আমি কীভাবে স্টাফকে অ্যাক্সেস দেব?',
-      'faqStaffA': 'আরও ট্যাব খুলুন, স্টাফ-এ যান এবং আপনি যে অনুমতি দিতে চান তা দিয়ে একজন স্টাফ সদস্য যোগ করুন।',
+      'faqStaffA':
+          'আরও ট্যাব খুলুন, স্টাফ-এ যান এবং আপনি যে অনুমতি দিতে চান তা দিয়ে একজন স্টাফ সদস্য যোগ করুন।',
       'removePhoto': 'ছবি সরান',
       'couldNotUploadImage': 'প্রোফাইল ছবি আপলোড করা যায়নি',
-      'signOutConfirm': 'আপনি কি নিশ্চিত যে আপনি আপনার অ্যাকাউন্ট থেকে সাইন আউট করতে চান?',
+      'signOutConfirm':
+          'আপনি কি নিশ্চিত যে আপনি আপনার অ্যাকাউন্ট থেকে সাইন আউট করতে চান?',
       'storeInformation': 'দোকানের তথ্য',
       'storeBusiness': 'দোকান / ব্যবসা',
       'storeName': 'দোকানের নাম',
@@ -2341,15 +2696,20 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'shareCalculatedByContribution': 'অবদান অনুযায়ী শেয়ার হিসাব করা হয়।',
       'quickTour': 'দ্রুত ট্যুর',
       'welcomeToMohajon': 'মহাজনে স্বাগতম',
-      'tourWelcomeDesc': 'আপনার সম্পূর্ণ ব্যবসায়িক ব্যবস্থাপনা সঙ্গী। আসুন একটি পরিচিতি করিয়ে দিই।',
+      'tourWelcomeDesc':
+          'আপনার সম্পূর্ণ ব্যবসায়িক ব্যবস্থাপনা সঙ্গী। আসুন একটি পরিচিতি করিয়ে দিই।',
       'tourDashboardTitle': 'ড্যাশবোর্ড',
-      'tourDashboardDesc': 'আপনার ব্যবসা এক নজরে দেখুন — বিক্রয়, স্টক এবং দৈনিক পরিসংখ্যান।',
+      'tourDashboardDesc':
+          'আপনার ব্যবসা এক নজরে দেখুন — বিক্রয়, স্টক এবং দৈনিক পরিসংখ্যান।',
       'tourPosTitle': 'বিক্রয় পয়েন্ট',
-      'tourPosDesc': 'নতুন বিক্রয় তৈরি করুন, কার্টে পণ্য যোগ করুন এবং দ্রুত পেমেন্ট প্রক্রিয়া করুন।',
+      'tourPosDesc':
+          'নতুন বিক্রয় তৈরি করুন, কার্টে পণ্য যোগ করুন এবং দ্রুত পেমেন্ট প্রক্রিয়া করুন।',
       'tourStockTitle': 'স্টক ব্যবস্থাপনা',
-      'tourStockDesc': 'ইনভেন্টরি ট্র্যাক করুন, পণ্যের তথ্য আপডেট করুন এবং স্টক পরিমাণ পরিচালনা করুন।',
+      'tourStockDesc':
+          'ইনভেন্টরি ট্র্যাক করুন, পণ্যের তথ্য আপডেট করুন এবং স্টক পরিমাণ পরিচালনা করুন।',
       'tourClientsTitle': 'ক্লায়েন্ট',
-      'tourClientsDesc': 'আপনার গ্রাহকদের পরিচালনা করুন, বকেয়া ব্যালেন্স ট্র্যাক করুন এবং ক্রয় ইতিহাস দেখুন।',
+      'tourClientsDesc':
+          'আপনার গ্রাহকদের পরিচালনা করুন, বকেয়া ব্যালেন্স ট্র্যাক করুন এবং ক্রয় ইতিহাস দেখুন।',
       'skip': 'এড়িয়ে যান',
       'next': 'পরবর্তী',
       'finish': 'সম্পন্ন',
@@ -2358,39 +2718,53 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'viewTourDesc': 'অ্যাপের ওভারভিউ আবার দেখুন',
       'skipAll': 'সব এড়িয়ে যান',
       'tourStepHome': 'হোম ড্যাশবোর্ড',
-      'tourStepHomeDesc': 'আপনার দৈনিক বিক্রয়, স্টক পরিমাণ এবং ব্যবসায়িক পরিসংখ্যান এক নজরে দেখুন।',
+      'tourStepHomeDesc':
+          'আপনার দৈনিক বিক্রয়, স্টক পরিমাণ এবং ব্যবসায়িক পরিসংখ্যান এক নজরে দেখুন।',
       'tourStepSales': 'বিক্রয় পয়েন্ট',
-      'tourStepSalesDesc': 'নতুন বিক্রয় তৈরি করুন, পণ্য খুঁজুন এবং গ্রাহকের পেমেন্ট প্রক্রিয়া করুন।',
+      'tourStepSalesDesc':
+          'নতুন বিক্রয় তৈরি করুন, পণ্য খুঁজুন এবং গ্রাহকের পেমেন্ট প্রক্রিয়া করুন।',
       'tourStepStock': 'স্টক ব্যবস্থাপনা',
-      'tourStepStockDesc': 'ইনভেন্টরি ট্র্যাক করুন, স্টক পরিমাণ দেখুন এবং নতুন পণ্য যোগ করুন।',
+      'tourStepStockDesc':
+          'ইনভেন্টরি ট্র্যাক করুন, স্টক পরিমাণ দেখুন এবং নতুন পণ্য যোগ করুন।',
       'tourStepClients': 'ক্লায়েন্ট',
-      'tourStepClientsDesc': 'গ্রাহক পরিচালনা করুন, বকেয়া ব্যালেন্স ট্র্যাক করুন এবং ক্রয় ইতিহাস দেখুন।',
+      'tourStepClientsDesc':
+          'গ্রাহক পরিচালনা করুন, বকেয়া ব্যালেন্স ট্র্যাক করুন এবং ক্রয় ইতিহাস দেখুন।',
       'tourStepMore': 'আরও অপশন',
-      'tourStepMoreDesc': 'বিক্রেতা, খরচ, বিনিয়োগকারী, স্টাফ, রিপোর্ট এবং সেটিংস অ্যাক্সেস করুন।',
+      'tourStepMoreDesc':
+          'বিক্রেতা, খরচ, বিনিয়োগকারী, স্টাফ, রিপোর্ট এবং সেটিংস অ্যাক্সেস করুন।',
       'tourStepStats': 'ব্যবসায়িক সারসংক্ষেপ',
-      'tourStepStatsDesc': 'মোট পণ্য, ক্লায়েন্ট এবং অমীমাংসিত বকেয়ার দ্রুত পরিসংখ্যান।',
+      'tourStepStatsDesc':
+          'মোট পণ্য, ক্লায়েন্ট এবং অমীমাংসিত বকেয়ার দ্রুত পরিসংখ্যান।',
       'tourStepProductGrid': 'পণ্য গ্রিড',
-      'tourStepProductGridDesc': 'কার্টে যোগ করতে একটি পণ্যে ট্যাপ করুন। দ্রুত খুঁজতে সার্চ ব্যবহার করুন।',
+      'tourStepProductGridDesc':
+          'কার্টে যোগ করতে একটি পণ্যে ট্যাপ করুন। দ্রুত খুঁজতে সার্চ ব্যবহার করুন।',
       'tourStepCheckout': 'চেকআউট',
-      'tourStepCheckoutDesc': 'কার্টের পণ্য পর্যালোচনা করুন, ডিসকাউন্ট প্রয়োগ করুন এবং বিক্রয় সম্পন্ন করুন।',
+      'tourStepCheckoutDesc':
+          'কার্টের পণ্য পর্যালোচনা করুন, ডিসকাউন্ট প্রয়োগ করুন এবং বিক্রয় সম্পন্ন করুন।',
       'tourStepAddProduct': 'পণ্য যোগ করুন',
-      'tourStepAddProductDesc': 'নাম, মূল্য এবং স্টক বিবরণ সহ নতুন পণ্য যোগ করতে এখানে ট্যাপ করুন।',
+      'tourStepAddProductDesc':
+          'নাম, মূল্য এবং স্টক বিবরণ সহ নতুন পণ্য যোগ করতে এখানে ট্যাপ করুন।',
       'tourStepAddClient': 'ক্লায়েন্ট যোগ করুন',
-      'tourStepAddClientDesc': 'যোগাযোগের তথ্য সহ নতুন গ্রাহক যোগ করতে এখানে ট্যাপ করুন।',
+      'tourStepAddClientDesc':
+          'যোগাযোগের তথ্য সহ নতুন গ্রাহক যোগ করতে এখানে ট্যাপ করুন।',
       'tourMoreVendors': 'বিক্রেতা',
-      'tourMoreVendorsDesc': 'আপনার বিক্রেতা তালিকা এবং সরবরাহকারীর তথ্য পরিচালনা করুন।',
+      'tourMoreVendorsDesc':
+          'আপনার বিক্রেতা তালিকা এবং সরবরাহকারীর তথ্য পরিচালনা করুন।',
       'tourMoreExpenses': 'খরচ',
       'tourMoreExpensesDesc': 'ব্যবসায়িক খরচ ট্র্যাক এবং শ্রেণিবদ্ধ করুন।',
       'tourMoreInvestors': 'বিনিয়োগকারী',
-      'tourMoreInvestorsDesc': 'আপনার বিনিয়োগকারীর প্রোফাইল এবং অবদান দেখুন এবং পরিচালনা করুন।',
+      'tourMoreInvestorsDesc':
+          'আপনার বিনিয়োগকারীর প্রোফাইল এবং অবদান দেখুন এবং পরিচালনা করুন।',
       'tourMoreStaff': 'স্টাফ',
       'tourMoreStaffDesc': 'স্টাফ অ্যাকাউন্ট, ভূমিকা এবং অনুমতি পরিচালনা করুন।',
       'tourMoreReports': 'রিপোর্ট',
       'tourMoreReportsDesc': 'বিক্রয়, খরচ এবং লাভের রিপোর্ট অ্যাক্সেস করুন।',
       'tourMoreInvestments': 'বিনিয়োগ',
-      'tourMoreInvestmentsDesc': 'বিনিয়োগ পোর্টফোলিও এবং রিটার্ন ট্র্যাক করুন।',
+      'tourMoreInvestmentsDesc':
+          'বিনিয়োগ পোর্টফোলিও এবং রিটার্ন ট্র্যাক করুন।',
       'tourMoreSettings': 'সেটিংস',
-      'tourMoreSettingsDesc': 'অ্যাপ পছন্দ, নিরাপত্তা এবং গোপনীয়তা কনফিগার করুন।',
+      'tourMoreSettingsDesc':
+          'অ্যাপ পছন্দ, নিরাপত্তা এবং গোপনীয়তা কনফিগার করুন।',
       'reportSalesSummary': 'বিক্রয় সারাংশ',
       'reportCustomerLedger': 'গ্রাহক খাতা',
       'reportInventory': 'স্টক রিপোর্ট',
@@ -2482,9 +2856,11 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'noTransactionsInPeriod': 'এই সময়ে কোনো লেনদেন নেই',
       'noPaymentsInPeriod': 'এই সময়ে কোনো পেমেন্ট নেই',
       'noDuesAllClear': 'কোনো বকেয়া নেই। সব পরিষ্কার!',
-      'noCustomerData': 'এখনো কোনো গ্রাহকের তথ্য নেই।\nগ্রাহক যোগ করে বিক্রয় রেকর্ড করা শুরু করুন।',
+      'noCustomerData':
+          'এখনো কোনো গ্রাহকের তথ্য নেই।\nগ্রাহক যোগ করে বিক্রয় রেকর্ড করা শুরু করুন।',
       'noLedgerEntries': 'এই গ্রাহকের জন্য কোনো খাতার এন্ট্রি নেই।',
-      'customersOweNotice': 'গ্রাহকরা খোলা বিক্রয় ইনভয়েসের বিপরীতে এই পরিমাণ বকেয়া রেখেছেন। খাতা পরিষ্কার রাখতে বকেয়া আদায় করুন।',
+      'customersOweNotice':
+          'গ্রাহকরা খোলা বিক্রয় ইনভয়েসের বিপরীতে এই পরিমাণ বকেয়া রেখেছেন। খাতা পরিষ্কার রাখতে বকেয়া আদায় করুন।',
       'unknownCustomer': 'অজানা গ্রাহক',
       'cashWalkIn': 'ক্যাশ (ওয়াক-ইন)',
       'settled': 'পরিশোধিত',
@@ -2537,28 +2913,34 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'hambotQuickAsk': 'মহাজন AI-কে জিজ্ঞেস করুন',
       'voiceBillingHint': 'এভাবে বলুন: “৩ কেজি চাল, ২ কেজি চিনি, ১ লিটার তেল”',
       'voiceBillingListening': 'শুনছি… আপনার অর্ডার এখানে আসবে',
-      'voiceBillingIdle': 'মাইক চেপে বলুন, যেমন “৩ কেজি চাল, ২ কেজি চিনি, ১ লিটার তেল”',
+      'voiceBillingIdle':
+          'মাইক চেপে বলুন, যেমন “৩ কেজি চাল, ২ কেজি চিনি, ১ লিটার তেল”',
       'voiceBillingSpeak': 'বলুন',
       'voiceBillingStop': 'থামুন',
       'voiceBillingRun': 'পণ্য খুঁজুন',
       'voiceBillingProcessing': 'খোঁজা হচ্ছে...',
-      'voiceBillingUnavailable': 'ভয়েস শনাক্তকরণ পাওয়া যায়নি। মাইক্রোফোন অনুমতি দিন।',
+      'voiceBillingUnavailable':
+          'ভয়েস শনাক্তকরণ পাওয়া যায়নি। মাইক্রোফোন অনুমতি দিন।',
       'voiceBillingNoSpeech': 'কিছু শোনা যায়নি। আবার পরিষ্কার করে বলুন।',
       'voiceBillingNoMatch': 'কোনো পণ্য মেলেনি। আবার চেষ্টা করুন।',
-      'voiceBillingAiError': 'এই মুহূর্তে পণ্য মেলানো যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
+      'voiceBillingAiError':
+          'এই মুহূর্তে পণ্য মেলানো যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
       'voiceBillingItemsFound': '{count}টি আইটেম পাওয়া গেছে',
       'voiceBillingAddToCart': 'কার্টে যোগ করুন',
       'voiceBillingAdded': '{count}টি আইটেম কার্টে যোগ হয়েছে',
       'voiceBillingAddedSome': '{count}টি যোগ হয়েছে, কিছু পাওয়া যায়নি',
       'voiceBillingAddFailed': 'কার্টে যোগ করা যায়নি',
       'noInternetTitle': 'ইন্টারনেট সংযোগ নেই',
-      'noInternetMessage': 'এই ফিচারটি ব্যবহারে ইন্টারনেট দরকার। ইন্টারনেট চালু করে আবার চেষ্টা করুন।',
+      'noInternetMessage':
+          'এই ফিচারটি ব্যবহারে ইন্টারনেট দরকার। ইন্টারনেট চালু করে আবার চেষ্টা করুন।',
       'hambotSubtitle': 'দোকান নিয়ে যেকোনো প্রশ্ন করুন — ভয়েস বা টাইপ করে',
       'hambotHint': 'প্রশ্ন লিখুন…',
       'hambotSpeaking': '🎤 বলা প্রশ্ন…',
       'hambotNoAnswer': 'এই তথ্যটি এখনো নেই। আরেকটি প্রশ্ন করুন।',
-      'hambotAiError': 'এই মুহূর্তে সহকারী বলা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
-      'hambotQuotaExhausted': 'উত্তর দেওয়ার AI এর আজকের দৈনিক সীমা শেষ হয়ে গেছে। একটু পরে বা কাল আবার চেষ্টা করুন।',
+      'hambotAiError':
+          'এই মুহূর্তে সহকারী বলা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
+      'hambotQuotaExhausted':
+          'উত্তর দেওয়ার AI এর আজকের দৈনিক সীমা শেষ হয়ে গেছে। একটু পরে বা কাল আবার চেষ্টা করুন।',
     },
   };
 

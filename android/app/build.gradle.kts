@@ -15,6 +15,27 @@ val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) load(keystorePropertiesFile.inputStream())
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties().apply {
+    if (localPropertiesFile.exists()) load(localPropertiesFile.inputStream())
+}
+
+// Facebook App ID (Meta developer console -> Settings -> Basic).
+//
+// Read from android/local.properties, which is git-ignored, so the Meta
+// credential never lands in version control. It is injected into the manifest
+// because the native Facebook SDK initialises itself from there before any
+// Dart code runs — with the key absent the SDK fails to initialise and takes
+// the rest of the plugin registry down with it.
+//
+// The same value has to be handed to Dart with
+// --dart-define=FACEBOOK_APP_ID=... ; CustomAuthBackend refuses to open the
+// Facebook flow when that define is missing, so the placeholder below can only
+// ever surface as the friendly "not configured" message.
+val facebookAppId: String =
+    localProperties.getProperty("facebook.app.id")?.trim().orEmpty()
+        .ifEmpty { "000000000000000" }
+
 android {
     namespace = "com.example.inventory_1"
     compileSdk = flutter.compileSdkVersion
@@ -38,6 +59,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders["facebookAppId"] = facebookAppId
     }
 
     signingConfigs {

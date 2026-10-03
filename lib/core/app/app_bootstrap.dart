@@ -23,6 +23,11 @@ class AppBootstrap {
       Hive.openBox<Map>(HiveBoxes.vendorPayments),
       Hive.openBox<Map>(HiveBoxes.expenses),
       Hive.openBox<Map>(HiveBoxes.notifications),
+      Hive.openBox<Map>(HiveBoxes.stockAdjustments),
+      Hive.openBox<Map>(HiveBoxes.supplierReturns),
+      Hive.openBox<Map>(HiveBoxes.auditEvents),
+      Hive.openBox<Map>(HiveBoxes.productBatches),
+      Hive.openBox<Map>(HiveBoxes.saleReturns),
       Hive.openBox<Map>(HiveBoxes.users),
       Hive.openBox<dynamic>(HiveBoxes.settings),
     ]);

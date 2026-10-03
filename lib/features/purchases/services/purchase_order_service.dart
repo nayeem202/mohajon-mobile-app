@@ -158,12 +158,15 @@ class PurchasePlannerService {
                 name: item.product.nameEn,
                 qty: item.suggestedQty,
                 unitCost: item.unitCost,
+                batchNumber: item.product.batchNumber,
+                expiryDate: item.product.expiryDate,
               ))
           .toList(),
       totalAmount: selected.fold<double>(0, (sum, item) => sum + item.estimatedTotal),
       status: 'DRAFT',
       notes: notes,
       shopId: _shopId,
+      branchId: _ref.read(localDatabaseProvider).settings.get('activeBranchId') as String? ?? '$_shopId-main',
       createdAt: now,
       updatedAt: now,
     );

@@ -113,7 +113,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
         method: _method,
       );
     });
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     final generateReceipt = await showDialog<bool>(
       context: context,
@@ -124,7 +124,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
         closeLabel: l10n.t('cancel'),
       ),
     );
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (generateReceipt == true) {
       final shop = ref.read(shopProfileProvider).value;
@@ -156,14 +156,14 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
       );
       try {
         final bytes = await pdfService.buildReceiptPdf(receipt);
-        if (context.mounted) {
+        if (mounted) {
           await Printing.sharePdf(
             bytes: bytes,
             filename: 'receipt-PAY-${DateTime.now().millisecondsSinceEpoch}.pdf',
           );
         }
       } catch (e) {
-        if (context.mounted) {
+        if (mounted) {
           showAppSnackBar(
             context,
             'Failed to generate receipt: $e',
@@ -172,7 +172,7 @@ class _AddPaymentScreenState extends ConsumerState<AddPaymentScreen>
         }
       }
     }
-    if (context.mounted) Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop();
   }
 }
 
@@ -342,7 +342,7 @@ class _WarmCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (header != null) header!,
+          ?header,
           if (header != null) const SizedBox(height: 14),
           child,
         ],
@@ -420,7 +420,7 @@ class _InvoiceCard extends StatelessWidget {
         title: l10n.t('applyToInvoice'),
       ),
       child: DropdownButtonFormField<String?>(
-        value: saleId,
+        initialValue: saleId,
         isExpanded: true,
         decoration: InputDecoration(
           hintText: l10n.t('customerAccount'),

@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:file_selector/file_selector.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,7 @@ import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_profile_screen.dart';
 import '../providers/customer_providers.dart';
 import 'customer_form_screen.dart';
+import '../services/customer_import_service.dart';
 import '../../pos/presentation/sales_history_screen.dart';
 import '../../pos/services/whatsapp_service.dart';
 import '../../settings/providers/shop_profile_providers.dart';
@@ -130,7 +133,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
                     children: [
-                      const _ClientsTopBar(),
+                      _ClientsTopBar(onMergeTap: _openDuplicateMerge, onImportTap: _openImport),
                       const SizedBox(height: 18),
                       _ClientStats(
                         totalClients: items.length,
@@ -272,6 +275,147 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     );
   }
 
+  Future<void> _openDuplicateMerge() async {
+    final customers = (ref.read(customersProvider).value ?? const <Customer>[])
+        .where((customer) => !customer.isDeleted)
+        .toList();
+    final groups = <String, List<Customer>>{};
+    for (final customer in customers) {
+      final phone = customer.phone.replaceAll(RegExp(r'\D'), '');
+      final name = customer.name.trim().toLowerCase();
+      final key = phone.length >= 8 ? 'phone:$phone' : 'name:$name';
+      if (key.endsWith(':') || key.endsWith(':0')) continue;
+      groups.putIfAbsent(key, () => []).add(customer);
+    }
+    final pairs = groups.values.where((group) => group.length > 1).expand(
+      (group) => [for (var i = 1; i < group.length; i++) (group.first, group[i])],
+    ).toList();
+    if (!mounted) return;
+    if (pairs.isEmpty) {
+      showAppSnackBar(context, AppLocalizations.of(context).t('noDuplicateCustomers'));
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(AppLocalizations.of(context).t('duplicateCustomers'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              Text(AppLocalizations.of(context).t('duplicateCustomersHelp')),
+              const SizedBox(height: 14),
+              for (final pair in pairs)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.merge_type_rounded),
+                    title: Text('${pair.$1.name}  +  ${pair.$2.name}'),
+                    subtitle: Text(pair.$1.phone),
+                    trailing: FilledButton(
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: Text(AppLocalizations.of(context).t('mergeCustomers')),
+                            content: Text(AppLocalizations.of(context).tP('mergeCustomersConfirm', {'source': pair.$2.name, 'target': pair.$1.name})),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppLocalizations.of(context).t('cancel'))),
+                              FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLocalizations.of(context).t('merge'))),
+                            ],
+                          ),
+                        );
+                        if (confirm != true || !mounted) return;
+                        try {
+                          await ref.read(customerServiceProvider).mergeCustomers(
+                                primaryId: pair.$1.customerId,
+                                duplicateId: pair.$2.customerId,
+                              );
+                          if (mounted) showAppSnackBar(context, AppLocalizations.of(context).t('customersMerged'));
+                        } catch (error) {
+                          if (mounted) showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+                        }
+                      },
+                      child: Text(AppLocalizations.of(context).t('merge')),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openImport() async {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController(text: 'name,phone,email,address\n');
+    Future<void> chooseFile() async {
+      final file = await openFile(
+        acceptedTypeGroups: [
+          const XTypeGroup(
+            label: 'CSV',
+            extensions: ['csv', 'txt'],
+          ),
+        ],
+      );
+      if (file == null) return;
+      final size = await file.length();
+      if (size > 5 * 1024 * 1024) {
+        throw const FormatException('CSV file is too large. Maximum size is 5 MB.');
+      }
+      controller.text = await file.readAsString();
+    }
+    try {
+      final csv = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.t('importCustomers')),
+          content: TextField(
+            controller: controller,
+            minLines: 6,
+            maxLines: 12,
+            decoration: InputDecoration(hintText: l10n.t('importCustomersHint')),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () async {
+                try {
+                  await chooseFile();
+                } catch (error) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('$error')),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.upload_file_rounded),
+              label: Text(l10n.t('importFromFile')),
+            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.t('cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.t('import'))),
+          ],
+        ),
+      );
+      if (csv == null || !mounted) return;
+      final result = await CustomerImportService(ref, const Uuid()).importCsv(csv);
+      if (!mounted) return;
+      showAppSnackBar(context, l10n.tP('importCustomersResult', {'created': '${result.created}', 'skipped': '${result.skipped}'}));
+      if (result.errors.isNotEmpty) {
+        showAppSnackBar(context, result.errors.take(2).join(' '), isError: true);
+      }
+    } catch (error) {
+      if (mounted) showAppSnackBar(context, error.toString(), isError: true);
+    } finally {
+      controller.dispose();
+    }
+  }
+
   Future<void> _showCustomerSheet(
     BuildContext context, {
     required Customer customer,
@@ -362,7 +506,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
 }
 
 class _ClientsTopBar extends StatelessWidget {
-  const _ClientsTopBar();
+  const _ClientsTopBar({required this.onMergeTap, required this.onImportTap});
+
+  final VoidCallback onMergeTap;
+  final VoidCallback onImportTap;
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +569,16 @@ class _ClientsTopBar extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: l10n.t('importCustomers'),
+            onPressed: onImportTap,
+            icon: const Icon(Icons.file_upload_outlined),
+          ),
+          IconButton(
+            tooltip: l10n.t('duplicateCustomers'),
+            onPressed: onMergeTap,
+            icon: const Icon(Icons.merge_type_rounded),
           ),
           const NotificationBell(),
           const SizedBox(width: 14),
@@ -1229,6 +1386,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final initials = _initials(customer.name);
     final tag = ref.watch(customerTagProvider(customer.customerId));
+    final loyalty = ref.watch(customerLoyaltyProvider(customer.customerId));
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       minChildSize: 0.72,
@@ -1254,6 +1412,48 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       color: MohajonWarm.goldBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFF6D5), Color(0xFFFFFCF0)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: MohajonWarm.goldBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.stars_rounded, color: MohajonWarm.goldText, size: 25),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.t('loyaltyTitle'),
+                              style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              loyalty.rewardReady
+                                  ? l10n.t('loyaltyRewardReady')
+                                  : l10n.tP('loyaltyNextReward', {'points': '${loyalty.nextRewardPoints}'}),
+                              style: const TextStyle(fontSize: 11, color: MohajonWarm.muted, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('${loyalty.points}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: MohajonWarm.goldText)),
+                          Text(loyalty.tier, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: MohajonWarm.ink)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 14),

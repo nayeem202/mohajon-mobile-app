@@ -44,6 +44,8 @@ class ShopProfileService {
     required String shopName,
     required String location,
     required String phoneNumber,
+    String tin = '',
+    String bin = '',
   }) async {
     final authSession = _ref.read(authStateProvider).value;
     if (authSession == null) {
@@ -68,6 +70,27 @@ class ShopProfileService {
       'name': trimmedShopName,
       'location': trimmedLocation,
       'phoneNumber': trimmedPhoneNumber,
+      'tin': tin.trim(),
+      'bin': bin.trim(),
     });
+  }
+
+  Future<void> updateLoyaltyOffer({
+    required bool enabled,
+    required int pointsRequired,
+    required double discountPercent,
+    required double maxDiscount,
+    required double minimumPurchase,
+  }) async {
+    await ApiClient(_ref.read(localDatabaseProvider)).patch(
+      '/api/v1/shops/me/loyalty-offer',
+      {
+        'enabled': enabled,
+        'pointsRequired': pointsRequired,
+        'discountPercent': discountPercent,
+        'maxDiscount': maxDiscount,
+        'minimumPurchase': minimumPurchase,
+      },
+    );
   }
 }

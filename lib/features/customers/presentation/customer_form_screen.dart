@@ -35,6 +35,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
   final _email = TextEditingController();
   final _address = TextEditingController();
   final _notes = TextEditingController();
+  final _creditLimit = TextEditingController();
 
   String? _imagePath;
 
@@ -48,6 +49,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
       _email.text = customer.email;
       _address.text = customer.address;
       _notes.text = customer.notes;
+      _creditLimit.text = customer.creditLimit > 0
+          ? customer.creditLimit.toStringAsFixed(2)
+          : '';
       _imagePath = customer.imagePath;
     }
   }
@@ -59,6 +63,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
     _email.dispose();
     _address.dispose();
     _notes.dispose();
+    _creditLimit.dispose();
     super.dispose();
   }
 
@@ -218,6 +223,41 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                       ),
                                       hintText: l10n.t('addressHint'),
                                     ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              _SectionCard(
+                                icon: Icons.account_balance_wallet_outlined,
+                                iconColor: MohajonWarm.orange,
+                                iconBackground: MohajonWarm.tintOrange,
+                                title: l10n.t('creditControl'),
+                                children: [
+                                  _FieldLabel(label: l10n.t('creditLimit')),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _creditLimit,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                    ],
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                                      hintText: l10n.t('creditLimitHint'),
+                                    ),
+                                    validator: (value) {
+                                      final amount = double.tryParse(value?.trim() ?? '');
+                                      if ((value ?? '').trim().isNotEmpty &&
+                                          (amount == null || amount < 0)) {
+                                        return l10n.t('invalidAmount');
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    l10n.t('creditLimitHelp'),
+                                    style: const TextStyle(fontSize: 11, color: MohajonWarm.muted),
                                   ),
                                 ],
                               ),
@@ -459,6 +499,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
               address: _address.text.trim(),
               notes: _notes.text.trim(),
               imagePath: _imagePath,
+              creditLimit: double.tryParse(_creditLimit.text.trim()) ?? 0,
             );
         if (mounted) Navigator.of(context).pop();
       });
