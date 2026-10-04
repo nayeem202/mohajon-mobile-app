@@ -47,7 +47,7 @@ final currentUserProvider = StateProvider<AppUser?>((ref) {
 final localeProvider = StateProvider<Locale>((ref) {
   final db = ref.watch(localDatabaseProvider);
   final language =
-      db.settings.get('languageCode', defaultValue: 'en') as String;
+      db.settings.get('languageCode', defaultValue: 'bn') as String;
   return Locale(language);
 });
 

@@ -9,9 +9,13 @@ import android.location.LocationManager;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
+
+import com.facebook.FacebookSdk;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,6 +37,45 @@ public class MainActivity extends FlutterActivity {
     private Result pendingDeviceSessionResult;
     private Result pendingFileResult;
     private static final int PICK_BACKUP_REQUEST = 5201;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        // The Facebook SDK has to be initialised before super.onCreate(), which
+        // is what triggers configureFlutterEngine -> GeneratedPluginRegistrant.
+        //
+        // flutter_facebook_auth builds its FacebookAuth instance inside the
+        // plugin constructor, and that reaches LoginManager.getInstance(),
+        // which throws "The SDK has not been initialized" if the SDK is not up
+        // yet. The exception escapes into GeneratedPluginRegistrant, which then
+        // skips every plugin after it -- including JniFlutterPlugin -- so Dart
+        // ends up with no JNI environment and main() dies inside
+        // Hive.initFlutter() before runApp. The visible symptom is the app
+        // sitting on the splash screen forever.
+        //
+        // FacebookInitProvider normally does this, but it does not run when the
+        // App ID is unset or rejected, so it is started explicitly here.
+        initialiseFacebookSdk();
+        super.onCreate(savedInstanceState);
+    }
+
+    /**
+     * Starts the Facebook SDK if it is not already running.
+     *
+     * <p>Failures are swallowed on purpose. An unusable Facebook configuration
+     * must not be able to abort startup: the exception would escape plugin
+     * registration and take the whole app's plugin chain with it. Facebook
+     * sign-in simply reports itself unavailable instead, which the Dart side
+     * already handles.
+     */
+    private void initialiseFacebookSdk() {
+        try {
+            if (!FacebookSdk.isInitialized()) {
+                FacebookSdk.sdkInitialize(getApplicationContext());
+            }
+        } catch (Throwable error) {
+            Log.w("Mohajon", "Facebook SDK not initialised: " + error.getMessage());
+        }
+    }
 
     @Override
     public void configureFlutterEngine(FlutterEngine flutterEngine) {

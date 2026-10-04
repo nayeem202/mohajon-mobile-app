@@ -7,6 +7,7 @@ import '../../../core/models/app_user.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/services/auth_backend.dart';
 import '../../../core/services/custom_auth_backend.dart';
+import '../../../core/services/api_client.dart';
 import '../../../core/services/sync_service.dart';
 
 /// The auth backend. The app authenticates against the self-hosted
@@ -37,6 +38,7 @@ class AuthService {
   static const _kProfileEmail = 'profile_email';
   static const _kProfileUserId = 'profile_userId';
   static const kProfileBusinessType = 'profile_businessType';
+  static const kProfileIdentityComplete = 'profile_identityComplete';
 
   AuthBackend get backend => _ref.read(authBackendProvider);
 
@@ -58,7 +60,7 @@ class AuthService {
     required String email,
     required String mobile,
     required String password,
-    String businessType = 'general',
+    String businessType = '',
   }) async {
     if (!backend.isReady) {
       throw const AuthMessageException(
@@ -97,7 +99,13 @@ class AuthService {
       settings.put(_kProfileOwnerName, ownerName.trim()),
       settings.put(_kProfilePhone, mobile.trim()),
       settings.put(_kProfileEmail, email.trim().toLowerCase()),
-      settings.put(kProfileBusinessType, businessType),
+      if (businessType.trim().isNotEmpty)
+        settings.put(kProfileBusinessType, businessType.trim())
+      else
+        settings.delete(kProfileBusinessType),
+      // Email registration already collected the shop identity fields. The
+      // post-login setup will only ask for the missing business category.
+      settings.put(kProfileIdentityComplete, true),
     ]);
   }
 
@@ -165,17 +173,10 @@ class AuthService {
     await db.clearBusinessData();
     // Store information is account-specific. Do not show the previous
     // account's owner/email after another user signs in on this device.
-    await db.settings.deleteAll([
-      _kProfileStoreName,
-      _kProfileOwnerName,
-      _kProfilePhone,
-      _kProfileEmail,
-      _kProfileUserId,
-      kProfileBusinessType,
-      'profile_setupComplete',
-      'profile_address',
-      'profile_imagePath',
-    ]);
+    // Keep the profile snapshot across logout so the same account can reopen
+    // without being treated as a brand-new business. If another account is
+    // used later, _prepareProfileForSession clears this snapshot after the
+    // user-id mismatch check, before any UI is rendered.
     await backend.signOut();
     _ref.read(currentUserProvider.notifier).state = null;
   }
@@ -187,6 +188,18 @@ class AuthService {
       );
     }
     await backend.sendPasswordResetEmail(email);
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) {
+    return backend.resetPassword(
+      email: email,
+      code: code,
+      newPassword: newPassword,
+    );
   }
 
   Future<void> changePassword({
@@ -260,11 +273,72 @@ class AuthService {
     Hive.box<dynamic>(HiveBoxes.settings).put('hasSignedInBefore', true);
     await _prepareProfileForSession(session);
     await _fillMissingProfileFromSession(session);
+    await _syncPendingShopProfile();
+    await _hydrateShopProfile();
     if (syncNow) {
       final syncService = SyncService(db);
       if (await syncService.isOnline) {
         await syncService.sync(shopId: shopId);
       }
+    }
+  }
+
+  /// Business profile data belongs to Haalkhata, not the generic auth
+  /// service. Sync the locally captured registration fields only after a
+  /// valid authenticated session exists.
+  Future<void> _syncPendingShopProfile() async {
+    final db = _ref.read(localDatabaseProvider);
+    final settings = db.settings;
+    final name = (settings.get(_kProfileStoreName) as String?)?.trim() ?? '';
+    final phone = (settings.get(_kProfilePhone) as String?)?.trim() ?? '';
+    final businessType =
+        (settings.get(kProfileBusinessType) as String?)?.trim() ?? '';
+    final payload = <String, dynamic>{
+      if (name.isNotEmpty) 'name': name,
+      if (phone.isNotEmpty) 'phoneNumber': phone,
+      if (businessType.isNotEmpty) 'businessType': businessType,
+    };
+    if (payload.isEmpty) return;
+    try {
+      await ApiClient(db).put('/api/v1/shops/me', payload);
+    } catch (_) {
+      // The local profile remains available offline; the next authenticated
+      // startup retries this write.
+    }
+  }
+
+  /// Recovers shop identity/category after a cache clear or reinstall. The
+  /// registration screen already collected these values, so the server is the
+  /// source of truth when local Hive data is unavailable.
+  Future<void> _hydrateShopProfile() async {
+    final db = _ref.read(localDatabaseProvider);
+    try {
+      final profile = await ApiClient(db)
+          .get('/api/v1/shops/me', timeout: const Duration(seconds: 3));
+      final settings = db.settings;
+      final shopName = (profile['name'] ?? '').toString().trim();
+      final phone = (profile['phoneNumber'] ?? '').toString().trim();
+      final businessType = (profile['businessType'] ?? '').toString().trim();
+      if (shopName.isNotEmpty) await settings.put(_kProfileStoreName, shopName);
+      if (phone.isNotEmpty) await settings.put(_kProfilePhone, phone);
+      if (shopName.isNotEmpty && phone.isNotEmpty) {
+        await settings.put(kProfileIdentityComplete, true);
+      }
+      // Haalkhata assigns `general` as the database default for a newly
+      // created shop. That value does not mean the user completed category
+      // setup; otherwise a fresh Google signup would skip the category UI.
+      // A user who explicitly selects General is marked complete by
+      // ShopSetupScreen locally after pressing Continue.
+      final isDefaultBusinessType = businessType == 'general';
+      if (businessType.isNotEmpty &&
+          (!isDefaultBusinessType ||
+              settings.get('profile_setupComplete', defaultValue: false) ==
+                  true)) {
+        await settings.put(kProfileBusinessType, businessType);
+        await settings.put('profile_setupComplete', true);
+      }
+    } catch (_) {
+      // Offline startup remains usable; the next authenticated sync retries.
     }
   }
 
@@ -287,6 +361,7 @@ class AuthService {
         'profile_address',
         'profile_imagePath',
         kProfileBusinessType,
+        kProfileIdentityComplete,
         'profile_setupComplete',
       ]);
     }
@@ -299,6 +374,7 @@ class AuthService {
   Future<void> _fillMissingProfileFromSession(AuthSession session) async {
     final settings = _ref.read(localDatabaseProvider).settings;
     final ownerName = (settings.get(_kProfileOwnerName) as String?) ?? '';
+    final storeName = (settings.get(_kProfileStoreName) as String?) ?? '';
     final phone = (settings.get(_kProfilePhone) as String?) ?? '';
     final email = (settings.get(_kProfileEmail) as String?) ?? '';
     await Future.wait([
@@ -308,6 +384,13 @@ class AuthService {
         settings.put(_kProfilePhone, session.phone.trim()),
       if (email.trim().isEmpty && session.email.trim().isNotEmpty)
         settings.put(_kProfileEmail, session.email.trim().toLowerCase()),
+      // Migration for email users created before the setup gate was added.
+      // Google users intentionally do not qualify because their shop name
+      // and mobile number were never collected during authentication.
+      if (session.provider.toLowerCase() != 'google' &&
+          storeName.trim().isNotEmpty &&
+          phone.trim().isNotEmpty)
+        settings.put(kProfileIdentityComplete, true),
     ]);
   }
 }

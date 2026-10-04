@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:printing/printing.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/utils/app_error.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,7 +17,7 @@ import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
 import '../providers/product_providers.dart';
-import '../services/barcode_label_service.dart';
+import '../services/product_barcode_generator.dart';
 import 'barcode_scan_screen.dart';
 
 class ProductFormScreen extends ConsumerStatefulWidget {
@@ -107,16 +106,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                         child: Form(
                           key: _formKey,
                           child: ListView(
-                            padding:
-                                const EdgeInsets.fromLTRB(18, 12, 18, 16),
+                            padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
                             children: [
                               _FormHeader(
                                 title: isEditing
                                     ? l10n.t('updateProduct')
                                     : l10n.t('addProduct'),
                                 subtitle: l10n.t('productDetailsPricing'),
-                                onBack: () =>
-                                    Navigator.of(context).maybePop(),
+                                onBack: () => Navigator.of(context).maybePop(),
                               ),
                               const SizedBox(height: 18),
                               _ImagePickerCard(
@@ -148,8 +145,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                       hintText: l10n.t('productNameHint'),
                                     ),
                                     validator: (value) =>
-                                        value == null ||
-                                            value.trim().isEmpty
+                                        value == null || value.trim().isEmpty
                                         ? l10n.t('required')
                                         : null,
                                   ),
@@ -165,40 +161,30 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      suffixIcon: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            tooltip: l10n.t('printBarcodeLabel'),
-                                            highlightColor: MohajonWarm
-                                                .primary
-                                                .withValues(alpha: 0.25),
-                                            icon: Icon(
-                                              Icons.print_outlined,
-                                              color: _barcode.text.trim().isEmpty
-                                                  ? MohajonWarm.muted
-                                                  : MohajonWarm.goldText,
-                                            ),
-                                            onPressed: isBusy ||
-                                                    _barcode.text.trim().isEmpty
-                                                ? null
-                                                : _printBarcodeLabel,
-                                          ),
-                                          IconButton(
-                                            tooltip: l10n.t('scanBarcode'),
-                                            highlightColor: MohajonWarm
-                                                .primary
-                                                .withValues(alpha: 0.25),
-                                            icon: const Icon(
-                                              Icons.qr_code_scanner_rounded,
-                                              color: MohajonWarm.goldText,
-                                            ),
-                                            onPressed: isBusy
-                                                ? null
-                                                : _scanBarcode,
-                                          ),
-                                        ],
+                                      suffixIcon: IconButton(
+                                        tooltip: l10n.t('scanBarcode'),
+                                        highlightColor: MohajonWarm.primary
+                                            .withValues(alpha: 0.25),
+                                        icon: const Icon(
+                                          Icons.qr_code_scanner_rounded,
+                                          color: MohajonWarm.goldText,
+                                        ),
+                                        onPressed: isBusy ? null : _scanBarcode,
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: isBusy
+                                          ? null
+                                          : _generateBarcode,
+                                      icon: const Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 17,
+                                      ),
+                                      label: Text(l10n.t('generateBarcode')),
                                     ),
                                   ),
                                 ],
@@ -224,8 +210,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                           label: _categoryLabel(category, l10n),
                                           selected:
                                               _selectedCategory == category,
-                                          onTap: () => setState(() =>
-                                              _selectedCategory = category),
+                                          onTap: () => setState(
+                                            () => _selectedCategory = category,
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -241,7 +228,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                           label: unit,
                                           selected: _selectedUnit == unit,
                                           onTap: () => setState(
-                                              () => _selectedUnit = unit),
+                                            () => _selectedUnit = unit,
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -270,12 +258,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                             const SizedBox(height: 8),
                                             TextFormField(
                                               controller: _buyingPrice,
-                                              keyboardType: const TextInputType
-                                                  .numberWithOptions(
-                                                decimal: true,
-                                              ),
-                                              decoration:
-                                                  const InputDecoration(
+                                              keyboardType:
+                                                  const TextInputType.numberWithOptions(
+                                                    decimal: true,
+                                                  ),
+                                              decoration: const InputDecoration(
                                                 prefixIcon: Padding(
                                                   padding: EdgeInsets.only(
                                                     left: 14,
@@ -284,8 +271,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                   child: Text(
                                                     '৳',
                                                     style: TextStyle(
-                                                      color:
-                                                          MohajonWarm.muted,
+                                                      color: MohajonWarm.muted,
                                                       fontSize: 14,
                                                       fontWeight:
                                                           FontWeight.w800,
@@ -294,9 +280,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                 ),
                                                 prefixIconConstraints:
                                                     BoxConstraints(
-                                                  minWidth: 0,
-                                                  minHeight: 0,
-                                                ),
+                                                      minWidth: 0,
+                                                      minHeight: 0,
+                                                    ),
                                                 hintText: '0.00',
                                               ),
                                               validator: (value) =>
@@ -321,12 +307,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                             const SizedBox(height: 8),
                                             TextFormField(
                                               controller: _sellingPrice,
-                                              keyboardType: const TextInputType
-                                                  .numberWithOptions(
-                                                decimal: true,
-                                              ),
-                                              decoration:
-                                                  const InputDecoration(
+                                              keyboardType:
+                                                  const TextInputType.numberWithOptions(
+                                                    decimal: true,
+                                                  ),
+                                              decoration: const InputDecoration(
                                                 prefixIcon: Padding(
                                                   padding: EdgeInsets.only(
                                                     left: 14,
@@ -335,8 +320,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                   child: Text(
                                                     '৳',
                                                     style: TextStyle(
-                                                      color:
-                                                          MohajonWarm.muted,
+                                                      color: MohajonWarm.muted,
                                                       fontSize: 14,
                                                       fontWeight:
                                                           FontWeight.w800,
@@ -345,9 +329,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                 ),
                                                 prefixIconConstraints:
                                                     BoxConstraints(
-                                                  minWidth: 0,
-                                                  minHeight: 0,
-                                                ),
+                                                      minWidth: 0,
+                                                      minHeight: 0,
+                                                    ),
                                                 hintText: '0.00',
                                               ),
                                               validator: (value) =>
@@ -396,11 +380,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                     value.trim().isEmpty) {
                                                   return l10n.t('required');
                                                 }
-                                                final parsed =
-                                                    int.tryParse(value.trim());
+                                                final parsed = int.tryParse(
+                                                  value.trim(),
+                                                );
                                                 if (parsed == null ||
                                                     parsed < 0) {
-                                                  return l10n.t('validWholeNumber');
+                                                  return l10n.t(
+                                                    'validWholeNumber',
+                                                  );
                                                 }
                                                 return null;
                                               },
@@ -431,11 +418,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                                     value.trim().isEmpty) {
                                                   return l10n.t('required');
                                                 }
-                                                final parsed =
-                                                    int.tryParse(value.trim());
+                                                final parsed = int.tryParse(
+                                                  value.trim(),
+                                                );
                                                 if (parsed == null ||
                                                     parsed < 0) {
-                                                  return l10n.t('validWholeNumber');
+                                                  return l10n.t(
+                                                    'validWholeNumber',
+                                                  );
                                                 }
                                                 return null;
                                               },
@@ -445,61 +435,82 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                       ),
                                     ],
                                   ),
-const SizedBox(height: 12),
-                              _ExpiryField(
-                                value: _expiryDate,
-                                onChanged: (date) =>
-                                    setState(() => _expiryDate = date),
-                              ),
-                              const SizedBox(height: 12),
-                              _FieldLabel(label: l10n.t('batchNumber')),
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _batchNumber,
-                                textCapitalization: TextCapitalization.characters,
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.qr_code_2_rounded, size: 20),
-                                  hintText: l10n.t('batchNumberHint'),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _sku,
-                                      textCapitalization: TextCapitalization.characters,
-                                      decoration: InputDecoration(
-                                        prefixIcon: const Icon(Icons.inventory_2_outlined, size: 20),
-                                        labelText: l10n.t('sku'),
-                                        hintText: l10n.t('skuHint'),
+                                  const SizedBox(height: 12),
+                                  _ExpiryField(
+                                    value: _expiryDate,
+                                    onChanged: (date) =>
+                                        setState(() => _expiryDate = date),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _FieldLabel(label: l10n.t('batchNumber')),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _batchNumber,
+                                    textCapitalization:
+                                        TextCapitalization.characters,
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
+                                        Icons.qr_code_2_rounded,
+                                        size: 20,
+                                      ),
+                                      hintText: l10n.t('batchNumberHint'),
+                                      suffixIcon: IconButton(
+                                        tooltip: l10n.t('scanBarcode'),
+                                        icon: const Icon(
+                                          Icons.qr_code_scanner_rounded,
+                                          color: MohajonWarm.goldText,
+                                        ),
+                                        onPressed: isBusy
+                                            ? null
+                                            : _scanBatchNumber,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _variantName,
-                                      decoration: InputDecoration(
-                                        prefixIcon: const Icon(Icons.tune_rounded, size: 20),
-                                        labelText: l10n.t('variant'),
-                                        hintText: l10n.t('variantHint'),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: _sku,
+                                          textCapitalization:
+                                              TextCapitalization.characters,
+                                          decoration: InputDecoration(
+                                            prefixIcon: const Icon(
+                                              Icons.inventory_2_outlined,
+                                              size: 20,
+                                            ),
+                                            labelText: l10n.t('sku'),
+                                            hintText: l10n.t('skuHint'),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: _variantName,
+                                          decoration: InputDecoration(
+                                            prefixIcon: const Icon(
+                                              Icons.tune_rounded,
+                                              size: 20,
+                                            ),
+                                            labelText: l10n.t('variant'),
+                                            hintText: l10n.t('variantHint'),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: MohajonWarm.tintOrange,
                                       border: Border.all(
-                                        color: MohajonWarm.orange
-                                            .withValues(alpha: 0.25),
+                                        color: MohajonWarm.orange.withValues(
+                                          alpha: 0.25,
+                                        ),
                                       ),
-                                      borderRadius:
-                                          BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Row(
                                       crossAxisAlignment:
@@ -531,9 +542,7 @@ const SizedBox(height: 12),
                                 const SizedBox(height: 8),
                                 Center(
                                   child: TextButton.icon(
-                                    onPressed: isBusy
-                                        ? null
-                                        : _deleteProduct,
+                                    onPressed: isBusy ? null : _deleteProduct,
                                     style: TextButton.styleFrom(
                                       foregroundColor: MohajonWarm.red,
                                       textStyle: const TextStyle(
@@ -541,8 +550,10 @@ const SizedBox(height: 12),
                                         fontSize: 14,
                                       ),
                                     ),
-                                    icon: const Icon(Icons.delete_outline,
-                                        size: 18),
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                    ),
                                     label: Text(l10n.t('delete')),
                                   ),
                                 ),
@@ -641,9 +652,9 @@ const SizedBox(height: 12),
   }
 
   List<String> _categoryOptions() {
-    final type = ref.read(localDatabaseProvider).settings.get(
-          'profile_businessType',
-        ) as String?;
+    final type =
+        ref.read(localDatabaseProvider).settings.get('profile_businessType')
+            as String?;
     final template = ShopCategoryTemplates.forId(type);
     final categories = <String>[
       ...template.categories,
@@ -678,37 +689,29 @@ const SizedBox(height: 12),
   }
 
   Future<void> _scanBarcode() async {
+    await _scanBarcodeInto(_barcode);
+  }
+
+  Future<void> _scanBatchNumber() async {
+    await _scanBarcodeInto(_batchNumber);
+  }
+
+  void _generateBarcode() {
+    setState(() {
+      _barcode.text = ProductBarcodeGenerator.generateInternalEan13();
+    });
+    showAppSnackBar(
+      context,
+      AppLocalizations.of(context).t('barcodeGenerated'),
+    );
+  }
+
+  Future<void> _scanBarcodeInto(TextEditingController target) async {
     final code = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScanScreen()),
     );
     if (code != null && code.isNotEmpty) {
-      setState(() => _barcode.text = code);
-    }
-  }
-
-  Future<void> _printBarcodeLabel() async {
-    final code = _barcode.text.trim();
-    if (code.isEmpty) return;
-    final name = _name.text.trim().isEmpty ? 'Product' : _name.text.trim();
-    final price = double.tryParse(_sellingPrice.text.trim()) ?? 0;
-    try {
-      await Printing.layoutPdf(
-        name: 'barcode-$code',
-        onLayout: (format) => BarcodeLabelService().buildLabels(
-          [
-            BarcodeLabel(code: code, name: name, price: price),
-          ],
-          format: format,
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        showAppSnackBar(
-          context,
-          AppLocalizations.of(context).tP('failedPrintBarcode', {'error': '$e'}),
-          isError: true,
-        );
-      }
+      setState(() => target.text = code);
     }
   }
 
@@ -833,7 +836,9 @@ const SizedBox(height: 12),
     final l10n = AppLocalizations.of(context);
     final product = widget.product;
     if (product == null) return;
-    final name = product.displayName(Localizations.localeOf(context).languageCode);
+    final name = product.displayName(
+      Localizations.localeOf(context).languageCode,
+    );
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -976,9 +981,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: MohajonWarm.card,
-        border: const Border(
-          top: BorderSide(color: MohajonWarm.goldBorder),
-        ),
+        border: const Border(top: BorderSide(color: MohajonWarm.goldBorder)),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),
@@ -1224,12 +1227,12 @@ class _ImagePickerCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: MohajonWarm.primary,
                             borderRadius: BorderRadius.circular(10),
-                            border:
-                                Border.all(color: Colors.white, width: 2),
+                            border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: MohajonWarm.primary
-                                    .withValues(alpha: 0.35),
+                                color: MohajonWarm.primary.withValues(
+                                  alpha: 0.35,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),

@@ -336,6 +336,19 @@ class CustomAuthBackend implements AuthBackend {
   }
 
   @override
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _post('/api/v1/auth/reset-password', {
+      'email': email.trim().toLowerCase(),
+      'code': code.trim(),
+      'newPassword': newPassword,
+    });
+  }
+
+  @override
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,

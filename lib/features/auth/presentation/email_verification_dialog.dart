@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,15 +39,44 @@ class _EmailVerificationDialogState
   final _codeController = TextEditingController();
   final _codeFocus = FocusNode();
   String? _error;
-
-  /// Set when a resend succeeded, so the message is styled as a confirmation
-  /// rather than as a failure.
   bool _notice = false;
   bool _busy = false;
   bool _success = false;
+  Timer? _countdownTimer;
+  Duration _codeRemaining = const Duration(minutes: 3);
+  int _resendRemaining = 30;
+
+  bool get _codeExpired => _codeRemaining == Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _codeRemaining = const Duration(minutes: 3);
+    _resendRemaining = 30;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final nextCode = _codeRemaining - const Duration(seconds: 1);
+      setState(() {
+        _codeRemaining = nextCode.isNegative ? Duration.zero : nextCode;
+        _resendRemaining = _resendRemaining > 0 ? _resendRemaining - 1 : 0;
+      });
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.toString().padLeft(2, '0');
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _codeController.dispose();
     _codeFocus.dispose();
     super.dispose();
@@ -53,50 +84,74 @@ class _EmailVerificationDialogState
 
   Future<void> _verify() async {
     final code = _codeController.text.trim();
-    if (code.isEmpty) {
+    if (_codeExpired) {
       setState(() {
-        _error = 'Enter the verification code from your email.';
+        _error = 'This code has expired. Please resend a new code.';
         _notice = false;
       });
       return;
     }
+    if (code.isEmpty) {
+      setState(() {
+        _error = 'Enter the 6-digit code';
+        _notice = false;
+      });
+      return;
+    }
+
     setState(() {
       _busy = true;
       _error = null;
       _notice = false;
     });
+
     try {
       await ref
           .read(authServiceProvider)
           .verifyEmail(email: widget.email, code: code);
-      if (!mounted) return;
-      setState(() => _success = true);
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (mounted) setState(() => _error = authErrorMessage(error));
+      if (mounted) {
+        setState(() {
+          _success = true;
+          _error = null;
+        });
+        await Future.delayed(const Duration(milliseconds: 350));
+        if (mounted) Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _notice = false;
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _resend() async {
+    if (_resendRemaining > 0) return;
     setState(() {
       _busy = true;
       _error = null;
       _notice = false;
     });
     try {
-      await ref
-          .read(authServiceProvider)
-          .sendEmailVerificationCode(widget.email);
+      await ref.read(authServiceProvider).sendEmailVerificationCode(widget.email);
       if (mounted) {
         setState(() {
-          _error = 'A fresh code is on its way.';
+          _error = 'Code resent to ${widget.email}';
           _notice = true;
         });
+        _startCountdown();
       }
-    } catch (error) {
-      if (mounted) setState(() => _error = authErrorMessage(error));
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _notice = false;
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -105,19 +160,20 @@ class _EmailVerificationDialogState
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final media = MediaQuery.of(context);
+    final availableHeight = media.size.height - media.viewInsets.bottom - 32;
+    final dialogHeight = (availableHeight * .84).clamp(300.0, 520.0).toDouble();
 
     return PopScope(
       canPop: _success,
       child: Dialog(
         backgroundColor: Colors.transparent,
-        // The dialog is opened from inside the auth screens, which already
-        // install the AuthBrand theme; re-applying it here keeps the dialog
-        // correct when it is shown from anywhere else.
-        insetPadding: EdgeInsets.fromLTRB(20, 24, 20, 24 + bottomInset),
+        insetPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
-          child: Container(
+          child: SizedBox(
+            height: dialogHeight,
+            child: Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AuthBrand.panelBackground,
@@ -140,93 +196,140 @@ class _EmailVerificationDialogState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _Header(email: widget.email, locale: locale),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Enter the 6-digit code we emailed you to confirm this '
-                        'address and finish setting up your account.',
-                        textAlign: TextAlign.center,
-                        style: AppType.body(
-                          const TextStyle(
-                            color: AuthBrand.panelMuted,
-                            fontSize: 14.5,
-                            height: 1.45,
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Enter the 6-digit code we emailed you to confirm this address and finish setting up your account.',
+                          textAlign: TextAlign.center,
+                          style: AppType.body(
+                            const TextStyle(
+                              color: AuthBrand.panelMuted,
+                              fontSize: 14.5,
+                              height: 1.45,
+                            ),
+                            locale: locale,
                           ),
-                          locale: locale,
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      _CodeField(
-                        controller: _codeController,
-                        focusNode: _codeFocus,
-                        locale: locale,
-                        onSubmitted: (_) => _verify(),
-                      ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOutCubic,
-                        alignment: Alignment.topCenter,
-                        child: _error == null
-                            ? const SizedBox(width: double.infinity)
-                            : Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: _StatusLine(
-                                  message: _error!,
-                                  isNotice: _notice,
-                                  locale: locale,
+                        const SizedBox(height: 20),
+                        _CodeField(
+                          controller: _codeController,
+                          focusNode: _codeFocus,
+                          locale: locale,
+                          onSubmitted: (_) => _verify(),
+                        ),
+                        const SizedBox(height: 10),
+                        Builder(
+                          builder: (context) {
+                            final bangla =
+                                Localizations.localeOf(context).languageCode ==
+                                'bn';
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _codeExpired
+                                      ? Icons.error_outline_rounded
+                                      : Icons.timer_outlined,
+                                  size: 16,
+                                  color: _codeExpired
+                                      ? AuthBrand.danger
+                                      : AuthBrand.primaryDeep,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _codeExpired
+                                      ? (bangla
+                                            ? 'কোডের মেয়াদ শেষ হয়েছে'
+                                            : 'Code expired')
+                                      : (bangla
+                                            ? 'কোডের মেয়াদ শেষ হবে ${_formatDuration(_codeRemaining)} পরে'
+                                            : 'Code expires in ${_formatDuration(_codeRemaining)}'),
+                                  style: TextStyle(
+                                    color: _codeExpired
+                                        ? AuthBrand.danger
+                                        : AuthBrand.panelMuted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          alignment: Alignment.topCenter,
+                          child: _error == null
+                              ? const SizedBox(width: double.infinity)
+                              : Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: _StatusLine(
+                                    message: _error!,
+                                    isNotice: _notice,
+                                    locale: locale,
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(height: 20),
+                        _VerifyButton(
+                          busy: _busy,
+                          enabled: !_codeExpired,
+                          label: 'Verify & continue',
+                          onPressed: _verify,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: _busy || _resendRemaining > 0
+                                    ? null
+                                    : _resend,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AuthBrand.primaryDeep,
+                                  disabledForegroundColor: AuthBrand.panelMuted
+                                      .withValues(alpha: .45),
+                                ),
+                                child: Text(
+                                  _resendRemaining > 0
+                                      ? 'Resend in ${_resendRemaining}s'
+                                      : 'Resend code',
                                 ),
                               ),
-                      ),
-                      const SizedBox(height: 20),
-                      _VerifyButton(
-                        busy: _busy,
-                        label: 'Verify & continue',
-                        onPressed: _verify,
-                      ),
-                      const SizedBox(height: 4),
-                      // Resend / skip are secondary: plain text links, so the
-                      // gold button stays the single obvious next step.
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: _busy ? null : _resend,
-                              style: TextButton.styleFrom(
-                                foregroundColor: AuthBrand.primaryDeep,
-                                disabledForegroundColor: AuthBrand.panelMuted
-                                    .withValues(alpha: .45),
-                              ),
-                              child: const Text('Resend code'),
                             ),
-                          ),
-                          Container(
-                            height: 18,
-                            width: 1,
-                            color: AuthBrand.fieldBorder,
-                          ),
-                          Expanded(
-                            child: TextButton(
-                              onPressed: _busy || _success
-                                  ? null
-                                  : () => Navigator.of(context).pop(false),
-                              style: TextButton.styleFrom(
-                                foregroundColor: AuthBrand.panelMuted,
-                                disabledForegroundColor: AuthBrand.panelMuted
-                                    .withValues(alpha: .45),
-                              ),
-                              child: const Text('Skip for now'),
+                            Container(
+                              height: 18,
+                              width: 1,
+                              color: AuthBrand.fieldBorder,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            Expanded(
+                              child: TextButton(
+                                onPressed: _busy || _success
+                                    ? null
+                                    : () => Navigator.of(context).pop(false),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AuthBrand.panelMuted,
+                                  disabledForegroundColor: AuthBrand.panelMuted
+                                      .withValues(alpha: .45),
+                                ),
+                                child: const Text('Skip for now'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ),
@@ -433,11 +536,13 @@ class _StatusLine extends StatelessWidget {
 class _VerifyButton extends StatelessWidget {
   const _VerifyButton({
     required this.busy,
+    required this.enabled,
     required this.label,
     required this.onPressed,
   });
 
   final bool busy;
+  final bool enabled;
   final String label;
   final VoidCallback onPressed;
 
@@ -470,7 +575,7 @@ class _VerifyButton extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: AuthBrand.buttonRadius,
-          onTap: busy ? null : onPressed,
+          onTap: busy || !enabled ? null : onPressed,
           child: Stack(
             fit: StackFit.expand,
             children: [

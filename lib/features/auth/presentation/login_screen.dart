@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
 import '../../../core/app/authenticated_entry.dart';
+import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/auth_backend.dart';
 import '../../../core/theme/app_typography.dart';
@@ -60,6 +61,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   void initState() {
     super.initState();
+    final settings = ref.read(localDatabaseProvider).settings;
+    _rememberMe =
+        settings.get('rememberLoginEmail', defaultValue: true) as bool;
+    _email.text =
+        settings.get('rememberedLoginEmail', defaultValue: '') as String;
     _entrance = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 650),
@@ -78,6 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isBangla = ref.watch(localeProvider).languageCode == 'bn';
     return withLoadingOverlay(
       Theme(
         data: AuthBrand.theme(Theme.of(context)),
@@ -118,13 +125,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                   ),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: _LanguageSwitcher(
+                                      isBangla: isBangla,
+                                      onChanged: _setLanguage,
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
                                   child: AuthHeading(
                                     title: _isReturningUser
-                                        ? 'Welcome back'
-                                        : 'Welcome to Mohajon',
+                                        ? (isBangla ? 'আবার স্বাগতম' : 'Welcome back')
+                                        : (isBangla
+                                            ? 'মহাজনে আপনাকে স্বাগতম'
+                                            : 'Welcome to Mohajon'),
                                     subtitle: _isReturningUser
-                                        ? 'Sign in to pick up where you left off'
-                                        : 'Sign in, or create a free account',
+                                        ? (isBangla
+                                            ? 'যেখানে শেষ করেছিলেন, সেখান থেকেই শুরু করুন'
+                                            : 'Sign in to pick up where you left off')
+                                        : (isBangla
+                                            ? 'সাইন ইন করুন, অথবা বিনামূল্যে অ্যাকাউন্ট তৈরি করুন'
+                                            : 'Sign in, or create a free account'),
                                     topPadding: compact ? 2 : 8,
                                   ),
                                 ),
@@ -146,14 +171,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       () =>
                                           _obscurePassword = !_obscurePassword,
                                     ),
-                                    onRememberChanged: (value) =>
-                                        setState(() => _rememberMe = value),
+                                    onRememberChanged: _setRememberMe,
                                     onForgotPassword: _openForgotPassword,
                                     onSignIn: _signIn,
                                     onGoogleSignIn: _signInWithGoogle,
                                     onFacebookSignIn: _signInWithFacebook,
                                     onSignup: _openSignup,
                                     isBusy: isBusy,
+                                    bangla: isBangla,
                                   ),
                                 ),
                               ],
@@ -171,6 +196,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       ),
       label: 'Signing in...',
     );
+  }
+
+  Future<void> _setLanguage(bool bangla) async {
+    final language = bangla ? 'bn' : 'en';
+    ref.read(localeProvider.notifier).state = Locale(language);
+    await ref.read(localDatabaseProvider).settings.put('languageCode', language);
+  }
+
+  Future<void> _setRememberMe(bool value) async {
+    setState(() => _rememberMe = value);
+    final settings = ref.read(localDatabaseProvider).settings;
+    await settings.put('rememberLoginEmail', value);
+    if (!value) await settings.delete('rememberedLoginEmail');
   }
 
   Future<void> _signIn() async {
@@ -198,6 +236,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               email: _email.text.trim(),
               password: _password.text,
             );
+        final settings = ref.read(localDatabaseProvider).settings;
+        if (_rememberMe) {
+          await settings.put('rememberedLoginEmail', _email.text.trim());
+          await settings.put('rememberLoginEmail', true);
+        } else {
+          await settings.delete('rememberedLoginEmail');
+          await settings.put('rememberLoginEmail', false);
+        }
         if (mounted) _openApp();
       } catch (error) {
         debugPrint('AUTH UI: email sign-in failed: $error');
@@ -296,13 +342,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final email = await Navigator.of(
       context,
     ).push<String>(MaterialPageRoute(builder: (_) => const SignupScreen()));
-    if (email != null && mounted) _email.text = email;
+    if (email == '__authenticated__' && mounted) {
+      _openApp();
+    } else if (email != null && mounted) {
+      _email.text = email;
+    }
   }
 }
 
 /// Brand mark shown in the header circle. Login is usually the entry route, so
 /// there is nothing to go "back" to - the disc keeps the header balanced
 /// instead of showing a dead arrow.
+class _LanguageSwitcher extends StatelessWidget {
+  const _LanguageSwitcher({required this.isBangla, required this.onChanged});
+
+  final bool isBangla;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .86),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AuthBrand.fieldBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _LanguageChoice(
+            label: 'BN',
+            selected: isBangla,
+            onTap: () => onChanged(true),
+          ),
+          _LanguageChoice(
+            label: 'EN',
+            selected: !isBangla,
+            onTap: () => onChanged(false),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageChoice extends StatelessWidget {
+  const _LanguageChoice({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AuthBrand.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : AuthBrand.primaryDeep,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BrandDisc extends StatelessWidget {
   const _BrandDisc();
 
@@ -347,6 +468,7 @@ class _LoginForm extends StatelessWidget {
     required this.onFacebookSignIn,
     required this.onSignup,
     required this.isBusy,
+    required this.bangla,
   });
 
   final GlobalKey<FormState> formKey;
@@ -366,6 +488,7 @@ class _LoginForm extends StatelessWidget {
   final VoidCallback onFacebookSignIn;
   final VoidCallback onSignup;
   final bool isBusy;
+  final bool bangla;
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +500,7 @@ class _LoginForm extends StatelessWidget {
           LoginTextField(
             controller: email,
             focusNode: emailFocus,
-            hintText: 'Email address',
+            hintText: bangla ? 'ইমেইল' : 'Email address',
             icon: Icons.person_outline_rounded,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
@@ -385,10 +508,10 @@ class _LoginForm extends StatelessWidget {
             onSubmitted: (_) => passwordFocus.requestFocus(),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please enter your email address';
+                return bangla ? 'আপনার ইমেইল লিখুন' : 'Please enter your email address';
               }
               if (!value.contains('@') || !value.contains('.')) {
-                return 'Please enter a valid email address';
+                return bangla ? 'সঠিক ইমেইল লিখুন' : 'Please enter a valid email address';
               }
               return null;
             },
@@ -397,7 +520,7 @@ class _LoginForm extends StatelessWidget {
           LoginTextField(
             controller: password,
             focusNode: passwordFocus,
-            hintText: 'Password',
+            hintText: bangla ? 'পাসওয়ার্ড' : 'Password',
             icon: Icons.lock_outline_rounded,
             obscureText: obscurePassword,
             textInputAction: TextInputAction.done,
@@ -405,7 +528,7 @@ class _LoginForm extends StatelessWidget {
             onSubmitted: (_) => onSignIn(),
             onToggleVisibility: onTogglePassword,
             validator: (value) => value == null || value.isEmpty
-                ? 'Please enter your password'
+                ? (bangla ? 'আপনার পাসওয়ার্ড লিখুন' : 'Please enter your password')
                 : null,
           ),
           const SizedBox(height: 8),
@@ -415,6 +538,7 @@ class _LoginForm extends StatelessWidget {
                 value: rememberMe,
                 enabled: !isBusy,
                 onChanged: onRememberChanged,
+                bangla: bangla,
               ),
               const Spacer(),
               TextButton(
@@ -425,27 +549,31 @@ class _LoginForm extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'Forgot Password ?',
+                child: Text(
+                  bangla ? 'পাসওয়ার্ড ভুলে গেছেন?' : 'Forgot Password ?',
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          PrimaryButton(onPressed: isBusy ? null : onSignIn, isLoading: isBusy),
+          PrimaryButton(
+            onPressed: isBusy ? null : onSignIn,
+            isLoading: isBusy,
+            label: bangla ? 'সাইন ইন' : 'Login',
+          ),
           if (message != null) ...[
             const SizedBox(height: 14),
             _MessageBanner(message: message!, isError: messageIsError),
           ],
           const SizedBox(height: 4),
           AuthFooterLink(
-            prompt: "Don't have an account?",
-            action: 'Sign up',
+            prompt: bangla ? 'অ্যাকাউন্ট নেই?' : "Don't have an account?",
+            action: bangla ? 'সাইন আপ' : 'Sign up',
             onPressed: isBusy ? null : onSignup,
           ),
           const SizedBox(height: 22),
-          const AuthOrDivider(label: 'Or continue with'),
+          AuthOrDivider(label: bangla ? 'অথবা ব্যবহার করুন' : 'Or continue with'),
           const SizedBox(height: 18),
           SocialAuthRow(
             onGoogle: isBusy ? null : onGoogleSignIn,
@@ -464,18 +592,20 @@ class _RememberToggle extends StatelessWidget {
     required this.value,
     required this.enabled,
     required this.onChanged,
+    required this.bangla,
   });
 
   final bool value;
   final bool enabled;
   final ValueChanged<bool> onChanged;
+  final bool bangla;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       checked: value,
       enabled: enabled,
-      label: 'Remember me',
+      label: bangla ? 'আমাকে মনে রাখুন' : 'Remember me',
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: enabled ? () => onChanged(!value) : null,
@@ -507,12 +637,15 @@ class _RememberToggle extends StatelessWidget {
                     : null,
               ),
               const SizedBox(width: 9),
-              const Text(
-                'Remember me',
-                style: TextStyle(
+              Text(
+                bangla ? 'আমাকে মনে রাখুন' : 'Remember me',
+                style: AppType.body(
+                  const TextStyle(
                   color: AuthBrand.panelMuted,
                   fontWeight: FontWeight.w600,
                   fontSize: 13.5,
+                  ),
+                  locale: Localizations.localeOf(context),
                 ),
               ),
             ],
@@ -617,22 +750,6 @@ class _PrimaryButtonState extends State<PrimaryButton> {
             borderRadius: AuthBrand.buttonRadius,
             gradient: enabled ? AuthBrand.gradient : null,
             color: enabled ? null : AuthBrand.buttonDisabled,
-            boxShadow: enabled
-                ? [
-                    // Warm gold glow, tight and low: the button sits on the
-                    // cream page rather than floating over it.
-                    BoxShadow(
-                      color: AuthBrand.buttonGlow.withValues(alpha: .38),
-                      blurRadius: 22,
-                      offset: const Offset(0, 10),
-                    ),
-                    BoxShadow(
-                      color: AuthBrand.buttonGlow.withValues(alpha: .20),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
           ),
           child: InkWell(
             borderRadius: AuthBrand.buttonRadius,

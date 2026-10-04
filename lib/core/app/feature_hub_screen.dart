@@ -807,7 +807,7 @@ class _IconFeaturePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth < 340 ? 3 : 4;
+        final columns = 4;
         return Container(
           padding: const EdgeInsets.fromLTRB(8, 18, 8, 16),
           decoration: BoxDecoration(

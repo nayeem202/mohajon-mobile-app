@@ -55,6 +55,29 @@ class SyncService {
     ('auditEvents', 'auditEvents'),
   ];
 
+  // Audit history is append-heavy and can grow without a practical upper
+  // bound. It is pushed immediately for durability, but historical rows are
+  // deliberately pulled by the Audit Timeline screen in small user-requested
+  // pages. This keeps startup sync fast on long-running businesses.
+  static const _pullCollections = [
+    ('products', 'products'),
+    ('productBatches', 'productBatches'),
+    ('customers', 'customers'),
+    ('sales', 'sales'),
+    ('customerLedgerEntries', 'customerLedgerEntries'),
+    ('payments', 'payments'),
+    ('purchases', 'purchases'),
+    ('suppliers', 'suppliers'),
+    ('vendors', 'vendors'),
+    ('vendorPurchases', 'vendorPurchases'),
+    ('vendorPayments', 'vendorPayments'),
+    ('expenses', 'expenses'),
+    ('users', 'users'),
+    ('stockAdjustments', 'stockAdjustments'),
+    ('supplierReturns', 'supplierReturns'),
+    ('saleReturns', 'saleReturns'),
+  ];
+
   Future<bool> get isOnline async {
     // Hard cap: a stalled DNS/connectivity call must never freeze the UI for
     // more than a few seconds on every satellite operation.
@@ -95,7 +118,6 @@ class SyncService {
           _db.vendorPurchases.pending().length +
           _db.vendorPayments.pending().length +
           _db.expenses.pending().length +
-          _db.users.pending().length +
           _db.stockAdjustments.pending().length +
           _db.supplierReturns.pending().length +
           _db.auditEvents.pending().length +
@@ -115,7 +137,6 @@ class SyncService {
         _db.vendorPurchases.pendingForShop(shopId).length +
         _db.vendorPayments.pendingForShop(shopId).length +
         _db.expenses.pendingForShop(shopId).length +
-        _db.users.pendingForShop(shopId).length +
         _db.stockAdjustments.pendingForShop(shopId).length +
         _db.supplierReturns.pendingForShop(shopId).length +
         _db.auditEvents.pendingForShop(shopId).length +
@@ -226,7 +247,7 @@ class SyncService {
           ((_db.settings.get('syncCount') as num?) ?? 0).toInt() + 1;
       await _db.settings.put('syncCount', syncCount);
       final forceFullProducts = syncCount % 10 == 0;
-      for (final (name, _) in _collections) {
+      for (final (name, _) in _pullCollections) {
         await _pullCollection(
           name,
           shopId,
@@ -308,34 +329,31 @@ class SyncService {
           '/api/v1/customers/$customerId/due-recovery',
         );
         final localUpdatedAt = DateTime.tryParse('${plan['updatedAt'] ?? ''}');
-        final remoteUpdatedAt =
-            DateTime.tryParse('${remoteBefore['updatedAt'] ?? ''}');
-        final remoteIsNewer = remoteUpdatedAt != null &&
+        final remoteUpdatedAt = DateTime.tryParse(
+          '${remoteBefore['updatedAt'] ?? ''}',
+        );
+        final remoteIsNewer =
+            remoteUpdatedAt != null &&
             (localUpdatedAt == null || remoteUpdatedAt.isAfter(localUpdatedAt));
         if (!remoteIsNewer) {
-          await _api.put(
-            '/api/v1/customers/$customerId/due-recovery',
-            {
-              'promisedPaymentDate': plan['promisedPaymentDate'],
-              'snoozedUntil': plan['snoozedUntil'],
-            },
-          );
+          await _api.put('/api/v1/customers/$customerId/due-recovery', {
+            'promisedPaymentDate': plan['promisedPaymentDate'],
+            'snoozedUntil': plan['snoozedUntil'],
+          });
         }
         final followUps = plan['followUps'];
         if (followUps is List) {
           for (final rawFollowUp in followUps.whereType<Map>()) {
             final followUp = Map<String, dynamic>.from(rawFollowUp);
-            await _api.post(
-              '/api/v1/customers/$customerId/due-recovery/follow-ups',
-              {
-                'id': followUp['id'],
-                'channel': followUp['channel'],
-                'note': followUp['note'] ?? '',
-                'status': followUp['status'] ?? 'opened',
-                'failureReason': followUp['failureReason'] ?? '',
-                'providerMessageId': followUp['providerMessageId'] ?? '',
-              },
-            );
+            await _api
+                .post('/api/v1/customers/$customerId/due-recovery/follow-ups', {
+                  'id': followUp['id'],
+                  'channel': followUp['channel'],
+                  'note': followUp['note'] ?? '',
+                  'status': followUp['status'] ?? 'opened',
+                  'failureReason': followUp['failureReason'] ?? '',
+                  'providerMessageId': followUp['providerMessageId'] ?? '',
+                });
           }
         }
         final remote = await _api.get(

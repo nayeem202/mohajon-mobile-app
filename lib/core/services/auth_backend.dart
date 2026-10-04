@@ -96,6 +96,12 @@ abstract class AuthBackend {
 
   Future<void> sendPasswordResetEmail(String email);
 
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  });
+
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,

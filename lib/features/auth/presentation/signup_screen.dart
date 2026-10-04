@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/async_action_state.dart';
@@ -61,6 +62,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bangla = ref.watch(localeProvider).languageCode == 'bn';
     final authTheme = AuthBrand.theme(Theme.of(context));
     return withLoadingOverlay(
       Theme(
@@ -102,8 +104,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     AuthHeading(
-                                      title: 'Register',
-                                      subtitle: 'Create your new account',
+                                      title: bangla ? 'রেজিস্টার করুন' : 'Register',
+                                      subtitle: bangla
+                                          ? 'আপনার নতুন অ্যাকাউন্ট তৈরি করুন'
+                                          : 'Create your new account',
                                       topPadding: compact ? 2 : 8,
                                     ),
                                     _submitted
@@ -138,7 +142,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         children: [
           _field(
             controller: _shopName,
-            hint: 'Shop name',
+            hint: _bn ? 'দোকানের নাম' : 'Shop name',
             icon: Icons.storefront_outlined,
             textInputAction: TextInputAction.next,
             validator: _required,
@@ -146,7 +150,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           const SizedBox(height: 14),
           _field(
             controller: _ownerName,
-            hint: 'Full name',
+            hint: _bn ? 'পূর্ণ নাম' : 'Full name',
             icon: Icons.person_outline_rounded,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.name],
@@ -155,7 +159,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           const SizedBox(height: 14),
           _field(
             controller: _email,
-            hint: 'Email address',
+            hint: _bn ? 'ইমেইল' : 'Email address',
             icon: Icons.alternate_email_rounded,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
@@ -176,7 +180,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           const SizedBox(height: 14),
           _field(
             controller: _mobile,
-            hint: 'Mobile number',
+            hint: _bn ? 'মোবাইল নম্বর' : 'Mobile number',
             icon: Icons.phone_iphone_rounded,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
@@ -186,7 +190,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           const SizedBox(height: 14),
           _field(
             controller: _password,
-            hint: 'Password',
+            hint: _bn ? 'পাসওয়ার্ড' : 'Password',
             icon: Icons.lock_outline_rounded,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.next,
@@ -218,7 +222,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           const SizedBox(height: 14),
           _field(
             controller: _confirmPassword,
-            hint: 'Confirm password',
+            hint: _bn ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm password',
             icon: Icons.lock_reset_rounded,
             obscureText: _obscureConfirm,
             textInputAction: TextInputAction.done,
@@ -259,16 +263,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             onPressed: _signup,
             isBusy: isBusy,
             icon: Icons.person_add_alt_1_rounded,
-            label: 'Create account',
+            label: _bn ? 'অ্যাকাউন্ট তৈরি করুন' : 'Create account',
           ),
           const SizedBox(height: 4),
           AuthFooterLink(
-            prompt: 'Already have an account?',
-            action: 'Sign in',
+            prompt: _bn ? 'ইতিমধ্যে অ্যাকাউন্ট আছে?' : 'Already have an account?',
+            action: _bn ? 'সাইন ইন' : 'Sign in',
             onPressed: isBusy ? null : () => Navigator.of(context).maybePop(),
           ),
           const SizedBox(height: 22),
-          const AuthOrDivider(label: 'Or continue with'),
+          AuthOrDivider(label: _bn ? 'অথবা ব্যবহার করুন' : 'Or continue with'),
           const SizedBox(height: 18),
           SocialAuthRow(
             onGoogle: isBusy ? null : _continueWithGoogle,
@@ -278,6 +282,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       ),
     );
   }
+
+  bool get _bn => ref.read(localeProvider).languageCode == 'bn';
 
   /// Single entry point for every signup field so the styling can never drift
   /// between the six inputs.
@@ -311,22 +317,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   }
 
   String? _required(String? value) {
-    if (value == null || value.trim().isEmpty) return 'This field is required.';
+    if (value == null || value.trim().isEmpty) {
+      return _bn ? 'এই তথ্যটি প্রয়োজন।' : 'This field is required.';
+    }
     return null;
   }
 
   String? _emailValidator(String? value) {
     final text = value?.trim() ?? '';
-    if (text.isEmpty) return 'Email is required.';
+    if (text.isEmpty) return _bn ? 'ইমেইল প্রয়োজন।' : 'Email is required.';
     if (!text.contains('@') || !text.contains('.')) {
-      return 'Enter a valid email address.';
+      return _bn ? 'সঠিক ইমেইল ঠিকানা লিখুন।' : 'Enter a valid email address.';
     }
     return null;
   }
 
   String? _passwordValidator(String? value) {
     final text = value ?? '';
-    if (text.length < 6) return 'Use at least 6 characters.';
+    if (text.length < 6) {
+      return _bn ? 'কমপক্ষে ৬টি অক্ষর ব্যবহার করুন।' : 'Use at least 6 characters.';
+    }
     return null;
   }
 
@@ -335,6 +345,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       setState(() => _message = null);
       try {
         await ref.read(authServiceProvider).signInWithGoogle();
+        // Signup is opened as a child route from LoginScreen. Return the
+        // authenticated result so the parent can replace the auth flow with
+        // AuthenticatedEntry, which then shows the required category setup.
+        if (mounted) Navigator.of(context).pop('__authenticated__');
       } catch (error) {
         _showError(authErrorMessage(error));
       }
@@ -346,6 +360,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       setState(() => _message = null);
       try {
         await ref.read(authServiceProvider).signInWithFacebook();
+        if (mounted) Navigator.of(context).pop('__authenticated__');
       } catch (error) {
         _showError(authErrorMessage(error));
       }
@@ -383,7 +398,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             email: _email.text.trim(),
           );
           if (verified && mounted) {
-            Navigator.of(context).pop(_email.text.trim());
+            // The registration form captured the shop identity, but the
+            // generic auth service must not own business fields. Sign in now
+            // so AuthService can persist those fields through Haalkhata's
+            // authenticated shop-profile endpoint before routing to setup.
+            await ref.read(authServiceProvider).signInWithEmail(
+                  email: _email.text.trim(),
+                  password: _password.text,
+                );
+            if (!mounted) return;
+            Navigator.of(context).pop('__authenticated__');
             return;
           }
         }
@@ -496,20 +520,6 @@ class _PrimaryActionButton extends StatelessWidget {
           borderRadius: AuthBrand.buttonRadius,
           gradient: disabled ? null : AuthBrand.gradient,
           color: disabled ? AuthBrand.buttonDisabled : null,
-          boxShadow: disabled
-              ? null
-              : [
-                  BoxShadow(
-                    color: AuthBrand.buttonGlow.withValues(alpha: .38),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                  BoxShadow(
-                    color: AuthBrand.buttonGlow.withValues(alpha: .20),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
         ),
         child: InkWell(
           borderRadius: AuthBrand.buttonRadius,

@@ -23,10 +23,13 @@ val localProperties = Properties().apply {
 // Facebook App ID (Meta developer console -> Settings -> Basic).
 //
 // Read from android/local.properties, which is git-ignored, so the Meta
-// credential never lands in version control. It is injected into the manifest
-// because the native Facebook SDK initialises itself from there before any
-// Dart code runs — with the key absent the SDK fails to initialise and takes
-// the rest of the plugin registry down with it.
+// credential never lands in version control. It is emitted as a string
+// resource and referenced by the manifest because the native Facebook SDK
+// initialises itself from there before any Dart code runs — with the key absent
+// the SDK fails to initialise and takes the rest of the plugin registry down
+// with it. The SDK rejects a raw manifest literal outright ("App Ids cannot be
+// directly placed in the manifest"), so a resource is required, not just
+// preferable.
 //
 // The same value has to be handed to Dart with
 // --dart-define=FACEBOOK_APP_ID=... ; CustomAuthBackend refuses to open the
@@ -35,6 +38,16 @@ val localProperties = Properties().apply {
 val facebookAppId: String =
     localProperties.getProperty("facebook.app.id")?.trim().orEmpty()
         .ifEmpty { "000000000000000" }
+
+// Facebook Client Token (Meta developer console -> Settings -> Basic).
+//
+// Distinct from the App ID and from the App Secret. It is a public,
+// client-side value, shipped inside every install, and the SDK refuses to
+// initialise without it ("A valid Facebook app client token must be set").
+// Meta presents it in the form <app-id>|<hash>.
+val facebookClientToken: String =
+    localProperties.getProperty("facebook.client.token")?.trim().orEmpty()
+        .ifEmpty { "$facebookAppId|00000000000000000000000000000000" }
 
 android {
     namespace = "com.example.inventory_1"
@@ -60,7 +73,11 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        manifestPlaceholders["facebookAppId"] = facebookAppId
+        // The Facebook SDK refuses a raw literal in the manifest and only
+        // accepts the App ID through a string resource, so it is generated here
+        // rather than hand-written into res/values/strings.xml.
+        resValue("string", "facebook_app_id", facebookAppId)
+        resValue("string", "facebook_client_token", facebookClientToken)
     }
 
     signingConfigs {
@@ -84,4 +101,13 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // flutter_facebook_auth depends on the Facebook SDK with `implementation`,
+    // so facebook-core is on the runtime classpath but not the compile one.
+    // MainActivity has to start the SDK before plugin registration, so the
+    // artifact is declared here too. Keep the version in step with the one
+    // flutter_facebook_auth resolves.
+    implementation("com.facebook.android:facebook-core:18.1.3")
 }

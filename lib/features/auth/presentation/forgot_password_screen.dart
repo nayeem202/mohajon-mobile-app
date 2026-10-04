@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app/app_providers.dart';
 import '../../../core/widgets/async_action_state.dart';
 import 'auth_brand.dart';
 import '../providers/auth_providers.dart';
@@ -19,8 +20,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     with AsyncActionState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _email;
+  final _code = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
   String? _message;
+  bool _messageIsError = false;
   bool _sent = false;
+  bool _completed = false;
 
   @override
   void initState() {
@@ -31,6 +37,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   @override
   void dispose() {
     _email.dispose();
+    _code.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -90,17 +99,68 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   }
 
   Widget _buildCard(BuildContext context) {
+    final bangla = ref.watch(localeProvider).languageCode == 'bn';
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AuthHeading(
-            title: _sent ? 'Email on its way' : 'Reset password',
+            title: _completed
+                ? (bangla ? 'পাসওয়ার্ড আপডেট হয়েছে' : 'Password updated')
+                : (_sent
+                    ? (bangla ? 'রিসেট কোড লিখুন' : 'Enter reset code')
+                    : (bangla ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset password')),
             subtitle: _sent
-                ? 'Open the email and follow the link to set a new password.'
-                : 'Enter your registered email and we will send you a reset link.',
+                ? (bangla
+                    ? 'ইমেইলে পাঠানো কোড লিখে নতুন পাসওয়ার্ড নির্বাচন করুন।'
+                    : 'Enter the code from your email and choose a new password.')
+                : (bangla
+                    ? 'রেজিস্টার করা ইমেইল লিখলে আমরা রিসেট কোড পাঠাব।'
+                    : 'Enter your registered email and we will send you a reset link.'),
           ),
+          if (_sent) ...[
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _code,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.next,
+              maxLength: 6,
+              decoration: AuthFieldDecoration(
+                hint: bangla ? '৬ সংখ্যার রিসেট কোড' : '6-digit reset code',
+                icon: Icons.pin_outlined,
+              ).copyWith(counterText: ''),
+              validator: (value) => (value?.trim().length ?? 0) == 6
+                  ? null
+                  : (bangla ? '৬ সংখ্যার রিসেট কোড লিখুন' : 'Enter the 6-digit reset code'),
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _newPassword,
+              obscureText: true,
+              textInputAction: TextInputAction.next,
+              decoration: AuthFieldDecoration(
+                hint: bangla ? 'নতুন পাসওয়ার্ড' : 'New password',
+                icon: Icons.lock_outline_rounded,
+              ),
+              validator: (value) => (value?.length ?? 0) >= 6
+                  ? null
+                  : (bangla ? 'কমপক্ষে ৬টি অক্ষর ব্যবহার করুন' : 'Use at least 6 characters'),
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _confirmPassword,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              decoration: AuthFieldDecoration(
+                hint: bangla ? 'নতুন পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm new password',
+                icon: Icons.lock_reset_outlined,
+              ),
+              validator: (value) => value == _newPassword.text
+                  ? null
+                  : (bangla ? 'পাসওয়ার্ড মিলছে না' : 'Passwords do not match'),
+            ),
+          ],
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
@@ -108,7 +168,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             autofillHints: const [AutofillHints.email],
             enabled: !_sent,
             decoration: AuthFieldDecoration(
-              hint: 'Email address',
+              hint: bangla ? 'ইমেইল' : 'Email address',
               icon: Icons.alternate_email_rounded,
             ),
             validator: _validateEmail,
@@ -122,22 +182,31 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                 ? const SizedBox(width: double.infinity)
                 : Padding(
                     padding: const EdgeInsets.only(top: 14),
-                    child: _MessageBanner(message: _message!, isError: !_sent),
+                    child: _MessageBanner(
+                      message: _message!,
+                      isError: _messageIsError,
+                    ),
                   ),
           ),
           const SizedBox(height: 18),
           _PrimaryActionButton(
-            onPressed: _sent ? () => Navigator.of(context).maybePop() : _send,
+            onPressed: _completed
+                ? () => Navigator.of(context).maybePop()
+                : (_sent ? _reset : _send),
             isBusy: isBusy,
-            icon: _sent ? Icons.arrow_back_rounded : Icons.send_rounded,
-            label: _sent ? 'Back to sign in' : 'Send reset email',
-            busyLabel: 'Sending...',
+            icon: _completed ? Icons.arrow_back_rounded : Icons.lock_reset,
+            label: _completed
+                ? (bangla ? 'সাইন ইন-এ ফিরুন' : 'Back to sign in')
+                : (_sent
+                    ? (bangla ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset password')
+                    : (bangla ? 'রিসেট কোড পাঠান' : 'Send reset code')),
+            busyLabel: _sent ? 'Updating...' : 'Sending...',
           ),
-          if (!_sent) ...[
+          if (!_sent || _completed) ...[
             const SizedBox(height: 6),
             AuthFooterLink(
-              prompt: 'Remembered your password?',
-              action: 'Sign in',
+              prompt: bangla ? 'পাসওয়ার্ড মনে পড়েছে?' : 'Remembered your password?',
+              action: bangla ? 'সাইন ইন' : 'Sign in',
               onPressed: () => Navigator.of(context).maybePop(),
             ),
           ],
@@ -175,11 +244,46 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         if (mounted) {
           setState(() {
             _sent = true;
-            _message = 'Password reset email sent to $email.';
+            _messageIsError = false;
+            _message = 'Reset code sent to $email. It expires in 3 minutes.';
           });
         }
       } catch (error) {
-        if (mounted) setState(() => _message = authErrorMessage(error));
+        if (mounted) {
+          setState(() {
+            _message = authErrorMessage(error);
+            _messageIsError = true;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _reset() async {
+    final form = _formKey.currentState;
+    if (form != null && !form.validate()) return;
+    await runBusyAction(() async {
+      setState(() => _message = null);
+      try {
+        await ref.read(authServiceProvider).resetPassword(
+              email: _email.text.trim(),
+              code: _code.text.trim(),
+              newPassword: _newPassword.text,
+            );
+        if (mounted) {
+          setState(() {
+            _completed = true;
+            _messageIsError = false;
+            _message = 'Password updated successfully.';
+          });
+        }
+      } catch (error) {
+        if (mounted) {
+          setState(() {
+            _message = authErrorMessage(error);
+            _messageIsError = true;
+          });
+        }
       }
     });
   }
@@ -212,20 +316,6 @@ class _PrimaryActionButton extends StatelessWidget {
           borderRadius: AuthBrand.buttonRadius,
           gradient: disabled ? null : AuthBrand.gradient,
           color: disabled ? AuthBrand.buttonDisabled : null,
-          boxShadow: disabled
-              ? null
-              : [
-                  BoxShadow(
-                    color: AuthBrand.buttonGlow.withValues(alpha: .38),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                  BoxShadow(
-                    color: AuthBrand.buttonGlow.withValues(alpha: .20),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
         ),
         child: InkWell(
           borderRadius: AuthBrand.buttonRadius,

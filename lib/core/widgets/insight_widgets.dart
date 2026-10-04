@@ -309,6 +309,9 @@ class InsightMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Keep metric cards aligned when one tile has an optional caption
+      // (for example the Cashflow Radar "Runway/Cholbe" tile).
+      constraints: const BoxConstraints(minHeight: 124),
       padding: const EdgeInsets.all(14),
       decoration: InsightTokens.cardDecoration(),
       child: Column(

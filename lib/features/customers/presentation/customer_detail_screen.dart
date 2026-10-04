@@ -10,6 +10,7 @@ import '../../../core/models/sale.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../payments/presentation/add_payment_screen.dart';
@@ -42,8 +43,9 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
     final due = ref.watch(customerDueProvider(customer.customerId));
     final tag = ref.watch(customerTagProvider(customer.customerId));
     final ledger = ref.watch(customerLedgerProvider(customer.customerId));
-    final sales = (ref.watch(salesStreamProvider).value ?? [])
-        .where((s) => s.customerId == customer.customerId);
+    final sales = (ref.watch(salesStreamProvider).value ?? []).where(
+      (s) => s.customerId == customer.customerId,
+    );
     final totalSpent = sales.fold<double>(0, (s, sale) => s + sale.totalAmount);
     final debitTotal = ledger
         .where((entry) => entry.signedAmount > 0)
@@ -95,259 +97,277 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
           label: const Text('Add payment'),
         ),
         body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (customer.imagePath != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: AppImage.file(
-                            File(customer.imagePath!),
-                            width: 42,
-                            height: 42,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stk) => _iconAvatar(context),
-                          ),
-                        )
-                      else
-                        _iconAvatar(context),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    customer.name,
-                                    style: Theme.of(context).textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w900),
-                                  ),
-                                ),
-                                if (tag.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: tag == 'VIP'
-                                          ? const Color(0xFFFFF7ED)
-                                          : const Color(0xFFF0FDF4),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (customer.imagePath != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: AppImage.file(
+                              File(customer.imagePath!),
+                              width: 42,
+                              height: 42,
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stk) =>
+                                  _iconAvatar(context),
+                            ),
+                          )
+                        else
+                          _iconAvatar(context),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
                                     child: Text(
-                                      tag,
-                                      style: TextStyle(
+                                      customer.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                    ),
+                                  ),
+                                  if (tag.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
                                         color: tag == 'VIP'
-                                            ? const Color(0xFFE98300)
-                                            : const Color(0xFF047857),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
+                                            ? const Color(0xFFFFF7ED)
+                                            : const Color(0xFFF0FDF4),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        tag,
+                                        style: TextStyle(
+                                          color: tag == 'VIP'
+                                              ? const Color(0xFFE98300)
+                                              : const Color(0xFF047857),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(customer.phone),
-                            if (customer.email.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                customer.email,
-                                style: const TextStyle(fontSize: 12),
                               ),
+                              const SizedBox(height: 3),
+                              Text(customer.phone),
+                              if (customer.email.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  customer.email,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
                             ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              money(due),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w900),
+                            ),
+                            Text(
+                              'Due balance',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ],
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        _MiniStat(
+                          label: 'Total Spent',
+                          value: money(totalSpent),
+                          icon: Icons.payments_rounded,
+                          color: const Color(0xFF0F766E),
+                        ),
+                        const SizedBox(width: 10),
+                        _MiniStat(
+                          label: 'Debit',
+                          value: money(debitTotal),
+                          icon: Icons.call_made_rounded,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 10),
+                        _MiniStat(
+                          label: 'Credit',
+                          value: money(creditTotal),
+                          icon: Icons.call_received_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: isBusy
+                                ? null
+                                : () => _showLedgerEntrySheet(
+                                    context,
+                                    title: 'Add debit',
+                                    icon: Icons.call_made_rounded,
+                                    color: Theme.of(context).colorScheme.error,
+                                    onSave: (amount, note) => ref
+                                        .read(customerLedgerServiceProvider)
+                                        .addDebit(
+                                          customerId: customer.customerId,
+                                          amount: amount,
+                                          note: note,
+                                        ),
+                                  ),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('Debit'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: isBusy
+                                ? null
+                                : () => _showLedgerEntrySheet(
+                                    context,
+                                    title: 'Add credit',
+                                    icon: Icons.call_received_rounded,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    onSave: (amount, note) => ref
+                                        .read(customerLedgerServiceProvider)
+                                        .addCredit(
+                                          customerId: customer.customerId,
+                                          amount: amount,
+                                          note: note,
+                                        ),
+                                  ),
+                            icon: const Icon(Icons.remove_circle_outline),
+                            label: const Text('Credit'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Ledger',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: isBusy
+                      ? null
+                      : () => _exportLedger(customer, ledger),
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('Export Ledger'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (ledger.isEmpty)
+              const Card(
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long_outlined),
+                  title: Text('No ledger activity yet'),
+                  subtitle: Text(
+                    'Add a debit or credit to track the customer balance.',
+                  ),
+                ),
+              ),
+            for (final entry in ledger)
+              Builder(
+                builder: (context) {
+                  running += entry.signedAmount;
+                  final isPositive = entry.signedAmount > 0;
+                  final color = switch (entry.type) {
+                    LedgerEntryType.sale => Theme.of(context).colorScheme.error,
+                    LedgerEntryType.debit => Theme.of(
+                      context,
+                    ).colorScheme.error,
+                    LedgerEntryType.payment => Theme.of(
+                      context,
+                    ).colorScheme.primary,
+                    LedgerEntryType.credit => Theme.of(
+                      context,
+                    ).colorScheme.primary,
+                  };
+                  final icon = switch (entry.type) {
+                    LedgerEntryType.sale => Icons.point_of_sale_rounded,
+                    LedgerEntryType.debit => Icons.arrow_upward_rounded,
+                    LedgerEntryType.payment => Icons.payments_rounded,
+                    LedgerEntryType.credit => Icons.arrow_downward_rounded,
+                  };
+                  final prefix = isPositive ? '+' : '-';
+
+                  return Card(
+                    child: ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, color: color),
                       ),
-                      Column(
+                      title: Text(entry.description),
+                      subtitle: Text(
+                        entry.createdAt.toLocal().toString().split('.').first,
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            money(due),
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w900),
+                            '$prefix${money(entry.amount)}',
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                           Text(
-                            'Due balance',
+                            'Bal ${money(running)}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _MiniStat(
-                        label: 'Total Spent',
-                        value: money(totalSpent),
-                        icon: Icons.payments_rounded,
-                        color: const Color(0xFF0F766E),
-                      ),
-                      const SizedBox(width: 10),
-                      _MiniStat(
-                        label: 'Debit',
-                        value: money(debitTotal),
-                        icon: Icons.call_made_rounded,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(width: 10),
-                      _MiniStat(
-                        label: 'Credit',
-                        value: money(creditTotal),
-                        icon: Icons.call_received_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: isBusy
-                              ? null
-                              : () => _showLedgerEntrySheet(
-                            context,
-                            title: 'Add debit',
-                            icon: Icons.call_made_rounded,
-                            color: Theme.of(context).colorScheme.error,
-                            onSave: (amount, note) => ref
-                                .read(customerLedgerServiceProvider)
-                                .addDebit(
-                                  customerId: customer.customerId,
-                                  amount: amount,
-                                  note: note,
-                                ),
-                          ),
-                          icon: const Icon(Icons.add_circle_outline),
-                          label: const Text('Debit'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: isBusy
-                              ? null
-                              : () => _showLedgerEntrySheet(
-                            context,
-                            title: 'Add credit',
-                            icon: Icons.call_received_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                            onSave: (amount, note) => ref
-                                .read(customerLedgerServiceProvider)
-                                .addCredit(
-                                  customerId: customer.customerId,
-                                  amount: amount,
-                                  note: note,
-                                ),
-                          ),
-                          icon: const Icon(Icons.remove_circle_outline),
-                          label: const Text('Credit'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Ledger',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: isBusy
-                    ? null
-                    : () => _exportLedger(customer, ledger),
-                icon: const Icon(Icons.download_rounded),
-                label: const Text('Export Ledger'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (ledger.isEmpty)
-            const Card(
-              child: ListTile(
-                leading: Icon(Icons.receipt_long_outlined),
-                title: Text('No ledger activity yet'),
-                subtitle: Text('Add a debit or credit to track the customer balance.'),
-              ),
-            ),
-          for (final entry in ledger)
-            Builder(
-              builder: (context) {
-                running += entry.signedAmount;
-                final isPositive = entry.signedAmount > 0;
-                final color = switch (entry.type) {
-                  LedgerEntryType.sale => Theme.of(context).colorScheme.error,
-                  LedgerEntryType.debit => Theme.of(context).colorScheme.error,
-                  LedgerEntryType.payment => Theme.of(context).colorScheme.primary,
-                  LedgerEntryType.credit => Theme.of(context).colorScheme.primary,
-                };
-                final icon = switch (entry.type) {
-                  LedgerEntryType.sale => Icons.point_of_sale_rounded,
-                  LedgerEntryType.debit => Icons.arrow_upward_rounded,
-                  LedgerEntryType.payment => Icons.payments_rounded,
-                  LedgerEntryType.credit => Icons.arrow_downward_rounded,
-                };
-                final prefix = isPositive ? '+' : '-';
-
-                return Card(
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(icon, color: color),
                     ),
-                    title: Text(entry.description),
-                    subtitle: Text(
-                      entry.createdAt.toLocal().toString().split('.').first,
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '$prefix${money(entry.amount)}',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          'Bal ${money(running)}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-        ],
+                  );
+                },
+              ),
+          ],
         ),
       ),
       label: 'Saving entry...',
@@ -380,6 +400,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
+      backgroundColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -444,202 +469,266 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
             final riskColor = risk.score >= 70
                 ? Colors.red
                 : risk.score >= 40
-                    ? Colors.orange
-                    : Colors.green;
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  8,
-                  16,
-                  MediaQuery.viewInsetsOf(context).bottom + 20,
+                ? Colors.orange
+                : Colors.green;
+            final riskLabel = risk.score >= 70
+                ? l10n.t('dueRiskHigh')
+                : risk.score >= 40
+                ? l10n.t('dueRiskWatch')
+                : l10n.t('dueRiskLow');
+            return Theme(
+              data: MohajonWarm.theme(Theme.of(context)),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: MohajonWarm.pageGradient,
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Smart due recovery',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${customer.name} • ${money(due)} due'),
-                      const SizedBox(height: 16),
-                      Card(
-                        color: riskColor.withValues(alpha: 0.10),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: riskColor.withValues(alpha: 0.16),
-                            child: Text(
-                              '${risk.score}',
-                              style: TextStyle(
-                                color: riskColor,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          title: Text('${risk.label} overdue risk'),
-                          subtitle: const Text(
-                            'Based on balance, overdue age, payment pattern and promise date',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: choosePromiseDate,
-                        icon: const Icon(Icons.event_available_rounded),
-                        label: Text(
-                          plan.promisedPaymentDate == null
-                              ? 'Set promised payment date'
-                              : 'Promised: ${_shortDate(plan.promisedPaymentDate!)}',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
+                child: SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      18,
+                      8,
+                      18,
+                      MediaQuery.viewInsetsOf(context).bottom + 20,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final item in [
-                            (const Duration(days: 1), 'Snooze 1 day'),
-                            (const Duration(days: 3), 'Snooze 3 days'),
-                            (const Duration(days: 7), 'Snooze 7 days'),
-                          ])
-                            ActionChip(
-                              avatar: const Icon(Icons.notifications_off_outlined, size: 16),
-                              label: Text(item.$2),
-                              onPressed: () async {
-                                await service.snooze(customer.customerId, item.$1);
-                                await refresh();
-                              },
-                            ),
-                        ],
-                      ),
-                      if (plan.isSnoozed) ...[
-                        const SizedBox(height: 6),
-                        TextButton.icon(
-                          onPressed: () async {
-                            await service.clearSnooze(customer.customerId);
-                            await refresh();
-                          },
-                          icon: const Icon(Icons.notifications_active_outlined),
-                          label: Text('Snoozed until ${_shortDate(plan.snoozedUntil!)} • Clear'),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      Text(
-                        'Contact customer',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => send(DueFollowUpChannel.whatsapp),
-                              icon: const Icon(Icons.chat_rounded),
-                              label: const Text('WhatsApp'),
-                            ),
+                          Text(
+                            l10n.t('dueRecoveryTitle'),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w900),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => send(DueFollowUpChannel.sms),
-                              icon: const Icon(Icons.sms_outlined),
-                              label: const Text('SMS'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton.filledTonal(
-                            onPressed: () => send(DueFollowUpChannel.call),
-                            icon: const Icon(Icons.call_outlined),
-                            tooltip: 'Call',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Follow-up history',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      if (plan.followUps.isEmpty)
-                        const Text('No follow-ups recorded yet.')
-                      else
-                        for (final item in plan.followUps.take(8))
-                          ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(switch (item.channel) {
-                              DueFollowUpChannel.whatsapp => Icons.chat_rounded,
-                              DueFollowUpChannel.sms => Icons.sms_outlined,
-                              DueFollowUpChannel.call => Icons.call_outlined,
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.tP('dueRecoveryCustomerDue', {
+                              'name': customer.name,
+                              'amount': money(due),
                             }),
-                            title: Row(
-                              children: [
-                                Text(item.channel.name.toUpperCase()),
-                                const SizedBox(width: 8),
-                                Text(
-                                  switch (item.status) {
-                                    'queued' => l10n.t('reminderQueued'),
-                                    'sent' => l10n.t('reminderSent'),
-                                    'delivered' => l10n.t('reminderDelivered'),
-                                    'opened' => l10n.t('reminderOpened'),
-                                    'failed' => l10n.t('reminderFailed'),
-                                    _ => item.status,
-                                  },
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  riskColor.withValues(alpha: 0.14),
+                                  Colors.white.withValues(alpha: 0.72),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: riskColor.withValues(alpha: 0.24),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: riskColor.withValues(alpha: 0.10),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 7),
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                backgroundColor: riskColor.withValues(
+                                  alpha: 0.16,
+                                ),
+                                child: Text(
+                                  '${risk.score}',
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: item.status == 'failed'
-                                        ? Colors.red
-                                        : item.status == 'delivered'
-                                            ? Colors.green
-                                            : Colors.blueGrey,
+                                    color: riskColor,
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                              ],
-                            ),
-                            subtitle: Text(
-                              '${_shortDateTime(item.createdAt)}${item.note.isEmpty ? '' : ' • ${item.note}'}',
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              tooltip: 'Update delivery status',
-                              onSelected: (status) async {
-                                try {
-                                  await service.updateFollowUpStatus(
-                                    customerId: customer.customerId,
-                                    followUpId: item.id,
-                                    status: status,
-                                  );
-                                  await refresh();
-                                } catch (_) {
-                                  if (context.mounted) {
-                                    showAppSnackBar(
-                                      context,
-                                      'Could not update reminder status',
-                                      isError: true,
-                                    );
-                                  }
-                                }
-                              },
-                              itemBuilder: (_) => [
-                                PopupMenuItem(
-                                  value: 'delivered',
-                                  child: Text(l10n.t('markReminderDelivered')),
-                                ),
-                                PopupMenuItem(
-                                  value: 'failed',
-                                  child: Text(l10n.t('markReminderFailed')),
-                                ),
-                              ],
+                              ),
+                              title: Text(riskLabel),
+                              subtitle: Text(l10n.t('dueRiskExplanation')),
                             ),
                           ),
-                    ],
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: choosePromiseDate,
+                            icon: const Icon(Icons.event_available_rounded),
+                            label: Text(
+                              plan.promisedPaymentDate == null
+                                  ? l10n.t('setPromiseDate')
+                                  : l10n.tP('promisedDate', {
+                                      'date': _shortDate(
+                                        plan.promisedPaymentDate!,
+                                      ),
+                                    }),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              for (final item in [
+                                (const Duration(days: 1), 'snoozeOneDay'),
+                                (const Duration(days: 3), 'snoozeThreeDays'),
+                                (const Duration(days: 7), 'snoozeSevenDays'),
+                              ])
+                                ActionChip(
+                                  avatar: const Icon(
+                                    Icons.notifications_off_outlined,
+                                    size: 16,
+                                  ),
+                                  label: Text(l10n.t(item.$2)),
+                                  onPressed: () async {
+                                    await service.snooze(
+                                      customer.customerId,
+                                      item.$1,
+                                    );
+                                    await refresh();
+                                  },
+                                ),
+                            ],
+                          ),
+                          if (plan.isSnoozed) ...[
+                            const SizedBox(height: 6),
+                            TextButton.icon(
+                              onPressed: () async {
+                                await service.clearSnooze(customer.customerId);
+                                await refresh();
+                              },
+                              icon: const Icon(
+                                Icons.notifications_active_outlined,
+                              ),
+                              label: Text(
+                                '${l10n.tP('snoozedUntil', {'date': _shortDate(plan.snoozedUntil!)})} • ${l10n.t('clearSnooze')}',
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          Text(
+                            l10n.t('contactCustomer'),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: () =>
+                                      send(DueFollowUpChannel.whatsapp),
+                                  icon: const Icon(Icons.chat_rounded),
+                                  label: const Text('WhatsApp'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => send(DueFollowUpChannel.sms),
+                                  icon: const Icon(Icons.sms_outlined),
+                                  label: const Text('SMS'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton.filledTonal(
+                                onPressed: () => send(DueFollowUpChannel.call),
+                                icon: const Icon(Icons.call_outlined),
+                                tooltip: l10n.t('voiceCall'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.t('followUpHistory'),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 6),
+                          if (plan.followUps.isEmpty)
+                            Text(l10n.t('noFollowUps'))
+                          else
+                            for (final item in plan.followUps.take(8))
+                              ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: Icon(switch (item.channel) {
+                                  DueFollowUpChannel.whatsapp =>
+                                    Icons.chat_rounded,
+                                  DueFollowUpChannel.sms => Icons.sms_outlined,
+                                  DueFollowUpChannel.call =>
+                                    Icons.call_outlined,
+                                }),
+                                title: Row(
+                                  children: [
+                                    Text(
+                                      item.channel ==
+                                              DueFollowUpChannel.whatsapp
+                                          ? 'WhatsApp'
+                                          : item.channel ==
+                                                DueFollowUpChannel.sms
+                                          ? 'SMS'
+                                          : l10n.t('voiceCall'),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      switch (item.status) {
+                                        'queued' => l10n.t('reminderQueued'),
+                                        'sent' => l10n.t('reminderSent'),
+                                        'delivered' => l10n.t(
+                                          'reminderDelivered',
+                                        ),
+                                        'opened' => l10n.t('reminderOpened'),
+                                        'failed' => l10n.t('reminderFailed'),
+                                        _ => item.status,
+                                      },
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: item.status == 'failed'
+                                            ? Colors.red
+                                            : item.status == 'delivered'
+                                            ? Colors.green
+                                            : Colors.blueGrey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Text(
+                                  '${_shortDateTime(item.createdAt)}${item.note.isEmpty ? '' : ' • ${item.note}'}',
+                                ),
+                                trailing: PopupMenuButton<String>(
+                                  tooltip: l10n.t('updateReminderStatus'),
+                                  onSelected: (status) async {
+                                    try {
+                                      await service.updateFollowUpStatus(
+                                        customerId: customer.customerId,
+                                        followUpId: item.id,
+                                        status: status,
+                                      );
+                                      await refresh();
+                                    } catch (_) {
+                                      if (context.mounted) {
+                                        showAppSnackBar(
+                                          context,
+                                          l10n.t('reminderStatusUpdateFailed'),
+                                          isError: true,
+                                        );
+                                      }
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(
+                                      value: 'delivered',
+                                      child: Text(
+                                        l10n.t('markReminderDelivered'),
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'failed',
+                                      child: Text(l10n.t('markReminderFailed')),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -656,28 +745,31 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
   String _shortDateTime(DateTime date) =>
       '${_shortDate(date)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
-  Future<void> _exportLedger(Customer customer, List<LedgerEntry> ledger) async {
+  Future<void> _exportLedger(
+    Customer customer,
+    List<LedgerEntry> ledger,
+  ) async {
     try {
       await runBusyAction(() async {
-        final file = await _ledgerExcelService.saveToDownloads(customer, ledger);
+        final file = await _ledgerExcelService.saveToDownloads(
+          customer,
+          ledger,
+        );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ledger exported to ${file.path}'),
-          ),
+          SnackBar(content: Text('Ledger exported to ${file.path}')),
         );
       });
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(error))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
     }
   }
 
   Future<void> _showLedgerEntrySheet(
-    BuildContext context,
-    {
+    BuildContext context, {
     required String title,
     required IconData icon,
     required Color color,
@@ -748,7 +840,10 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                               if (amount <= 0) return;
                               setSheetState(() => saving = true);
                               try {
-                                await onSave(amount, noteController.text.trim());
+                                await onSave(
+                                  amount,
+                                  noteController.text.trim(),
+                                );
                                 if (sheetContext.mounted) {
                                   Navigator.of(sheetContext).pop();
                                 }
@@ -817,17 +912,14 @@ class _MiniStat extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  Text(label, style: Theme.of(context).textTheme.bodySmall),
                   Text(
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -844,10 +936,7 @@ Widget _iconAvatar(BuildContext context) {
     width: 42,
     height: 42,
     decoration: BoxDecoration(
-      color: Theme.of(context)
-          .colorScheme
-          .primary
-          .withValues(alpha: 0.12),
+      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(8),
     ),
     child: Icon(

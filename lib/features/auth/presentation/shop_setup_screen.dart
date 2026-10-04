@@ -19,6 +19,7 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
   late final TextEditingController _shopName;
   late final TextEditingController _mobile;
   String _businessType = 'general';
+  late final bool _needsIdentity;
   bool _saving = false;
   String? _error;
 
@@ -29,6 +30,9 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
     super.initState();
     final settings = ref.read(localDatabaseProvider).settings;
     final session = ref.read(authStateProvider).value;
+    _needsIdentity =
+        settings.get('profile_identityComplete', defaultValue: false) != true &&
+        (session?.provider.toLowerCase() ?? '') != 'local';
     _shopName = TextEditingController(
       text: (settings.get('profile_storeName') as String?) ?? '',
     );
@@ -74,25 +78,27 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
                   style: TextStyle(color: Colors.grey.shade700, height: 1.45),
                 ),
                 const SizedBox(height: 26),
-                TextField(
-                  controller: _shopName,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: _isBangla ? 'দোকানের নাম' : 'Shop name',
-                    hintText: _isBangla ? 'যেমন: বন্ধুর স্টোর' : 'e.g. Bondhu Stores',
-                    prefixIcon: const Icon(Icons.store_outlined),
+                if (_needsIdentity) ...[
+                  TextField(
+                    controller: _shopName,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: _isBangla ? 'দোকানের নাম' : 'Shop name',
+                      hintText: _isBangla ? 'যেমন: বন্ধুর স্টোর' : 'e.g. Bondhu Stores',
+                      prefixIcon: const Icon(Icons.store_outlined),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _mobile,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: _isBangla ? 'মোবাইল নম্বর' : 'Mobile number',
-                    hintText: '+8801XXXXXXXXX',
-                    prefixIcon: const Icon(Icons.phone_iphone_rounded),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _mobile,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: _isBangla ? 'মোবাইল নম্বর' : 'Mobile number',
+                      hintText: '+8801XXXXXXXXX',
+                      prefixIcon: const Icon(Icons.phone_iphone_rounded),
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 22),
                 Text(
                   _isBangla ? 'আপনার ব্যবসার ধরন' : 'Your business type',
@@ -132,7 +138,7 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
   Future<void> _save() async {
     final shopName = _shopName.text.trim();
     final mobile = _mobile.text.trim();
-    if (shopName.isEmpty || mobile.isEmpty) {
+    if (_needsIdentity && (shopName.isEmpty || mobile.isEmpty)) {
       setState(() => _error = _isBangla ? 'দোকানের নাম ও মোবাইল নম্বর দিন।' : 'Shop name and mobile number are required.');
       return;
     }
@@ -145,6 +151,7 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
       db.settings.put('profile_storeName', shopName),
       db.settings.put('profile_phone', mobile),
       db.settings.put('profile_businessType', _businessType),
+      db.settings.put('profile_identityComplete', true),
       db.settings.put('profile_setupComplete', true),
     ]);
     try {

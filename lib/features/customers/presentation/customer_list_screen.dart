@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter/material.dart';
@@ -29,7 +30,10 @@ import '../../../core/widgets/shop_avatar.dart';
 final GlobalKey tourAddClientKey = GlobalKey();
 
 enum _ClientFilter { all, dues, vip, recent }
+
 enum _ClientSort { lastVisit, name, totalSpent, dues }
+
+enum _CustomerImportSource { phoneContacts, csv }
 
 class _CustomerSummary {
   const _CustomerSummary({
@@ -133,7 +137,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
                     children: [
-                      _ClientsTopBar(onMergeTap: _openDuplicateMerge, onImportTap: _openImport),
+                      _ClientsTopBar(
+                        onMergeTap: _openDuplicateMerge,
+                        onImportTap: _openImport,
+                      ),
                       const SizedBox(height: 18),
                       _ClientStats(
                         totalClients: items.length,
@@ -148,11 +155,17 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                           selectedFilter: _filter,
                           selectedSort: _sort,
                           onSearchChanged: (value) =>
-                              ref.read(customerSearchQueryProvider.notifier).state =
+                              ref
+                                      .read(
+                                        customerSearchQueryProvider.notifier,
+                                      )
+                                      .state =
                                   value,
                           onClearSearch: () {
                             _searchController.clear();
-                            ref.read(customerSearchQueryProvider.notifier).state =
+                            ref
+                                    .read(customerSearchQueryProvider.notifier)
+                                    .state =
                                 '';
                           },
                           onFilterChanged: (filter) =>
@@ -182,7 +195,8 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                             context,
                             customer: customer,
                             due: dueByCustomer[customer.customerId] ?? 0,
-                            stats: customerStats[customer.customerId] ??
+                            stats:
+                                customerStats[customer.customerId] ??
                                 const _CustomerSummary(),
                           ),
                         ),
@@ -191,9 +205,11 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 );
               },
               error: (error, _) => EmptyState(
-                  message: friendlyErrorMessage(error,
-                      fallback: l10n.t('couldNotLoadClients')),
+                message: friendlyErrorMessage(
+                  error,
+                  fallback: l10n.t('couldNotLoadClients'),
                 ),
+              ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: MohajonWarm.primary),
               ),
@@ -241,17 +257,23 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     final sorted = [...customers]
       ..sort((a, b) {
         return switch (_sort) {
-          _ClientSort.lastVisit => (customerStats[b.customerId]?.lastVisit ??
-                  DateTime.fromMillisecondsSinceEpoch(0))
-              .compareTo(
-                customerStats[a.customerId]?.lastVisit ??
-                    DateTime.fromMillisecondsSinceEpoch(0),
-              ),
-          _ClientSort.name => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          _ClientSort.totalSpent => (customerStats[b.customerId]?.totalSpent ?? 0)
-              .compareTo(customerStats[a.customerId]?.totalSpent ?? 0),
-          _ClientSort.dues => (dueByCustomer[b.customerId] ?? 0)
-              .compareTo(dueByCustomer[a.customerId] ?? 0),
+          _ClientSort.lastVisit =>
+            (customerStats[b.customerId]?.lastVisit ??
+                    DateTime.fromMillisecondsSinceEpoch(0))
+                .compareTo(
+                  customerStats[a.customerId]?.lastVisit ??
+                      DateTime.fromMillisecondsSinceEpoch(0),
+                ),
+          _ClientSort.name => a.name.toLowerCase().compareTo(
+            b.name.toLowerCase(),
+          ),
+          _ClientSort.totalSpent =>
+            (customerStats[b.customerId]?.totalSpent ?? 0).compareTo(
+              customerStats[a.customerId]?.totalSpent ?? 0,
+            ),
+          _ClientSort.dues => (dueByCustomer[b.customerId] ?? 0).compareTo(
+            dueByCustomer[a.customerId] ?? 0,
+          ),
         };
       });
     return switch (_filter) {
@@ -269,9 +291,9 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     PaywallGate.guard(
       context,
       ref,
-      () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CustomerFormScreen()),
-      ),
+      () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const CustomerFormScreen())),
     );
   }
 
@@ -287,12 +309,20 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
       if (key.endsWith(':') || key.endsWith(':0')) continue;
       groups.putIfAbsent(key, () => []).add(customer);
     }
-    final pairs = groups.values.where((group) => group.length > 1).expand(
-      (group) => [for (var i = 1; i < group.length; i++) (group.first, group[i])],
-    ).toList();
+    final pairs = groups.values
+        .where((group) => group.length > 1)
+        .expand(
+          (group) => [
+            for (var i = 1; i < group.length; i++) (group.first, group[i]),
+          ],
+        )
+        .toList();
     if (!mounted) return;
     if (pairs.isEmpty) {
-      showAppSnackBar(context, AppLocalizations.of(context).t('noDuplicateCustomers'));
+      showAppSnackBar(
+        context,
+        AppLocalizations.of(context).t('noDuplicateCustomers'),
+      );
       return;
     }
     await showModalBottomSheet<void>(
@@ -305,7 +335,13 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(AppLocalizations.of(context).t('duplicateCustomers'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(
+                AppLocalizations.of(context).t('duplicateCustomers'),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 6),
               Text(AppLocalizations.of(context).t('duplicateCustomersHelp')),
               const SizedBox(height: 14),
@@ -321,23 +357,58 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (dialogContext) => AlertDialog(
-                            title: Text(AppLocalizations.of(context).t('mergeCustomers')),
-                            content: Text(AppLocalizations.of(context).tP('mergeCustomersConfirm', {'source': pair.$2.name, 'target': pair.$1.name})),
+                            title: Text(
+                              AppLocalizations.of(context).t('mergeCustomers'),
+                            ),
+                            content: Text(
+                              AppLocalizations.of(context).tP(
+                                'mergeCustomersConfirm',
+                                {
+                                  'source': pair.$2.name,
+                                  'target': pair.$1.name,
+                                },
+                              ),
+                            ),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppLocalizations.of(context).t('cancel'))),
-                              FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLocalizations.of(context).t('merge'))),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, false),
+                                child: Text(
+                                  AppLocalizations.of(context).t('cancel'),
+                                ),
+                              ),
+                              FilledButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, true),
+                                child: Text(
+                                  AppLocalizations.of(context).t('merge'),
+                                ),
+                              ),
                             ],
                           ),
                         );
                         if (confirm != true || !mounted) return;
                         try {
-                          await ref.read(customerServiceProvider).mergeCustomers(
+                          await ref
+                              .read(customerServiceProvider)
+                              .mergeCustomers(
                                 primaryId: pair.$1.customerId,
                                 duplicateId: pair.$2.customerId,
                               );
-                          if (mounted) showAppSnackBar(context, AppLocalizations.of(context).t('customersMerged'));
+                          if (mounted) {
+                            showAppSnackBar(
+                              context,
+                              AppLocalizations.of(context).t('customersMerged'),
+                            );
+                          }
                         } catch (error) {
-                          if (mounted) showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+                          if (mounted) {
+                            showAppSnackBar(
+                              context,
+                              friendlyErrorMessage(error),
+                              isError: true,
+                            );
+                          }
                         }
                       },
                       child: Text(AppLocalizations.of(context).t('merge')),
@@ -353,23 +424,89 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
 
   Future<void> _openImport() async {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: 'name,phone,email,address\n');
+    final source = await showModalBottomSheet<_CustomerImportSource>(
+      context: context,
+      backgroundColor: MohajonWarm.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(
+                    color: MohajonWarm.goldBorder,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              Text(
+                l10n.t('importCustomers'),
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.t('importCustomersSourceHint'),
+                style: const TextStyle(color: MohajonWarm.muted),
+              ),
+              const SizedBox(height: 14),
+              _ImportSourceTile(
+                icon: Icons.contacts_rounded,
+                title: l10n.t('importFromContacts'),
+                subtitle: l10n.t('importFromContactsSubtitle'),
+                onTap: () => Navigator.pop(
+                  sheetContext,
+                  _CustomerImportSource.phoneContacts,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _ImportSourceTile(
+                icon: Icons.upload_file_rounded,
+                title: l10n.t('importFromFile'),
+                subtitle: l10n.t('importFromFileSubtitle'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _CustomerImportSource.csv),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || source == null) return;
+    if (source == _CustomerImportSource.phoneContacts) {
+      await _importPhoneContacts();
+      return;
+    }
+    final controller = TextEditingController(
+      text: 'name,phone,email,address\n',
+    );
     Future<void> chooseFile() async {
       final file = await openFile(
         acceptedTypeGroups: [
-          const XTypeGroup(
-            label: 'CSV',
-            extensions: ['csv', 'txt'],
-          ),
+          const XTypeGroup(label: 'CSV', extensions: ['csv', 'txt']),
         ],
       );
       if (file == null) return;
       final size = await file.length();
       if (size > 5 * 1024 * 1024) {
-        throw const FormatException('CSV file is too large. Maximum size is 5 MB.');
+        throw const FormatException(
+          'CSV file is too large. Maximum size is 5 MB.',
+        );
       }
       controller.text = await file.readAsString();
     }
+
     try {
       final csv = await showDialog<String>(
         context: context,
@@ -379,7 +516,9 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
             controller: controller,
             minLines: 6,
             maxLines: 12,
-            decoration: InputDecoration(hintText: l10n.t('importCustomersHint')),
+            decoration: InputDecoration(
+              hintText: l10n.t('importCustomersHint'),
+            ),
           ),
           actions: [
             TextButton.icon(
@@ -388,32 +527,166 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                   await chooseFile();
                 } catch (error) {
                   if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('$error')),
-                    );
+                    ScaffoldMessenger.of(
+                      dialogContext,
+                    ).showSnackBar(SnackBar(content: Text('$error')));
                   }
                 }
               },
               icon: const Icon(Icons.upload_file_rounded),
               label: Text(l10n.t('importFromFile')),
             ),
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.t('cancel'))),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: Text(l10n.t('import'))),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n.t('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
+              child: Text(l10n.t('import')),
+            ),
           ],
         ),
       );
       if (csv == null || !mounted) return;
-      final result = await CustomerImportService(ref, const Uuid()).importCsv(csv);
+      final result = await CustomerImportService(
+        ref,
+        const Uuid(),
+      ).importCsv(csv);
       if (!mounted) return;
-      showAppSnackBar(context, l10n.tP('importCustomersResult', {'created': '${result.created}', 'skipped': '${result.skipped}'}));
+      showAppSnackBar(
+        context,
+        l10n.tP('importCustomersResult', {
+          'created': '${result.created}',
+          'skipped': '${result.skipped}',
+        }),
+      );
       if (result.errors.isNotEmpty) {
-        showAppSnackBar(context, result.errors.take(2).join(' '), isError: true);
+        showAppSnackBar(
+          context,
+          result.errors.take(2).join(' '),
+          isError: true,
+        );
       }
     } catch (error) {
       if (mounted) showAppSnackBar(context, error.toString(), isError: true);
     } finally {
       controller.dispose();
     }
+  }
+
+  Future<void> _importPhoneContacts() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final permission = await FlutterContacts.permissions.request(
+        PermissionType.read,
+      );
+      if (permission != PermissionStatus.granted &&
+          permission != PermissionStatus.limited) {
+        if (mounted) {
+          showAppSnackBar(
+            context,
+            l10n.t('contactsPermissionDenied'),
+            isError: true,
+          );
+        }
+        return;
+      }
+      final contacts = await FlutterContacts.getAll(
+        properties: {ContactProperty.phone},
+      );
+      final rows = contacts
+          .map((contact) {
+            final phone = contact.phones.isEmpty
+                ? ''
+                : contact.phones.first.number.trim();
+            return CustomerImportRow(
+              name: (contact.displayName ?? '').trim(),
+              phone: phone,
+            );
+          })
+          .where((row) => row.name.isNotEmpty && row.phone.isNotEmpty)
+          .toList();
+      if (!mounted) return;
+      if (rows.isEmpty) {
+        showAppSnackBar(context, l10n.t('noContactsToImport'));
+        return;
+      }
+      final selected = await _selectContacts(rows);
+      if (selected == null || selected.isEmpty || !mounted) return;
+      final result = await CustomerImportService(
+        ref,
+        const Uuid(),
+      ).importContacts(selected);
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        l10n.tP('importCustomersResult', {
+          'created': '${result.created}',
+          'skipped': '${result.skipped}',
+        }),
+      );
+    } catch (error) {
+      if (mounted) showAppSnackBar(context, '$error', isError: true);
+    }
+  }
+
+  Future<List<CustomerImportRow>?> _selectContacts(
+    List<CustomerImportRow> rows,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final selected = <int>{...List.generate(rows.length, (index) => index)};
+    return showDialog<List<CustomerImportRow>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(l10n.t('selectContacts')),
+            content: SizedBox(
+              width: 420,
+              height: MediaQuery.sizeOf(context).height * .58,
+              child: ListView.builder(
+                itemCount: rows.length,
+                itemBuilder: (context, index) {
+                  final row = rows[index];
+                  return CheckboxListTile(
+                    value: selected.contains(index),
+                    onChanged: (value) => setDialogState(() {
+                      if (value == true) {
+                        selected.add(index);
+                      } else {
+                        selected.remove(index);
+                      }
+                    }),
+                    title: Text(
+                      row.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(row.phone),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(l10n.t('cancel')),
+              ),
+              FilledButton(
+                onPressed: selected.isEmpty
+                    ? null
+                    : () => Navigator.pop(dialogContext, [
+                        for (final index in selected) rows[index],
+                      ]),
+                child: Text('${l10n.t('import')} (${selected.length})'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _showCustomerSheet(
@@ -496,11 +769,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
       message: message,
     );
     if (!ok && mounted) {
-      showAppSnackBar(
-        this.context,
-        l10n.t('whatsappFailed'),
-        isError: true,
-      );
+      showAppSnackBar(this.context, l10n.t('whatsappFailed'), isError: true);
     }
   }
 }
@@ -684,16 +953,16 @@ class _ClientStats extends StatelessWidget {
               runSpacing: 12,
               children: [
                 for (final card in cards)
-                  SizedBox(width: cardWidth, child: _StatCard(spec: card)),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _StatCard(spec: card),
+                  ),
               ],
             );
           },
         ),
         const SizedBox(height: 12),
-        _ReceivableCard(
-          value: money(totalReceivable),
-          dueClients: dueClients,
-        ),
+        _ReceivableCard(value: money(totalReceivable), dueClients: dueClients),
       ],
     );
   }
@@ -990,8 +1259,9 @@ class _SearchAndFilters extends StatelessWidget {
                                 color: MohajonWarm.muted,
                               ),
                             ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -1147,7 +1417,8 @@ class _ClientList extends StatelessWidget {
           _ClientRow(
             customer: customers[index],
             due: dueByCustomer[customers[index].customerId] ?? 0,
-            stats: customerStats[customers[index].customerId] ??
+            stats:
+                customerStats[customers[index].customerId] ??
                 const _CustomerSummary(),
             onTap: () => onCustomerTap(customers[index]),
           ),
@@ -1225,44 +1496,46 @@ class _ClientRow extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Flexible(child: Consumer(
-                          builder: (context, ref, _) {
-                            final tag = ref.watch(
-                              customerTagProvider(customer.customerId),
-                            );
-                            final displayTag = tag.isNotEmpty
-                                ? tag
-                                : (hasDue ? l10n.t('hasDues') : '');
-                            if (displayTag.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-                            final tagColor = displayTag == 'VIP'
-                                ? MohajonWarm.goldText
-                                : displayTag == l10n.t('hasDues')
-                                    ? MohajonWarm.red
-                                    : MohajonWarm.green;
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: tagColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                displayTag,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  color: tagColor,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w800,
+                        Flexible(
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final tag = ref.watch(
+                                customerTagProvider(customer.customerId),
+                              );
+                              final displayTag = tag.isNotEmpty
+                                  ? tag
+                                  : (hasDue ? l10n.t('hasDues') : '');
+                              if (displayTag.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              final tagColor = displayTag == 'VIP'
+                                  ? MohajonWarm.goldText
+                                  : displayTag == l10n.t('hasDues')
+                                  ? MohajonWarm.red
+                                  : MohajonWarm.green;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
                                 ),
-                              ),
-                            );
-                          },
-                        )),
+                                decoration: BoxDecoration(
+                                  color: tagColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  displayTag,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: tagColor,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 3),
@@ -1309,7 +1582,9 @@ class _ClientRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      hasDue ? l10n.tP('dueAmount', {'amount': money(due)}) : l10n.t('clear'),
+                      hasDue
+                          ? l10n.tP('dueAmount', {'amount': money(due)})
+                          : l10n.t('clear'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1340,7 +1615,6 @@ class _ClientRow extends StatelessWidget {
       ),
     );
   }
-
 }
 
 String _initials(String name) {
@@ -1358,6 +1632,69 @@ String _formatRelativeDay(DateTime time) {
   if (diff.inHours < 24) return 'Today';
   if (diff.inHours < 48) return 'Yesterday';
   return '${diff.inDays} days ago';
+}
+
+class _ImportSourceTile extends StatelessWidget {
+  const _ImportSourceTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: MohajonWarm.tintYellow,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: MohajonWarm.goldText),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: MohajonWarm.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: MohajonWarm.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _CustomerDetailSheet extends ConsumerWidget {
@@ -1426,7 +1763,11 @@ class _CustomerDetailSheet extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.stars_rounded, color: MohajonWarm.goldText, size: 25),
+                      const Icon(
+                        Icons.stars_rounded,
+                        color: MohajonWarm.goldText,
+                        size: 25,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -1434,14 +1775,23 @@ class _CustomerDetailSheet extends ConsumerWidget {
                           children: [
                             Text(
                               l10n.t('loyaltyTitle'),
-                              style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: MohajonWarm.ink,
+                              ),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               loyalty.rewardReady
                                   ? l10n.t('loyaltyRewardReady')
-                                  : l10n.tP('loyaltyNextReward', {'points': '${loyalty.nextRewardPoints}'}),
-                              style: const TextStyle(fontSize: 11, color: MohajonWarm.muted, fontWeight: FontWeight.w600),
+                                  : l10n.tP('loyaltyNextReward', {
+                                      'points': '${loyalty.nextRewardPoints}',
+                                    }),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: MohajonWarm.muted,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -1449,8 +1799,22 @@ class _CustomerDetailSheet extends ConsumerWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('${loyalty.points}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: MohajonWarm.goldText)),
-                          Text(loyalty.tier, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: MohajonWarm.ink)),
+                          Text(
+                            '${loyalty.points}',
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              color: MohajonWarm.goldText,
+                            ),
+                          ),
+                          Text(
+                            loyalty.tier,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: MohajonWarm.ink,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -1491,7 +1855,9 @@ class _CustomerDetailSheet extends ConsumerWidget {
                                     ? MohajonWarm.tintYellow
                                     : MohajonWarm.tintGreen,
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: MohajonWarm.goldBorder),
+                                border: Border.all(
+                                  color: MohajonWarm.goldBorder,
+                                ),
                               ),
                               child: Text(
                                 tag,
@@ -1858,8 +2224,7 @@ class _InfoLine extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(height: 1, indent: 14, endIndent: 14),
+        if (showDivider) const Divider(height: 1, indent: 14, endIndent: 14),
       ],
     );
   }

@@ -1643,6 +1643,7 @@ class _SaleReturnDialogState extends State<_SaleReturnDialog> {
   late final List<TextEditingController> _qtyControllers;
   final _reasonController = TextEditingController();
   String _refundMethod = 'CASH';
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -1665,110 +1666,334 @@ class _SaleReturnDialogState extends State<_SaleReturnDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.t('returnSale')),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var index = 0; index < widget.sale.items.length; index++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.sale.items[index].name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 76,
-                      child: TextField(
-                        controller: _qtyControllers[index],
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: l10n.t('returnQuantity'),
-                          isDense: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            DropdownButtonFormField<String>(
-              initialValue: _refundMethod,
-              decoration: InputDecoration(labelText: l10n.t('refundMethod')),
-              items: [
-                DropdownMenuItem(
-                  value: 'CASH',
-                  child: Text(l10n.t('refundCash')),
-                ),
-                DropdownMenuItem(
-                  value: 'BKASH',
-                  child: Text(l10n.t('refundBkash')),
-                ),
-                DropdownMenuItem(
-                  value: 'NAGAD',
-                  child: Text(l10n.t('refundNagad')),
-                ),
-                DropdownMenuItem(
-                  value: 'BANK',
-                  child: Text(l10n.t('refundBank')),
-                ),
-                DropdownMenuItem(
-                  value: 'OTHER',
-                  child: Text(l10n.t('refundOther')),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 720),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: MohajonWarm.pageGradient,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.white.withValues(alpha: .72)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 28,
+                  offset: Offset(0, 14),
                 ),
               ],
-              onChanged: (value) =>
-                  setState(() => _refundMethod = value ?? 'CASH'),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _reasonController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: l10n.t('refundReason'),
-                alignLabelWithHint: true,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: MohajonWarm.ink,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.assignment_return_rounded,
+                          color: MohajonWarm.primary,
+                          size: 25,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.t('returnSale'),
+                              style: const TextStyle(
+                                color: MohajonWarm.ink,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              l10n.t('returnQuantity'),
+                              style: const TextStyle(
+                                color: MohajonWarm.muted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: l10n.t('cancel'),
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        color: MohajonWarm.muted,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          for (
+                            var index = 0;
+                            index < widget.sale.items.length;
+                            index++
+                          )
+                            _ReturnItemCard(
+                              item: widget.sale.items[index],
+                              controller: _qtyControllers[index],
+                              quantityLabel: l10n.t('returnQuantity'),
+                              onChanged: (_) {
+                                if (_errorMessage != null) {
+                                  setState(() => _errorMessage = null);
+                                }
+                              },
+                            ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            initialValue: _refundMethod,
+                            decoration: InputDecoration(
+                              labelText: l10n.t('refundMethod'),
+                              prefixIcon: const Icon(Icons.payments_rounded),
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'CASH',
+                                child: Text(l10n.t('refundCash')),
+                              ),
+                              DropdownMenuItem(
+                                value: 'BKASH',
+                                child: Text(l10n.t('refundBkash')),
+                              ),
+                              DropdownMenuItem(
+                                value: 'NAGAD',
+                                child: Text(l10n.t('refundNagad')),
+                              ),
+                              DropdownMenuItem(
+                                value: 'BANK',
+                                child: Text(l10n.t('refundBank')),
+                              ),
+                              DropdownMenuItem(
+                                value: 'OTHER',
+                                child: Text(l10n.t('refundOther')),
+                              ),
+                            ],
+                            onChanged: (value) =>
+                                setState(() => _refundMethod = value ?? 'CASH'),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _reasonController,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              labelText: l10n.t('refundReason'),
+                              alignLabelWithHint: true,
+                              prefixIcon: const Padding(
+                                padding: EdgeInsets.only(bottom: 22),
+                                child: Icon(Icons.notes_rounded),
+                              ),
+                            ),
+                          ),
+                          if (_errorMessage != null) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(11),
+                              decoration: BoxDecoration(
+                                color: MohajonWarm.tintRed,
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: MohajonWarm.red.withValues(alpha: .2),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline_rounded,
+                                    size: 18,
+                                    color: MohajonWarm.red,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(
+                                        color: MohajonWarm.red,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(l10n.t('cancel')),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton.icon(
+                          onPressed: _submit,
+                          icon: const Icon(
+                            Icons.check_circle_rounded,
+                            size: 19,
+                          ),
+                          label: Text(l10n.t('saleReturn')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.t('cancel')),
-        ),
-        FilledButton(
-          onPressed: () {
-            final items = <SaleReturnRequestItem>[];
-            for (var index = 0; index < widget.sale.items.length; index++) {
-              final qty = int.tryParse(_qtyControllers[index].text.trim()) ?? 0;
-              if (qty > 0) {
-                items.add(
-                  SaleReturnRequestItem(
-                    saleItemId: widget.sale.items[index].saleItemId,
-                    qty: qty,
+    );
+  }
+
+  void _submit() {
+    final items = <SaleReturnRequestItem>[];
+    for (var index = 0; index < widget.sale.items.length; index++) {
+      final qty = int.tryParse(_qtyControllers[index].text.trim()) ?? 0;
+      if (qty > widget.sale.items[index].qty) {
+        setState(
+          () => _errorMessage = 'Return quantity cannot exceed sold quantity.',
+        );
+        return;
+      }
+      if (qty > 0) {
+        items.add(
+          SaleReturnRequestItem(
+            saleItemId: widget.sale.items[index].saleItemId,
+            qty: qty,
+          ),
+        );
+      }
+    }
+    if (items.isEmpty) {
+      setState(() => _errorMessage = 'Select at least one item to return.');
+      return;
+    }
+    Navigator.of(context).pop(
+      _SaleReturnFormResult(
+        items: items,
+        refundMethod: _refundMethod,
+        reason: _reasonController.text,
+      ),
+    );
+  }
+}
+
+class _ReturnItemCard extends StatelessWidget {
+  const _ReturnItemCard({
+    required this.item,
+    required this.controller,
+    required this.quantityLabel,
+    required this.onChanged,
+  });
+
+  final SaleItem item;
+  final TextEditingController controller;
+  final String quantityLabel;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 10),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card.withValues(alpha: .88),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: MohajonWarm.tintYellow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.inventory_2_rounded,
+              color: MohajonWarm.goldText,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
                   ),
-                );
-              }
-            }
-            if (items.isEmpty) return;
-            Navigator.of(context).pop(
-              _SaleReturnFormResult(
-                items: items,
-                refundMethod: _refundMethod,
-                reason: _reasonController.text,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Sold: ${item.qty}',
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 82,
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: quantityLabel,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 10,
+                ),
               ),
-            );
-          },
-          child: Text(l10n.t('saleReturn')),
-        ),
-      ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
