@@ -9,8 +9,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class TokenStore {
   TokenStore._();
 
-  static final FlutterSecureStorage _storage =
-      FlutterSecureStorage(aOptions: AndroidOptions());
+  static final FlutterSecureStorage _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(),
+  );
 
   static final Map<String, String> _cache = {};
   static bool _loaded = false;
@@ -19,7 +20,10 @@ class TokenStore {
   static Future<void> load() async {
     if (_loaded) return;
     try {
-      final all = await _storage.readAll();
+      // Some Android Keystore implementations can indefinitely stall after a
+      // system update or a restored backup. Authentication is recoverable, so
+      // never let encrypted-storage I/O keep the native launch screen open.
+      final all = await _storage.readAll().timeout(const Duration(seconds: 5));
       _cache.addAll(all);
     } catch (_) {
       // Keystore unavailable (e.g. headless test) — fall back to an empty

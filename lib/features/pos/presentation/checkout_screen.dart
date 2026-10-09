@@ -114,14 +114,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     final vatAmount = cart.subtotal * (_vatPercent / 100);
     final manualDiscountAmount = _discountAmount(cart.subtotal, vatAmount);
-    final loyaltyDiscount = _useLoyaltyReward &&
+    final loyaltyDiscount =
+        _useLoyaltyReward &&
             loyaltyOffer.enabled &&
             loyalty?.points != null &&
             loyalty!.points >= loyaltyOffer.pointsRequired &&
             cart.subtotal >= loyaltyOffer.minimumPurchase
         ? ((cart.subtotal + vatAmount) * loyaltyOffer.discountPercent / 100)
-            .clamp(0, loyaltyOffer.maxDiscount)
-            .toDouble()
+              .clamp(0, loyaltyOffer.maxDiscount)
+              .toDouble()
         : 0.0;
     final discountAmount = (manualDiscountAmount + loyaltyDiscount)
         .clamp(0, cart.subtotal + vatAmount)
@@ -440,98 +441,101 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 )
                               else
                                 Container(
-                                decoration: BoxDecoration(
-                                  color: _kCard,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: _kBorder),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF6B5A2A,
-                                      ).withValues(alpha: 0.07),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 180,
+                                  decoration: BoxDecoration(
+                                    color: _kCard,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: _kBorder),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF6B5A2A,
+                                        ).withValues(alpha: 0.07),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
                                   ),
-                                  child: ListView.separated(
-                                    padding: const EdgeInsets.all(6),
-                                    shrinkWrap: true,
-                                    itemCount: filteredCustomers.length,
-                                    separatorBuilder: (_, _) => const Divider(
-                                      height: 1,
-                                      indent: 56,
-                                      color: Color(0xFFF3EDDD),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 180,
                                     ),
-                                    itemBuilder: (context, index) {
-                                      final customer = filteredCustomers[index];
-                                      final selected =
-                                          customer.customerId ==
-                                          cart.customerId;
-                                      return ListTile(
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 2,
-                                            ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        tileColor: selected ? _kWarmTint : null,
-                                        leading: customer.imagePath != null
-                                            ? ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                                child: AppImage.file(
-                                                  File(customer.imagePath!),
-                                                  width: 40,
-                                                  height: 40,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, _, _) =>
-                                                      _CustomerInitials(
-                                                        name: customer.name,
-                                                      ),
-                                                ),
-                                              )
-                                            : _CustomerInitials(
-                                                name: customer.name,
+                                    child: ListView.separated(
+                                      padding: const EdgeInsets.all(6),
+                                      shrinkWrap: true,
+                                      itemCount: filteredCustomers.length,
+                                      separatorBuilder: (_, _) => const Divider(
+                                        height: 1,
+                                        indent: 56,
+                                        color: Color(0xFFF3EDDD),
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final customer =
+                                            filteredCustomers[index];
+                                        final selected =
+                                            customer.customerId ==
+                                            cart.customerId;
+                                        return ListTile(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 2,
                                               ),
-                                        title: Text(
-                                          customer.name,
-                                          style: TextStyle(
-                                            fontWeight: selected
-                                                ? FontWeight.w900
-                                                : FontWeight.w700,
-                                            color: _kInk,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
-                                        ),
-                                        subtitle: Text(
-                                          customer.phone,
-                                          style: const TextStyle(
-                                            color: _kMuted,
-                                            fontWeight: FontWeight.w600,
+                                          tileColor: selected
+                                              ? _kWarmTint
+                                              : null,
+                                          leading: customer.imagePath != null
+                                              ? ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  child: AppImage.file(
+                                                    File(customer.imagePath!),
+                                                    width: 40,
+                                                    height: 40,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, _, _) =>
+                                                        _CustomerInitials(
+                                                          name: customer.name,
+                                                        ),
+                                                  ),
+                                                )
+                                              : _CustomerInitials(
+                                                  name: customer.name,
+                                                ),
+                                          title: Text(
+                                            customer.name,
+                                            style: TextStyle(
+                                              fontWeight: selected
+                                                  ? FontWeight.w900
+                                                  : FontWeight.w700,
+                                              color: _kInk,
+                                            ),
                                           ),
-                                        ),
-                                        trailing: selected
-                                            ? const Icon(
-                                                Icons.check_circle_rounded,
-                                                color: _kBronzeText,
-                                              )
-                                            : null,
-                                        onTap: () => controller.setCustomer(
-                                          customer.customerId,
-                                        ),
-                                      );
-                                    },
+                                          subtitle: Text(
+                                            customer.phone,
+                                            style: const TextStyle(
+                                              color: _kMuted,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          trailing: selected
+                                              ? const Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: _kBronzeText,
+                                                )
+                                              : null,
+                                          onTap: () => controller.setCustomer(
+                                            customer.customerId,
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                             const SizedBox(height: 20),
                             _SectionHeader(
@@ -669,72 +673,58 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             999,
                                           ),
                                           border: Border.all(
-                                            color:
-                                                MohajonWarm.primary.withValues(
-                                              alpha: 0.45,
-                                            ),
+                                            color: MohajonWarm.primary
+                                                .withValues(alpha: 0.45),
                                           ),
                                         ),
                                         child: SizedBox(
                                           width: 74,
                                           child: Center(
                                             child: TextField(
-                                              controller:
-                                                  _vatCustomController,
-                                              keyboardType: const TextInputType
-                                                  .numberWithOptions(
-                                                decimal: true,
-                                              ),
+                                              controller: _vatCustomController,
+                                              keyboardType:
+                                                  const TextInputType.numberWithOptions(
+                                                    decimal: true,
+                                                  ),
                                               textAlign: TextAlign.center,
-                                              cursorColor:
-                                                  MohajonWarm.goldText,
+                                              cursorColor: MohajonWarm.goldText,
                                               inputFormatters: [
-                                                FilteringTextInputFormatter
-                                                    .allow(
+                                                FilteringTextInputFormatter.allow(
                                                   RegExp(r'[0-9.]'),
                                                 ),
                                               ],
                                               decoration: InputDecoration(
                                                 filled: false,
                                                 isDense: true,
-                                                contentPadding:
-                                                    EdgeInsets.zero,
+                                                contentPadding: EdgeInsets.zero,
                                                 border: InputBorder.none,
-                                                enabledBorder:
-                                                    InputBorder.none,
-                                                focusedBorder:
-                                                    InputBorder.none,
+                                                enabledBorder: InputBorder.none,
+                                                focusedBorder: InputBorder.none,
                                                 hintText: l10n.t('custom'),
                                                 hintStyle: const TextStyle(
                                                   color: MohajonWarm.muted,
-                                                  fontWeight:
-                                                      FontWeight.w800,
+                                                  fontWeight: FontWeight.w800,
                                                   fontSize: 11,
                                                 ),
                                                 suffixText: '%',
                                                 suffixStyle: const TextStyle(
-                                                  color:
-                                                      MohajonWarm.goldText,
-                                                  fontWeight:
-                                                      FontWeight.w900,
+                                                  color: MohajonWarm.goldText,
+                                                  fontWeight: FontWeight.w900,
                                                   fontSize: 12,
                                                 ),
                                               ),
                                               style: const TextStyle(
-                                                color:
-                                                    MohajonWarm.goldText,
+                                                color: MohajonWarm.goldText,
                                                 fontWeight: FontWeight.w900,
                                                 fontSize: 13,
                                               ),
                                               onChanged: (value) {
-                                                final parsed =
-                                                    double.tryParse(
+                                                final parsed = double.tryParse(
                                                   value,
                                                 );
                                                 if (parsed == null) return;
                                                 setState(
-                                                  () => _vatPercent =
-                                                      parsed,
+                                                  () => _vatPercent = parsed,
                                                 );
                                               },
                                             ),
@@ -762,8 +752,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       children: [
                                         Text(
                                           l10n.tP('vatAmount', {
-                                            'pct':
-                                                _vatPercent.toStringAsFixed(_vatPercent % 1 == 0 ? 0 : 1),
+                                            'pct': _vatPercent.toStringAsFixed(
+                                              _vatPercent % 1 == 0 ? 0 : 1,
+                                            ),
                                           }),
                                           style: const TextStyle(
                                             color: _kMuted,
@@ -877,16 +868,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   ),
                                   if (loyaltyOffer.enabled &&
                                       loyalty?.points != null &&
-                                      loyalty!.points >= loyaltyOffer.pointsRequired &&
-                                      cart.subtotal >= loyaltyOffer.minimumPurchase) ...[
+                                      loyalty!.points >=
+                                          loyaltyOffer.pointsRequired &&
+                                      cart.subtotal >=
+                                          loyaltyOffer.minimumPurchase) ...[
                                     const SizedBox(height: 8),
                                     SwitchListTile.adaptive(
                                       contentPadding: EdgeInsets.zero,
                                       value: _useLoyaltyReward,
-                                      onChanged: (value) => setState(() => _useLoyaltyReward = value),
-                                      title: Text(l10n.t('useLoyaltyReward'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                                      subtitle: Text(l10n.t('loyaltyRewardOffer'), style: const TextStyle(fontSize: 11, color: _kMuted)),
-                                      secondary: const Icon(Icons.stars_rounded, color: MohajonWarm.goldText),
+                                      onChanged: (value) => setState(
+                                        () => _useLoyaltyReward = value,
+                                      ),
+                                      title: Text(
+                                        l10n.t('useLoyaltyReward'),
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        l10n.t('loyaltyRewardOffer'),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: _kMuted,
+                                        ),
+                                      ),
+                                      secondary: const Icon(
+                                        Icons.stars_rounded,
+                                        color: MohajonWarm.goldText,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -999,7 +1009,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      l10n.t('total').toUpperCase(),
+                                                      l10n
+                                                          .t('total')
+                                                          .toUpperCase(),
                                                       style: TextStyle(
                                                         color: Color(
                                                           0xFF6B5210,
@@ -1145,7 +1157,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     ? () async {
                                         setState(() => _isCheckingOut = true);
                                         final navigator = Navigator.of(context);
-                                        final l10n = AppLocalizations.of(context);
+                                        final l10n = AppLocalizations.of(
+                                          context,
+                                        );
                                         try {
                                           final controller = ref.read(
                                             cartProvider.notifier,
@@ -1175,41 +1189,46 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           final shopProfile = ref
                                               .read(shopProfileProvider)
                                               .value;
-                                          final billMessage = WhatsAppService
-                                              .billMessage(
-                                            sale: sale,
-                                            shopName:
-                                                shopProfile?.shopName ?? '',
-                                            customerName:
-                                                selectedCustomer?.name ?? '',
-                                            t: (key) => l10n.t(key),
-                                          );
+                                          final billMessage =
+                                              WhatsAppService.billMessage(
+                                                sale: sale,
+                                                shopName:
+                                                    shopProfile?.shopName ?? '',
+                                                customerName:
+                                                    selectedCustomer?.name ??
+                                                    '',
+                                                t: (key) => l10n.t(key),
+                                              );
                                           if (context.mounted) {
                                             await showModalBottomSheet<void>(
                                               context: context,
-                                              backgroundColor: Colors.transparent,
+                                              backgroundColor:
+                                                  Colors.transparent,
                                               isScrollControlled: true,
                                               builder: (_) => SaleSuccessSheet(
                                                 onPrint: () async {
                                                   final bytes =
                                                       await InvoiceService()
                                                           .buildThermalReceipt(
-                                                    sale,
-                                                    customerName:
-                                                        selectedCustomer
-                                                                ?.name ??
-                                                            '',
-                                                    customerPhone:
-                                                        selectedCustomer
-                                                                ?.phone ??
-                                                            '',
-                                                    company: DocCompany
-                                                        .fromShop(shopProfile),
-                                                  );
+                                                            sale,
+                                                            customerName:
+                                                                selectedCustomer
+                                                                    ?.name ??
+                                                                '',
+                                                            customerPhone:
+                                                                selectedCustomer
+                                                                    ?.phone ??
+                                                                '',
+                                                            company:
+                                                                DocCompany.fromShop(
+                                                                  shopProfile,
+                                                                ),
+                                                          );
                                                   await Printing.layoutPdf(
                                                     name:
                                                         'receipt-${sale.saleId}',
-                                                    onLayout: (_) async => bytes,
+                                                    onLayout: (_) async =>
+                                                        bytes,
                                                   );
                                                 },
                                                 onSave: () async {
@@ -1217,27 +1236,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                   try {
                                                     final bytes = await InvoiceService()
                                                         .buildThermalReceipt(
-                                                      sale,
-                                                      customerName:
-                                                          selectedCustomer
+                                                          sale,
+                                                          customerName:
+                                                              selectedCustomer
                                                                   ?.name ??
                                                               '',
-                                                      customerPhone:
-                                                          selectedCustomer
+                                                          customerPhone:
+                                                              selectedCustomer
                                                                   ?.phone ??
                                                               '',
-                                                      company: DocCompany
-                                                          .fromShop(shopProfile),
-                                                    );
-                                                    path =
-                                                        await DownloadExportService()
-                                                            .saveFileToDownloads(
-                                                      fileName:
-                                                          'receipt-${sale.saleId}.pdf',
-                                                      mimeType:
-                                                          'application/pdf',
-                                                      bytes: bytes,
-                                                    );
+                                                          company:
+                                                              DocCompany.fromShop(
+                                                                shopProfile,
+                                                              ),
+                                                        );
+                                                    path = await DownloadExportService()
+                                                        .saveFileToDownloads(
+                                                          fileName:
+                                                              'receipt-${sale.saleId}.pdf',
+                                                          mimeType:
+                                                              'application/pdf',
+                                                          bytes: bytes,
+                                                        );
                                                   } catch (_) {
                                                     if (!context.mounted) {
                                                       return;
@@ -1256,35 +1276,80 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                   }
                                                   showAppSnackBar(
                                                     context,
-                                                    l10n.tP(
-                                                      'receiptSavedAt',
-                                                      {'path': path ?? 'Download'},
-                                                    ),
+                                                    l10n.tP('receiptSavedAt', {
+                                                      'path':
+                                                          path ?? 'Download',
+                                                    }),
                                                   );
                                                 },
                                                 whatsappPhone:
                                                     selectedCustomer?.phone,
                                                 whatsappMessage: billMessage,
                                                 onDigitalInvoice: () async {
+                                                  final isOnline = await ref
+                                                      .read(syncServiceProvider)
+                                                      .isOnline;
+                                                  if (!context.mounted) {
+                                                    return;
+                                                  }
+                                                  if (!isOnline) {
+                                                    showAppSnackBar(
+                                                      context,
+                                                      l10n.t(
+                                                        'digitalInvoiceInternetRequired',
+                                                      ),
+                                                      isError: true,
+                                                    );
+                                                    return;
+                                                  }
                                                   try {
-                                                    final uri = await DigitalInvoiceService(
-                                                      ref.read(localDatabaseProvider),
-                                                    ).createLink(sale);
-                                                    if (!context.mounted) return;
-                                                    if (uri == null) {
-                                                      showAppSnackBar(context, l10n.t('digitalInvoiceUnavailable'), isError: true);
+                                                    final uri =
+                                                        await DigitalInvoiceService(
+                                                          ref.read(
+                                                            localDatabaseProvider,
+                                                          ),
+                                                        ).createLink(sale);
+                                                    if (!context.mounted) {
                                                       return;
                                                     }
-                                                    final ok = await WhatsAppService.openChat(
-                                                      phone: selectedCustomer?.phone ?? '',
-                                                      message: '${l10n.t('digitalInvoiceMessage')}\n$uri',
-                                                    );
-                                                    if (!ok && context.mounted) {
-                                                      showAppSnackBar(context, l10n.t('whatsappFailed'), isError: true);
+                                                    if (uri == null) {
+                                                      showAppSnackBar(
+                                                        context,
+                                                        l10n.t(
+                                                          'digitalInvoiceUnavailable',
+                                                        ),
+                                                        isError: true,
+                                                      );
+                                                      return;
+                                                    }
+                                                    final ok =
+                                                        await WhatsAppService.openChat(
+                                                          phone:
+                                                              selectedCustomer
+                                                                  ?.phone ??
+                                                              '',
+                                                          message:
+                                                              '${l10n.t('digitalInvoiceMessage')}\n$uri',
+                                                        );
+                                                    if (!ok &&
+                                                        context.mounted) {
+                                                      showAppSnackBar(
+                                                        context,
+                                                        l10n.t(
+                                                          'whatsappFailed',
+                                                        ),
+                                                        isError: true,
+                                                      );
                                                     }
                                                   } catch (_) {
                                                     if (context.mounted) {
-                                                      showAppSnackBar(context, l10n.t('digitalInvoiceUnavailable'), isError: true);
+                                                      showAppSnackBar(
+                                                        context,
+                                                        l10n.t(
+                                                          'digitalInvoiceUnavailable',
+                                                        ),
+                                                        isError: true,
+                                                      );
                                                     }
                                                   }
                                                 },
@@ -1296,7 +1361,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           if (context.mounted) {
                                             showAppSnackBar(
                                               context,
-                                              friendlyErrorMessage(error),
+                                              friendlyErrorMessage(
+                                                error,
+                                                l10n: l10n,
+                                              ),
                                               isError: true,
                                             );
                                           }
@@ -1307,7 +1375,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             );
                                           }
                                         }
-                                      } : null,
+                                      }
+                                    : null,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [

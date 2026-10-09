@@ -51,3 +51,4 @@ deploy/.env
 *.p12
 *.jks
 *.jks.bak
+/ops/vm/deploy/haalkhata/app.jar

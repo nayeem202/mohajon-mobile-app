@@ -46,6 +46,7 @@ class ShopProfileService {
     required String phoneNumber,
     String tin = '',
     String bin = '',
+    String? reportLogoPath,
   }) async {
     final authSession = _ref.read(authStateProvider).value;
     if (authSession == null) {
@@ -72,6 +73,7 @@ class ShopProfileService {
       'phoneNumber': trimmedPhoneNumber,
       'tin': tin.trim(),
       'bin': bin.trim(),
+      if (reportLogoPath != null) 'reportLogoPath': reportLogoPath.trim(),
     });
   }
 

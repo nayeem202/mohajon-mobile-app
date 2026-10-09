@@ -171,7 +171,9 @@ class _ProfitLossScreenState extends ConsumerState<ProfitLossScreen>
     isXlsx: false,
     task: () async {
       final data = _compute();
-      final company = DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      final company = await DocCompany.fromShopForExport(
+        ref.read(shopProfileProvider).value,
+      );
       await ProfitLossPdfService().saveProfitLoss(
         table: data.table,
         range: _range,
@@ -221,6 +223,11 @@ class _ProfitLossScreenState extends ConsumerState<ProfitLossScreen>
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                ReportBrandStrip(
+                  title: l10n.t('reportProfitLoss'),
+                  icon: Icons.trending_up_rounded,
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(

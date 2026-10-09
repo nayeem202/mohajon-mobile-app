@@ -15,6 +15,7 @@ import '../services/sales_summary_excel_service.dart';
 import '../services/sales_summary_pdf_service.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
+import 'report_shared_widgets.dart';
 
 const _dailyBarPalette = <Color>[
   Color(0xFFF5B731), // gold
@@ -222,8 +223,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     setState(() => _exportingPdf = true);
     try {
       final data = _compute();
-      final company =
-          DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      final company = await DocCompany.fromShopForExport(
+        ref.read(shopProfileProvider).value,
+      );
       await _pdfService.saveSalesSummary(
         days: data.days,
         range: _range,
@@ -314,6 +316,11 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               children: [
+                ReportBrandStrip(
+                  title: l10n.t('reportSalesSummary'),
+                  icon: Icons.bar_chart_rounded,
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(

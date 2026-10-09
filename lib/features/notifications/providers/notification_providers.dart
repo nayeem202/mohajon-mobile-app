@@ -52,8 +52,9 @@ class NotificationsState {
   }) {
     return NotificationsState(
       items: items ?? this.items,
-      categoryFilter:
-          clearCategory ? null : categoryFilter ?? this.categoryFilter,
+      categoryFilter: clearCategory
+          ? null
+          : categoryFilter ?? this.categoryFilter,
       unreadOnly: unreadOnly ?? this.unreadOnly,
     );
   }
@@ -61,7 +62,7 @@ class NotificationsState {
 
 class NotificationsController extends StateNotifier<NotificationsState> {
   NotificationsController(this._db, this._shopId)
-      : super(NotificationsState(items: _load(_db, _shopId))) {
+    : super(NotificationsState(items: _load(_db, _shopId))) {
     _sortAndPersist();
     unawaited(_loadSharedHistory());
     _historyRefreshTimer = Timer.periodic(
@@ -94,19 +95,34 @@ class NotificationsController extends StateNotifier<NotificationsState> {
 
   Future<void> _loadSharedHistory() async {
     try {
-      final data = await ApiClient(_db).getJson('/api/v1/notifications/history');
+      final data = await ApiClient(
+        _db,
+      ).getJson('/api/v1/notifications/history');
       if (data is! List) return;
-      final remote = data
-          .whereType<Map>()
-          .map((item) => AppNotification.fromJson(item))
-          .toList();
+      final languageCode = _db.settings.get('languageCode', defaultValue: 'bn');
+      final remote = data.whereType<Map>().map((item) {
+        final localized = Map<dynamic, dynamic>.from(item);
+        if (languageCode == 'bn') {
+          final titleBn = localized['titleBn']?.toString().trim();
+          final bodyBn = localized['descriptionBn']?.toString().trim();
+          if (titleBn != null && titleBn.isNotEmpty) {
+            localized['title'] = titleBn;
+          }
+          if (bodyBn != null && bodyBn.isNotEmpty) {
+            localized['description'] = bodyBn;
+          }
+        }
+        return AppNotification.fromJson(localized);
+      }).toList();
       final existingBySource = <String, AppNotification>{
         for (final item in state.items)
           if (item.sourceKey != null) item.sourceKey!: item,
       };
       final merged = [...state.items];
       for (final item in remote) {
-        final old = item.sourceKey == null ? null : existingBySource[item.sourceKey];
+        final old = item.sourceKey == null
+            ? null
+            : existingBySource[item.sourceKey];
         if (old == null) {
           merged.add(item);
           await _persist(item);
@@ -143,20 +159,32 @@ class NotificationsController extends StateNotifier<NotificationsState> {
     final serverId = sourceKey != null && sourceKey.startsWith('server:')
         ? sourceKey.substring('server:'.length)
         : null;
+    final platformId = sourceKey != null && sourceKey.startsWith('platform:')
+        ? sourceKey.substring('platform:'.length)
+        : null;
     if (everyone && serverId != null) {
-      await ApiClient(_db).delete(
-        '/api/v1/notifications/history/$serverId/everyone',
-      );
+      await ApiClient(
+        _db,
+      ).delete('/api/v1/notifications/history/$serverId/everyone');
     }
     state = state.copyWith(
       items: state.items.where((n) => n.id != id).toList(),
     );
     _db.notifications.delete(id);
+    if (platformId != null) {
+      try {
+        await ApiClient(
+          _db,
+        ).delete('/api/v1/notifications/history/platform/$platformId');
+      } catch (_) {
+        // Local deletion remains applied; the next history refresh will retry
+        // the server-backed delete when a connection is available.
+      }
+      return;
+    }
     if (serverId == null || everyone) return;
     try {
-      await ApiClient(_db).delete(
-        '/api/v1/notifications/history/$serverId',
-      );
+      await ApiClient(_db).delete('/api/v1/notifications/history/$serverId');
     } catch (_) {
       // The local delete remains applied; a later sync can restore it if the
       // server deletion failed.
@@ -193,7 +221,8 @@ class NotificationsController extends StateNotifier<NotificationsState> {
       title: title,
       description: message,
       timestamp: now,
-      category: category ??
+      category:
+          category ??
           (type == NotificationType.system || type == NotificationType.platform
               ? NotificationCategory.platform
               : NotificationCategory.shop),
@@ -214,11 +243,11 @@ class NotificationsController extends StateNotifier<NotificationsState> {
 
 final notificationsProvider =
     StateNotifierProvider<NotificationsController, NotificationsState>((ref) {
-  return NotificationsController(
-    ref.watch(localDatabaseProvider),
-    ref.watch(shopIdProvider),
-  );
-});
+      return NotificationsController(
+        ref.watch(localDatabaseProvider),
+        ref.watch(shopIdProvider),
+      );
+    });
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(ref);
@@ -239,14 +268,16 @@ class NotificationService {
   }) {
     if (!isNotificationPushEnabled()) return;
     if (!isNotificationTypeEnabled(type)) return;
-    _ref.read(notificationsProvider.notifier).addNotification(
+    _ref
+        .read(notificationsProvider.notifier)
+        .addNotification(
           type: type,
           title: title,
           message: message,
           category: category,
           sourceKey: sourceKey,
-          senderUserId: senderUserId ??
-              _ref.read(authStateProvider).value?.userId,
+          senderUserId:
+              senderUserId ?? _ref.read(authStateProvider).value?.userId,
         );
   }
 
@@ -264,7 +295,9 @@ class NotificationService {
         'title': title,
         'body': message,
         // System notifications are stored/filtered under the Platform type.
-        'data': {'type': type == NotificationType.system ? 'platform' : type.name},
+        'data': {
+          'type': type == NotificationType.system ? 'platform' : type.name,
+        },
       },
     );
     final notificationId = response['notificationId']?.toString();
@@ -272,16 +305,16 @@ class NotificationService {
         ? NotificationType.platform
         : type;
     try {
-      _ref.read(notificationServiceProvider).add(
+      _ref
+          .read(notificationServiceProvider)
+          .add(
             type: storedType,
             category: storedType == NotificationType.platform
                 ? NotificationCategory.platform
                 : NotificationCategory.shop,
             title: title,
             message: message,
-            sourceKey: notificationId == null
-                ? null
-                : 'server:$notificationId',
+            sourceKey: notificationId == null ? null : 'server:$notificationId',
           );
     } catch (error, stackTrace) {
       // The server has already accepted the notification. Do not report a

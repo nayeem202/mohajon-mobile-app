@@ -654,7 +654,9 @@ class _OperationalReportScreenState
       if (pdf) {
         bytes = await buildTablePdf(
           table,
-          DocCompany.fromShop(ref.read(shopProfileProvider).value),
+          await DocCompany.fromShopForExport(
+            ref.read(shopProfileProvider).value,
+          ),
         );
         mime = 'application/pdf';
         extension = 'pdf';
@@ -729,6 +731,8 @@ class _OperationalReportScreenState
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             children: [
+              ReportBrandStrip(title: data.title, icon: Icons.analytics_rounded),
+              const SizedBox(height: 14),
               ReportRangeSelector(
                 range: _range,
                 onPickRange: () async {

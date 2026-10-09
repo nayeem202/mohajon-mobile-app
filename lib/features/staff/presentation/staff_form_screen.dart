@@ -221,10 +221,11 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
       setState(() => _saving = false);
       debugPrint('APP_ERROR >>> ${error.runtimeType}: $error');
       _showToast(
-        error is StaffApiException
-            ? error.message
-            : friendlyErrorMessage(error,
-                fallback: _l10n.t('couldNotSaveStaff')),
+        friendlyErrorMessage(
+          error,
+          l10n: _l10n,
+          fallback: _l10n.t('couldNotSaveStaff'),
+        ),
         isError: true,
       );
     }
@@ -302,224 +303,225 @@ class _StaffFormScreenState extends ConsumerState<StaffFormScreen> {
                         ),
                       )
                     : error
-                        ? _errorState()
-                        : Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: ListView(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        18, 12, 18, 16),
+                    ? _errorState()
+                    : Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ListView(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  12,
+                                  18,
+                                  16,
+                                ),
+                                children: [
+                                  _FormHeader(
+                                    title: _isEditing
+                                        ? l10n.t('editStaffMember')
+                                        : l10n.t('addStaffMember'),
+                                    subtitle: l10n.t('teamAndPermissions'),
+                                    onBack: () =>
+                                        Navigator.of(context).maybePop(),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _StaffPhotoPicker(
+                                    initials: _initials,
+                                    imagePath: _imagePath,
+                                    photoUrl: _photoUrl,
+                                    onTap: _saving ? null : _pickImage,
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _SectionCard(
+                                    icon: Icons.badge_outlined,
+                                    iconColor: MohajonWarm.goldText,
+                                    iconBackground: MohajonWarm.tintYellow,
+                                    title: l10n.t('staffDetails'),
                                     children: [
-                                      _FormHeader(
-                                        title: _isEditing
-                                            ? l10n.t('editStaffMember')
-                                            : l10n.t('addStaffMember'),
-                                        subtitle: l10n.t('teamAndPermissions'),
-                                        onBack: () =>
-                                            Navigator.of(context).maybePop(),
+                                      _FieldLabel(
+                                        label: l10n.t('fullName'),
+                                        required: true,
                                       ),
-                                      const SizedBox(height: 18),
-                                      _StaffPhotoPicker(
-                                        initials: _initials,
-                                        imagePath: _imagePath,
-                                        photoUrl: _photoUrl,
-                                        onTap: _saving ? null : _pickImage,
-                                      ),
-                                      const SizedBox(height: 18),
-                                      _SectionCard(
-                                        icon: Icons.badge_outlined,
-                                        iconColor: MohajonWarm.goldText,
-                                        iconBackground: MohajonWarm.tintYellow,
-                                        title: l10n.t('staffDetails'),
-                                        children: [
-                                          _FieldLabel(
-                                            label: l10n.t('fullName'),
-                                            required: true,
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _nameCtrl,
+                                        textCapitalization:
+                                            TextCapitalization.words,
+                                        onChanged: (_) => setState(() {}),
+                                        decoration: const InputDecoration(
+                                          prefixIcon: Icon(
+                                            Icons.person_outline_rounded,
+                                            size: 20,
+                                            color: MohajonWarm.muted,
                                           ),
-                                          const SizedBox(height: 8),
-                                          TextFormField(
-                                            controller: _nameCtrl,
-                                            textCapitalization:
-                                                TextCapitalization.words,
-                                            onChanged: (_) => setState(() {}),
-                                            decoration: const InputDecoration(
-                                              prefixIcon: Icon(
-                                                Icons.person_outline_rounded,
-                                                size: 20,
-                                                color: MohajonWarm.muted,
-                                              ),
-                                              hintText: 'e.g. Karim Uddin',
-                                            ),
-                                            validator: (v) =>
-                                                v?.trim().isEmpty == true
-                                                    ? l10n.t('nameIsRequired')
-                                                    : null,
-                                          ),
-                                          const SizedBox(height: 14),
-                                          _FieldLabel(
-                                              label: l10n.t('phoneNumber')),
-                                          const SizedBox(height: 8),
-                                          TextFormField(
-                                            controller: _phoneCtrl,
-                                            keyboardType: TextInputType.phone,
-                                            inputFormatters: [
-                                              FilteringTextInputFormatter
-                                                  .digitsOnly,
-                                              LengthLimitingTextInputFormatter(
-                                                  13),
-                                            ],
-                                            decoration: const InputDecoration(
-                                              prefixIcon: Icon(
-                                                Icons.phone_outlined,
-                                                size: 20,
-                                                color: MohajonWarm.muted,
-                                              ),
-                                              hintText: 'e.g. 01712-345678',
-                                            ),
-                                          ),
-                                        ],
+                                          hintText: 'e.g. Karim Uddin',
+                                        ),
+                                        validator: (v) =>
+                                            v?.trim().isEmpty == true
+                                            ? l10n.t('nameIsRequired')
+                                            : null,
                                       ),
                                       const SizedBox(height: 14),
-                                      _SectionCard(
-                                        icon: Icons.lock_outline_rounded,
-                                        iconColor: MohajonWarm.green,
-                                        iconBackground: MohajonWarm.tintGreen,
-                                        title: l10n.t('signInCredentials'),
-                                        children: [
-                                          _FieldLabel(
-                                            label: l10n.t('email'),
-                                            required: true,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          TextFormField(
-                                            controller: _emailCtrl,
-                                            keyboardType:
-                                                TextInputType.emailAddress,
-                                            enabled: !_isEditing,
-                                            autocorrect: false,
-                                            decoration: const InputDecoration(
-                                              prefixIcon: Icon(
-                                                Icons.email_outlined,
-                                                size: 20,
-                                                color: MohajonWarm.muted,
-                                              ),
-                                              hintText:
-                                                  'e.g. karim@hishabbondhu.com',
-                                            ),
-                                            validator: (v) {
-                                              final trimmed = v?.trim() ?? '';
-                                              if (!_isEditing &&
-                                                  trimmed.isEmpty) {
-                                                return l10n.t(
-                                                    'emailIsRequiredSignIn');
-                                              }
-                                              if (trimmed.isNotEmpty) {
-                                                final emailRegex = RegExp(
-                                                    r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-                                                if (!emailRegex
-                                                    .hasMatch(trimmed)) {
-                                                  return l10n.t(
-                                                      'validEmailAddress');
-                                                }
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                          if (!_isEditing) ...[
-                                            const SizedBox(height: 14),
-                                            _FieldLabel(
-                                              label: l10n.t('password'),
-                                              required: true,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            TextFormField(
-                                              controller: _passwordCtrl,
-                                              obscureText: true,
-                                              decoration:
-                                                  InputDecoration(
-                                                prefixIcon: Icon(
-                                                  Icons.password_rounded,
-                                                  size: 20,
-                                                  color: MohajonWarm.muted,
-                                                ),
-                                                hintText:
-                                                    l10n.t('minPassword'),
-                                              ),
-                                              validator: (v) {
-                                                if (v?.trim().isEmpty == true) {
-                                                  return l10n.t(
-                                                      'passwordIsRequired');
-                                                }
-                                                if ((v?.length ?? 0) < 6) {
-                                                  return l10n.t(
-                                                      'passwordTooShort');
-                                                }
-                                                return null;
-                                              },
-                                            ),
-                                          ],
-                                          if (_isEditing) ...[
-                                            const SizedBox(height: 12),
-                                            Text(
-                                              l10n.t('emailPasswordUnchanged'),
-                                              style: const TextStyle(
-                                                color: MohajonWarm.muted,
-                                                fontSize: 11.5,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
+                                      _FieldLabel(label: l10n.t('phoneNumber')),
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _phoneCtrl,
+                                        keyboardType: TextInputType.phone,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(13),
                                         ],
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _SectionCard(
-                                        icon:
-                                            Icons.admin_panel_settings_rounded,
-                                        iconColor: MohajonWarm.orange,
-                                        iconBackground: MohajonWarm.tintOrange,
-                                        title: l10n.t('role'),
-                                        children: [
-                                          Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            children: roles.map((role) {
-                                              final isSelected =
-                                                  role.code == _selectedRole;
-                                              return _PillChip(
-                                                label: role.name,
-                                                selected: isSelected,
-                                                onTap: () => setState(() =>
-                                                    _selectedRole = role.code),
-                                              );
-                                            }).toList(),
+                                        decoration: const InputDecoration(
+                                          prefixIcon: Icon(
+                                            Icons.phone_outlined,
+                                            size: 20,
+                                            color: MohajonWarm.muted,
                                           ),
-                                        ],
+                                          hintText: 'e.g. 01712-345678',
+                                        ),
                                       ),
-                                      const SizedBox(height: 14),
-                                      _menuSection(menus),
                                     ],
                                   ),
-                                ),
-                                _SaveBar(
-                                  child: ActionButton(
-                                    onPressed: _saving ? null : _submit,
-                                    isBusy: _saving,
-                                    icon: _isEditing
-                                        ? Icons.save_rounded
-                                        : Icons.person_add_rounded,
-                                    label: _isEditing
-                                        ? l10n.t('saveChanges')
-                                        : l10n.t('createStaffMember'),
-                                    busyLabel: _isEditing
-                                        ? l10n.t('updating')
-                                        : l10n.t('creating'),
+                                  const SizedBox(height: 14),
+                                  _SectionCard(
+                                    icon: Icons.lock_outline_rounded,
+                                    iconColor: MohajonWarm.green,
+                                    iconBackground: MohajonWarm.tintGreen,
+                                    title: l10n.t('signInCredentials'),
+                                    children: [
+                                      _FieldLabel(
+                                        label: l10n.t('email'),
+                                        required: true,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _emailCtrl,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        enabled: !_isEditing,
+                                        autocorrect: false,
+                                        decoration: const InputDecoration(
+                                          prefixIcon: Icon(
+                                            Icons.email_outlined,
+                                            size: 20,
+                                            color: MohajonWarm.muted,
+                                          ),
+                                          hintText:
+                                              'e.g. karim@hishabbondhu.com',
+                                        ),
+                                        validator: (v) {
+                                          final trimmed = v?.trim() ?? '';
+                                          if (!_isEditing && trimmed.isEmpty) {
+                                            return l10n.t(
+                                              'emailIsRequiredSignIn',
+                                            );
+                                          }
+                                          if (trimmed.isNotEmpty) {
+                                            final emailRegex = RegExp(
+                                              r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                            );
+                                            if (!emailRegex.hasMatch(trimmed)) {
+                                              return l10n.t(
+                                                'validEmailAddress',
+                                              );
+                                            }
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      if (!_isEditing) ...[
+                                        const SizedBox(height: 14),
+                                        _FieldLabel(
+                                          label: l10n.t('password'),
+                                          required: true,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        TextFormField(
+                                          controller: _passwordCtrl,
+                                          obscureText: true,
+                                          decoration: InputDecoration(
+                                            prefixIcon: Icon(
+                                              Icons.password_rounded,
+                                              size: 20,
+                                              color: MohajonWarm.muted,
+                                            ),
+                                            hintText: l10n.t('minPassword'),
+                                          ),
+                                          validator: (v) {
+                                            if (v?.trim().isEmpty == true) {
+                                              return l10n.t(
+                                                'passwordIsRequired',
+                                              );
+                                            }
+                                            if ((v?.length ?? 0) < 6) {
+                                              return l10n.t('passwordTooShort');
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
+                                      if (_isEditing) ...[
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          l10n.t('emailPasswordUnchanged'),
+                                          style: const TextStyle(
+                                            color: MohajonWarm.muted,
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 14),
+                                  _SectionCard(
+                                    icon: Icons.admin_panel_settings_rounded,
+                                    iconColor: MohajonWarm.orange,
+                                    iconBackground: MohajonWarm.tintOrange,
+                                    title: l10n.t('role'),
+                                    children: [
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: roles.map((role) {
+                                          final isSelected =
+                                              role.code == _selectedRole;
+                                          return _PillChip(
+                                            label: role.name,
+                                            selected: isSelected,
+                                            onTap: () => setState(
+                                              () => _selectedRole = role.code,
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _menuSection(menus),
+                                ],
+                              ),
                             ),
-                          ),
+                            _SaveBar(
+                              child: ActionButton(
+                                onPressed: _saving ? null : _submit,
+                                isBusy: _saving,
+                                icon: _isEditing
+                                    ? Icons.save_rounded
+                                    : Icons.person_add_rounded,
+                                label: _isEditing
+                                    ? l10n.t('saveChanges')
+                                    : l10n.t('createStaffMember'),
+                                busyLabel: _isEditing
+                                    ? l10n.t('updating')
+                                    : l10n.t('creating'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
               ),
             ],
           ),
@@ -705,14 +707,14 @@ class _StaffPhotoPicker extends StatelessWidget {
                               errorBuilder: (_, _, _) => _fallback(),
                             )
                           : (photoUrl?.isNotEmpty == true)
-                              ? Image.network(
-                                  '${AppConfig.apiBaseUrl}$photoUrl',
-                                  width: size,
-                                  height: size,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => _fallback(),
-                                )
-                              : _fallback(),
+                          ? Image.network(
+                              '${AppConfig.apiBaseUrl}$photoUrl',
+                              width: size,
+                              height: size,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _fallback(),
+                            )
+                          : _fallback(),
                     ),
                   ),
                   Positioned(
@@ -727,8 +729,7 @@ class _StaffPhotoPicker extends StatelessWidget {
                         border: Border.all(color: Colors.white, width: 2.5),
                         boxShadow: [
                           BoxShadow(
-                            color: MohajonWarm.primary
-                                .withValues(alpha: 0.35),
+                            color: MohajonWarm.primary.withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -807,9 +808,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: MohajonWarm.card,
-        border: const Border(
-          top: BorderSide(color: MohajonWarm.goldBorder),
-        ),
+        border: const Border(top: BorderSide(color: MohajonWarm.goldBorder)),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),
@@ -1034,13 +1033,16 @@ class _MenuTypeSectionState extends State<_MenuTypeSection> {
 
   @override
   Widget build(BuildContext context) {
-    final allSelected =
-        widget.menus.every((m) => widget.selectedCodes.contains(m.code));
-    final anySelected =
-        widget.menus.any((m) => widget.selectedCodes.contains(m.code));
+    final allSelected = widget.menus.every(
+      (m) => widget.selectedCodes.contains(m.code),
+    );
+    final anySelected = widget.menus.any(
+      (m) => widget.selectedCodes.contains(m.code),
+    );
     final triValue = allSelected ? true : (anySelected ? null : false);
-    final selectedCount =
-        widget.menus.where((m) => widget.selectedCodes.contains(m.code)).length;
+    final selectedCount = widget.menus
+        .where((m) => widget.selectedCodes.contains(m.code))
+        .length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1060,7 +1062,9 @@ class _MenuTypeSectionState extends State<_MenuTypeSection> {
                   onTap: () => setState(() => _expanded = !_expanded),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -1077,12 +1081,16 @@ class _MenuTypeSectionState extends State<_MenuTypeSection> {
                           Container(
                             margin: const EdgeInsets.only(right: 6),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: MohajonWarm.tintYellow,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: MohajonWarm.primary.withValues(alpha: 0.3),
+                                color: MohajonWarm.primary.withValues(
+                                  alpha: 0.3,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -1132,7 +1140,9 @@ class _MenuTypeSectionState extends State<_MenuTypeSection> {
                     ),
                   _MenuCheckboxTile(
                     menu: widget.menus[i],
-                    checked: widget.selectedCodes.contains(widget.menus[i].code),
+                    checked: widget.selectedCodes.contains(
+                      widget.menus[i].code,
+                    ),
                     onChanged: (checked) =>
                         widget.onMenuChanged(widget.menus[i].code, checked),
                   ),
@@ -1241,9 +1251,7 @@ class _MenuCheckboxTile extends StatelessWidget {
                   ? Icons.check_box_rounded
                   : Icons.check_box_outline_blank_rounded,
               size: 22,
-              color: checked
-                  ? MohajonWarm.primary
-                  : MohajonWarm.goldBorder,
+              color: checked ? MohajonWarm.primary : MohajonWarm.goldBorder,
             ),
             const SizedBox(width: 12),
             Expanded(

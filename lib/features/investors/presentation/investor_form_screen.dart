@@ -21,8 +21,7 @@ class InvestorFormScreen extends ConsumerStatefulWidget {
   final Investor? investor;
 
   @override
-  ConsumerState<InvestorFormScreen> createState() =>
-      _InvestorFormScreenState();
+  ConsumerState<InvestorFormScreen> createState() => _InvestorFormScreenState();
 }
 
 class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
@@ -69,9 +68,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: MohajonWarm.pageGradient,
-            ),
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
             child: Stack(
               children: [
                 Positioned(
@@ -123,20 +120,14 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                         child: Form(
                           key: _formKey,
                           child: ListView(
-                            padding: const EdgeInsets.fromLTRB(
-                              18,
-                              12,
-                              18,
-                              16,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
                             children: [
                               _FormHeader(
                                 title: isEditing
                                     ? l10n.t('editInvestor')
                                     : l10n.t('addInvestor'),
                                 subtitle: l10n.t('capitalPartners'),
-                                onBack: () =>
-                                    Navigator.of(context).maybePop(),
+                                onBack: () => Navigator.of(context).maybePop(),
                               ),
                               const SizedBox(height: 18),
                               _PhotoPicker(
@@ -162,8 +153,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                     textCapitalization:
                                         TextCapitalization.words,
                                     onChanged: (_) => setState(() {}),
-                                    decoration:
-                                        InputDecoration(
+                                    decoration: InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.person_outline_rounded,
                                         size: 20,
@@ -172,8 +162,7 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                       hintText: l10n.t('fullNameHint'),
                                     ),
                                     validator: (value) =>
-                                        value == null ||
-                                            value.trim().isEmpty
+                                        value == null || value.trim().isEmpty
                                         ? l10n.t('pleaseEnterFullName')
                                         : null,
                                   ),
@@ -184,14 +173,10 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                     controller: _phoneCtrl,
                                     keyboardType: TextInputType.phone,
                                     inputFormatters: [
-                                      FilteringTextInputFormatter
-                                          .digitsOnly,
-                                      LengthLimitingTextInputFormatter(
-                                        13,
-                                      ),
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(13),
                                     ],
-                                    decoration:
-                                        InputDecoration(
+                                    decoration: InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.phone_outlined,
                                         size: 20,
@@ -213,18 +198,15 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _emailCtrl,
-                                    keyboardType: TextInputType
-                                        .emailAddress,
+                                    keyboardType: TextInputType.emailAddress,
                                     autocorrect: false,
-                                    decoration:
-                                        InputDecoration(
+                                    decoration: InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.email_outlined,
                                         size: 20,
                                         color: MohajonWarm.muted,
                                       ),
-                                      hintText:
-                                          l10n.t('emailHint'),
+                                      hintText: l10n.t('emailHint'),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
@@ -240,30 +222,23 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                     },
                                   ),
                                   const SizedBox(height: 14),
-                                  _FieldLabel(
-                                    label: l10n.t('address'),
-                                  ),
+                                  _FieldLabel(label: l10n.t('address')),
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _addressCtrl,
                                     maxLines: 2,
                                     textCapitalization:
                                         TextCapitalization.words,
-                                    decoration:
-                                        InputDecoration(
+                                    decoration: InputDecoration(
                                       prefixIcon: Padding(
-                                        padding: EdgeInsets.only(
-                                          bottom: 18,
-                                        ),
+                                        padding: EdgeInsets.only(bottom: 18),
                                         child: Icon(
-                                          Icons
-                                              .location_on_outlined,
+                                          Icons.location_on_outlined,
                                           size: 20,
                                           color: MohajonWarm.muted,
                                         ),
                                       ),
-                                      hintText:
-                                          l10n.t('addressHint'),
+                                      hintText: l10n.t('addressHint'),
                                     ),
                                   ),
                                 ],
@@ -281,10 +256,8 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
                                     maxLines: 5,
                                     textCapitalization:
                                         TextCapitalization.sentences,
-                                    decoration:
-                                        InputDecoration(
-                                      hintText:
-                                          l10n.t('investorNotesHint'),
+                                    decoration: InputDecoration(
+                                      hintText: l10n.t('investorNotesHint'),
                                     ),
                                   ),
                                 ],
@@ -360,7 +333,11 @@ class _InvestorFormScreenState extends ConsumerState<InvestorFormScreen>
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(error))),
+          SnackBar(
+            content: Text(
+              friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+            ),
+          ),
         );
       }
     }
@@ -378,9 +355,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: MohajonWarm.card,
-        border: const Border(
-          top: BorderSide(color: MohajonWarm.goldBorder),
-        ),
+        border: const Border(top: BorderSide(color: MohajonWarm.goldBorder)),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),
@@ -589,15 +564,10 @@ class _PhotoPicker extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: MohajonWarm.primary,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2.5,
-                        ),
+                        border: Border.all(color: Colors.white, width: 2.5),
                         boxShadow: [
                           BoxShadow(
-                            color: MohajonWarm.primary.withValues(
-                              alpha: 0.35,
-                            ),
+                            color: MohajonWarm.primary.withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -616,10 +586,7 @@ class _PhotoPicker extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: MohajonWarm.tintYellow,
               borderRadius: BorderRadius.circular(999),

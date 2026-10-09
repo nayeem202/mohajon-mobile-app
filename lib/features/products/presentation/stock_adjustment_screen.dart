@@ -35,13 +35,18 @@ class _StockAdjustmentScreenState extends ConsumerState<StockAdjustmentScreen> {
     final l10n = AppLocalizations.of(context);
     final productId = _productId;
     final delta = int.tryParse(_delta.text.trim());
-    if (productId == null || delta == null || delta == 0 || _reason.text.trim().length < 3) {
+    if (productId == null ||
+        delta == null ||
+        delta == 0 ||
+        _reason.text.trim().length < 3) {
       showAppSnackBar(context, l10n.t('adjustmentFormInvalid'), isError: true);
       return;
     }
     setState(() => _saving = true);
     try {
-      final result = await ref.read(productServiceProvider).requestStockAdjustment(
+      final result = await ref
+          .read(productServiceProvider)
+          .requestStockAdjustment(
             productId: productId,
             delta: delta,
             reason: _reason.text,
@@ -68,7 +73,9 @@ class _StockAdjustmentScreenState extends ConsumerState<StockAdjustmentScreen> {
     final products = ref.watch(productsProvider).value ?? const <Product>[];
     final shopId = ref.watch(shopIdProvider);
     final branchId = ref.watch(currentBranchIdProvider) ?? '$shopId-main';
-    final adjustments = ref.watch(localDatabaseProvider).stockAdjustments
+    final adjustments = ref
+        .watch(localDatabaseProvider)
+        .stockAdjustments
         .watchForShop(shopId);
     final isOwner = ref.watch(currentUserProvider)?.role.name == 'owner';
 
@@ -91,24 +98,47 @@ class _StockAdjustmentScreenState extends ConsumerState<StockAdjustmentScreen> {
                 onSubmit: () => _submit(products),
               ),
               const SizedBox(height: 20),
-              Text(l10n.t('adjustmentHistory'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: MohajonWarm.ink)),
+              Text(
+                l10n.t('adjustmentHistory'),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  color: MohajonWarm.ink,
+                ),
+              ),
               const SizedBox(height: 10),
               StreamBuilder<List<StockAdjustment>>(
                 stream: adjustments,
                 builder: (context, snapshot) {
                   final rows = (snapshot.data ?? const <StockAdjustment>[])
-                      .where((item) => (item.branchId ?? '$shopId-main') == branchId)
+                      .where(
+                        (item) => (item.branchId ?? '$shopId-main') == branchId,
+                      )
                       .toList();
-                  if (rows.isEmpty) return Text(l10n.t('noAdjustments'), style: const TextStyle(color: MohajonWarm.muted));
+                  if (rows.isEmpty) {
+                    return Text(
+                      l10n.t('noAdjustments'),
+                      style: const TextStyle(color: MohajonWarm.muted),
+                    );
+                  }
                   return Column(
                     children: [
                       for (final row in rows.take(30))
                         _AdjustmentRow(
                           adjustment: row,
-                          productName: products.where((p) => p.productId == row.productId).firstOrNull?.nameEn ?? row.productId,
+                          productName:
+                              products
+                                  .where((p) => p.productId == row.productId)
+                                  .firstOrNull
+                                  ?.nameEn ??
+                              row.productId,
                           isOwner: isOwner,
-                          onApprove: () => ref.read(productServiceProvider).approveStockAdjustment(row.adjustmentId),
-                          onReject: () => ref.read(productServiceProvider).rejectStockAdjustment(row.adjustmentId),
+                          onApprove: () => ref
+                              .read(productServiceProvider)
+                              .approveStockAdjustment(row.adjustmentId),
+                          onReject: () => ref
+                              .read(productServiceProvider)
+                              .rejectStockAdjustment(row.adjustmentId),
                         ),
                     ],
                   );
@@ -123,7 +153,15 @@ class _StockAdjustmentScreenState extends ConsumerState<StockAdjustmentScreen> {
 }
 
 class _AdjustmentForm extends StatelessWidget {
-  const _AdjustmentForm({required this.products, required this.selectedProductId, required this.delta, required this.reason, required this.saving, required this.onProductChanged, required this.onSubmit});
+  const _AdjustmentForm({
+    required this.products,
+    required this.selectedProductId,
+    required this.delta,
+    required this.reason,
+    required this.saving,
+    required this.onProductChanged,
+    required this.onSubmit,
+  });
   final List<Product> products;
   final String? selectedProductId;
   final TextEditingController delta;
@@ -137,29 +175,74 @@ class _AdjustmentForm extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: .88), borderRadius: BorderRadius.circular(20), border: Border.all(color: MohajonWarm.goldBorder)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l10n.t('requestStockAdjustment'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: MohajonWarm.ink)),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: selectedProductId,
-          decoration: InputDecoration(labelText: l10n.t('product')),
-          items: products.map((p) => DropdownMenuItem(value: p.productId, child: Text(p.nameEn, overflow: TextOverflow.ellipsis))).toList(),
-          onChanged: onProductChanged,
-        ),
-        const SizedBox(height: 10),
-        TextField(controller: delta, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.t('adjustmentQuantity'), hintText: '+10 or -3')),
-        const SizedBox(height: 10),
-        TextField(controller: reason, maxLines: 2, decoration: InputDecoration(labelText: l10n.t('adjustmentReason'))),
-        const SizedBox(height: 14),
-        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: saving ? null : onSubmit, icon: const Icon(Icons.send_rounded), label: Text(l10n.t('submitAdjustment')))),
-      ]),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .88),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.t('requestStockAdjustment'),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: MohajonWarm.ink,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: selectedProductId,
+            decoration: InputDecoration(labelText: l10n.t('product')),
+            items: products
+                .map(
+                  (p) => DropdownMenuItem(
+                    value: p.productId,
+                    child: Text(p.nameEn, overflow: TextOverflow.ellipsis),
+                  ),
+                )
+                .toList(),
+            onChanged: onProductChanged,
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: delta,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: l10n.t('adjustmentQuantity'),
+              hintText: '+10 or -3',
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: reason,
+            maxLines: 2,
+            decoration: InputDecoration(labelText: l10n.t('adjustmentReason')),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: saving ? null : onSubmit,
+              icon: const Icon(Icons.send_rounded),
+              label: Text(l10n.t('submitAdjustment')),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _AdjustmentRow extends StatelessWidget {
-  const _AdjustmentRow({required this.adjustment, required this.productName, required this.isOwner, required this.onApprove, required this.onReject});
+  const _AdjustmentRow({
+    required this.adjustment,
+    required this.productName,
+    required this.isOwner,
+    required this.onApprove,
+    required this.onReject,
+  });
   final StockAdjustment adjustment;
   final String productName;
   final bool isOwner;
@@ -169,13 +252,81 @@ class _AdjustmentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pending = adjustment.status == StockAdjustmentStatus.pendingApproval;
-    final color = adjustment.status == StockAdjustmentStatus.approved ? Colors.green : adjustment.status == StockAdjustmentStatus.rejected ? Colors.red : Colors.orange;
-    return Card(
-      child: ListTile(
-        title: Text('$productName  ${adjustment.delta > 0 ? '+' : ''}${adjustment.delta}', style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${adjustment.reason}\n${adjustment.status.name}'),
-        isThreeLine: true,
-        trailing: pending && isOwner ? Wrap(spacing: 2, children: [IconButton(onPressed: onApprove, color: Colors.green, icon: const Icon(Icons.check_circle_outline)), IconButton(onPressed: onReject, color: Colors.red, icon: const Icon(Icons.cancel_outlined))]) : Icon(Icons.circle, size: 10, color: color),
+    final color = adjustment.status == StockAdjustmentStatus.approved
+        ? MohajonWarm.green
+        : adjustment.status == StockAdjustmentStatus.rejected
+        ? MohajonWarm.red
+        : MohajonWarm.orange;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: MohajonWarm.card.withValues(alpha: .94),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(Icons.tune_rounded, color: color, size: 21),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$productName  ${adjustment.delta > 0 ? '+' : ''}${adjustment.delta}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  adjustment.reason,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (pending && isOwner)
+            Wrap(
+              spacing: 2,
+              children: [
+                IconButton(
+                  onPressed: onApprove,
+                  color: MohajonWarm.green,
+                  icon: const Icon(Icons.check_circle_outline_rounded),
+                ),
+                IconButton(
+                  onPressed: onReject,
+                  color: MohajonWarm.red,
+                  icon: const Icon(Icons.cancel_outlined),
+                ),
+              ],
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Icon(Icons.circle, size: 9, color: color),
+            ),
+        ],
       ),
     );
   }

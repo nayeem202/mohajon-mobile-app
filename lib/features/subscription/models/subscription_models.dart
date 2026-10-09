@@ -6,6 +6,7 @@ class SubscriptionPlan {
     required this.priceBdt,
     required this.durationDays,
     required this.isActive,
+    required this.tier,
   });
 
   final String planCode;
@@ -14,6 +15,7 @@ class SubscriptionPlan {
   final double priceBdt;
   final int durationDays;
   final bool isActive;
+  final String tier;
 
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
     return SubscriptionPlan(
@@ -23,6 +25,7 @@ class SubscriptionPlan {
       priceBdt: double.tryParse((json['price'] ?? '').toString()) ?? 0,
       durationDays: (json['durationDays'] as num?)?.toInt() ?? 0,
       isActive: json['isActive'] as bool? ?? true,
+      tier: (json['tier'] ?? 'PRO').toString(),
     );
   }
 
@@ -33,6 +36,7 @@ class SubscriptionPlan {
     'price': priceBdt,
     'durationDays': durationDays,
     'isActive': isActive,
+    'tier': tier,
   };
 }
 
@@ -123,6 +127,8 @@ class SubscriptionInfo {
     this.endDate,
     this.daysRemaining,
     this.isTrial = false,
+    this.tier = 'FREE',
+    this.hasPremium = false,
   });
 
   final bool hasActive;
@@ -135,18 +141,23 @@ class SubscriptionInfo {
   final String? endDate;
   final int? daysRemaining;
   final bool isTrial;
+  final String tier;
+  final bool hasPremium;
 
   bool get isActive => hasActive;
   bool get isTrialActive => hasActive && isTrial;
+  bool get isFree => tier == 'FREE';
+  bool get hasBusiness => tier == 'BUSINESS';
 
-  /// True when no trial/subscription is currently running — the shop is in
-  /// read-only mode and the paywall should block new entries.
-  bool get isExpired => !hasActive;
+  /// A shop remains usable on Free after a trial or paid period ends.
+  bool get isExpired => !hasActive && !isFree;
 
   factory SubscriptionInfo.fromJson(Map<String, dynamic> json) {
     final isActive = json['hasActive'] as bool? ?? false;
     final latest = json['latest'] as Map<String, dynamic>? ?? const {};
-    final sub = (isActive ? json['subscription'] : latest)
+    final sub = (isActive || json['tier'] == 'FREE'
+            ? json['subscription']
+            : latest)
             as Map<String, dynamic>? ??
         const {};
     final plan = sub['plan'] as Map<String, dynamic>? ?? const {};
@@ -164,12 +175,16 @@ class SubscriptionInfo {
       isTrial: (json['isTrial'] as bool?) ??
           (sub['isTrial'] as bool?) ??
           sub['planCode'] == 'TRIAL',
+      tier: (json['tier'] ?? plan['tier'] ?? 'FREE').toString(),
+      hasPremium: json['hasPremium'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'hasActive': hasActive,
     'isTrial': isTrial,
+    'tier': tier,
+    'hasPremium': hasPremium,
     'daysRemaining': daysRemaining,
     'subscription': {
       'subscriptionId': subscriptionId,
@@ -180,4 +195,28 @@ class SubscriptionInfo {
       'plan': {'name': planName, 'price': amountBdt?.toStringAsFixed(2)},
     },
   };
+}
+
+class AiCreditStatus {
+  const AiCreditStatus({
+    required this.monthlyLimit,
+    required this.monthlyUsed,
+    required this.monthlyRemaining,
+    required this.welcomeRemaining,
+    required this.remaining,
+  });
+
+  final int monthlyLimit;
+  final int monthlyUsed;
+  final int monthlyRemaining;
+  final int welcomeRemaining;
+  final int remaining;
+
+  factory AiCreditStatus.fromJson(Map<String, dynamic> json) => AiCreditStatus(
+        monthlyLimit: (json['monthlyLimit'] as num?)?.toInt() ?? 0,
+        monthlyUsed: (json['monthlyUsed'] as num?)?.toInt() ?? 0,
+        monthlyRemaining: (json['monthlyRemaining'] as num?)?.toInt() ?? 0,
+        welcomeRemaining: (json['welcomeRemaining'] as num?)?.toInt() ?? 0,
+        remaining: (json['remaining'] as num?)?.toInt() ?? 0,
+      );
 }

@@ -40,8 +40,8 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
   }
 
   Future<void> _openForm({StaffMember? staff}) async {
-    if (PaywallGate.isReadOnly(ref)) {
-      await PaywallGate.showPaywallSheet(context);
+    if (!PaywallGate.hasBusiness(ref)) {
+      await PaywallGate.showPaywallSheet(context, requiredTier: 'BUSINESS');
       return;
     }
     final saved = await Navigator.of(context).push<bool>(
@@ -71,19 +71,22 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     } catch (error) {
       if (!mounted) return;
       _showToast(
-        friendlyErrorMessage(error,
-            fallback: _l10n.t('couldNotUpdateStatus')),
+        friendlyErrorMessage(
+          error,
+          l10n: _l10n,
+          fallback: _l10n.t('couldNotUpdateStatus'),
+        ),
         isError: true,
       );
     }
   }
 
-  Future<void> _confirmDelete(StaffMember staff) async {    final confirmed = await showDialog<bool>(
+  Future<void> _confirmDelete(StaffMember staff) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => DeleteStaffDialog(
-        onConfirm: () => Navigator.of(context).pop(true),
-      ),
+      builder: (_) =>
+          DeleteStaffDialog(onConfirm: () => Navigator.of(context).pop(true)),
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -95,8 +98,11 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     } catch (error) {
       if (!mounted) return;
       _showToast(
-        friendlyErrorMessage(error,
-            fallback: 'Could not remove staff. Please try again.'),
+        friendlyErrorMessage(
+          error,
+          l10n: _l10n,
+          fallback: _l10n.t('couldNotUpdateStatus'),
+        ),
         isError: true,
       );
     }
@@ -109,10 +115,14 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
     final staff = staffAsync.value ?? const <StaffMember>[];
     final filtered = query.isEmpty
         ? staff
-        : staff.where((s) =>
-            s.name.toLowerCase().contains(query) ||
-            s.role.toLowerCase().contains(query) ||
-            s.phone.contains(query)).toList();
+        : staff
+              .where(
+                (s) =>
+                    s.name.toLowerCase().contains(query) ||
+                    s.role.toLowerCase().contains(query) ||
+                    s.phone.contains(query),
+              )
+              .toList();
     final activeCount = staff.where((s) => s.active).length;
     final inactiveCount = staff.length - activeCount;
     final l10n = AppLocalizations.of(context);
@@ -122,9 +132,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: MohajonWarm.pageGradient,
-          ),
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             child: Column(
               children: [
@@ -141,8 +149,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                       decoration: BoxDecoration(
                         color: MohajonWarm.card,
                         borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: MohajonWarm.goldBorder),
+                        border: Border.all(color: MohajonWarm.goldBorder),
                         boxShadow: [
                           BoxShadow(
                             color: MohajonWarm.ink.withValues(alpha: 0.05),
@@ -187,13 +194,13 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                     padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
                     child: Text(
                       l10n.tP('staffSummary', {
-                        'count': '${filtered.length}',
-                        'total': '${staff.length}',
-                        'active': '$activeCount',
-                      }) +
+                            'count': '${filtered.length}',
+                            'total': '${staff.length}',
+                            'active': '$activeCount',
+                          }) +
                           (inactiveCount > 0
                               ? l10n.tP('staffSummaryInactive', {
-                                  'inactive': '$inactiveCount'
+                                  'inactive': '$inactiveCount',
                                 })
                               : ''),
                       style: const TextStyle(
@@ -211,38 +218,29 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                           ),
                         )
                       : staffAsync.hasError && staff.isEmpty
-                          ? _errorState()
-                          : staff.isEmpty
-                              ? _emptyState()
-                              : filtered.isEmpty
-                                  ? _emptySearchState()
-                                  : ListView.builder(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        18,
-                                        4,
-                                        18,
-                                        100,
-                                      ),
-                                      itemCount: filtered.length,
-                                      itemBuilder: (context, index) {
-                                        final item = filtered[index];
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 10,
-                                          ),
-                                          child: _StaffCard(
-                                            key: ValueKey(item.id),
-                                            staff: item,
-                                            onEdit: () =>
-                                                _openForm(staff: item),
-                                            onDelete: () =>
-                                                _confirmDelete(item),
-                                            onToggleActive: (active) =>
-                                                _toggleActive(item, active),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                      ? _errorState()
+                      : staff.isEmpty
+                      ? _emptyState()
+                      : filtered.isEmpty
+                      ? _emptySearchState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(18, 4, 18, 100),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final item = filtered[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _StaffCard(
+                                key: ValueKey(item.id),
+                                staff: item,
+                                onEdit: () => _openForm(staff: item),
+                                onDelete: () => _confirmDelete(item),
+                                onToggleActive: (active) =>
+                                    _toggleActive(item, active),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -260,9 +258,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                 }
               },
               child: Icon(
-                _showSearch
-                    ? Icons.search_off_rounded
-                    : Icons.search_rounded,
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
                 size: 22,
               ),
             ),
@@ -619,8 +615,7 @@ class _StaffCard extends StatelessWidget {
                         Wrap(
                           spacing: 5,
                           runSpacing: 5,
-                          children:
-                              staff.menuCodes.take(3).map((code) {
+                          children: staff.menuCodes.take(3).map((code) {
                             return Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -659,10 +654,7 @@ class _StaffCard extends StatelessWidget {
                       onChanged: onToggleActive,
                     ),
                     const SizedBox(width: 4),
-                    _ActionTile(
-                      icon: Icons.edit_rounded,
-                      onTap: onEdit,
-                    ),
+                    _ActionTile(icon: Icons.edit_rounded, onTap: onEdit),
                     const SizedBox(width: 4),
                     _ActionTile(
                       icon: Icons.delete_outline_rounded,
@@ -681,10 +673,7 @@ class _StaffCard extends StatelessWidget {
 }
 
 class _StatusSwitch extends StatelessWidget {
-  const _StatusSwitch({
-    required this.active,
-    required this.onChanged,
-  });
+  const _StatusSwitch({required this.active, required this.onChanged});
 
   final bool active;
   final ValueChanged<bool> onChanged;

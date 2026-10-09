@@ -827,7 +827,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
       });
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          isError: true,
+        );
       }
     }
   }
@@ -964,7 +968,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
       });
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          isError: true,
+        );
       }
     }
   }

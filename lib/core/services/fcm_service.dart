@@ -116,10 +116,9 @@ class FcmService {
   }
 
   Future<void> _disableToken(String token) {
-    return ApiClient(_ref.read(localDatabaseProvider)).post(
-      '/api/v1/notifications/devices/disable',
-      {'token': token},
-    );
+    return ApiClient(
+      _ref.read(localDatabaseProvider),
+    ).post('/api/v1/notifications/devices/disable', {'token': token});
   }
 
   Future<void> _registerToken(String token) async {
@@ -128,14 +127,14 @@ class FcmService {
       final platform = defaultTargetPlatform == TargetPlatform.iOS
           ? 'ios'
           : 'android';
-      await ApiClient(_ref.read(localDatabaseProvider)).post(
-        '/api/v1/notifications/devices',
-        {
-          'token': token,
-          'platform': platform,
-          'enabledTypes': enabledNotificationTypeKeys(),
-        },
-      );
+      await ApiClient(
+        _ref.read(localDatabaseProvider),
+      ).post('/api/v1/notifications/devices', {
+        'token': token,
+        'platform': platform,
+        'enabledTypes': enabledNotificationTypeKeys(),
+        'languageCode': _ref.read(localeProvider).languageCode,
+      });
       _registeredToken = token;
     } catch (error) {
       debugPrint('FCM token registration failed: $error');
@@ -147,10 +146,13 @@ class FcmService {
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) return;
-      await ApiClient(_ref.read(localDatabaseProvider)).post(
-        '/api/v1/notifications/devices/preferences',
-        {'token': token, 'enabledTypes': enabledNotificationTypeKeys()},
-      );
+      await ApiClient(
+        _ref.read(localDatabaseProvider),
+      ).post('/api/v1/notifications/devices/preferences', {
+        'token': token,
+        'enabledTypes': enabledNotificationTypeKeys(),
+        'languageCode': _ref.read(localeProvider).languageCode,
+      });
     } catch (error) {
       debugPrint('FCM preference sync failed: $error');
     }
@@ -168,18 +170,23 @@ class FcmService {
     final title = notification?.title ?? message.data['title']?.toString();
     final body = notification?.body ?? message.data['body']?.toString();
     if (title == null || body == null) return;
-    final category = type == NotificationType.platform ||
-            type == NotificationType.system
+    final category =
+        type == NotificationType.platform || type == NotificationType.system
         ? NotificationCategory.platform
         : NotificationCategory.shop;
-    _ref.read(notificationServiceProvider).add(
+    _ref
+        .read(notificationServiceProvider)
+        .add(
           type: type,
           category: category,
           title: title,
           message: body,
           senderUserId: message.data['senderUserId']?.toString(),
           sourceKey: message.data['notificationId'] != null
-              ? 'server:${message.data['notificationId']}'
+              ? (type == NotificationType.platform &&
+                        message.data['platformInbox'] == 'true'
+                    ? 'platform:${message.data['notificationId']}'
+                    : 'server:${message.data['notificationId']}')
               : 'fcm:${message.messageId ?? message.sentTime}',
         );
   }

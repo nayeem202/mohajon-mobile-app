@@ -26,6 +26,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     final l10n = AppLocalizations.of(context);
     final plans = ref.watch(subscriptionPlansProvider);
     final status = ref.watch(subscriptionStatusProvider);
+    final aiCredits = ref.watch(aiCreditStatusProvider);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
@@ -45,11 +46,19 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                         status.when(
                           data: (info) => _HeroBanner(
                             info: info,
-                            onRenew: () => _startPurchase(info.planCode),
-                            onResume: () => _startPurchase(info.planCode),
-                            onUpgrade: () => _startPurchase(info.planCode),
+                            onRenew: () => _startPurchase(_purchasePlanFor(info)),
+                            onResume: () => _startPurchase(_purchasePlanFor(info)),
+                            onUpgrade: () => _startPurchase(_purchasePlanFor(info)),
                           ),
                           loading: () => const SizedBox(height: 8),
+                          error: (_, _) => const SizedBox.shrink(),
+                        ),
+                        const SizedBox(height: 16),
+                        const _FreeTierCard(),
+                        const SizedBox(height: 12),
+                        aiCredits.when(
+                          data: (credits) => _AiCreditCard(credits: credits),
+                          loading: () => const SizedBox.shrink(),
                           error: (_, _) => const SizedBox.shrink(),
                         ),
                         const SizedBox(height: 24),
@@ -111,14 +120,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     final monthly = ref
         .watch(subscriptionPlansProvider)
         .value
-        ?.where((p) => p.planCode == 'MONTHLY')
+        ?.where((p) => p.tier == plan.tier && p.durationDays <= 31)
         .firstOrNull;
-    final months = switch (plan.planCode) {
-      'MONTHLY' => null,
-      'SIX_MONTHS' => 6,
-      'YEARLY' => 12,
-      _ => null,
-    };
+    final months = plan.durationDays <= 31 ? null : (plan.durationDays / 30).round();
     final savePct = monthly != null && months != null
         ? (((monthly.priceBdt * months) - plan.priceBdt) /
                   (monthly.priceBdt * months) *
@@ -291,6 +295,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     ref.invalidate(subscriptionStatusProvider);
     ref.invalidate(subscriptionPlansProvider);
   }
+
+  String _purchasePlanFor(SubscriptionInfo info) {
+    const sellablePlans = {
+      'PRO_MONTHLY',
+      'PRO_YEARLY',
+      'BUSINESS_MONTHLY',
+      'BUSINESS_YEARLY',
+    };
+    if (sellablePlans.contains(info.planCode)) return info.planCode!;
+    return info.hasBusiness ? 'BUSINESS_MONTHLY' : 'PRO_MONTHLY';
+  }
 }
 
 String _planLabel(String planCode, BuildContext context) {
@@ -301,7 +316,12 @@ String _planLabel(String planCode, BuildContext context) {
     case 'SIX_MONTHS':
       return l10n.t('sixMonthsPlan');
     case 'YEARLY':
+    case 'PRO_YEARLY':
+    case 'BUSINESS_YEARLY':
       return l10n.t('yearlyPlan');
+    case 'PRO_MONTHLY':
+    case 'BUSINESS_MONTHLY':
+      return l10n.t('monthlyPlan');
     default:
       return planCode;
   }
@@ -430,7 +450,13 @@ class _HeroBanner extends StatelessWidget {
     String? actionText;
     IconData actionIcon = Icons.arrow_forward_rounded;
 
-    if (info.isTrialActive) {
+    if (info.isFree) {
+      gradient = const [Color(0xFFE7F6EF), Color(0xFFC4E8D3)];
+      icon = Icons.check_circle_rounded;
+      title = l10n.t('freePlanTitle');
+      body = l10n.t('freePlanBody');
+      actionText = l10n.t('subscribeNow');
+    } else if (info.isTrialActive) {
       gradient = const [Color(0xFFFFEDB3), Color(0xFFFFC64D)];
       icon = Icons.redeem_rounded;
       title = l10n.t('trialActiveTitle');
@@ -481,7 +507,7 @@ class _HeroBanner extends StatelessWidget {
         ? onResume
         : onUpgrade;
 
-    final bool lightBg = info.isActive;
+    final bool lightBg = info.isActive || info.isFree;
     final Color contentColor = lightBg ? MohajonWarm.ink : Colors.white;
     final Color contentMuted = lightBg ? const Color(0xFF6B5B1E) : Colors.white;
 
@@ -683,7 +709,8 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isPopular = plan.planCode == 'SIX_MONTHS';
+    final isPopular = plan.planCode == 'PRO_YEARLY';
+    final isBusiness = plan.tier == 'BUSINESS';
 
     final (Color badgeColor, String? badgeText) = highlight
         ? (MohajonWarm.goldText, l10n.t('currentPlan'))
@@ -719,8 +746,8 @@ class _PlanCard extends StatelessWidget {
                   color: MohajonWarm.tintYellow,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
+                child: Icon(
+                  isBusiness ? Icons.groups_rounded : Icons.workspace_premium_rounded,
                   color: Color(0xFFB45309),
                   size: 22,
                 ),
@@ -795,17 +822,23 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 14),
           _FeatureTile(
             icon: Icons.check_circle_rounded,
-            label: l10n.t('featureAllAccess'),
+            label: plan.description.isNotEmpty
+                ? plan.description
+                : l10n.t('featureAllAccess'),
           ),
           const SizedBox(height: 8),
           _FeatureTile(
             icon: Icons.check_circle_rounded,
-            label: l10n.t('featureBkash'),
+            label: isBusiness
+                ? l10n.t('businessFeatureOne')
+                : l10n.t('proFeatureOne'),
           ),
           const SizedBox(height: 8),
           _FeatureTile(
             icon: Icons.check_circle_rounded,
-            label: l10n.t('featureSupport'),
+            label: isBusiness
+                ? l10n.t('featureSupport')
+                : l10n.t('proFeatureTwo'),
           ),
         ],
       ),
@@ -817,6 +850,81 @@ class _PlanCard extends StatelessWidget {
     if (days <= 31) return l10n.t('monthlyPlan');
     if (days <= 183) return l10n.t('sixMonthsPlan');
     return l10n.t('yearlyPlan');
+  }
+}
+
+class _FreeTierCard extends StatelessWidget {
+  const _FreeTierCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6FBF8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFB7DEC6)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF16844B)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.t('freePlanTitle'),
+                    style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink)),
+                const SizedBox(height: 2),
+                Text(l10n.t('freePlanBody'),
+                    style: const TextStyle(fontSize: 11.5, height: 1.35, color: MohajonWarm.muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiCreditCard extends StatelessWidget {
+  const _AiCreditCard({required this.credits});
+
+  final AiCreditStatus credits;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final total = credits.monthlyLimit + credits.welcomeRemaining;
+    final used = credits.monthlyUsed;
+    final progress = total == 0 ? 1.0 : (used / total).clamp(0.0, 1.0);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F5FF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD8C9F5)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6D3BB5)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(l10n.t('aiCredits'),
+              style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink))),
+          Text('${credits.remaining}',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF6D3BB5))),
+        ]),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(value: progress, minHeight: 7, borderRadius: BorderRadius.circular(99),
+            backgroundColor: const Color(0xFFE8E0F7), color: const Color(0xFF6D3BB5)),
+        const SizedBox(height: 8),
+        Text(l10n.tP('aiCreditsDetail', {
+          'monthly': '${credits.monthlyRemaining}',
+          'welcome': '${credits.welcomeRemaining}',
+        }), style: const TextStyle(fontSize: 11.5, color: MohajonWarm.muted, fontWeight: FontWeight.w600)),
+      ]),
+    );
   }
 }
 

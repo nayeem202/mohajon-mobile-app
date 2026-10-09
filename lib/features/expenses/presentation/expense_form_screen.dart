@@ -73,9 +73,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: MohajonWarm.pageGradient,
-            ),
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
             child: Stack(
               children: [
                 Positioned(
@@ -127,20 +125,14 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                         child: Form(
                           key: _formKey,
                           child: ListView(
-                            padding: const EdgeInsets.fromLTRB(
-                              18,
-                              12,
-                              18,
-                              16,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
                             children: [
                               _FormHeader(
                                 title: isEditing
                                     ? l10n.t('editExpense')
                                     : l10n.t('addExpense'),
                                 subtitle: l10n.t('recordShopSpending'),
-                                onBack: () =>
-                                    Navigator.of(context).maybePop(),
+                                onBack: () => Navigator.of(context).maybePop(),
                               ),
                               const SizedBox(height: 18),
                               _SectionCard(
@@ -170,9 +162,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                     validator: (value) {
                                       if (value == null ||
                                           value.trim().isEmpty) {
-                                        return l10n.t(
-                                          'enterShortDescription',
-                                        );
+                                        return l10n.t('enterShortDescription');
                                       }
                                       return null;
                                     },
@@ -185,8 +175,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _amountController,
-                                    keyboardType: const TextInputType
-                                        .numberWithOptions(decimal: true),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
                                         RegExp(r'[0-9.]'),
@@ -211,14 +203,15 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                       ),
                                       prefixIconConstraints:
                                           const BoxConstraints(
-                                        minWidth: 0,
-                                        minHeight: 0,
-                                      ),
+                                            minWidth: 0,
+                                            minHeight: 0,
+                                          ),
                                       hintText: l10n.t('amountHint'),
                                     ),
                                     validator: (value) {
-                                      final amount =
-                                          double.tryParse(value ?? '');
+                                      final amount = double.tryParse(
+                                        value ?? '',
+                                      );
                                       if (amount == null || amount <= 0) {
                                         return l10n.t('enterValidAmount');
                                       }
@@ -268,13 +261,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                         )
                                         .toList(),
                                     onChanged: (value) {
-                                      setState(
-                                        () => _categoryId = value,
-                                      );
+                                      setState(() => _categoryId = value);
                                     },
                                     validator: (value) {
-                                      if (value == null ||
-                                          value.isEmpty) {
+                                      if (value == null || value.isEmpty) {
                                         return l10n.t('chooseCategory');
                                       }
                                       return null;
@@ -286,8 +276,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                   TextFormField(
                                     readOnly: true,
                                     controller: TextEditingController(
-                                      text: DateFormat('dd MMM yyyy')
-                                          .format(_selectedDate),
+                                      text: DateFormat(
+                                        'dd MMM yyyy',
+                                      ).format(_selectedDate),
                                     ),
                                     decoration: const InputDecoration(
                                       prefixIcon: Icon(
@@ -296,14 +287,12 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
                                         color: MohajonWarm.muted,
                                       ),
                                       suffixIcon: Icon(
-                                        Icons
-                                            .keyboard_arrow_down_rounded,
+                                        Icons.keyboard_arrow_down_rounded,
                                         color: MohajonWarm.muted,
                                       ),
                                     ),
                                     onTap: () async {
-                                      final picked =
-                                          await showDatePicker(
+                                      final picked = await showDatePicker(
                                         context: context,
                                         initialDate: _selectedDate,
                                         firstDate: DateTime(2020),
@@ -422,7 +411,11 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen>
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          isError: true,
+        );
       }
     }
   }
@@ -439,9 +432,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: MohajonWarm.card,
-        border: const Border(
-          top: BorderSide(color: MohajonWarm.goldBorder),
-        ),
+        border: const Border(top: BorderSide(color: MohajonWarm.goldBorder)),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),

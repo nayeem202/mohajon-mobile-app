@@ -3,6 +3,7 @@ package com.example.inventory_1;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
@@ -13,6 +14,7 @@ import android.util.Log;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 
 import com.facebook.FacebookSdk;
@@ -21,6 +23,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.io.InputStream;
@@ -33,9 +37,12 @@ import io.flutter.plugin.common.MethodChannel.Result;
 public class MainActivity extends FlutterActivity {
     private static final String DOWNLOAD_CHANNEL = "com.example.inventory_1/downloads";
     private static final String DEVICE_SESSION_CHANNEL = "com.example.inventory_1/device_session";
+    private static final String CONTACTS_CHANNEL = "com.example.inventory_1/phone_contacts";
     private static final int LOCATION_PERMISSION_REQUEST = 4201;
+    private static final int CONTACTS_PERMISSION_REQUEST = 6201;
     private Result pendingDeviceSessionResult;
     private Result pendingFileResult;
+    private Result pendingContactsResult;
     private static final int PICK_BACKUP_REQUEST = 5201;
 
     @Override
@@ -128,6 +135,32 @@ public class MainActivity extends FlutterActivity {
             // best-effort metadata and is handled as unavailable below.
             result.success(currentDeviceSession());
         });
+
+        // Contact import uses our Activity channel on Android instead of a
+        // plugin channel. This keeps the feature available after a Flutter
+        // engine restart and gives the app one controlled permission path.
+        new MethodChannel(
+                flutterEngine.getDartExecutor().getBinaryMessenger(),
+                CONTACTS_CHANNEL
+        ).setMethodCallHandler((call, result) -> {
+            if (!"readPhoneContacts".equals(call.method)) {
+                result.notImplemented();
+                return;
+            }
+            if (!hasContactsPermission()) {
+                pendingContactsResult = result;
+                requestPermissions(
+                        new String[]{android.Manifest.permission.READ_CONTACTS},
+                        CONTACTS_PERMISSION_REQUEST
+                );
+                return;
+            }
+            try {
+                result.success(readPhoneContacts());
+            } catch (Exception exception) {
+                result.error("contacts_read_failed", "Could not read phone contacts.", null);
+            }
+        });
     }
 
     @Override
@@ -159,6 +192,19 @@ public class MainActivity extends FlutterActivity {
         if (requestCode == LOCATION_PERMISSION_REQUEST && pendingDeviceSessionResult != null) {
             pendingDeviceSessionResult.success(currentDeviceSession());
             pendingDeviceSessionResult = null;
+        }
+        if (requestCode == CONTACTS_PERMISSION_REQUEST && pendingContactsResult != null) {
+            Result result = pendingContactsResult;
+            pendingContactsResult = null;
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    result.success(readPhoneContacts());
+                } catch (Exception exception) {
+                    result.error("contacts_read_failed", "Could not read phone contacts.", null);
+                }
+            } else {
+                result.error("contacts_permission_denied", "Contacts permission was not granted.", null);
+            }
         }
     }
 
@@ -285,5 +331,45 @@ public class MainActivity extends FlutterActivity {
                 == PackageManager.PERMISSION_GRANTED
                 || checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean hasContactsPermission() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                || checkSelfPermission(android.Manifest.permission.READ_CONTACTS)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private List<Map<String, String>> readPhoneContacts() {
+        List<Map<String, String>> contacts = new ArrayList<>();
+        java.util.HashSet<String> seen = new java.util.HashSet<>();
+        String[] projection = {
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+        };
+        try (Cursor cursor = getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                projection,
+                null,
+                null,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE NOCASE ASC"
+        )) {
+            if (cursor == null) return contacts;
+            int nameColumn = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+            int phoneColumn = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+            while (cursor.moveToNext()) {
+                String name = nameColumn < 0 ? "" : cursor.getString(nameColumn);
+                String phone = phoneColumn < 0 ? "" : cursor.getString(phoneColumn);
+                name = name == null ? "" : name.trim();
+                phone = phone == null ? "" : phone.trim();
+                if (name.isEmpty() || phone.isEmpty()) continue;
+                String key = name.toLowerCase(Locale.US) + "|" + phone.replaceAll("[^0-9+]", "");
+                if (!seen.add(key)) continue;
+                Map<String, String> item = new HashMap<>();
+                item.put("name", name);
+                item.put("phone", phone);
+                contacts.add(item);
+            }
+        }
+        return contacts;
     }
 }

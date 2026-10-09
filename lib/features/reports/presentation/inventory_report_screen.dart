@@ -71,8 +71,9 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
         task: () async {
           final report = ref.read(inventoryReportProvider);
           if (report.products.isEmpty) return;
-          final company =
-              DocCompany.fromShop(ref.read(shopProfileProvider).value);
+          final company = await DocCompany.fromShopForExport(
+            ref.read(shopProfileProvider).value,
+          );
           await InventoryPdfService().saveInventoryReport(report, company);
         },
         message: AppLocalizations.of(context)
@@ -140,6 +141,11 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen>
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
+                  ReportBrandStrip(
+                    title: l10n.t('reportInventory'),
+                    icon: Icons.inventory_2_rounded,
+                  ),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(

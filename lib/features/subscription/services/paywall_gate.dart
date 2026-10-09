@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/paywall_service.dart';
 import '../presentation/widgets/paywall_sheet.dart';
+import '../providers/subscription_providers.dart';
 
 /// Central write-gate for the freemium model.
 ///
@@ -19,6 +20,16 @@ class PaywallGate {
 
   static bool isReadOnly(WidgetRef ref) =>
       ref.read(isReadOnlyProvider);
+
+  static bool hasPro(WidgetRef ref) {
+    final status = ref.read(subscriptionStatusProvider);
+    return status.hasValue && (status.value?.hasPremium ?? false);
+  }
+
+  static bool hasBusiness(WidgetRef ref) {
+    final status = ref.read(subscriptionStatusProvider);
+    return status.hasValue && (status.value?.hasBusiness ?? false);
+  }
 
   /// Runs [action] only when the shop has full access; otherwise shows the
   /// paywall sheet.
@@ -44,12 +55,39 @@ class PaywallGate {
     return action();
   }
 
-  static Future<void> showPaywallSheet(BuildContext context) {
+  static void guardPro(
+    BuildContext context,
+    WidgetRef ref,
+    VoidCallback action,
+  ) {
+    if (!hasPro(ref)) {
+      showPaywallSheet(context, requiredTier: 'PRO');
+      return;
+    }
+    action();
+  }
+
+  static void guardBusiness(
+    BuildContext context,
+    WidgetRef ref,
+    VoidCallback action,
+  ) {
+    if (!hasBusiness(ref)) {
+      showPaywallSheet(context, requiredTier: 'BUSINESS');
+      return;
+    }
+    action();
+  }
+
+  static Future<void> showPaywallSheet(
+    BuildContext context, {
+    String requiredTier = 'PRO',
+  }) {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => const PaywallSheet(),
+      builder: (_) => PaywallSheet(requiredTier: requiredTier),
     );
   }
 }

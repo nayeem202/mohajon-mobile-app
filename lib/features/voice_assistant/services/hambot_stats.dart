@@ -10,11 +10,15 @@ class HamBotStats {
   const HamBotStats._();
 
   static String build(LocalDatabase db, {String? shopId}) {
-    final products = db.products.values();
-    final customers = db.customers.values();
-    final sales = db.sales.values();
-    final payments = db.payments.values();
-    final ledger = db.customerLedgerEntries.values();
+    // The remote AI fallback receives only the active shop's aggregate data.
+    // Direct/verified answers use the full local record set; do not leak
+    // customer names or another shop's data to an external model provider.
+    final activeShopId = shopId ?? '';
+    final products = db.products.valuesForShop(activeShopId);
+    final customers = db.customers.valuesForShop(activeShopId);
+    final sales = db.sales.valuesForShop(activeShopId);
+    final payments = db.payments.valuesForShop(activeShopId);
+    final ledger = db.customerLedgerEntries.valuesForShop(activeShopId);
 
     DateTime? nowDt;
     try {
@@ -55,13 +59,15 @@ class HamBotStats {
       (s) => s.totalAmount,
     );
     final todayExpenses = sumOf(
-      db.expenses.values().where(
-        (e) => !e.date.isBefore(todayStart) && e.date.isBefore(todayEnd),
-      ),
+      db.expenses
+          .valuesForShop(activeShopId)
+          .where(
+            (e) => !e.date.isBefore(todayStart) && e.date.isBefore(todayEnd),
+          ),
       (e) => (e as Expense).amount,
     );
     final expenses30d = db.expenses
-        .values()
+        .valuesForShop(activeShopId)
         .where((e) => !e.date.isBefore(thirtyDaysStart))
         .toList();
     final expenses30dTotal = sumOf(expenses30d, (e) => (e as Expense).amount);
@@ -118,7 +124,10 @@ class HamBotStats {
           sumOf(cpay, (p) => p.amount) +
           sumOf(cledger, (l) => l.signedAmount);
       if (due > 0) {
-        debtors.add({'name': customer.name, 'due': (due * 100).round() / 100});
+        debtors.add({
+          'rank': debtors.length + 1,
+          'due': (due * 100).round() / 100,
+        });
       }
     }
     debtors.sort((a, b) => (b['due'] as num).compareTo(a['due'] as num));
@@ -150,7 +159,6 @@ class HamBotStats {
       'low_stock_count': lowStockCount,
       'top_selling_products_last_30d': topSellingProducts.take(10).toList(),
       'inventory_snapshot': inventorySnapshot,
-      'shop_id': shopId ?? '',
     });
   }
 }

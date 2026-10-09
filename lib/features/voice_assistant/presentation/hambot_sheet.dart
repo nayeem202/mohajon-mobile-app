@@ -8,9 +8,11 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/network_guard.dart';
+import '../../subscription/providers/subscription_providers.dart';
 import '../services/gemini_ask_client.dart';
 import '../services/hambot_stats.dart';
 import '../services/mohajon_tts.dart';
+import '../services/verified_business_answer_service.dart';
 import '../services/voice_assistant_service.dart';
 
 /// "Mohajon AI" — ask your shop questions by voice or text and get a friendly
@@ -74,8 +76,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
   }
 
   Future<void> _submitText() async {
-    final text =
-        _textController.text.trim().isEmpty
+    final text = _textController.text.trim().isEmpty
         ? null
         : _textController.text.trim();
     _textController.clear();
@@ -105,6 +106,36 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
   Future<void> _ask({String? text, Uint8List? audio}) async {
     if ((text == null || text.isEmpty) && audio == null) return;
     final l10n = AppLocalizations.of(context);
+    final db = ref.read(localDatabaseProvider);
+    final shopId = ref.read(shopIdProvider);
+
+    // Common questions are answered from the shop's own records first. This
+    // works without internet and avoids asking an AI provider to calculate a
+    // sales, stock, expense or due number.
+    if (text != null && text.isNotEmpty) {
+      final verified = VerifiedBusinessAnswerService.answer(
+        db,
+        shopId: shopId,
+        question: text,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
+      if (verified != null) {
+        setState(() {
+          _error = null;
+          _turns.add(
+            _ChatTurn(
+              question: text,
+              answer: verified.answer,
+              source: verified.source,
+              isVerified: true,
+            ),
+          );
+        });
+        await _speak(verified.answer);
+        return;
+      }
+    }
+
     await requireInternetFor(context, () async {
       setState(() {
         _matching = true;
@@ -116,13 +147,20 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
         _turns.add(_ChatTurn(question: l10n.t('hambotSpeaking'), answer: null));
       }
       try {
-        final db = ref.read(localDatabaseProvider);
-        final shopId = ref.read(shopIdProvider);
         final stats = HamBotStats.build(db, shopId: shopId);
+        final languageCode = Localizations.localeOf(context).languageCode;
         final HamBotAnswer result = audio != null
-            ? await GeminiAskClient(db).askAudio(audio, statsJson: stats)
-            : await GeminiAskClient(db).ask(text!, stats);
+            ? await GeminiAskClient(
+                db,
+              ).askAudio(audio, statsJson: stats, languageCode: languageCode)
+            : await GeminiAskClient(
+                db,
+              ).ask(text!, stats, languageCode: languageCode);
         if (!mounted) return;
+        // The subscription screen caches this FutureProvider. Invalidate it
+        // after a billable server answer so returning to that screen fetches
+        // the current server-side balance instead of showing stale credits.
+        ref.invalidate(aiCreditStatusProvider);
         setState(() {
           _matching = false;
           _turns[_turns.length - 1] = _ChatTurn(
@@ -130,6 +168,9 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
             answer: result.answer.isEmpty
                 ? l10n.t('hambotNoAnswer')
                 : result.answer,
+            source: Localizations.localeOf(context).languageCode == 'bn'
+                ? 'Mohajon AI পরামর্শ'
+                : 'Mohajon AI guidance',
           );
         });
         final answer = result.answer.isEmpty
@@ -138,18 +179,24 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
         await _speak(answer);
       } catch (err) {
         if (!mounted) return;
-        final isQuota = err is ApiException &&
+        final isQuota =
+            err is ApiException &&
             (err.code == 'AI_UNAVAILABLE' || err.statusCode == 429);
         setState(() {
           _matching = false;
           final last = _turns.removeLast();
-          if (_turns.isNotEmpty && _turns.last.answer == null) _turns.removeLast();
-          _turns.add(_ChatTurn(
-            question: last.question,
-            answer: l10n.t(
-                isQuota ? 'hambotQuotaExhausted' : 'hambotAiError'),
-            isError: true,
-          ));
+          if (_turns.isNotEmpty && _turns.last.answer == null) {
+            _turns.removeLast();
+          }
+          _turns.add(
+            _ChatTurn(
+              question: last.question,
+              answer: l10n.t(
+                isQuota ? 'hambotQuotaExhausted' : 'hambotAiError',
+              ),
+              isError: true,
+            ),
+          );
         });
       }
     });
@@ -215,8 +262,11 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
               shape: BoxShape.circle,
               color: MohajonWarm.orange,
             ),
-            child: const Icon(Icons.support_agent_rounded,
-                color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.support_agent_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 10),
           Column(
@@ -232,10 +282,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
               ),
               Text(
                 l10n.t('hambotSubtitle'),
-                style: const TextStyle(
-                  color: MohajonWarm.muted,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: MohajonWarm.muted, fontSize: 12),
               ),
             ],
           ),
@@ -307,8 +354,10 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
                   filled: true,
                   fillColor: MohajonWarm.card,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(22),
                     borderSide: BorderSide.none,
@@ -321,7 +370,11 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
               heroTag: 'hambot-ask',
               onPressed: _busy ? null : _submitText,
               backgroundColor: MohajonWarm.green,
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -332,9 +385,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
               height: 46,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _busy
-                    ? MohajonWarm.red
-                    : MohajonWarm.orange,
+                color: _busy ? MohajonWarm.red : MohajonWarm.orange,
               ),
               child: Icon(
                 _busy ? Icons.stop_rounded : Icons.mic_rounded,
@@ -350,10 +401,18 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
 }
 
 class _ChatTurn {
-  const _ChatTurn({required this.question, this.answer, this.isError = false});
+  const _ChatTurn({
+    required this.question,
+    this.answer,
+    this.source,
+    this.isVerified = false,
+    this.isError = false,
+  });
 
   final String question;
   final String? answer;
+  final String? source;
+  final bool isVerified;
   final bool isError;
 }
 
@@ -406,31 +465,62 @@ class _TurnBubble extends StatelessWidget {
                 ),
                 border: Border.all(color: MohajonWarm.goldBorder),
               ),
-              child: Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(
-                    child: Text(
-                      turn.answer!,
-                      style: const TextStyle(
-                        color: MohajonWarm.ink,
-                        fontSize: 14,
-                        height: 1.4,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          turn.answer!,
+                          style: const TextStyle(
+                            color: MohajonWarm.ink,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (onSpeak != null) ...[
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: onSpeak,
+                          borderRadius: BorderRadius.circular(20),
+                          child: const Padding(
+                            padding: EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.volume_up_rounded,
+                              size: 17,
+                              color: MohajonWarm.orange,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (onSpeak != null) ...[
-                    const SizedBox(width: 6),
-                    InkWell(
-                      onTap: onSpeak,
-                      borderRadius: BorderRadius.circular(20),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.volume_up_rounded,
-                          size: 17,
-                          color: MohajonWarm.orange,
+                  if (turn.source != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: turn.isVerified
+                            ? MohajonWarm.tintGreen
+                            : MohajonWarm.tintYellow,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        '${turn.isVerified ? '✓ ' : ''}${turn.source}',
+                        style: TextStyle(
+                          color: turn.isVerified
+                              ? MohajonWarm.green
+                              : MohajonWarm.goldText,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -453,7 +543,10 @@ class _TypingIndicator extends StatelessWidget {
       padding: EdgeInsets.only(top: 10),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text('Mohajon AI…', style: TextStyle(color: MohajonWarm.goldText)),
+        child: Text(
+          'Mohajon AI…',
+          style: TextStyle(color: MohajonWarm.goldText),
+        ),
       ),
     );
   }
@@ -504,8 +597,11 @@ class _IdleHint extends StatelessWidget {
                 color: MohajonWarm.tintYellow,
                 border: Border.all(color: MohajonWarm.goldBorder),
               ),
-              child: const Icon(Icons.auto_awesome_rounded,
-                  color: MohajonWarm.orange, size: 26),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: MohajonWarm.orange,
+                size: 26,
+              ),
             ),
             const SizedBox(height: 14),
             const Text(

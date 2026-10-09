@@ -2,11 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../config/app_config.dart';
+
 bool isRemoteImagePath(String path) =>
-    path.startsWith('http://') || path.startsWith('https://');
+    path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/');
 
 ImageProvider<Object> imageProviderForPath(String path) =>
-    isRemoteImagePath(path) ? NetworkImage(path) : FileImage(File(path));
+    isRemoteImagePath(path)
+        ? NetworkImage(path.startsWith('/') ? '${AppConfig.apiBaseUrl}$path' : path)
+        : FileImage(File(path));
 
 class AppImage extends StatelessWidget {
   const AppImage({

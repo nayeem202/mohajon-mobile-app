@@ -4,6 +4,149 @@ import 'package:intl/intl.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/widgets/app_image.dart';
+import '../../settings/providers/shop_profile_providers.dart';
+
+/// Shared report identity block. Every report now starts with the same shop
+/// context, so the screen and its exported document feel like one product.
+class ReportBrandStrip extends ConsumerWidget {
+  const ReportBrandStrip({
+    super.key,
+    required this.title,
+    this.subtitle = 'Live business insight, ready to export',
+    this.icon = Icons.insights_rounded,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shop = ref.watch(shopProfileProvider).value;
+    final logo = (shop?.reportLogoPath ?? '').trim();
+    final shopName = (shop?.shopName ?? '').trim();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MohajonWarm.ink, Color(0xFF414537), MohajonWarm.goldText],
+          stops: [0, 0.65, 1],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: MohajonWarm.ink.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -22,
+            top: -34,
+            child: Container(
+              width: 108,
+              height: 108,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.09),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.45),
+                  ),
+                ),
+                child: logo.isEmpty
+                    ? Icon(icon, color: MohajonWarm.orange, size: 25)
+                    : AppImage(
+                        path: logo,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => Icon(
+                          icon,
+                          color: MohajonWarm.orange,
+                          size: 25,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (shopName.isNotEmpty) ...[
+                      const SizedBox(height: 7),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Text(
+                          shopName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 mixin ReportExportMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   bool _exportingXlsx = false;

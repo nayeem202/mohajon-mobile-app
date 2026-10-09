@@ -5,6 +5,7 @@ import '../../../core/models/customer_ledger_entry.dart';
 import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
+import '../../../core/app/app_providers.dart';
 import '../../expenses/providers/expense_providers.dart';
 import '../../../features/customers/providers/customer_providers.dart';
 import '../../../features/products/providers/product_providers.dart';
@@ -66,8 +67,7 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
 
   final double? weekChangePercent;
   if (lastWeekSales > 0) {
-    weekChangePercent =
-        ((thisWeekSales - lastWeekSales) / lastWeekSales) * 100;
+    weekChangePercent = ((thisWeekSales - lastWeekSales) / lastWeekSales) * 100;
   } else {
     weekChangePercent = null;
   }
@@ -143,9 +143,26 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
   final topSelling = productSoldQty.entries.toList()
     ..sort((a, b) => b.value.compareTo(a.value));
 
+  // Keep this optional. A shop without staff, or without staff-attributed
+  // sales, should never see an empty performance prompt on its dashboard.
+  final staffById = {
+    for (final user in ref.watch(localDatabaseProvider).users.values())
+      if (user.role.name == 'staff') user.userId: user,
+  };
+  final staffSales = <String, double>{};
+  for (final sale in sales) {
+    final staffId = sale.staffId;
+    if (staffId != null && staffById.containsKey(staffId)) {
+      staffSales[staffId] = (staffSales[staffId] ?? 0) + sale.totalAmount;
+    }
+  }
+  final topStaff = staffSales.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+
   final lowStock = products.where((product) => product.isLowStock).toList();
-  final expiringSoon =
-      products.where((product) => product.isExpiringSoon).toList();
+  final expiringSoon = products
+      .where((product) => product.isExpiringSoon)
+      .toList();
 
   final monthlySales = List<double>.filled(12, 0);
   for (final sale in sales.where((sale) => sale.createdAt.year == now.year)) {
@@ -197,6 +214,17 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
           (entry) => TopSellingProduct(name: entry.key, quantity: entry.value),
         )
         .toList(),
+    topStaff: topStaff
+        .take(1)
+        .map(
+          (entry) => StaffSalesSummary(
+            name: (staffById[entry.key]!.name).trim().isNotEmpty
+                ? staffById[entry.key]!.name
+                : staffById[entry.key]!.phone,
+            sales: entry.value,
+          ),
+        )
+        .toList(),
     recentSales: sortedSales.take(6).map((sale) {
       final customer = customerById[sale.customerId];
       return RecentSaleSummary(
@@ -240,6 +268,7 @@ class DashboardSummary {
     required this.netProfit,
     required this.profitLossRatio,
     required this.topSelling,
+    required this.topStaff,
     required this.recentSales,
     required this.lowStock,
     required this.expiringSoon,
@@ -263,6 +292,7 @@ class DashboardSummary {
   final double netProfit;
   final double profitLossRatio;
   final List<TopSellingProduct> topSelling;
+  final List<StaffSalesSummary> topStaff;
   final List<RecentSaleSummary> recentSales;
   final List<Product> lowStock;
   final List<Product> expiringSoon;
@@ -311,6 +341,13 @@ class TopSellingProduct {
 
   final String name;
   final double quantity;
+}
+
+class StaffSalesSummary {
+  const StaffSalesSummary({required this.name, required this.sales});
+
+  final String name;
+  final double sales;
 }
 
 class DaySalesSummary {

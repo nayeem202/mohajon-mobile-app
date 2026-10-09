@@ -90,7 +90,10 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
 
     return withLoadingOverlay(
       Theme(
-        data: MohajonWarm.theme(Theme.of(context)),
+        data: MohajonWarm.theme(
+          Theme.of(context),
+          locale: Localizations.localeOf(context),
+        ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(

@@ -1,0 +1,28 @@
+{
+	default_sni 104.207.93.99
+}
+
+:80 {
+	handle /.well-known/acme-challenge/* {
+		root * /var/www/certbot
+		file_server
+	}
+	handle {
+		redir https://104.207.93.99{uri} permanent
+	}
+}
+
+https://104.207.93.99 {
+	tls /etc/letsencrypt/live/104.207.93.99/fullchain.pem /etc/letsencrypt/live/104.207.93.99/privkey.pem
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	@actuator path /actuator/*
+	respond @actuator 404
+	@auth path /api/v1/auth/* /api/v1/users/* /oauth2/* /.well-known/*
+	reverse_proxy @auth auth:8080
+	reverse_proxy haalkhata:8081
+}

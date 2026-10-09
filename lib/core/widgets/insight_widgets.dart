@@ -361,19 +361,25 @@ class InsightMetricTile extends StatelessWidget {
               letterSpacing: -0.3,
             ),
           ),
-          if (caption != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              caption!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10,
-                color: MohajonWarm.muted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+          // Reserve the footer line in every tile. Without it, a tile such
+          // as Cashflow Radar's Runway (which has a caption) becomes taller
+          // than the three adjacent metric cards.
+          const SizedBox(height: 3),
+          SizedBox(
+            height: 12,
+            child: caption == null
+                ? null
+                : Text(
+                    caption!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: MohajonWarm.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
         ],
       ),
     );

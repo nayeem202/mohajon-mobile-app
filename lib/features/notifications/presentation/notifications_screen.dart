@@ -7,6 +7,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_providers.dart';
+import '../services/notification_text_localizer.dart';
 import 'push_notification_sheet.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -17,22 +18,28 @@ class NotificationsScreen extends ConsumerStatefulWidget {
       _NotificationsScreenState();
 }
 
-class _NotificationsScreenState
-    extends ConsumerState<NotificationsScreen> {
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   final Set<String> _deletingIds = {};
 
   Future<void> _deleteNotification(AppNotification notification) async {
     final l10n = AppLocalizations.of(context);
     final session = ref.read(authStateProvider).value;
-    final canDeleteEveryone = session != null &&
+    final canDeleteEveryone =
+        session != null &&
         (session.userId == notification.senderUserId ||
-            session.roles.any((role) =>
-                role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN'));
+            session.roles.any(
+              (role) =>
+                  role.toUpperCase() == 'OWNER' ||
+                  role.toUpperCase() == 'ADMIN',
+            ));
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: MohajonWarm.goldBorder),
+        ),
+        backgroundColor: MohajonWarm.card,
         title: Text(
           l10n.t('deleteNotification'),
           style: const TextStyle(
@@ -45,10 +52,7 @@ class _NotificationsScreenState
           canDeleteEveryone
               ? l10n.t('deleteChoiceMessage')
               : l10n.t('deleteChoiceMessageOnlyYou'),
-          style: const TextStyle(
-            color: MohajonWarm.muted,
-            fontSize: 13,
-          ),
+          style: const TextStyle(color: MohajonWarm.muted, fontSize: 13),
         ),
         actions: [
           TextButton(
@@ -78,10 +82,9 @@ class _NotificationsScreenState
     if (choice == null || !mounted) return;
     setState(() => _deletingIds.add(notification.id));
     try {
-      await ref.read(notificationsProvider.notifier).delete(
-            notification.id,
-            everyone: choice == 'everyone',
-          );
+      await ref
+          .read(notificationsProvider.notifier)
+          .delete(notification.id, everyone: choice == 'everyone');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,11 +102,9 @@ class _NotificationsScreenState
       backgroundColor: Colors.transparent,
       builder: (_) => PushNotificationSheet(
         onSubmit: (type, title, message) {
-          return ref.read(notificationServiceProvider).sendPush(
-                type: type,
-                title: title,
-                message: message,
-              );
+          return ref
+              .read(notificationServiceProvider)
+              .sendPush(type: type, title: title, message: message);
         },
       ),
     );
@@ -118,13 +119,14 @@ class _NotificationsScreenState
     final totalUnread = state.unreadCount;
 
     return Theme(
-      data: MohajonWarm.theme(base),
+      data: MohajonWarm.theme(
+        base,
+        locale: Localizations.localeOf(context),
+      ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: MohajonWarm.pageGradient,
-          ),
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             child: Column(
               children: [
@@ -153,16 +155,12 @@ class _NotificationsScreenState
                   l10n: l10n,
                   unreadOnly: state.unreadOnly,
                   onChanged: (v) {
-                    ref
-                        .read(notificationsProvider.notifier)
-                        .setUnreadOnly(v);
+                    ref.read(notificationsProvider.notifier).setUnreadOnly(v);
                   },
                 ),
                 const Divider(height: 1, color: MohajonWarm.goldBorder),
                 if (filtered.isEmpty)
-                  Expanded(
-                    child: _EmptyState(l10n: l10n),
-                  )
+                  Expanded(child: _EmptyState(l10n: l10n))
                 else
                   Expanded(
                     child: ListView.builder(
@@ -173,8 +171,9 @@ class _NotificationsScreenState
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final notification = filtered[index];
-                        final isDeleting =
-                            _deletingIds.contains(notification.id);
+                        final isDeleting = _deletingIds.contains(
+                          notification.id,
+                        );
                         return _NotificationItem(
                           notification: notification,
                           isDeleting: isDeleting,
@@ -218,9 +217,7 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.only(left: 20, right: 16, top: 12, bottom: 12),
       decoration: const BoxDecoration(
         color: MohajonWarm.primary,
-        border: Border(
-          bottom: BorderSide(color: MohajonWarm.primarySoft),
-        ),
+        border: Border(bottom: BorderSide(color: MohajonWarm.primarySoft)),
       ),
       child: Row(
         children: [
@@ -398,9 +395,7 @@ class _Chip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: isActive
-                    ? MohajonWarm.goldText
-                    : MohajonWarm.muted,
+                color: isActive ? MohajonWarm.goldText : MohajonWarm.muted,
               ),
             ),
           ],
@@ -434,9 +429,7 @@ class _SecondaryTabs extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: !unreadOnly
-                    ? MohajonWarm.goldText
-                    : MohajonWarm.muted,
+                color: !unreadOnly ? MohajonWarm.goldText : MohajonWarm.muted,
               ),
             ),
           ),
@@ -448,9 +441,7 @@ class _SecondaryTabs extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: unreadOnly
-                    ? MohajonWarm.goldText
-                    : MohajonWarm.muted,
+                color: unreadOnly ? MohajonWarm.goldText : MohajonWarm.muted,
               ),
             ),
           ),
@@ -511,6 +502,7 @@ class _ItemContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isUnread = !notification.read;
+    final text = NotificationTextLocalizer.resolve(notification, l10n);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -540,7 +532,7 @@ class _ItemContent extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              notification.title,
+                              text.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -578,7 +570,7 @@ class _ItemContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  notification.description,
+                  text.description,
                   style: const TextStyle(
                     fontSize: 13,
                     color: MohajonWarm.muted,

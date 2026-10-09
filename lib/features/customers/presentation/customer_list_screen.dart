@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter/material.dart';
@@ -20,6 +20,7 @@ import 'customer_profile_screen.dart';
 import '../providers/customer_providers.dart';
 import 'customer_form_screen.dart';
 import '../services/customer_import_service.dart';
+import '../services/phone_contacts_service.dart';
 import '../../pos/presentation/sales_history_screen.dart';
 import '../../pos/services/whatsapp_service.dart';
 import '../../settings/providers/shop_profile_providers.dart';
@@ -207,6 +208,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
               error: (error, _) => EmptyState(
                 message: friendlyErrorMessage(
                   error,
+                  l10n: l10n,
                   fallback: l10n.t('couldNotLoadClients'),
                 ),
               ),
@@ -405,7 +407,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                           if (mounted) {
                             showAppSnackBar(
                               context,
-                              friendlyErrorMessage(error),
+                              friendlyErrorMessage(
+                                error,
+                                l10n: AppLocalizations.of(context),
+                              ),
                               isError: true,
                             );
                           }
@@ -426,59 +431,69 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     final l10n = AppLocalizations.of(context);
     final source = await showModalBottomSheet<_CustomerImportSource>(
       context: context,
-      backgroundColor: MohajonWarm.surface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 18),
-                  decoration: BoxDecoration(
-                    color: MohajonWarm.goldBorder,
-                    borderRadius: BorderRadius.circular(99),
+      builder: (sheetContext) => DecoratedBox(
+        decoration: const BoxDecoration(
+          color: MohajonWarm.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 18),
+                    decoration: BoxDecoration(
+                      color: MohajonWarm.goldBorder,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                l10n.t('importCustomers'),
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
+                Text(
+                  l10n.t('importCustomers'),
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.t('importCustomersSourceHint'),
-                style: const TextStyle(color: MohajonWarm.muted),
-              ),
-              const SizedBox(height: 14),
-              _ImportSourceTile(
-                icon: Icons.contacts_rounded,
-                title: l10n.t('importFromContacts'),
-                subtitle: l10n.t('importFromContactsSubtitle'),
-                onTap: () => Navigator.pop(
-                  sheetContext,
-                  _CustomerImportSource.phoneContacts,
+                const SizedBox(height: 6),
+                Text(
+                  l10n.t('importCustomersSourceHint'),
+                  style: const TextStyle(color: MohajonWarm.muted),
                 ),
-              ),
-              const SizedBox(height: 10),
-              _ImportSourceTile(
-                icon: Icons.upload_file_rounded,
-                title: l10n.t('importFromFile'),
-                subtitle: l10n.t('importFromFileSubtitle'),
-                onTap: () =>
-                    Navigator.pop(sheetContext, _CustomerImportSource.csv),
-              ),
-            ],
+                const SizedBox(height: 14),
+                _ImportSourceTile(
+                  icon: Icons.contacts_rounded,
+                  iconBackground: MohajonWarm.tintGreen,
+                  iconColor: MohajonWarm.green,
+                  title: l10n.t('importFromContacts'),
+                  subtitle: l10n.t('importFromContactsSubtitle'),
+                  onTap: () => Navigator.pop(
+                    sheetContext,
+                    _CustomerImportSource.phoneContacts,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _ImportSourceTile(
+                  icon: Icons.upload_file_rounded,
+                  iconBackground: MohajonWarm.tintYellow,
+                  iconColor: MohajonWarm.goldText,
+                  title: l10n.t('importFromFile'),
+                  subtitle: l10n.t('importFromFileSubtitle'),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, _CustomerImportSource.csv),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -510,41 +525,11 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     try {
       final csv = await showDialog<String>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l10n.t('importCustomers')),
-          content: TextField(
-            controller: controller,
-            minLines: 6,
-            maxLines: 12,
-            decoration: InputDecoration(
-              hintText: l10n.t('importCustomersHint'),
-            ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () async {
-                try {
-                  await chooseFile();
-                } catch (error) {
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(
-                      dialogContext,
-                    ).showSnackBar(SnackBar(content: Text('$error')));
-                  }
-                }
-              },
-              icon: const Icon(Icons.upload_file_rounded),
-              label: Text(l10n.t('importFromFile')),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l10n.t('cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, controller.text),
-              child: Text(l10n.t('import')),
-            ),
-          ],
+        builder: (dialogContext) => _CsvImportDialog(
+          controller: controller,
+          l10n: l10n,
+          onChooseFile: chooseFile,
+          onIssue: _showImportIssue,
         ),
       );
       if (csv == null || !mounted) return;
@@ -561,14 +546,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         }),
       );
       if (result.errors.isNotEmpty) {
-        showAppSnackBar(
-          context,
-          result.errors.take(2).join(' '),
-          isError: true,
-        );
+        _showImportIssue(l10n.t('customerImportPartial'));
       }
     } catch (error) {
-      if (mounted) showAppSnackBar(context, error.toString(), isError: true);
+      if (mounted) _showImportIssue(_importErrorMessage(error, l10n));
     } finally {
       controller.dispose();
     }
@@ -577,34 +558,12 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
   Future<void> _importPhoneContacts() async {
     final l10n = AppLocalizations.of(context);
     try {
-      final permission = await FlutterContacts.permissions.request(
-        PermissionType.read,
-      );
-      if (permission != PermissionStatus.granted &&
-          permission != PermissionStatus.limited) {
-        if (mounted) {
-          showAppSnackBar(
-            context,
-            l10n.t('contactsPermissionDenied'),
-            isError: true,
-          );
-        }
-        return;
-      }
-      final contacts = await FlutterContacts.getAll(
-        properties: {ContactProperty.phone},
-      );
+      final contacts = await PhoneContactsService().readContacts();
       final rows = contacts
-          .map((contact) {
-            final phone = contact.phones.isEmpty
-                ? ''
-                : contact.phones.first.number.trim();
-            return CustomerImportRow(
-              name: (contact.displayName ?? '').trim(),
-              phone: phone,
-            );
-          })
-          .where((row) => row.name.isNotEmpty && row.phone.isNotEmpty)
+          .map(
+            (contact) =>
+                CustomerImportRow(name: contact.name, phone: contact.phone),
+          )
           .toList();
       if (!mounted) return;
       if (rows.isEmpty) {
@@ -625,9 +584,50 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           'skipped': '${result.skipped}',
         }),
       );
-    } catch (error) {
-      if (mounted) showAppSnackBar(context, '$error', isError: true);
+    } on PhoneContactsPermissionDenied {
+      if (mounted) _showImportIssue(l10n.t('contactsPermissionDenied'));
+    } on MissingPluginException {
+      if (mounted) _showImportIssue(l10n.t('contactsImportUnavailable'));
+    } on PlatformException {
+      if (mounted) _showImportIssue(l10n.t('contactsImportUnavailable'));
+    } catch (_) {
+      if (mounted) _showImportIssue(l10n.t('customerImportFailed'));
     }
+  }
+
+  String _importErrorMessage(Object error, AppLocalizations l10n) {
+    if (error is FormatException) {
+      final message = error.message.toString().toLowerCase();
+      if (message.contains('large')) return l10n.t('csvFileTooLarge');
+      return l10n.t('csvFormatInvalid');
+    }
+    return l10n.t('customerImportFailed');
+  }
+
+  void _showImportIssue(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: MohajonWarm.ink,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: MohajonWarm.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(message)),
+            ],
+          ),
+        ),
+      );
   }
 
   Future<List<CustomerImportRow>?> _selectContacts(
@@ -1637,12 +1637,16 @@ String _formatRelativeDay(DateTime time) {
 class _ImportSourceTile extends StatelessWidget {
   const _ImportSourceTile({
     required this.icon,
+    required this.iconBackground,
+    required this.iconColor,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color iconBackground;
+  final Color iconColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -1650,46 +1654,275 @@ class _ImportSourceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: MohajonWarm.card,
       borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: MohajonWarm.tintYellow,
-                  borderRadius: BorderRadius.circular(13),
+      child: Ink(
+        decoration: BoxDecoration(
+          border: Border.all(color: MohajonWarm.goldBorder),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: MohajonWarm.ink.withValues(alpha: .055),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: iconBackground,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, color: iconColor),
                 ),
-                child: Icon(icon, color: MohajonWarm.goldText),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: MohajonWarm.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: MohajonWarm.muted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CsvImportDialog extends StatefulWidget {
+  const _CsvImportDialog({
+    required this.controller,
+    required this.l10n,
+    required this.onChooseFile,
+    required this.onIssue,
+  });
+
+  final TextEditingController controller;
+  final AppLocalizations l10n;
+  final Future<void> Function() onChooseFile;
+  final ValueChanged<String> onIssue;
+
+  @override
+  State<_CsvImportDialog> createState() => _CsvImportDialogState();
+}
+
+class _CsvImportDialogState extends State<_CsvImportDialog> {
+  bool _choosingFile = false;
+
+  Future<void> _chooseFile() async {
+    setState(() => _choosingFile = true);
+    try {
+      await widget.onChooseFile();
+      if (mounted) setState(() {});
+    } catch (error) {
+      if (mounted) widget.onIssue(_csvIssueMessage(error));
+    } finally {
+      if (mounted) setState(() => _choosingFile = false);
+    }
+  }
+
+  String _csvIssueMessage(Object error) {
+    if (error is FormatException &&
+        error.message.toString().toLowerCase().contains('large')) {
+      return widget.l10n.t('csvFileTooLarge');
+    }
+    return widget.l10n.t('customerImportFailed');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: MohajonWarm.theme(Theme.of(context)),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540, maxHeight: 660),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: MohajonWarm.card,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: MohajonWarm.goldBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: MohajonWarm.ink.withValues(alpha: .22),
+                  blurRadius: 30,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    Row(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: MohajonWarm.tintYellow,
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: const Icon(
+                            Icons.group_add_rounded,
+                            color: MohajonWarm.goldText,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.l10n.t('importCustomers'),
+                                style: const TextStyle(
+                                  color: MohajonWarm.ink,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.l10n.t('importCustomersSourceHint'),
+                                style: const TextStyle(
+                                  color: MohajonWarm.muted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          tooltip: widget.l10n.t('cancel'),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 18),
+                    Material(
+                      color: MohajonWarm.tintOrange,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        onTap: _choosingFile ? null : _chooseFile,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 13,
+                          ),
+                          child: Row(
+                            children: [
+                              _choosingFile
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: MohajonWarm.orange,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.upload_file_rounded,
+                                      color: MohajonWarm.orange,
+                                    ),
+                              const SizedBox(width: 11),
+                              Expanded(
+                                child: Text(
+                                  widget.l10n.t('importFromFile'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: MohajonWarm.ink,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: MohajonWarm.orange,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     Text(
-                      subtitle,
+                      widget.l10n.t('importCustomersHint'),
                       style: const TextStyle(
                         color: MohajonWarm.muted,
                         fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: widget.controller,
+                      minLines: 6,
+                      maxLines: 11,
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: 'name,phone,email,address',
+                        alignLabelWithHint: true,
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(bottom: 110),
+                          child: Icon(Icons.table_chart_rounded),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(widget.l10n.t('cancel')),
+                        ),
+                        FilledButton.icon(
+                          onPressed: () =>
+                              Navigator.pop(context, widget.controller.text),
+                          icon: const Icon(Icons.file_download_done_rounded),
+                          label: Text(widget.l10n.t('import')),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: MohajonWarm.muted),
-            ],
+            ),
           ),
         ),
       ),

@@ -14,6 +14,7 @@ import '../services/ledger_pdf_service.dart';
 import 'customer_ledger_detail_screen.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/shop_avatar.dart';
+import 'report_shared_widgets.dart';
 
 class CustomerLedgerScreen extends ConsumerStatefulWidget {
   const CustomerLedgerScreen({super.key});
@@ -63,7 +64,9 @@ class _CustomerLedgerScreenState
       final l10n = AppLocalizations.of(context);
       final messenger = ScaffoldMessenger.of(context);
       final service = LedgerPdfService();
-      final company = DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      final company = await DocCompany.fromShopForExport(
+        ref.read(shopProfileProvider).value,
+      );
       await service.saveAllCustomers(all, company);
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.t('pdfExported'))),
@@ -125,6 +128,11 @@ class _CustomerLedgerScreenState
             child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
+          ReportBrandStrip(
+            title: l10n.t('reportCustomerLedger'),
+            icon: Icons.receipt_long_rounded,
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(

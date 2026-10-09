@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/services/file_upload_service.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/app_error.dart';
@@ -34,6 +38,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   final _addressController = TextEditingController();
   final _tinController = TextEditingController();
   final _binController = TextEditingController();
+  final _logoPicker = ImagePicker();
 
   final _storeNameFocus = FocusNode();
   final _ownerNameFocus = FocusNode();
@@ -42,6 +47,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   final _addressFocus = FocusNode();
 
   bool _isSaving = false;
+  String? _reportLogoPath;
+  bool _reportLogoChanged = false;
 
   @override
   void initState() {
@@ -83,6 +90,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
     _phoneController.text = _currentProfile.phone;
     _emailController.text = _currentProfile.email;
     _addressController.text = _currentProfile.address;
+    _tinController.text = _currentProfile.tin;
+    _binController.text = _currentProfile.bin;
   }
 
   @override
@@ -106,9 +115,17 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   Widget build(BuildContext context) {
     final p = _currentProfile;
     final l10n = AppLocalizations.of(context);
+    final savedLogoPath =
+        ref.watch(shopProfileProvider).value?.reportLogoPath ?? '';
+    final reportLogoPath = _reportLogoChanged
+        ? (_reportLogoPath ?? '')
+        : savedLogoPath;
     final session = ref.watch(authStateProvider).value;
-    final canEdit = session?.roles.any((role) =>
-            role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN') ??
+    final canEdit =
+        session?.roles.any(
+          (role) =>
+              role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+        ) ??
         false;
     final storeName = p.storeName.trim();
     final displayName = storeName.isEmpty ? l10n.t('myStore') : storeName;
@@ -142,6 +159,28 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      if (_isEditing && canEdit) ...[
+                        AnimatedSection(
+                          delay: const Duration(milliseconds: 45),
+                          child: ProfileInfoCard(
+                            title: 'Report Branding',
+                            icon: Icons.workspace_premium_rounded,
+                            accentColor: MohajonWarm.goldText,
+                            children: [
+                              _ReportLogoPicker(
+                                imagePath: reportLogoPath,
+                                isBusy: _isSaving,
+                                onPick: _pickReportLogo,
+                                onRemove: () => setState(() {
+                                  _reportLogoPath = '';
+                                  _reportLogoChanged = true;
+                                }),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       AnimatedSection(
                         delay: const Duration(milliseconds: 70),
                         child: ProfileInfoCard(
@@ -286,8 +325,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                                 style: FilledButton.styleFrom(
                                   backgroundColor: MohajonWarm.ink,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor:
-                                      MohajonWarm.muted.withValues(alpha: 0.5),
+                                  disabledBackgroundColor: MohajonWarm.muted
+                                      .withValues(alpha: 0.5),
                                   disabledForegroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -363,12 +402,17 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(shopProfileServiceProvider).updateProfile(
+      await ref
+          .read(shopProfileServiceProvider)
+          .updateProfile(
             shopName: storeName,
             location: address,
             phoneNumber: phone,
             tin: tin,
             bin: bin,
+            reportLogoPath: _reportLogoChanged
+                ? await _uploadReportLogoIfNeeded()
+                : null,
           );
       await ref.read(profileRepositoryProvider).saveProfile(updated);
       ref.read(profileVersionProvider.notifier).state++;
@@ -376,6 +420,8 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       if (!mounted) return;
       setState(() {
         _currentProfile = updated;
+        if (_reportLogoChanged) _reportLogoPath = null;
+        _reportLogoChanged = false;
         _isSaving = false;
         _isEditing = false;
       });
@@ -383,11 +429,109 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+      showAppSnackBar(
+        context,
+        friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+        isError: true,
+      );
     }
   }
 
-  List<String> _validate(String storeName, String ownerName, String phone, String email, String address) {
+  Future<void> _pickReportLogo() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: MohajonWarm.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: MohajonWarm.goldBorder,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Choose report logo',
+                style: TextStyle(
+                  color: MohajonWarm.ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This logo will appear on exported reports and invoices.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: MohajonWarm.muted, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: const Icon(
+                  Icons.photo_library_rounded,
+                  color: MohajonWarm.goldText,
+                ),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: MohajonWarm.goldText,
+                ),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (source == null) return;
+    final file = await _logoPicker.pickImage(
+      source: source,
+      maxWidth: 1600,
+      imageQuality: 88,
+    );
+    if (file == null || !mounted) return;
+    setState(() {
+      _reportLogoPath = file.path;
+      _reportLogoChanged = true;
+    });
+  }
+
+  Future<String> _uploadReportLogoIfNeeded() async {
+    final path = (_reportLogoPath ?? '').trim();
+    if (path.isEmpty || path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final uploaded = await FileUploadService(
+      ref.read(localDatabaseProvider),
+    ).uploadIfNeeded(File(path).path);
+    return uploaded ?? '';
+  }
+
+  List<String> _validate(
+    String storeName,
+    String ownerName,
+    String phone,
+    String email,
+    String address,
+  ) {
     final l10n = AppLocalizations.of(context);
     final errors = <String>[];
     if (storeName.trim().isEmpty) {
@@ -410,6 +554,113 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       errors.add(l10n.t('addressRequired'));
     }
     return errors;
+  }
+}
+
+class _ReportLogoPicker extends StatelessWidget {
+  const _ReportLogoPicker({
+    required this.imagePath,
+    required this.isBusy,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final String imagePath;
+  final bool isBusy;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = imagePath.trim().isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MohajonWarm.tintYellow.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MohajonWarm.goldBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: MohajonWarm.goldBorder),
+            ),
+            child: hasLogo
+                ? AppImage(
+                    path: imagePath,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.storefront_rounded,
+                      color: MohajonWarm.orange,
+                    ),
+                  )
+                : const Icon(
+                    Icons.storefront_rounded,
+                    color: MohajonWarm.orange,
+                    size: 29,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasLogo ? 'Custom logo ready' : 'Add a custom logo',
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                const Text(
+                  'Used on every exported report and invoice.',
+                  style: TextStyle(
+                    color: MohajonWarm.muted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    TextButton.icon(
+                      onPressed: isBusy ? null : onPick,
+                      icon: const Icon(Icons.upload_rounded, size: 16),
+                      label: Text(hasLogo ? 'Change' : 'Upload'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        foregroundColor: MohajonWarm.goldText,
+                        textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    if (hasLogo)
+                      TextButton.icon(
+                        onPressed: isBusy ? null : onRemove,
+                        icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                        label: const Text('Remove'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          foregroundColor: MohajonWarm.red,
+                          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -678,7 +929,10 @@ class _StoreHero extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: MohajonWarm.goldBorder, width: 1.4),
+                        border: Border.all(
+                          color: MohajonWarm.goldBorder,
+                          width: 1.4,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: MohajonWarm.ink.withValues(alpha: 0.12),
@@ -715,7 +969,10 @@ class _StoreHero extends StatelessWidget {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
+                            colors: [
+                              MohajonWarm.primary,
+                              MohajonWarm.primaryPale,
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.white, width: 2),

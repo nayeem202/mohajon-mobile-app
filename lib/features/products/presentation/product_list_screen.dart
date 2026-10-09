@@ -65,9 +65,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     final searchQuery = ref.watch(productSearchQueryProvider);
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
     final session = ref.watch(authStateProvider).value;
-    final isOwner = session?.roles.any(
-          (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
-        ) ?? false;
+    final isOwner =
+        session?.roles.any(
+          (role) =>
+              role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+        ) ??
+        false;
     final canAddProduct = hasMenuAccess(
       grantedMenus,
       MenuCodes.addProduct,
@@ -105,7 +108,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
                     children: [
-                      _StockTopBar(onAdjustmentTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StockAdjustmentScreen()))),
+                      _StockTopBar(
+                        onAdjustmentTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const StockAdjustmentScreen(),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 18),
                       _StockStats(
                         totalProducts: items.length,
@@ -120,11 +129,15 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           searchQuery: searchQuery,
                           selectedFilter: _filter,
                           onSearchChanged: (value) =>
-                              ref.read(productSearchQueryProvider.notifier).state =
+                              ref
+                                      .read(productSearchQueryProvider.notifier)
+                                      .state =
                                   value,
                           onClearSearch: () {
                             _searchController.clear();
-                            ref.read(productSearchQueryProvider.notifier).state =
+                            ref
+                                    .read(productSearchQueryProvider.notifier)
+                                    .state =
                                 '';
                           },
                           onFilterChanged: (filter) =>
@@ -151,9 +164,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 );
               },
               error: (error, _) => EmptyState(
-                  message: friendlyErrorMessage(error,
-                      fallback: l10n.t('couldNotLoadProducts')),
+                message: friendlyErrorMessage(
+                  error,
+                  l10n: l10n,
+                  fallback: l10n.t('couldNotLoadProducts'),
                 ),
+              ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: MohajonWarm.primary),
               ),
@@ -186,7 +202,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   onPressed: () => PaywallGate.guard(context, ref, () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                          builder: (_) => const ProductFormScreen()),
+                        builder: (_) => const ProductFormScreen(),
+                      ),
                     );
                   }),
                   child: const Icon(Icons.add_rounded, size: 26),
@@ -401,7 +418,10 @@ class _StockStats extends StatelessWidget {
           runSpacing: 12,
           children: [
             for (final card in cards)
-              SizedBox(width: cardWidth, child: _StatCard(spec: card)),
+              SizedBox(
+                width: cardWidth,
+                child: _StatCard(spec: card),
+              ),
           ],
         );
       },
@@ -764,7 +784,9 @@ class _InventoryRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    product.displayName(Localizations.localeOf(context).languageCode),
+                    product.displayName(
+                      Localizations.localeOf(context).languageCode,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -775,7 +797,9 @@ class _InventoryRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    product.category.isEmpty ? l10n.t('general') : product.category,
+                    product.category.isEmpty
+                        ? l10n.t('general')
+                        : product.category,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -918,16 +942,15 @@ class _InventoryRow extends StatelessWidget {
     try {
       await Printing.layoutPdf(
         name: 'barcode-${product.barcode}',
-        onLayout: (format) => BarcodeLabelService().buildLabels(
-          [
-            BarcodeLabel(
-              code: product.barcode,
-              name: product.displayName(Localizations.localeOf(context).languageCode),
-              price: product.sellingPrice,
+        onLayout: (format) => BarcodeLabelService().buildLabels([
+          BarcodeLabel(
+            code: product.barcode,
+            name: product.displayName(
+              Localizations.localeOf(context).languageCode,
             ),
-          ],
-          format: format,
-        ),
+            price: product.sellingPrice,
+          ),
+        ], format: format),
       );
     } catch (e) {
       messenger.showSnackBar(
@@ -936,9 +959,7 @@ class _InventoryRow extends StatelessWidget {
           backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }

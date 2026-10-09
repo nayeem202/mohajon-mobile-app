@@ -39,6 +39,11 @@ final subscriptionStatusProvider = FutureProvider<SubscriptionInfo>((ref) {
   return _statusOrCached(service);
 });
 
+final aiCreditStatusProvider = FutureProvider<AiCreditStatus>((ref) {
+  ref.watch(subscriptionRefreshProvider);
+  return ref.watch(subscriptionApiServiceProvider).fetchAiCredits();
+});
+
 Future<SubscriptionInfo> _statusOrCached(SubscriptionApiService service) async {
   final online = await isConnected();
   if (!online) {

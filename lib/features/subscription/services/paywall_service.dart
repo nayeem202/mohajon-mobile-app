@@ -12,11 +12,9 @@ import '../models/subscription_models.dart';
 import '../providers/subscription_providers.dart';
 import 'subscription_api_service.dart';
 
-/// Paywall enforcement for the freemium model:
-/// - During the free trial and an active subscription: full access.
-/// - After the trial/subscription expires: read-only mode — the shop owner can
-///   still view every report and all history, but new entries are blocked
-///   until they subscribe.
+/// Subscription state for the freemium model. Every shop retains the Free
+/// tier after a trial ends; individual premium screens use [PaywallGate]'s
+/// Pro/Business checks instead of locking core POS and khata work.
 /// - Offline friendly: the last known status is cached in Hive. If the app is
 ///   offline with no cached status, the shop falls back to read-only (view)
 ///   mode — the user can still see everything, writes simply need an active
@@ -143,8 +141,7 @@ class PaywallService {
   }
 
   PaywallVerdict _verdictFor(SubscriptionInfo info) {
-    if (info.hasActive) return PaywallVerdict.fullAccess;
-    return PaywallVerdict.readOnly;
+    return PaywallVerdict.fullAccess;
   }
 }
 

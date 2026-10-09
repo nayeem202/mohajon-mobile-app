@@ -104,8 +104,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                     : l10n.t('addClient'),
                                 subtitle: l10n.t('clientProfileContact'),
                                 icon: Icons.people_alt_rounded,
-                                onBack: () =>
-                                    Navigator.of(context).maybePop(),
+                                onBack: () => Navigator.of(context).maybePop(),
                               ),
                               const SizedBox(height: 18),
                               _ProfilePhoto(
@@ -139,8 +138,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                       hintText: l10n.t('fullNameHint'),
                                     ),
                                     validator: (value) =>
-                                        value == null ||
-                                            value.trim().isEmpty
+                                        value == null || value.trim().isEmpty
                                         ? l10n.t('required')
                                         : null,
                                   ),
@@ -166,8 +164,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                       hintText: l10n.t('phoneHint'),
                                     ),
                                     validator: (value) =>
-                                        value == null ||
-                                            value.trim().isEmpty
+                                        value == null || value.trim().isEmpty
                                         ? l10n.t('required')
                                         : null,
                                   ),
@@ -237,16 +234,26 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _creditLimit,
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
-                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                      FilteringTextInputFormatter.allow(
+                                        RegExp(r'[0-9.]'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
-                                      prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                                      prefixIcon: const Icon(
+                                        Icons.payments_outlined,
+                                        size: 20,
+                                      ),
                                       hintText: l10n.t('creditLimitHint'),
                                     ),
                                     validator: (value) {
-                                      final amount = double.tryParse(value?.trim() ?? '');
+                                      final amount = double.tryParse(
+                                        value?.trim() ?? '',
+                                      );
                                       if ((value ?? '').trim().isNotEmpty &&
                                           (amount == null || amount < 0)) {
                                         return l10n.t('invalidAmount');
@@ -257,7 +264,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                                   const SizedBox(height: 6),
                                   Text(
                                     l10n.t('creditLimitHelp'),
-                                    style: const TextStyle(fontSize: 11, color: MohajonWarm.muted),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: MohajonWarm.muted,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -347,9 +357,12 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
                           onPressed: _saveCustomer,
                           isBusy: isBusy,
                           icon: Icons.save_outlined,
-                          label: isEditing ? l10n.t('updateClient') : l10n.t('saveClient'),
-                          busyLabel:
-                              isEditing ? l10n.t('updating') : l10n.t('saving'),
+                          label: isEditing
+                              ? l10n.t('updateClient')
+                              : l10n.t('saveClient'),
+                          busyLabel: isEditing
+                              ? l10n.t('updating')
+                              : l10n.t('saving'),
                         ),
                       ),
                     ],
@@ -505,7 +518,11 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen>
       });
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          isError: true,
+        );
       }
     }
   }
@@ -522,9 +539,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: MohajonWarm.card,
-        border: const Border(
-          top: BorderSide(color: MohajonWarm.goldBorder),
-        ),
+        border: const Border(top: BorderSide(color: MohajonWarm.goldBorder)),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),
@@ -712,10 +727,7 @@ class _SectionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                trailing!,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
             ],
           ),
           const SizedBox(height: 14),
@@ -783,8 +795,7 @@ class _ProfilePhoto extends StatelessWidget {
                               width: size,
                               height: size,
                               fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stk) =>
-                                  _defaultAvatar(),
+                              errorBuilder: (ctx, err, stk) => _defaultAvatar(),
                             ),
                           )
                         : _defaultAvatar(),
@@ -854,6 +865,7 @@ class _ProfilePhoto extends StatelessWidget {
       ),
     );
   }
+
   Widget _defaultAvatar() {
     return Center(
       child: initials.isEmpty

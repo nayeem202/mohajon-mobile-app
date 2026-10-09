@@ -1,0 +1,137 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mohajon
+      POSTGRES_USER: mohajon
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: --data-checksums
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=40", "-c", "effective_cache_size=512MB"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mohajon -d mohajon"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 320m
+    networks: [backend]
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory", "64mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    mem_limit: 96m
+    networks: [backend]
+
+  auth:
+    build:
+      context: ./auth
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PORT: 8080
+      DB_URL: jdbc:postgresql://postgres:5432/mohajon
+      DB_USERNAME: mohajon
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: https://104.207.93.99
+      APP_BASE_URL: https://104.207.93.99
+      APP_OTP_STORE: redis
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      CORS_ALLOWED_ORIGINS: https://104.207.93.99
+      JAVA_TOOL_OPTIONS: -Xms96m -Xmx224m -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    mem_limit: 384m
+    networks: [backend]
+
+  haalkhata:
+    build:
+      context: ./haalkhata
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: mohajon
+      DB_SCHEMA: hk
+      DB_USER: mohajon
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      JWT_SECRET: ${HK_JWT_SECRET:?set HK_JWT_SECRET}
+      TRUSTED_JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: haalkhata-service
+      PORT: 8081
+      HAALKHATA_STORAGE_DIR: /var/lib/haalkhata/storage
+      HAALKHATA_LOG_DIR: /var/log/haalkhata
+      LOG_REQUEST_BODY: "false"
+      CORS_ALLOWED_ORIGINS: https://104.207.93.99
+      PUBLIC_BASE_URL: https://104.207.93.99
+      SUBSCRIPTION_ENFORCEMENT: "true"
+      MAIL_PROVIDER: console
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      AI_PROVIDER_MODE: ${AI_PROVIDER_MODE:-chain}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-qwen/qwen3.8-27b}
+      GROQ_STT_MODEL: ${GROQ_STT_MODEL:-whisper-large-v3-turbo}
+      BKASH_SANDBOX: "true"
+      JAVA_TOOL_OPTIONS: -Xms96m -Xmx320m -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError
+    volumes:
+      - /opt/mohajon/storage:/var/lib/haalkhata/storage
+      - /opt/mohajon/logs:/var/log/haalkhata
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8081"]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 120s
+    mem_limit: 512m
+    networks: [backend]
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      auth: {condition: service_healthy}
+      haalkhata: {condition: service_healthy}
+    mem_limit: 64m
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

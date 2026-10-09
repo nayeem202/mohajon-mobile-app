@@ -36,7 +36,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       } catch (_) {
         signedIn = false;
       }
-      if (signedIn) {
+      if (signedIn && mounted) {
         // Refresh data in the background instead of blocking the UI, so
         // relaunching the app enters the home screen immediately.
         unawaited(ref.read(syncStateProvider.notifier).syncNow());

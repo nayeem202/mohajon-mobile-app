@@ -6,6 +6,7 @@ import '../../../core/app/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/audit_event.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/utils/money.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../branches/providers/branch_providers.dart';
 import '../services/audit_timeline_service.dart';
@@ -107,7 +108,10 @@ class _AuditTimelineScreenState extends ConsumerState<AuditTimelineScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.t('auditTimeline')),
-        actions: const [SyncStatusIndicator(), NotificationBell()],
+        // NotificationBell already includes the single app-wide sync status
+        // control. Adding another one here made the network indicator appear
+        // twice on this screen.
+        actions: const [NotificationBell()],
       ),
       body: DecoratedBox(
         decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
@@ -119,18 +123,24 @@ class _AuditTimelineScreenState extends ConsumerState<AuditTimelineScreen> {
                 onRefresh: _refresh,
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
-                  itemCount: _events.length + (_hasMore ? 1 : 0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+                  itemCount: _events.length + (_hasMore ? 2 : 1),
                   itemBuilder: (context, index) {
-                    if (index == _events.length) {
+                    if (index == 0) {
+                      return _AuditTimelineIntro(
+                        subtitle: l10n.t('auditTimelineSubtitle'),
+                      );
+                    }
+                    final eventIndex = index - 1;
+                    if (eventIndex == _events.length) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 18),
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
                     return _AuditEventTile(
-                      event: _events[index],
-                      isLast: index == _events.length - 1 && !_hasMore,
+                      event: _events[eventIndex],
+                      isLast: eventIndex == _events.length - 1 && !_hasMore,
                     );
                   },
                 ),
@@ -186,6 +196,196 @@ class _AuditEmptyState extends StatelessWidget {
   );
 }
 
+class _AuditTimelineIntro extends StatelessWidget {
+  const _AuditTimelineIntro({required this.subtitle});
+
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: MohajonWarm.card.withValues(alpha: .8),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: MohajonWarm.goldBorder),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: MohajonWarm.tintYellow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.history_rounded,
+            color: MohajonWarm.goldText,
+            size: 21,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            subtitle,
+            style: const TextStyle(
+              color: MohajonWarm.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _AuditEventInfo {
+  const _AuditEventInfo({
+    required this.title,
+    required this.summary,
+    required this.actor,
+    required this.shortId,
+    required this.icon,
+    required this.accent,
+  });
+
+  final String title;
+  final String summary;
+  final String actor;
+  final String shortId;
+  final IconData icon;
+  final Color accent;
+
+  factory _AuditEventInfo.from(AuditEvent event, AppLocalizations l10n) {
+    final details = event.details;
+    final actorName = '${details['actorName'] ?? ''}'.trim();
+    final actor = actorName.isNotEmpty
+        ? actorName
+        : event.actorId == 'local-owner'
+        ? l10n.t('auditYou')
+        : _shortReference(event.actorId);
+    final shortId = _shortReference(event.eventId);
+    final amount = _number(
+      details['amount'] ?? details['totalAmount'] ?? details['refundAmount'],
+    );
+    final delta = _number(details['delta']);
+    final reason = '${details['reason'] ?? ''}'.trim();
+    final method = '${details['method'] ?? details['paymentMethod'] ?? ''}'
+        .trim();
+    final itemCount = details['items'] is List
+        ? (details['items'] as List).length
+        : 0;
+    final summary = switch (event.action) {
+      'SALE_CREATED' => _join([
+        if (amount != null) money(amount),
+        if (method.isNotEmpty) _paymentMethod(l10n, method),
+      ]),
+      'PAYMENT_RECORDED' => _join([
+        if (amount != null) money(amount),
+        if (method.isNotEmpty) _paymentMethod(l10n, method),
+      ]),
+      'PURCHASE_RECEIVED' =>
+        itemCount > 0
+            ? l10n.tP('auditItemsReceived', {'count': '$itemCount'})
+            : '',
+      'SALE_RETURN_CREATED' => amount == null ? '' : money(amount),
+      'SUPPLIER_RETURN_CREATED' => _join([
+        if (amount != null) money(amount),
+        if (reason.isNotEmpty) reason,
+      ]),
+      'STOCK_ADJUSTMENT_REQUESTED' ||
+      'STOCK_ADJUSTMENT_APPROVED' ||
+      'STOCK_ADJUSTMENT_REJECTED' => _join([
+        if (delta != null) '${delta > 0 ? '+' : ''}${_compactNumber(delta)}',
+        if (reason.isNotEmpty) reason,
+      ]),
+      _ => '',
+    };
+    final (title, icon, accent) = switch (event.action) {
+      'SALE_CREATED' => (
+        l10n.t('auditSaleCreated'),
+        Icons.point_of_sale_rounded,
+        MohajonWarm.green,
+      ),
+      'PAYMENT_RECORDED' => (
+        l10n.t('auditPaymentRecorded'),
+        Icons.payments_rounded,
+        MohajonWarm.green,
+      ),
+      'PURCHASE_RECEIVED' => (
+        l10n.t('auditPurchaseReceived'),
+        Icons.inventory_rounded,
+        MohajonWarm.orange,
+      ),
+      'SALE_RETURN_CREATED' => (
+        l10n.t('auditSaleReturnCreated'),
+        Icons.assignment_return_rounded,
+        MohajonWarm.red,
+      ),
+      'SUPPLIER_RETURN_CREATED' => (
+        l10n.t('auditSupplierReturnCreated'),
+        Icons.reply_all_rounded,
+        MohajonWarm.red,
+      ),
+      'STOCK_ADJUSTMENT_REQUESTED' => (
+        l10n.t('auditStockAdjustmentRequested'),
+        Icons.tune_rounded,
+        MohajonWarm.orange,
+      ),
+      'STOCK_ADJUSTMENT_APPROVED' => (
+        l10n.t('auditStockAdjustmentApproved'),
+        Icons.verified_rounded,
+        MohajonWarm.green,
+      ),
+      'STOCK_ADJUSTMENT_REJECTED' => (
+        l10n.t('auditStockAdjustmentRejected'),
+        Icons.cancel_rounded,
+        MohajonWarm.red,
+      ),
+      _ => (
+        l10n.t('auditOtherActivity'),
+        Icons.history_rounded,
+        MohajonWarm.goldText,
+      ),
+    };
+    return _AuditEventInfo(
+      title: title,
+      summary: summary,
+      actor: actor,
+      shortId: shortId,
+      icon: icon,
+      accent: accent,
+    );
+  }
+
+  static num? _number(Object? value) =>
+      value is num ? value : num.tryParse('$value');
+
+  static String _compactNumber(num value) => value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value.toStringAsFixed(2);
+
+  static String _shortReference(String value) => value.length <= 8
+      ? value
+      : value.substring(value.length - 8).toUpperCase();
+
+  static String _join(Iterable<String> values) =>
+      values.where((value) => value.trim().isNotEmpty).join(' • ');
+
+  static String _paymentMethod(AppLocalizations l10n, String method) =>
+      switch (method.toUpperCase()) {
+        'CASH' => l10n.t('refundCash'),
+        'BKASH' => l10n.t('refundBkash'),
+        'NAGAD' => l10n.t('refundNagad'),
+        'BANK' => l10n.t('refundBank'),
+        'OTHER' => l10n.t('refundOther'),
+        _ => method,
+      };
+}
+
 class _AuditEventTile extends StatelessWidget {
   const _AuditEventTile({required this.event, required this.isLast});
 
@@ -194,13 +394,12 @@ class _AuditEventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final date = DateFormat(
-      'dd MMM, hh:mm a',
+      'd MMM, h:mm a',
+      l10n.locale.languageCode,
     ).format(event.createdAt.toLocal());
-    final entity = event.entityType.trim().isEmpty
-        ? event.entityId
-        : event.entityType;
-    final actor = event.actorId.trim().isEmpty ? '—' : event.actorId;
+    final info = _AuditEventInfo.from(event, l10n);
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -213,7 +412,7 @@ class _AuditEventTile extends StatelessWidget {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: MohajonWarm.ink,
+                    color: info.accent,
                     borderRadius: BorderRadius.circular(11),
                     boxShadow: const [
                       BoxShadow(
@@ -223,11 +422,7 @@ class _AuditEventTile extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.bolt_rounded,
-                    color: MohajonWarm.primary,
-                    size: 17,
-                  ),
+                  child: Icon(info.icon, color: Colors.white, size: 17),
                 ),
                 if (!isLast)
                   Expanded(
@@ -265,7 +460,7 @@ class _AuditEventTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          event.action,
+                          info.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -287,34 +482,35 @@ class _AuditEventTile extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (info.summary.isNotEmpty) ...[
+                    const SizedBox(height: 7),
+                    Text(
+                      info.summary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: MohajonWarm.ink,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 7,
                     runSpacing: 6,
                     children: [
                       _AuditMetaChip(
-                        icon: Icons.category_rounded,
-                        text: entity,
+                        icon: Icons.person_rounded,
+                        text: l10n.tP('auditRecordedBy', {'name': info.actor}),
                       ),
-                      _AuditMetaChip(icon: Icons.person_rounded, text: actor),
+                      _AuditMetaChip(
+                        icon: Icons.tag_rounded,
+                        text: l10n.tP('auditReference', {'id': info.shortId}),
+                      ),
                     ],
                   ),
-                  if (event.details.isNotEmpty) ...[
-                    const SizedBox(height: 9),
-                    Text(
-                      event.details.entries
-                          .take(2)
-                          .map((entry) => '${entry.key}: ${entry.value}')
-                          .join(' • '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: MohajonWarm.muted,
-                        fontSize: 11,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

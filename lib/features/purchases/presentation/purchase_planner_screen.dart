@@ -59,7 +59,10 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
       purchases: purchases,
       suppliers: suppliers,
     );
-    final calculatedBudget = planner.cashBudget(sales: sales, expenses: expenses);
+    final calculatedBudget = planner.cashBudget(
+      sales: sales,
+      expenses: expenses,
+    );
     final budget = double.tryParse(_budgetController.text) ?? calculatedBudget;
     final total = recommendations.fold<double>(
       0,
@@ -76,7 +79,11 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
         headerTrailing: IconButton(
           tooltip: l10n.t('purchaseRefresh'),
           onPressed: () => planner.syncPending(),
-          icon: const Icon(Icons.sync_rounded, color: MohajonWarm.ink, size: 20),
+          icon: const Icon(
+            Icons.sync_rounded,
+            color: MohajonWarm.ink,
+            size: 20,
+          ),
         ),
         children: [
           const SizedBox(height: 18),
@@ -85,8 +92,8 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
             accent: recommendations.isEmpty
                 ? MohajonWarm.green
                 : overBudget
-                    ? MohajonWarm.red
-                    : MohajonWarm.orange,
+                ? MohajonWarm.red
+                : MohajonWarm.orange,
             title: l10n.t('purchaseBrief'),
             body: l10n.t('purchaseBriefDesc'),
             trailingValue: money(total),
@@ -125,7 +132,9 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
             decoration: InsightTokens.cardDecoration(),
             child: TextField(
               controller: _budgetController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 labelText: l10n.t('purchaseBudget'),
@@ -140,11 +149,18 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
             ),
           ),
           StreamBuilder<List<PurchaseOrder>>(
-            stream: db.purchaseOrders.watchForShop(ref.read(shopIdProvider)).map((items) {
-              final shopId = ref.read(shopIdProvider);
-              final branchId = ref.read(currentBranchIdProvider) ?? '$shopId-main';
-              return items.where((item) => (item.branchId ?? '$shopId-main') == branchId).toList();
-            }),
+            stream: db.purchaseOrders
+                .watchForShop(ref.read(shopIdProvider))
+                .map((items) {
+                  final shopId = ref.read(shopIdProvider);
+                  final branchId =
+                      ref.read(currentBranchIdProvider) ?? '$shopId-main';
+                  return items
+                      .where(
+                        (item) => (item.branchId ?? '$shopId-main') == branchId,
+                      )
+                      .toList();
+                }),
             builder: (context, snapshot) {
               final orders = snapshot.data ?? const <PurchaseOrder>[];
               if (orders.isEmpty) return const SizedBox.shrink();
@@ -154,13 +170,20 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
                   InsightSectionTitle(
                     title: l10n.t('purchaseOrders'),
                     icon: Icons.receipt_long_rounded,
-                    trailing: InsightBadge(label: '${orders.length}', accent: MohajonWarm.green),
+                    trailing: InsightBadge(
+                      label: '${orders.length}',
+                      accent: MohajonWarm.green,
+                    ),
                   ),
                   for (final order in orders.take(8))
                     _OrderCard(
                       order: order,
-                      onReceive: order.status == 'RECEIVED' ? null : () => _receiveOrder(order),
-                      onReturn: order.receivedQty.isEmpty ? null : () => _returnOrder(order),
+                      onReceive: order.status == 'RECEIVED'
+                          ? null
+                          : () => _receiveOrder(order),
+                      onReturn: order.receivedQty.isEmpty
+                          ? null
+                          : () => _returnOrder(order),
                     ),
                   const SizedBox(height: 8),
                 ],
@@ -214,7 +237,10 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.playlist_add_check_rounded, size: 19),
+                          : const Icon(
+                              Icons.playlist_add_check_rounded,
+                              size: 19,
+                            ),
                       label: Text(
                         l10n.tP('purchaseCreateOrder', {
                           'amount': money(total.clamp(0, budget).toDouble()),
@@ -267,24 +293,26 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
   ) async {
     try {
       final order = await runBusyAction(
-        () => ref.read(purchasePlannerServiceProvider).createOrder(
-              recommendations: recommendations,
-              budget: budget,
-            ),
+        () => ref
+            .read(purchasePlannerServiceProvider)
+            .createOrder(recommendations: recommendations, budget: budget),
       );
       if (!mounted || order == null) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)
-                .tP('purchaseSaved', {'count': '${order.items.length}'}),
+            AppLocalizations.of(
+              context,
+            ).tP('purchaseSaved', {'count': '${order.items.length}'}),
           ),
         ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+        ),
       );
     }
   }
@@ -302,39 +330,60 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
     try {
       final quantities = await showDialog<Map<String, double>>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l10n.t('receivePurchase')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final item in order.items) ...[
-                  Text('${item.name} • remaining ${item.qty - (order.receivedQty[item.productId] ?? 0)}'),
-                  TextField(
-                    controller: controllers[item.productId],
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: l10n.t('receivedQuantity')),
-                  ),
-                  const SizedBox(height: 8),
+        builder: (dialogContext) => Theme(
+          data: MohajonWarm.theme(Theme.of(context)),
+          child: AlertDialog(
+            title: Text(l10n.t('receivePurchase')),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final item in order.items) ...[
+                    Text(
+                      '${item.name} • remaining ${item.qty - (order.receivedQty[item.productId] ?? 0)}',
+                    ),
+                    TextField(
+                      controller: controllers[item.productId],
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.t('receivedQuantity'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.t('cancel'))),
-            FilledButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                controllers.map((key, controller) => MapEntry(key, double.tryParse(controller.text) ?? 0)),
               ),
-              child: Text(l10n.t('receive')),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(l10n.t('cancel')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(
+                  dialogContext,
+                  controllers.map(
+                    (key, controller) =>
+                        MapEntry(key, double.tryParse(controller.text) ?? 0),
+                  ),
+                ),
+                child: Text(l10n.t('receive')),
+              ),
+            ],
+          ),
         ),
       );
       if (quantities == null || !mounted) return;
-      await ref.read(purchaseServiceProvider).receiveOrder(orderId: order.orderId, quantities: quantities);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.t('purchaseReceived'))));
+      await ref
+          .read(purchaseServiceProvider)
+          .receiveOrder(orderId: order.orderId, quantities: quantities);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('purchaseReceived'))));
+      }
     } finally {
       for (final controller in controllers.values) {
         controller.dispose();
@@ -352,41 +401,69 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
     try {
       final result = await showDialog<(Map<String, double>, String)?>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l10n.t('supplierReturn')),
-          content: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              for (final item in order.items) ...[
-                Text(item.name),
-                TextField(
-                  controller: controllers[item.productId],
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: l10n.t('returnQuantity')),
-                ),
-              ],
-              const SizedBox(height: 8),
-              TextField(controller: reason, maxLines: 2, decoration: InputDecoration(labelText: l10n.t('returnReason'))),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.t('cancel'))),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, (
-                controllers.map((key, value) => MapEntry(key, double.tryParse(value.text) ?? 0)),
-                reason.text,
-              )),
-              child: Text(l10n.t('returnToSupplier')),
+        builder: (dialogContext) => Theme(
+          data: MohajonWarm.theme(Theme.of(context)),
+          child: AlertDialog(
+            title: Text(l10n.t('supplierReturn')),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final item in order.items) ...[
+                    Text(item.name),
+                    TextField(
+                      controller: controllers[item.productId],
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.t('returnQuantity'),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: reason,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      labelText: l10n.t('returnReason'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(l10n.t('cancel')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, (
+                  controllers.map(
+                    (key, value) =>
+                        MapEntry(key, double.tryParse(value.text) ?? 0),
+                  ),
+                  reason.text,
+                )),
+                child: Text(l10n.t('returnToSupplier')),
+              ),
+            ],
+          ),
         ),
       );
       if (result == null || !mounted) return;
-      await ref.read(purchaseServiceProvider).returnFromOrder(
+      await ref
+          .read(purchaseServiceProvider)
+          .returnFromOrder(
             orderId: order.orderId,
             quantities: result.$1,
             reason: result.$2,
           );
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.t('supplierReturnSaved'))));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('supplierReturnSaved'))));
+      }
     } finally {
       for (final controller in controllers.values) {
         controller.dispose();
@@ -397,14 +474,20 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.onReceive, required this.onReturn});
+  const _OrderCard({
+    required this.order,
+    required this.onReceive,
+    required this.onReturn,
+  });
   final PurchaseOrder order;
   final VoidCallback? onReceive;
   final VoidCallback? onReturn;
 
   @override
   Widget build(BuildContext context) {
-    final color = order.status == 'RECEIVED' ? MohajonWarm.green : MohajonWarm.orange;
+    final color = order.status == 'RECEIVED'
+        ? MohajonWarm.green
+        : MohajonWarm.orange;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
@@ -413,13 +496,40 @@ class _OrderCard extends StatelessWidget {
         children: [
           Icon(Icons.local_shipping_rounded, color: color),
           const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${order.items.length} items • ${order.status}', style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink)),
-            const SizedBox(height: 3),
-            Text(money(order.totalAmount), style: const TextStyle(fontSize: 12, color: MohajonWarm.muted)),
-          ])),
-          if (onReceive != null) IconButton(onPressed: onReceive, tooltip: AppLocalizations.of(context).t('receivePurchase'), icon: const Icon(Icons.move_to_inbox_rounded)),
-          if (onReturn != null) IconButton(onPressed: onReturn, tooltip: AppLocalizations.of(context).t('supplierReturn'), icon: const Icon(Icons.assignment_return_outlined)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${order.items.length} items • ${order.status}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  money(order.totalAmount),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: MohajonWarm.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (onReceive != null)
+            IconButton(
+              onPressed: onReceive,
+              tooltip: AppLocalizations.of(context).t('receivePurchase'),
+              icon: const Icon(Icons.move_to_inbox_rounded),
+            ),
+          if (onReturn != null)
+            IconButton(
+              onPressed: onReturn,
+              tooltip: AppLocalizations.of(context).t('supplierReturn'),
+              icon: const Icon(Icons.assignment_return_outlined),
+            ),
         ],
       ),
     );
@@ -437,8 +547,8 @@ class _RecommendationCard extends StatelessWidget {
     final accent = item.product.stockQty <= 0
         ? MohajonWarm.red
         : item.dailyVelocity >= 1
-            ? MohajonWarm.orange
-            : MohajonWarm.green;
+        ? MohajonWarm.orange
+        : MohajonWarm.green;
 
     return Container(
       padding: const EdgeInsets.all(14),

@@ -176,8 +176,9 @@ class _VatReportScreenState extends ConsumerState<VatReportScreen>
         isXlsx: false,
         task: () async {
           final data = _compute();
-          final company =
-              DocCompany.fromShop(ref.read(shopProfileProvider).value);
+          final company = await DocCompany.fromShopForExport(
+            ref.read(shopProfileProvider).value,
+          );
           await VatReportPdfService()
               .saveVatReport(table: data.table, range: _range, company: company);
         },
@@ -226,6 +227,11 @@ class _VatReportScreenState extends ConsumerState<VatReportScreen>
             child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          ReportBrandStrip(
+            title: l10n.t('reportVat'),
+            icon: Icons.calculate_rounded,
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(

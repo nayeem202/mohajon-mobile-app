@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -8,6 +9,7 @@ import '../constants/app_constants.dart';
 import '../models/sale.dart';
 import '../utils/money.dart';
 import 'pdf_doc.dart';
+import 'pdf_raster_text.dart';
 
 class InvoiceService {
   static const _thermal80 = PdfPageFormat(
@@ -26,6 +28,15 @@ class InvoiceService {
     required DocCompany company,
   }) async {
     final theme = await buildAppPdfTheme();
+    final raster = PdfRasterText();
+    await _prepareInvoiceRaster(
+      raster,
+      sale: sale,
+      company: company,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      thermal: false,
+    );
     final pdf = pw.Document(theme: theme);
     final now = DateTime.now();
 
@@ -33,14 +44,20 @@ class InvoiceService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
-        header: (context) => _header(company),
+        header: (context) => _header(pdf.document, raster, company),
         footer: (context) => _pageFooter(context),
         build: (context) => [
           _invoiceMeta(sale, now),
           pw.SizedBox(height: 16),
-          _customerSection(sale, customerName: customerName, customerPhone: customerPhone),
+          _customerSection(
+            pdf.document,
+            raster,
+            sale,
+            customerName: customerName,
+            customerPhone: customerPhone,
+          ),
           pw.SizedBox(height: 16),
-          _itemsTable(sale),
+          _itemsTable(pdf.document, raster, sale),
           pw.SizedBox(height: 16),
           _summarySection(sale),
         ],
@@ -58,6 +75,15 @@ class InvoiceService {
     required DocCompany company,
   }) async {
     final theme = await buildAppPdfTheme();
+    final raster = PdfRasterText();
+    await _prepareInvoiceRaster(
+      raster,
+      sale: sale,
+      company: company,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      thermal: true,
+    );
     final pdf = pw.Document(theme: theme);
     final now = DateTime.now();
 
@@ -67,19 +93,21 @@ class InvoiceService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            _receiptShopHeader(company),
+            _receiptShopHeader(pdf.document, raster, company),
             _receiptDivider(),
             _receiptMeta(sale, now),
             if (customerName.isNotEmpty || sale.customerId.isNotEmpty) ...[
               _receiptDivider(),
               _receiptCustomer(
+                pdf.document,
+                raster,
                 sale,
                 customerName: customerName,
                 customerPhone: customerPhone,
               ),
             ],
             _receiptDivider(),
-            _receiptItems(sale),
+            _receiptItems(pdf.document, raster, sale),
             _receiptDivider(),
             _receiptTotals(sale),
             _receiptDivider(),
@@ -91,7 +119,87 @@ class InvoiceService {
     return pdf.save();
   }
 
-  pw.Widget _receiptShopHeader(DocCompany company) {
+  Future<void> _prepareInvoiceRaster(
+    PdfRasterText raster, {
+    required Sale sale,
+    required DocCompany company,
+    required String customerName,
+    required String customerPhone,
+    required bool thermal,
+  }) async {
+    const receiptInk = ui.Color(0xFF123B36);
+    const invoiceIndigo = ui.Color(0xFF1E3A8A);
+    const grey800 = ui.Color(0xFF374151);
+    const grey600 = ui.Color(0xFF525252);
+    const grey500 = ui.Color(0xFF737373);
+    final companyWidth = thermal ? 200.0 : 300.0;
+    final itemWidth = thermal ? 88.0 : 241.0;
+    final customerWidth = thermal ? 118.0 : 475.0;
+
+    await raster.prepare(
+      company.name,
+      fontSize: thermal ? 16 : 20,
+      bold: true,
+      color: thermal ? receiptInk : invoiceIndigo,
+      width: companyWidth,
+      textAlign: thermal ? ui.TextAlign.center : ui.TextAlign.left,
+    );
+    final companyFields = <(String, ui.Color)>[
+      (company.tagline, grey600),
+      (company.address, thermal ? grey600 : grey500),
+      (company.phone, thermal ? grey600 : grey500),
+      (company.email, grey500),
+    ];
+    for (final field in companyFields) {
+      if (field.$1.isNotEmpty) {
+        await raster.prepare(
+          field.$1,
+          fontSize: thermal ? 8 : 9,
+          bold: false,
+          color: field.$2,
+          width: companyWidth,
+          textAlign: thermal ? ui.TextAlign.center : ui.TextAlign.left,
+        );
+      }
+    }
+
+    final displayName = customerName.isNotEmpty
+        ? customerName
+        : sale.customerId;
+    await raster.prepare(
+      displayName,
+      fontSize: thermal ? 9 : 12,
+      bold: true,
+      color: grey800,
+      width: customerWidth,
+      textAlign: thermal ? ui.TextAlign.right : ui.TextAlign.left,
+    );
+    if (customerPhone.isNotEmpty) {
+      await raster.prepare(
+        customerPhone,
+        fontSize: thermal ? 9 : 9,
+        bold: false,
+        color: grey600,
+        width: customerWidth,
+        textAlign: thermal ? ui.TextAlign.right : ui.TextAlign.left,
+      );
+    }
+    for (final item in sale.items) {
+      await raster.prepare(
+        item.name,
+        fontSize: thermal ? 8.5 : 9,
+        bold: false,
+        color: grey800,
+        width: itemWidth,
+      );
+    }
+  }
+
+  pw.Widget _receiptShopHeader(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    DocCompany company,
+  ) {
     return pw.Column(
       children: [
         pw.Container(
@@ -101,49 +209,68 @@ class InvoiceService {
           ),
         ),
         pw.SizedBox(height: 8),
-        pw.Text(
+        _rasterText(
+          pdf,
+          raster,
           company.name,
-          textAlign: pw.TextAlign.center,
-          style: pw.TextStyle(
-            fontSize: 16,
-            fontWeight: pw.FontWeight.bold,
-            color: const PdfColor.fromInt(0xFF123B36),
-          ),
+          fontSize: 16,
+          bold: true,
+          color: const ui.Color(0xFF123B36),
+          width: 200,
+          alignment: pw.Alignment.center,
         ),
         if (company.address.isNotEmpty) ...[
           pw.SizedBox(height: 2),
-          pw.Text(
+          _rasterText(
+            pdf,
+            raster,
             company.address,
-            textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+            fontSize: 8,
+            color: const ui.Color(0xFF525252),
+            width: 200,
+            alignment: pw.Alignment.center,
           ),
         ],
         if (company.phone.isNotEmpty) ...[
           pw.SizedBox(height: 1),
-          pw.Text(
+          _rasterText(
+            pdf,
+            raster,
             company.phone,
-            textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+            fontSize: 8,
+            color: const ui.Color(0xFF525252),
+            width: 200,
+            alignment: pw.Alignment.center,
           ),
         ],
         if (company.tin.isNotEmpty)
-          pw.Text('TIN: ${company.tin}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-        if (company.bin.isNotEmpty)
-          pw.Text('BIN: ${company.bin}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-        if (company.tagline.trim().isNotEmpty)
           pw.Text(
+            'TIN: ${company.tin}',
+            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+        if (company.bin.isNotEmpty)
+          pw.Text(
+            'BIN: ${company.bin}',
+            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+        if (company.tagline.trim().isNotEmpty)
+          _rasterText(
+            pdf,
+            raster,
             company.tagline,
-            textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+            fontSize: 8,
+            color: const ui.Color(0xFF525252),
+            width: 200,
+            alignment: pw.Alignment.center,
           ),
       ],
     );
   }
 
   pw.Widget _receiptDivider() => pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 6),
-        child: pw.Divider(thickness: 0.8, color: PdfColors.grey400),
-      );
+    padding: const pw.EdgeInsets.symmetric(vertical: 6),
+    child: pw.Divider(thickness: 0.8, color: PdfColors.grey400),
+  );
 
   pw.Widget _receiptMeta(Sale sale, DateTime now) {
     return pw.Column(
@@ -172,19 +299,15 @@ class InvoiceService {
           'Invoice #',
           sale.invoiceNumber.isNotEmpty ? sale.invoiceNumber : sale.saleId,
         ),
-        _receiptLine(
-          'Date',
-          DateFormat('MMM dd, yyyy').format(sale.createdAt),
-        ),
-        _receiptLine(
-          'Time',
-          DateFormat('hh:mm a').format(sale.createdAt),
-        ),
+        _receiptLine('Date', DateFormat('MMM dd, yyyy').format(sale.createdAt)),
+        _receiptLine('Time', DateFormat('hh:mm a').format(sale.createdAt)),
       ],
     );
   }
 
   pw.Widget _receiptCustomer(
+    PdfDocument pdf,
+    PdfRasterText raster,
     Sale sale, {
     String customerName = '',
     String customerPhone = '',
@@ -192,31 +315,33 @@ class InvoiceService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _receiptLine(
+        _receiptRasterLine(
+          pdf,
+          raster,
           'Customer',
           customerName.isNotEmpty ? customerName : sale.customerId,
           boldValue: true,
         ),
         if (customerPhone.isNotEmpty)
-          _receiptLine('Phone', customerPhone),
+          _receiptRasterLine(pdf, raster, 'Phone', customerPhone),
         _receiptLine(
           'Status',
           sale.paymentStatus == PaymentStatus.paid
               ? 'PAID'
               : sale.paymentStatus == PaymentStatus.partial
-                  ? 'PARTIAL'
-                  : 'DUE',
+              ? 'PARTIAL'
+              : 'DUE',
           valueColor: sale.paymentStatus == PaymentStatus.paid
               ? const PdfColor.fromInt(0xFF16A34A)
               : sale.paymentStatus == PaymentStatus.partial
-                  ? const PdfColor.fromInt(0xFFD97706)
-                  : const PdfColor.fromInt(0xFFDC2626),
+              ? const PdfColor.fromInt(0xFFD97706)
+              : const PdfColor.fromInt(0xFFDC2626),
         ),
       ],
     );
   }
 
-  pw.Widget _receiptItems(Sale sale) {
+  pw.Widget _receiptItems(PdfDocument pdf, PdfRasterText raster, Sale sale) {
     final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -260,9 +385,13 @@ class InvoiceService {
               children: [
                 pw.Expanded(
                   flex: 3,
-                  child: pw.Text(
+                  child: _rasterText(
+                    pdf,
+                    raster,
                     item.name,
-                    style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey800),
+                    fontSize: 8.5,
+                    color: const ui.Color(0xFF374151),
+                    width: 88,
                   ),
                 ),
                 _receiptQtyCell(_qtyText(item.qty)),
@@ -304,11 +433,7 @@ class InvoiceService {
     );
   }
 
-  pw.Widget _receiptQtyCell(
-    String text, {
-    bool bold = false,
-    PdfColor? color,
-  }) {
+  pw.Widget _receiptQtyCell(String text, {bool bold = false, PdfColor? color}) {
     return pw.SizedBox(
       width: 24,
       child: pw.Text(
@@ -344,16 +469,22 @@ class InvoiceService {
 
   pw.Widget _receiptTotals(Sale sale) {
     final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final taxable = (itemsTotal - sale.discount).clamp(0, double.infinity).toDouble();
+    final taxable = (itemsTotal - sale.discount)
+        .clamp(0, double.infinity)
+        .toDouble();
     final vatAmount = taxable * (sale.vatPercent / 100);
 
     return pw.Column(
       children: [
         _receiptTotalRow('Subtotal', money(itemsTotal)),
         if (sale.vatPercent > 0)
-          _receiptTotalRow('VAT (${sale.vatPercent.toStringAsFixed(1)}%)', money(vatAmount)),
+          _receiptTotalRow(
+            'VAT (${sale.vatPercent.toStringAsFixed(1)}%)',
+            money(vatAmount),
+          ),
         if (sale.charge > 0) _receiptTotalRow('Charge', money(sale.charge)),
-        if (sale.discount > 0) _receiptTotalRow('Discount', '-${money(sale.discount)}'),
+        if (sale.discount > 0)
+          _receiptTotalRow('Discount', '-${money(sale.discount)}'),
         pw.SizedBox(height: 4),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -447,9 +578,55 @@ class InvoiceService {
               textAlign: pw.TextAlign.right,
               style: pw.TextStyle(
                 fontSize: 9,
-                fontWeight: boldValue ? pw.FontWeight.bold : pw.FontWeight.normal,
+                fontWeight: boldValue
+                    ? pw.FontWeight.bold
+                    : pw.FontWeight.normal,
                 color: valueColor ?? PdfColors.grey800,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _receiptRasterLine(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    String label,
+    String value, {
+    bool boldValue = false,
+  }) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            '• ',
+            style: pw.TextStyle(fontSize: 9, color: PdfColors.grey400),
+          ),
+          pw.SizedBox(
+            width: 52,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey600,
+              ),
+            ),
+          ),
+          pw.Expanded(
+            child: _rasterText(
+              pdf,
+              raster,
+              value,
+              fontSize: 9,
+              bold: boldValue,
+              color: const ui.Color(0xFF374151),
+              width: 118,
+              alignment: pw.Alignment.centerRight,
             ),
           ),
         ],
@@ -484,9 +661,10 @@ class InvoiceService {
     );
   }
 
-  String _qtyText(double qty) => qty % 1 == 0 ? qty.toStringAsFixed(0) : qty.toString();
+  String _qtyText(double qty) =>
+      qty % 1 == 0 ? qty.toStringAsFixed(0) : qty.toString();
 
-  pw.Widget _header(DocCompany company) {
+  pw.Widget _header(PdfDocument pdf, PdfRasterText raster, DocCompany company) {
     return pw.Column(
       children: [
         pw.Row(
@@ -494,7 +672,7 @@ class InvoiceService {
           children: [
             pw.Expanded(
               flex: 3,
-              child: buildCompanyColumn(company),
+              child: buildRasterCompanyColumn(pdf, raster, company),
             ),
             pw.Expanded(
               flex: 2,
@@ -551,14 +729,22 @@ class InvoiceService {
           pw.Expanded(
             child: pw.Row(
               children: [
-                _metaBadge('Invoice #', sale.invoiceNumber.isNotEmpty ? sale.invoiceNumber : sale.saleId),
+                _metaBadge(
+                  'Invoice #',
+                  sale.invoiceNumber.isNotEmpty
+                      ? sale.invoiceNumber
+                      : sale.saleId,
+                ),
                 pw.SizedBox(width: 16),
                 _metaBadge(
                   'Date',
                   DateFormat('MMM dd, yyyy').format(sale.createdAt),
                 ),
                 pw.SizedBox(width: 16),
-                _metaBadge('Generated', DateFormat('MMM dd, yyyy HH:mm').format(now)),
+                _metaBadge(
+                  'Generated',
+                  DateFormat('MMM dd, yyyy HH:mm').format(now),
+                ),
               ],
             ),
           ),
@@ -581,17 +767,22 @@ class InvoiceService {
         ),
         pw.Text(
           value,
-          style: pw.TextStyle(
-            fontSize: 9,
-            color: PdfColors.grey700,
-          ),
+          style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
         ),
       ],
     );
   }
 
-  pw.Widget _customerSection(Sale sale, {String customerName = '', String customerPhone = ''}) {
-    final displayName = customerName.isNotEmpty ? customerName : sale.customerId;
+  pw.Widget _customerSection(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    Sale sale, {
+    String customerName = '',
+    String customerPhone = '',
+  }) {
+    final displayName = customerName.isNotEmpty
+        ? customerName
+        : sale.customerId;
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
@@ -614,70 +805,73 @@ class InvoiceService {
               ),
               pw.SizedBox(width: 8),
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
                 decoration: pw.BoxDecoration(
                   color: sale.paymentStatus == PaymentStatus.paid
                       ? const PdfColor.fromInt(0xFFDCFCE7)
                       : sale.paymentStatus == PaymentStatus.partial
-                          ? const PdfColor.fromInt(0xFFFEF9C3)
-                          : const PdfColor.fromInt(0xFFFEE2E2),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                      ? const PdfColor.fromInt(0xFFFEF9C3)
+                      : const PdfColor.fromInt(0xFFFEE2E2),
+                  borderRadius: const pw.BorderRadius.all(
+                    pw.Radius.circular(10),
+                  ),
                 ),
                 child: pw.Text(
                   sale.paymentStatus == PaymentStatus.paid
                       ? 'Paid'
                       : sale.paymentStatus == PaymentStatus.partial
-                          ? 'Partial'
-                          : 'Due',
+                      ? 'Partial'
+                      : 'Due',
                   style: pw.TextStyle(
                     fontSize: 8,
                     fontWeight: pw.FontWeight.bold,
                     color: sale.paymentStatus == PaymentStatus.paid
                         ? const PdfColor.fromInt(0xFF16A34A)
                         : sale.paymentStatus == PaymentStatus.partial
-                            ? const PdfColor.fromInt(0xFFD97706)
-                            : const PdfColor.fromInt(0xFFDC2626),
+                        ? const PdfColor.fromInt(0xFFD97706)
+                        : const PdfColor.fromInt(0xFFDC2626),
                   ),
                 ),
               ),
             ],
           ),
           pw.SizedBox(height: 8),
-          pw.Text(
+          _rasterText(
+            pdf,
+            raster,
             displayName,
-            style: pw.TextStyle(
-              fontSize: 12,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.grey800,
-            ),
+            fontSize: 12,
+            bold: true,
+            color: const ui.Color(0xFF374151),
+            width: 475,
           ),
           pw.SizedBox(height: 4),
           if (customerPhone.isNotEmpty)
-            pw.Text(
+            _rasterText(
+              pdf,
+              raster,
               customerPhone,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfColors.grey600,
-              ),
+              fontSize: 9,
+              color: const ui.Color(0xFF525252),
+              width: 475,
             ),
           pw.Text(
             'ID: ${sale.customerId}',
-            style: pw.TextStyle(
-              fontSize: 8,
-              color: PdfColors.grey500,
-            ),
+            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
           ),
         ],
       ),
     );
   }
 
-  pw.Widget _itemsTable(Sale sale) {
+  pw.Widget _itemsTable(PdfDocument pdf, PdfRasterText raster, Sale sale) {
     final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
     return pw.Table(
       border: pw.TableBorder(
-        horizontalInside:
-            pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+        horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
         bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
         top: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
       ),
@@ -691,8 +885,8 @@ class InvoiceService {
       children: [
         _tableHeaderRow(['#', 'Item', 'Qty', 'Unit Price', 'Total']),
         ...sale.items.asMap().entries.map(
-              (e) => _itemRow(e.value, e.key + 1, e.key.isOdd),
-            ),
+          (e) => _itemRow(pdf, raster, e.value, e.key + 1, e.key.isOdd),
+        ),
         _subtotalRow(itemsTotal),
       ],
     );
@@ -700,16 +894,18 @@ class InvoiceService {
 
   pw.TableRow _tableHeaderRow(List<String> headers) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFF1E3A8A),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF1E3A8A)),
       children: headers
           .map(
             (h) => pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 8,
+              ),
               child: pw.Text(
                 h,
-                textAlign: h == '#' || h == 'Qty' || h == 'Unit Price' || h == 'Total'
+                textAlign:
+                    h == '#' || h == 'Qty' || h == 'Unit Price' || h == 'Total'
                     ? pw.TextAlign.center
                     : pw.TextAlign.left,
                 style: pw.TextStyle(
@@ -724,16 +920,30 @@ class InvoiceService {
     );
   }
 
-  pw.TableRow _itemRow(SaleItem item, int index, bool odd) {
+  pw.TableRow _itemRow(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    SaleItem item,
+    int index,
+    bool odd,
+  ) {
     return pw.TableRow(
       decoration: pw.BoxDecoration(
-        color: odd
-            ? const PdfColor.fromInt(0xFFF8FAFC)
-            : PdfColors.white,
+        color: odd ? const PdfColor.fromInt(0xFFF8FAFC) : PdfColors.white,
       ),
       children: [
         _cell('$index', align: pw.TextAlign.center),
-        _cell(item.name),
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+          child: _rasterText(
+            pdf,
+            raster,
+            item.name,
+            fontSize: 9,
+            color: const ui.Color(0xFF374151),
+            width: 241,
+          ),
+        ),
         _cell('${item.qty.toInt()}', align: pw.TextAlign.center),
         _cell(money(item.unitPrice), align: pw.TextAlign.right),
         _cell(money(item.lineTotal), align: pw.TextAlign.right),
@@ -743,9 +953,7 @@ class InvoiceService {
 
   pw.TableRow _subtotalRow(double itemsTotal) {
     return pw.TableRow(
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFFF1F5F9),
-      ),
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
       children: [
         _cell('', align: pw.TextAlign.center),
         _cell(''),
@@ -758,7 +966,9 @@ class InvoiceService {
 
   pw.Widget _summarySection(Sale sale) {
     final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final taxable = (itemsTotal - sale.discount).clamp(0, double.infinity).toDouble();
+    final taxable = (itemsTotal - sale.discount)
+        .clamp(0, double.infinity)
+        .toDouble();
     final vatAmount = taxable * (sale.vatPercent / 100);
 
     return pw.Container(
@@ -774,8 +984,7 @@ class InvoiceService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                _summaryLine('Subtotal', itemsTotal,
-                    PdfColors.grey700),
+                _summaryLine('Subtotal', itemsTotal, PdfColors.grey700),
                 pw.SizedBox(height: 4),
                 pw.Divider(thickness: 0.5, color: PdfColors.grey300),
                 pw.SizedBox(height: 4),
@@ -785,21 +994,36 @@ class InvoiceService {
                   const PdfColor.fromInt(0xFF1E3A8A),
                 ),
                 if (sale.charge > 0)
-                  _summaryLine('Charge', sale.charge,
-                      const PdfColor.fromInt(0xFFEA580C)),
+                  _summaryLine(
+                    'Charge',
+                    sale.charge,
+                    const PdfColor.fromInt(0xFFEA580C),
+                  ),
                 if (sale.discount > 0)
-                  _summaryLine('Discount', sale.discount,
-                      const PdfColor.fromInt(0xFFEA580C)),
+                  _summaryLine(
+                    'Discount',
+                    sale.discount,
+                    const PdfColor.fromInt(0xFFEA580C),
+                  ),
                 pw.SizedBox(height: 4),
                 pw.Divider(thickness: 0.5, color: PdfColors.grey300),
                 pw.SizedBox(height: 4),
-                _summaryLine('Total Amount', sale.totalAmount,
-                    const PdfColor.fromInt(0xFF1E3A8A)),
-                _summaryLine('Paid Amount', sale.paidAmount,
-                    const PdfColor.fromInt(0xFF16A34A)),
+                _summaryLine(
+                  'Total Amount',
+                  sale.totalAmount,
+                  const PdfColor.fromInt(0xFF1E3A8A),
+                ),
+                _summaryLine(
+                  'Paid Amount',
+                  sale.paidAmount,
+                  const PdfColor.fromInt(0xFF16A34A),
+                ),
                 if (sale.dueAmount > 0)
-                  _summaryLine('Due Amount', sale.dueAmount,
-                      const PdfColor.fromInt(0xFFDC2626)),
+                  _summaryLine(
+                    'Due Amount',
+                    sale.dueAmount,
+                    const PdfColor.fromInt(0xFFDC2626),
+                  ),
               ],
             ),
           ),
@@ -832,6 +1056,27 @@ class InvoiceService {
           ),
         ],
       ),
+    );
+  }
+
+  pw.Widget _rasterText(
+    PdfDocument pdf,
+    PdfRasterText raster,
+    String text, {
+    required double fontSize,
+    required ui.Color color,
+    required double width,
+    bool bold = false,
+    pw.Alignment alignment = pw.Alignment.centerLeft,
+  }) {
+    return raster.build(
+      pdf,
+      text,
+      fontSize: fontSize,
+      bold: bold,
+      color: color,
+      width: width,
+      alignment: alignment,
     );
   }
 

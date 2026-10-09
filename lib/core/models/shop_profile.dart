@@ -36,6 +36,7 @@ class ShopProfile {
     this.ownerEmail = '',
     this.createdAt,
     this.imagePath = '',
+    this.reportLogoPath = '',
     this.tin = '',
     this.bin = '',
     this.loyaltyOfferEnabled = true,
@@ -55,6 +56,7 @@ class ShopProfile {
   final String ownerEmail;
   final DateTime? createdAt;
   final String imagePath;
+  final String reportLogoPath;
   final String tin;
   final String bin;
   final bool loyaltyOfferEnabled;
@@ -90,6 +92,7 @@ class ShopProfile {
     'totalInvestment': totalInvestment,
     if (createdAt != null) 'createdAt': dateToJson(createdAt!),
     'imagePath': imagePath,
+    'reportLogoPath': reportLogoPath,
     'updatedAt': dateToJson(updatedAt),
     'tin': tin,
     'bin': bin,
@@ -117,6 +120,7 @@ class ShopProfile {
       location: (json['location'] ?? '') as String,
       phoneNumber: (json['phoneNumber'] ?? '') as String,
       imagePath: (json['imagePath'] ?? '') as String,
+      reportLogoPath: (json['reportLogoPath'] ?? '') as String,
       tin: (json['tin'] ?? '') as String,
       bin: (json['bin'] ?? '') as String,
       loyaltyOfferEnabled: json['loyaltyOfferEnabled'] != false,

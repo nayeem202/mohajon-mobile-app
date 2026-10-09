@@ -10,6 +10,7 @@ import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/app_error.dart';
 import '../../../core/services/audit_service.dart';
 import '../../../features/products/providers/product_providers.dart';
 import '../../notifications/models/notification_model.dart';
@@ -186,14 +187,16 @@ class CartController extends StateNotifier<CartState> {
             .clamp(0, double.infinity)
             .toDouble();
         if (currentDue + state.due > limit) {
-          throw StateError(
-            'Customer credit limit exceeded. Available credit: ৳${(limit - currentDue).clamp(0, double.infinity).toStringAsFixed(2)}',
+          throw CreditLimitExceededException(
+            (limit - currentDue).clamp(0, double.infinity).toDouble(),
           );
         }
       }
     }
     for (final item in state.items) {
-      final product = _ref.read(productServiceProvider).getActiveBranchProduct(item.productId);
+      final product = _ref
+          .read(productServiceProvider)
+          .getActiveBranchProduct(item.productId);
       if (product == null) {
         throw StateError('${item.name} is no longer available.');
       }
@@ -340,10 +343,14 @@ class CartController extends StateNotifier<CartState> {
       try {
         await db.customers.put(
           customerBeforeSale.copyWith(
-            totalSpent: moneyRound2(customerBeforeSale.totalSpent + totalAmount),
-            loyaltyPoints: (customerBeforeSale.loyaltyPoints -
-                    sale.loyaltyPointsRedeemed + sale.loyaltyPointsEarned)
-                .clamp(0, 1 << 30),
+            totalSpent: moneyRound2(
+              customerBeforeSale.totalSpent + totalAmount,
+            ),
+            loyaltyPoints:
+                (customerBeforeSale.loyaltyPoints -
+                        sale.loyaltyPointsRedeemed +
+                        sale.loyaltyPointsEarned)
+                    .clamp(0, 1 << 30),
             updatedAt: now,
             syncStatus: SyncStatus.pending,
           ),

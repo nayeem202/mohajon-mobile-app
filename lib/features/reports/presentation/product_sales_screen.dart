@@ -175,7 +175,9 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
     isXlsx: false,
     task: () async {
       final data = _compute();
-      final company = DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      final company = await DocCompany.fromShopForExport(
+        ref.read(shopProfileProvider).value,
+      );
       await ProductSalesPdfService().saveProductSales(
         table: data.table,
         range: _range,
@@ -224,6 +226,11 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                ReportBrandStrip(
+                  title: l10n.t('reportProductSales'),
+                  icon: Icons.shopping_bag_rounded,
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(

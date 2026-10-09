@@ -106,6 +106,14 @@ class SyncController extends StateNotifier<SyncState> {
     );
     try {
       state = await _syncService.sync(shopId: _shopId);
+    } catch (error) {
+      // Never leave the global sync indicator stuck in `syncing` if an
+      // unexpected local/database error escapes SyncService.
+      state = SyncState(
+        phase: SyncPhase.failed,
+        message: error.toString(),
+        pendingCount: _syncService.pendingCount(shopId: _shopId),
+      );
     } finally {
       _syncing = false;
     }

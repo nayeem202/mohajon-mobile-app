@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
-
 import '../config/app_config.dart';
 import '../constants/app_constants.dart';
 import '../models/syncable.dart';
@@ -93,12 +91,16 @@ class SyncService {
 
   Future<bool> _probeOnline() async {
     try {
-      final results = await Connectivity().checkConnectivity();
-      if (!results.any((result) => result != ConnectivityResult.none)) {
-        return false;
-      }
-      // Confirm the business service itself is reachable.
+      // OS connectivity is only a hint. It can report `none` for an
+      // ADB-reversed local service even while the business API is fully
+      // reachable, and it can report Wi-Fi for a captive portal. The actual
+      // API probe is the source of truth for the sync indicator.
       await _api.get('/api/v1/shops/me', timeout: const Duration(seconds: 6));
+      return true;
+    } on ApiException {
+      // Any HTTP response proves the API host is reachable. In particular,
+      // an expired/rejected session (401/403) is an authentication/sync
+      // problem, not an offline network state.
       return true;
     } catch (_) {
       return false;

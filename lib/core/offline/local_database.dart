@@ -176,6 +176,10 @@ class LocalDatabase {
     await clearBusinessData();
     await settings.put('activeUserId', userId);
     await settings.put('activeShopId', shopId);
+    // A branch selection belongs to exactly one shop. Never carry it into a
+    // different account; the server rejects cross-shop branch headers.
+    await settings.delete('activeBranchId');
+    await settings.delete('activeBranchShopId');
   }
 
   Future<void> clearBusinessData() async {
@@ -205,5 +209,7 @@ class LocalDatabase {
     await settings.deleteAll(keys);
     await settings.delete('activeUserId');
     await settings.delete('activeShopId');
+    await settings.delete('activeBranchId');
+    await settings.delete('activeBranchShopId');
   }
 }

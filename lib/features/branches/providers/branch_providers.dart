@@ -6,14 +6,17 @@ import '../../../core/services/api_client.dart';
 import '../models/branch.dart';
 
 final currentBranchIdProvider = StateProvider<String?>((ref) {
-  return ref.watch(localDatabaseProvider).settings.get('activeBranchId') as String?;
+  return ref.watch(localDatabaseProvider).settings.get('activeBranchId')
+      as String?;
 });
 
 final branchesProvider = FutureProvider<List<Branch>>((ref) async {
   final session = ref.watch(authStateProvider).value;
   if (session == null) return const <Branch>[];
   try {
-    final data = await ApiClient(ref.read(localDatabaseProvider)).getJson('/api/v1/branches');
+    final data = await ApiClient(
+      ref.read(localDatabaseProvider),
+    ).getJson('/api/v1/branches');
     if (data is! List) return const <Branch>[];
     return data.whereType<Map>().map(Branch.fromJson).toList(growable: false);
   } on ApiException catch (error) {
@@ -22,24 +25,31 @@ final branchesProvider = FutureProvider<List<Branch>>((ref) async {
   }
 });
 
-final branchServiceProvider = Provider<BranchService>((ref) => BranchService(ref));
+final branchServiceProvider = Provider<BranchService>(
+  (ref) => BranchService(ref),
+);
 
 class BranchService {
   BranchService(this._ref);
   final Ref _ref;
 
-  Future<Branch> create({required String name, String address = '', String phone = ''}) async {
+  Future<Branch> create({
+    required String name,
+    String address = '',
+    String phone = '',
+  }) async {
     if (name.trim().isEmpty) throw StateError('Branch name is required.');
-    final json = await ApiClient(_ref.read(localDatabaseProvider)).post('/api/v1/branches', {
-      'name': name.trim(),
-      'address': address.trim(),
-      'phone': phone.trim(),
-    });
+    final json = await ApiClient(_ref.read(localDatabaseProvider)).post(
+      '/api/v1/branches',
+      {'name': name.trim(), 'address': address.trim(), 'phone': phone.trim()},
+    );
     return Branch.fromJson(json);
   }
 
   Future<void> select(Branch branch) async {
-    await _ref.read(localDatabaseProvider).settings.put('activeBranchId', branch.branchId);
+    final settings = _ref.read(localDatabaseProvider).settings;
+    await settings.put('activeBranchId', branch.branchId);
+    await settings.put('activeBranchShopId', branch.shopId);
     _ref.read(currentBranchIdProvider.notifier).state = branch.branchId;
     _ref.invalidate(branchesProvider);
   }

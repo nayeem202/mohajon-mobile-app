@@ -44,7 +44,7 @@ class _EmailVerificationDialogState
   bool _success = false;
   Timer? _countdownTimer;
   Duration _codeRemaining = const Duration(minutes: 3);
-  int _resendRemaining = 30;
+  late DateTime _codeExpiresAt;
 
   bool get _codeExpired => _codeRemaining == Duration.zero;
 
@@ -56,16 +56,21 @@ class _EmailVerificationDialogState
 
   void _startCountdown() {
     _countdownTimer?.cancel();
-    _codeRemaining = const Duration(minutes: 3);
-    _resendRemaining = 30;
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      final nextCode = _codeRemaining - const Duration(seconds: 1);
-      setState(() {
-        _codeRemaining = nextCode.isNegative ? Duration.zero : nextCode;
-        _resendRemaining = _resendRemaining > 0 ? _resendRemaining - 1 : 0;
-      });
+    _codeExpiresAt = DateTime.now().add(const Duration(minutes: 3));
+    _refreshCountdown();
+    _countdownTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _refreshCountdown(),
+    );
+  }
+
+  void _refreshCountdown() {
+    if (!mounted) return;
+    final remaining = _codeExpiresAt.difference(DateTime.now());
+    setState(() {
+      _codeRemaining = remaining.isNegative ? Duration.zero : remaining;
     });
+    if (remaining <= Duration.zero) _countdownTimer?.cancel();
   }
 
   String _formatDuration(Duration duration) {
@@ -130,14 +135,16 @@ class _EmailVerificationDialogState
   }
 
   Future<void> _resend() async {
-    if (_resendRemaining > 0) return;
+    if (!_codeExpired) return;
     setState(() {
       _busy = true;
       _error = null;
       _notice = false;
     });
     try {
-      await ref.read(authServiceProvider).sendEmailVerificationCode(widget.email);
+      await ref
+          .read(authServiceProvider)
+          .sendEmailVerificationCode(widget.email);
       if (mounted) {
         setState(() {
           _error = 'Code resent to ${widget.email}';
@@ -174,162 +181,170 @@ class _EmailVerificationDialogState
           child: SizedBox(
             height: dialogHeight,
             child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: AuthBrand.panelBackground,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: AuthBrand.buttonGlow.withValues(alpha: .22),
-                  blurRadius: 40,
-                  offset: const Offset(0, 18),
-                ),
-                BoxShadow(
-                  color: AuthBrand.panelText.withValues(alpha: .10),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _Header(email: widget.email, locale: locale),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Enter the 6-digit code we emailed you to confirm this address and finish setting up your account.',
-                          textAlign: TextAlign.center,
-                          style: AppType.body(
-                            const TextStyle(
-                              color: AuthBrand.panelMuted,
-                              fontSize: 14.5,
-                              height: 1.45,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: AuthBrand.panelBackground,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: AuthBrand.buttonGlow.withValues(alpha: .22),
+                    blurRadius: 40,
+                    offset: const Offset(0, 18),
+                  ),
+                  BoxShadow(
+                    color: AuthBrand.panelText.withValues(alpha: .10),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _Header(email: widget.email, locale: locale),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Enter the 6-digit code we emailed you to confirm this address and finish setting up your account.',
+                            textAlign: TextAlign.center,
+                            style: AppType.body(
+                              const TextStyle(
+                                color: AuthBrand.panelMuted,
+                                fontSize: 14.5,
+                                height: 1.45,
+                              ),
+                              locale: locale,
                             ),
-                            locale: locale,
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        _CodeField(
-                          controller: _codeController,
-                          focusNode: _codeFocus,
-                          locale: locale,
-                          onSubmitted: (_) => _verify(),
-                        ),
-                        const SizedBox(height: 10),
-                        Builder(
-                          builder: (context) {
-                            final bangla =
-                                Localizations.localeOf(context).languageCode ==
-                                'bn';
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _codeExpired
-                                      ? Icons.error_outline_rounded
-                                      : Icons.timer_outlined,
-                                  size: 16,
-                                  color: _codeExpired
-                                      ? AuthBrand.danger
-                                      : AuthBrand.primaryDeep,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _codeExpired
-                                      ? (bangla
-                                            ? 'কোডের মেয়াদ শেষ হয়েছে'
-                                            : 'Code expired')
-                                      : (bangla
-                                            ? 'কোডের মেয়াদ শেষ হবে ${_formatDuration(_codeRemaining)} পরে'
-                                            : 'Code expires in ${_formatDuration(_codeRemaining)}'),
-                                  style: TextStyle(
+                          const SizedBox(height: 20),
+                          _CodeField(
+                            controller: _codeController,
+                            focusNode: _codeFocus,
+                            locale: locale,
+                            onSubmitted: (_) => _verify(),
+                          ),
+                          const SizedBox(height: 10),
+                          Builder(
+                            builder: (context) {
+                              final bangla =
+                                  Localizations.localeOf(
+                                    context,
+                                  ).languageCode ==
+                                  'bn';
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _codeExpired
+                                        ? Icons.error_outline_rounded
+                                        : Icons.timer_outlined,
+                                    size: 16,
                                     color: _codeExpired
                                         ? AuthBrand.danger
-                                        : AuthBrand.panelMuted,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                                        : AuthBrand.primaryDeep,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _codeExpired
+                                        ? (bangla
+                                              ? 'কোডের মেয়াদ শেষ হয়েছে'
+                                              : 'Code expired')
+                                        : (bangla
+                                              ? 'কোডের মেয়াদ শেষ হবে ${_formatDuration(_codeRemaining)} পরে'
+                                              : 'Code expires in ${_formatDuration(_codeRemaining)}'),
+                                    style: TextStyle(
+                                      color: _codeExpired
+                                          ? AuthBrand.danger
+                                          : AuthBrand.panelMuted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            alignment: Alignment.topCenter,
+                            child: _error == null
+                                ? const SizedBox(width: double.infinity)
+                                : Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: _StatusLine(
+                                      message: _error!,
+                                      isNotice: _notice,
+                                      locale: locale,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 20),
+                          _VerifyButton(
+                            busy: _busy,
+                            enabled: !_codeExpired,
+                            label: 'Verify & continue',
+                            onPressed: _verify,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: _busy || !_codeExpired
+                                      ? null
+                                      : _resend,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AuthBrand.primaryDeep,
+                                    disabledForegroundColor: AuthBrand
+                                        .panelMuted
+                                        .withValues(alpha: .45),
+                                  ),
+                                  child: Text(
+                                    _codeExpired
+                                        ? (locale.languageCode == 'bn'
+                                              ? 'নতুন কোড পাঠান'
+                                              : 'Resend code')
+                                        : (locale.languageCode == 'bn'
+                                              ? 'কোডের সময় শেষ হলে নতুন কোড পাঠাতে পারবেন'
+                                              : 'You can resend after this code expires'),
                                   ),
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          alignment: Alignment.topCenter,
-                          child: _error == null
-                              ? const SizedBox(width: double.infinity)
-                              : Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: _StatusLine(
-                                    message: _error!,
-                                    isNotice: _notice,
-                                    locale: locale,
+                              ),
+                              Container(
+                                height: 18,
+                                width: 1,
+                                color: AuthBrand.fieldBorder,
+                              ),
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: _busy || _success
+                                      ? null
+                                      : () => Navigator.of(context).pop(false),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AuthBrand.panelMuted,
+                                    disabledForegroundColor: AuthBrand
+                                        .panelMuted
+                                        .withValues(alpha: .45),
                                   ),
-                                ),
-                        ),
-                        const SizedBox(height: 20),
-                        _VerifyButton(
-                          busy: _busy,
-                          enabled: !_codeExpired,
-                          label: 'Verify & continue',
-                          onPressed: _verify,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextButton(
-                                onPressed: _busy || _resendRemaining > 0
-                                    ? null
-                                    : _resend,
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AuthBrand.primaryDeep,
-                                  disabledForegroundColor: AuthBrand.panelMuted
-                                      .withValues(alpha: .45),
-                                ),
-                                child: Text(
-                                  _resendRemaining > 0
-                                      ? 'Resend in ${_resendRemaining}s'
-                                      : 'Resend code',
+                                  child: const Text('Skip for now'),
                                 ),
                               ),
-                            ),
-                            Container(
-                              height: 18,
-                              width: 1,
-                              color: AuthBrand.fieldBorder,
-                            ),
-                            Expanded(
-                              child: TextButton(
-                                onPressed: _busy || _success
-                                    ? null
-                                    : () => Navigator.of(context).pop(false),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AuthBrand.panelMuted,
-                                  disabledForegroundColor: AuthBrand.panelMuted
-                                      .withValues(alpha: .45),
-                                ),
-                                child: const Text('Skip for now'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
           ),
         ),

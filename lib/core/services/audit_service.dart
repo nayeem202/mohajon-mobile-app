@@ -22,24 +22,34 @@ class AuditService {
     final db = _ref.read(localDatabaseProvider);
     final user = _ref.read(currentUserProvider);
     final now = DateTime.now();
-    await db.auditEvents.put(AuditEvent(
-      eventId: const Uuid().v4(),
-      action: action,
-      entityType: entityType,
-      entityId: entityId,
-      actorId: user?.userId ?? 'unknown',
-      shopId: _ref.read(shopIdProvider),
-      branchId: _ref.read(localDatabaseProvider).settings.get('activeBranchId') as String? ??
-          '${_ref.read(shopIdProvider)}-main',
-      createdAt: now,
-      details: details,
-      syncStatus: SyncStatus.pending,
-    ));
+    final enrichedDetails = <String, dynamic>{
+      ...details,
+      if ((user?.name ?? '').trim().isNotEmpty) 'actorName': user!.name.trim(),
+    };
+    await db.auditEvents.put(
+      AuditEvent(
+        eventId: const Uuid().v4(),
+        action: action,
+        entityType: entityType,
+        entityId: entityId,
+        actorId: user?.userId ?? 'unknown',
+        shopId: _ref.read(shopIdProvider),
+        branchId:
+            _ref.read(localDatabaseProvider).settings.get('activeBranchId')
+                as String? ??
+            '${_ref.read(shopIdProvider)}-main',
+        createdAt: now,
+        details: enrichedDetails,
+        syncStatus: SyncStatus.pending,
+      ),
+    );
     unawaited(_ref.read(syncStateProvider.notifier).syncIfOnline());
   }
 
   List<AuditEvent> recent({int limit = 100}) {
-    return _ref.read(localDatabaseProvider).auditEvents
+    return _ref
+        .read(localDatabaseProvider)
+        .auditEvents
         .valuesForShop(_ref.read(shopIdProvider))
         .take(limit)
         .toList();

@@ -192,12 +192,23 @@ class ApiClient {
     return (data is Map<String, dynamic>) ? data : const {};
   }
 
-  Map<String, String> _headers({bool json = false}) => {
-    'Authorization': 'Bearer ${accessToken ?? ''}',
-    if ((_settings.get('activeBranchId') as String?)?.isNotEmpty == true)
-      'X-Branch-Id': _settings.get('activeBranchId') as String,
-    if (json) 'Content-Type': 'application/json',
-  };
+  Map<String, String> _headers({bool json = false}) {
+    final activeBranchId = _settings.get('activeBranchId') as String?;
+    final activeShopId = _settings.get('activeShopId') as String?;
+    final branchShopId = _settings.get('activeBranchShopId') as String?;
+    final branchBelongsToActiveShop =
+        activeBranchId != null &&
+        activeBranchId.isNotEmpty &&
+        activeShopId != null &&
+        activeShopId.isNotEmpty &&
+        branchShopId == activeShopId;
+
+    return {
+      'Authorization': 'Bearer ${accessToken ?? ''}',
+      if (branchBelongsToActiveShop) 'X-Branch-Id': activeBranchId,
+      if (json) 'Content-Type': 'application/json',
+    };
+  }
 
   Future<dynamic> _send(
     Future<http.Response> Function() send, {
@@ -278,8 +289,13 @@ class ApiClient {
         return _RefreshOutcome.unreachable;
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final access = (data['accessToken'] ?? '') as String;
-      final refresh = (data['refreshToken'] ?? '') as String;
+      final access = (data['accessToken'] as String?)?.trim() ?? '';
+      final refresh = (data['refreshToken'] as String?)?.trim() ?? '';
+      if (access.isEmpty || refresh.isEmpty) {
+        // A malformed success response cannot recover the session. Treat it
+        // as rejected instead of retaining the expired access token forever.
+        return _RefreshOutcome.rejected;
+      }
       await TokenStore.put(_kAccessToken, access);
       await TokenStore.put(_kRefreshToken, refresh);
       return _RefreshOutcome.refreshed;
@@ -299,7 +315,9 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return data ?? const <String, dynamic>{};
     }
-    final body = data is Map<String, dynamic> ? data : const <String, dynamic>{};
+    final body = data is Map<String, dynamic>
+        ? data
+        : const <String, dynamic>{};
     final code = (body['code'] ?? 'ERROR').toString();
     final message = (body['message'] ?? 'Request failed ($path).').toString();
     throw ApiException(response.statusCode, code, message);
@@ -312,7 +330,8 @@ class ApiClient {
   /// wipe, so the pollers that all discover the same dead session at once
   /// produce one sign-out instead of one per in-flight request.
   Future<void> _clearTokens() async {
-    final hadSession = TokenStore.get(_kAccessToken) != null ||
+    final hadSession =
+        TokenStore.get(_kAccessToken) != null ||
         TokenStore.get(_kRefreshToken) != null ||
         TokenStore.get(_kSession) != null ||
         _settings.get(_kAccessToken) != null ||

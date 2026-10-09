@@ -5,14 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/product.dart';
-import '../../../core/services/sync_service.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_image.dart';
-import '../../../core/widgets/loading_overlay.dart';
 import '../../../core/widgets/notification_bell.dart';
 import '../../products/presentation/product_form_screen.dart';
 import '../../profile/models/profile.dart';
@@ -26,8 +25,10 @@ import '../../settings/providers/shop_profile_providers.dart';
 import '../../../core/utils/snackbar.dart';
 import '../presentation/low_stock_products_screen.dart';
 import '../providers/dashboard_providers.dart';
+import '../providers/home_announcement_providers.dart';
 import 'models/weekly_sales.dart';
 import 'widgets/home_shortcut_section.dart';
+import 'widgets/owner_action_center.dart';
 import 'widgets/sales_chart_card.dart';
 
 final GlobalKey tourDashboardStatsKey = GlobalKey();
@@ -38,9 +39,13 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardProvider);
-    final sync = ref.watch(syncStateProvider);
     final profile = ref.watch(profileProvider);
-    final l10n = AppLocalizations.of(context);
+    final announcements = ref.watch(homeAnnouncementsProvider);
+    final homeAnnouncements = announcements.when(
+      data: (items) => items,
+      loading: () => const <HomeAnnouncement>[],
+      error: (_, __) => const <HomeAnnouncement>[],
+    );
     final theme = Theme.of(context);
     final homeTheme = theme.copyWith(
       colorScheme: theme.colorScheme.copyWith(
@@ -65,82 +70,196 @@ class DashboardScreen extends ConsumerWidget {
 
     return Theme(
       data: homeTheme,
-      child: LoadingOverlay(
-        loading: sync.phase == SyncPhase.syncing,
-        label: l10n.t('syncingData'),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.28, 0.47, 1.0],
-                colors: [
-                  Color(0xFFFFC800),
-                  Color(0xFFFFD83D),
-                  Color(0xFFFFF0A6),
-                  Color(0xFFFFFCF0),
-                ],
-              ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.28, 0.47, 1.0],
+              colors: [
+                Color(0xFFFFC800),
+                Color(0xFFFFD83D),
+                Color(0xFFFFF0A6),
+                Color(0xFFFFFCF0),
+              ],
             ),
-            child: SafeArea(
-              child: RefreshIndicator(
-                onRefresh: () => ref.read(syncStateProvider.notifier).syncNow(),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-                  children: [
-                    _HomeTopBar(
-                      profile: profile,
-                      onAvatarTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileOverviewScreen(),
-                        ),
+          ),
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await ref.read(syncStateProvider.notifier).syncNow();
+                ref.invalidate(homeAnnouncementsProvider);
+              },
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                children: [
+                  _HomeTopBar(
+                    profile: profile,
+                    onAvatarTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProfileOverviewScreen(),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    _GreetingPanel(
-                      summary: summary,
-                      name: profile?.ownerName ?? '',
+                  ),
+                  const SizedBox(height: 18),
+                  _GreetingPanel(
+                    summary: summary,
+                    name: profile?.ownerName ?? '',
+                  ),
+                  const SizedBox(height: 16),
+                  OwnerActionCenter(summary: summary),
+                  if (homeAnnouncements.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _PlatformAnnouncementCard(
+                      announcement: homeAnnouncements.first,
                     ),
-                    const SizedBox(height: 20),
-                    const HomeShortcutSection(),
-                    const SizedBox(height: 20),
-                    KeyedSubtree(
-                      key: tourDashboardStatsKey,
-                      child: _OverviewStats(summary: summary),
-                    ),
-                    const SizedBox(height: 20),
-                    SalesChartCard(
-                      data: summary.dayWiseSales
-                          .map(
-                            (d) => WeeklySalesData(
-                              dayLabel: d.label,
-                              fullDayName: DateFormat('EEEE').format(d.date),
-                              sales: d.sales,
-                            ),
-                          )
-                          .toList(),
-                      weekChangePercent: summary.weekChangePercent,
-                    ),
-                    const SizedBox(height: 20),
-                    _RecentSalesCard(sales: summary.recentSales),
-                    if (summary.dueCustomers.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _DueListCard(customers: summary.dueCustomers),
-                    ],
-                    const SizedBox(height: 20),
-                    _LowStockAlert(products: summary.lowStock),
-                    if (summary.expiringSoon.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _ExpiryAlertCard(products: summary.expiringSoon),
-                    ],
                   ],
-                ),
+                  const SizedBox(height: 20),
+                  const HomeShortcutSection(),
+                  const SizedBox(height: 20),
+                  KeyedSubtree(
+                    key: tourDashboardStatsKey,
+                    child: _OverviewStats(summary: summary),
+                  ),
+                  const SizedBox(height: 20),
+                  SalesChartCard(
+                    data: summary.dayWiseSales
+                        .map(
+                          (d) => WeeklySalesData(
+                            dayLabel: d.label,
+                            fullDayName: DateFormat('EEEE').format(d.date),
+                            sales: d.sales,
+                          ),
+                        )
+                        .toList(),
+                    weekChangePercent: summary.weekChangePercent,
+                  ),
+                  const SizedBox(height: 20),
+                  _RecentSalesCard(sales: summary.recentSales),
+                  if (summary.dueCustomers.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _DueListCard(customers: summary.dueCustomers),
+                  ],
+                  const SizedBox(height: 20),
+                  _LowStockAlert(products: summary.lowStock),
+                  if (summary.expiringSoon.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _ExpiryAlertCard(products: summary.expiringSoon),
+                  ],
+                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PlatformAnnouncementCard extends StatelessWidget {
+  const _PlatformAnnouncementCard({required this.announcement});
+
+  final HomeAnnouncement announcement;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final imageUrl = announcement.imageUrl == null
+        ? null
+        : '${AppConfig.apiBaseUrl}${announcement.imageUrl}';
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFF4D2848),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4D2848).withValues(alpha: 0.28),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (imageUrl != null)
+            AppImage(
+              path: imageUrl,
+              width: double.infinity,
+              height: 166,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(
+                    Icons.campaign_rounded,
+                    color: Color(0xFFFFD83D),
+                    size: 19,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.t('notifications').toUpperCase(),
+                        style: const TextStyle(
+                          color: Color(0xFFFFD83D),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        announcement.localizedTitle(languageCode),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (announcement
+                          .localizedBody(languageCode)
+                          .isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          announcement.localizedBody(languageCode),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -667,6 +786,7 @@ class _RecentSalesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final latestSales = sales.take(3).toList(growable: false);
     return _SectionCard(
       child: Column(
         children: [
@@ -678,20 +798,17 @@ class _RecentSalesCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          if (sales.isEmpty)
+          if (latestSales.isEmpty)
             _InlineEmpty(message: l10n.t('noSalesYet'))
           else
-            for (var index = 0; index < sales.length; index++) ...[
+            for (var index = 0; index < latestSales.length; index++) ...[
               if (index != 0)
                 const Divider(height: 18, color: Color(0xFFF0ECE6)),
               _RecentSaleRow(
-                sale: sales[index],
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SalesHistoryScreen(),
-                  ),
-                ),
+                sale: latestSales[index],
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => SalesHistoryScreen())),
               ),
             ],
         ],
@@ -722,77 +839,79 @@ class _RecentSaleRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: paid ? const Color(0xFFDDFBF2) : const Color(0xFFF3F0EA),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            paid ? Icons.done_all_rounded : Icons.schedule_rounded,
-            color: statusColor,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                sale.customerName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  color: colors.onSurface,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: paid
+                      ? const Color(0xFFDDFBF2)
+                      : const Color(0xFFF3F0EA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  paid ? Icons.done_all_rounded : Icons.schedule_rounded,
+                  color: statusColor,
+                  size: 18,
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                '${sale.invoiceNo} • ${sale.itemCount} ${l10n.t('items')} • ${_relativeTime(l10n, sale.createdAt)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colors.onSurfaceVariant,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sale.customerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${sale.invoiceNo} • ${sale.itemCount} ${l10n.t('items')} • ${_relativeTime(l10n, sale.createdAt)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    money(sale.amount),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    paid ? l10n.t('paid') : l10n.t('due'),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              money(sale.amount),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              paid ? l10n.t('paid') : l10n.t('due'),
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ],
-        ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -838,15 +957,12 @@ class _DueListCard extends ConsumerWidget {
             title: l10n.t('outstandingDues'),
             action: l10n.t('seeAll'),
             onAction: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const CustomerListScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const CustomerListScreen()),
             ),
           ),
           const SizedBox(height: 14),
           for (var index = 0; index < visible.length; index++) ...[
-            if (index != 0)
-              const Divider(height: 18, color: Color(0xFFF0ECE6)),
+            if (index != 0) const Divider(height: 18, color: Color(0xFFF0ECE6)),
             _DueRow(
               customer: visible[index],
               onRemind: () => _sendReminder(context, ref, visible[index]),
@@ -1052,14 +1168,15 @@ class _ExpiryAlertCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const ProductListScreen(
-                        showExpiringOnly: true,
-                      ),
+                      builder: (_) =>
+                          const ProductListScreen(showExpiringOnly: true),
                     ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 5),
+                      horizontal: 4,
+                      vertical: 5,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1091,8 +1208,7 @@ class _ExpiryAlertCard extends StatelessWidget {
             child: Column(
               children: [
                 for (var index = 0; index < visible.length; index++) ...[
-                  if (index != 0)
-                    const SizedBox(height: 10),
+                  if (index != 0) const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -1111,7 +1227,7 @@ class _ExpiryAlertCard extends StatelessWidget {
                       Text(
                         visible[index].isExpired
                             ? '${l10n.t('expired')} • '
-                                '${_expiryLabel(visible[index].expiryDate)}'
+                                  '${_expiryLabel(visible[index].expiryDate)}'
                             : _expiryLabel(visible[index].expiryDate),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1185,9 +1301,9 @@ class _LowStockAlert extends StatelessWidget {
                 Container(
                   width: 30,
                   height: 30,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0A6),
-                  shape: BoxShape.circle,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF0A6),
+                    shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.warning_amber_rounded,
@@ -1242,8 +1358,10 @@ class _LowStockAlert extends StatelessWidget {
                         ),
                       ),
                       child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 5,
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1315,8 +1433,10 @@ class _LowStockProductCard extends StatelessWidget {
         .toDouble();
     // Match the New Sale (POS) product card width: (screenWidth - 76) / 3,
     // where 76 = 2*16 (outer pad) + 2*12 (grid pad) + 2*10 (spacing).
-    final cardWidth =
-        ((MediaQuery.of(context).size.width - 76) / 3).clamp(96.0, 140.0);
+    final cardWidth = ((MediaQuery.of(context).size.width - 76) / 3).clamp(
+      96.0,
+      140.0,
+    );
 
     return Material(
       color: Colors.white,

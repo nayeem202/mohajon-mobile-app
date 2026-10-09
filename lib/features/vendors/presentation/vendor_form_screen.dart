@@ -69,9 +69,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: MohajonWarm.pageGradient,
-            ),
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
             child: Stack(
               children: [
                 Positioned(
@@ -123,20 +121,14 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                         child: Form(
                           key: _formKey,
                           child: ListView(
-                            padding: const EdgeInsets.fromLTRB(
-                              18,
-                              12,
-                              18,
-                              16,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
                             children: [
                               _FormHeader(
                                 title: isEditing
                                     ? l10n.t('editVendor')
                                     : l10n.t('addVendor'),
                                 subtitle: l10n.t('suppliersAndPurchases'),
-                                onBack: () =>
-                                    Navigator.of(context).maybePop(),
+                                onBack: () => Navigator.of(context).maybePop(),
                               ),
                               const SizedBox(height: 18),
                               _SectionCard(
@@ -232,8 +224,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _emailCtrl,
-                                    keyboardType:
-                                        TextInputType.emailAddress,
+                                    keyboardType: TextInputType.emailAddress,
                                     autocorrect: false,
                                     decoration: InputDecoration(
                                       prefixIcon: const Icon(
@@ -309,8 +300,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                       hintText: l10n.t('selectCategory'),
                                     ),
                                     icon: const Icon(
-                                      Icons
-                                          .keyboard_arrow_down_rounded,
+                                      Icons.keyboard_arrow_down_rounded,
                                       color: MohajonWarm.muted,
                                     ),
                                     items: vendorCategories.map((cat) {
@@ -319,9 +309,8 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                         child: Text(cat),
                                       );
                                     }).toList(),
-                                    onChanged: (v) => setState(
-                                      () => _category = v ?? '',
-                                    ),
+                                    onChanged: (v) =>
+                                        setState(() => _category = v ?? ''),
                                   ),
                                   const SizedBox(height: 14),
                                   _FieldLabel(
@@ -384,8 +373,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
 
     final vendors = ref.read(vendorsProvider).value ?? const <Vendor>[];
     final duplicate = vendors.any((v) {
-      if (widget.vendor != null &&
-          v.vendorId == widget.vendor!.vendorId) {
+      if (widget.vendor != null && v.vendorId == widget.vendor!.vendorId) {
         return false;
       }
       return v.companyName.toLowerCase() ==
@@ -402,7 +390,9 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
 
     try {
       await runBusyAction(() async {
-        await ref.read(vendorServiceProvider).save(
+        await ref
+            .read(vendorServiceProvider)
+            .save(
               vendorId: widget.vendor?.vendorId,
               companyName: _companyCtrl.text.trim(),
               contactPerson: _contactCtrl.text.trim(),
@@ -424,7 +414,11 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
       });
     } catch (error) {
       if (mounted) {
-        showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          isError: true,
+        );
       }
     }
   }
@@ -441,9 +435,7 @@ class _SaveBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: MohajonWarm.card,
-        border: const Border(
-          top: BorderSide(color: MohajonWarm.goldBorder),
-        ),
+        border: const Border(top: BorderSide(color: MohajonWarm.goldBorder)),
         boxShadow: [
           BoxShadow(
             color: MohajonWarm.ink.withValues(alpha: 0.06),

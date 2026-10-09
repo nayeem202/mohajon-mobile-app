@@ -12,6 +12,7 @@ import '../../../core/services/fcm_service.dart';
 import '../../../core/services/notification_preferences.dart';
 import '../../../core/services/app_feedback.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/utils/app_error.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/app/app_lock_controller.dart';
@@ -852,6 +853,7 @@ class _AppPrefsBody extends ConsumerWidget {
                   .settings
                   .put('languageCode', code);
               ref.read(localeProvider.notifier).state = Locale(code);
+              unawaited(ref.read(fcmServiceProvider).syncPreferences());
             },
           ),
           onTap: null,
@@ -1468,17 +1470,23 @@ class _DataBackupBody extends ConsumerWidget {
         _Divider(),
         _NavRow(
           icon: Icons.restore_rounded,
-          label: 'Restore Backup',
+          label: l10n.t('restoreBackup'),
           value: '',
           onTap: () async {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (dialogContext) => AlertDialog(
-                title: const Text('Restore backup?'),
-                content: const Text('Backup records will be restored locally and synced as pending changes. Existing records with the same id may be replaced.'),
+                title: Text(l10n.t('restoreBackupConfirmTitle')),
+                content: Text(l10n.t('restoreBackupConfirmMessage')),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-                  FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Restore')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(l10n.t('cancel')),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: Text(l10n.t('restoreBackupConfirm')),
+                  ),
                 ],
               ),
             );
@@ -1490,9 +1498,21 @@ class _DataBackupBody extends ConsumerWidget {
               if (decoded is! Map<String, dynamic>) throw const FormatException('Invalid backup format.');
               final restored = await ref.read(localDatabaseProvider).restoreBackup(decoded, ref.read(shopIdProvider));
               await ref.read(syncStateProvider.notifier).syncIfOnline();
-              if (context.mounted) onToast('Restored $restored records. Sync will finish in the background.');
+              if (context.mounted) {
+                onToast(
+                  l10n.tP('restoreBackupSuccess', {'count': '$restored'}),
+                );
+              }
             } catch (error) {
-              if (context.mounted) onToast('Restore failed: $error');
+              if (context.mounted) {
+                onToast(
+                  friendlyErrorMessage(
+                    error,
+                    l10n: l10n,
+                    fallback: l10n.t('restoreBackupFailed'),
+                  ),
+                );
+              }
             }
           },
         ),

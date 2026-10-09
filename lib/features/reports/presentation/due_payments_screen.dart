@@ -150,7 +150,9 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
         isXlsx: false,
     task: () async {
       final data = _compute();
-      final company = DocCompany.fromShop(ref.read(shopProfileProvider).value);
+      final company = await DocCompany.fromShopForExport(
+        ref.read(shopProfileProvider).value,
+      );
       await DuePaymentsPdfService().saveDuePayments(
         table: data.table,
         range: _allTimeRange(),
@@ -207,6 +209,11 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
             child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          ReportBrandStrip(
+            title: l10n.t('reportDuePayments'),
+            icon: Icons.account_balance_wallet_rounded,
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(

@@ -171,7 +171,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
   }
 
   void _openAddVendor() {
-    PaywallGate.guard(
+    PaywallGate.guardPro(
       context,
       ref,
       () => Navigator.of(

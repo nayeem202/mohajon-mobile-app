@@ -8,11 +8,14 @@ import '../subscription_screen.dart';
 /// expired). The shop owner can still view everything — this only blocks
 /// creating new entries until they subscribe.
 class PaywallSheet extends StatelessWidget {
-  const PaywallSheet({super.key});
+  const PaywallSheet({super.key, this.requiredTier = 'PRO'});
+
+  final String requiredTier;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isBusiness = requiredTier == 'BUSINESS';
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -50,7 +53,7 @@ class PaywallSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            l10n.t('paywallTitle'),
+            isBusiness ? l10n.t('businessPlanRequired') : l10n.t('proPlanRequired'),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 17,
@@ -60,7 +63,7 @@ class PaywallSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            l10n.t('paywallBody'),
+            isBusiness ? l10n.t('businessPlanBody') : l10n.t('proPlanBody'),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12.5,
@@ -96,7 +99,7 @@ class PaywallSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            l10n.t('paywallPriceHint'),
+            isBusiness ? l10n.t('businessPlanHint') : l10n.t('proPlanHint'),
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,

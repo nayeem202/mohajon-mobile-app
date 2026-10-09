@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/theme/mohajon_warm_theme.dart';
 
 class DeleteStaffDialog extends StatelessWidget {
   const DeleteStaffDialog({super.key, required this.onConfirm});
@@ -16,11 +17,19 @@ class DeleteStaffDialog extends StatelessWidget {
         color: Colors.transparent,
         child: Center(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 32),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              gradient: MohajonWarm.pageGradient,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: MohajonWarm.goldBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -29,12 +38,12 @@ class DeleteStaffDialog extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFFFEBEE),
+                    color: MohajonWarm.tintRed,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.error_outline_rounded,
-                    color: Color(0xFFEF5350),
+                    color: MohajonWarm.red,
                     size: 22,
                   ),
                 ),
@@ -44,7 +53,7 @@ class DeleteStaffDialog extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1C1917),
+                    color: MohajonWarm.ink,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -55,7 +64,7 @@ class DeleteStaffDialog extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF98A2B3),
+                      color: MohajonWarm.muted,
                     ),
                   ),
                 ),
@@ -68,8 +77,8 @@ class DeleteStaffDialog extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF0ECE6),
-                            foregroundColor: const Color(0xFF525252),
+                            backgroundColor: MohajonWarm.card,
+                            foregroundColor: MohajonWarm.ink,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide.none,
@@ -93,7 +102,7 @@ class DeleteStaffDialog extends StatelessWidget {
                             Navigator.of(context).pop();
                           },
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFEF5350),
+                            backgroundColor: MohajonWarm.red,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

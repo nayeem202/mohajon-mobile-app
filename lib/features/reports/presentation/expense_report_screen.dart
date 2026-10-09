@@ -63,8 +63,9 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
         isXlsx: false,
         task: () async {
           if (expenses.isEmpty) return;
-          final company =
-              DocCompany.fromShop(ref.read(shopProfileProvider).value);
+          final company = await DocCompany.fromShopForExport(
+            ref.read(shopProfileProvider).value,
+          );
           await ExpenseReportPdfService()
               .saveExpenseReport(expenses: expenses, range: _range, company: company);
         },
@@ -122,6 +123,11 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen>
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                ReportBrandStrip(
+                  title: l10n.t('reportExpense'),
+                  icon: Icons.receipt_long_rounded,
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(

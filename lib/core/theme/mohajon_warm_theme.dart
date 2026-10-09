@@ -29,23 +29,13 @@ class MohajonWarm {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     stops: [0.0, 0.28, 0.47, 1.0],
-    colors: [
-      primary,
-      primarySoft,
-      Color(0xFFFFF0A6),
-      surface,
-    ],
+    colors: [primary, primarySoft, Color(0xFFFFF0A6), surface],
   );
 
-  static ThemeData theme(ThemeData base) {
-    // Only a ThemeData is available here, so the locale comes from the
-    // platform. The root theme has already applied the correct families per
-    // slot, so this re-run is mostly for the styles this file overrides.
-    final locale = WidgetsBinding
-        .instance
-        .platformDispatcher
-        .locales
-        .firstOrNull;
+  static ThemeData theme(ThemeData base, {Locale? locale}) {
+    // A user can choose Bangla inside the app while Android remains in
+    // English. Preserve that app choice instead of reading the device locale.
+    final effectiveLocale = locale ?? _localeFromRootTheme(base);
     return base.copyWith(
       textTheme: AppType.textTheme(
         base.textTheme.copyWith(
@@ -55,7 +45,7 @@ class MohajonWarm {
             color: ink,
           ),
         ),
-        locale,
+        effectiveLocale,
       ),
       colorScheme: base.colorScheme.copyWith(
         primary: primary,
@@ -93,7 +83,7 @@ class MohajonWarm {
             fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
-          locale: locale,
+          locale: effectiveLocale,
         ),
         labelStyle: AppType.body(
           const TextStyle(
@@ -101,7 +91,7 @@ class MohajonWarm {
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
-          locale: locale,
+          locale: effectiveLocale,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -124,8 +114,12 @@ class MohajonWarm {
           borderSide: const BorderSide(color: red, width: 1.6),
         ),
         errorStyle: AppType.body(
-          const TextStyle(color: red, fontSize: 11, fontWeight: FontWeight.w500),
-          locale: locale,
+          const TextStyle(
+            color: red,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+          locale: effectiveLocale,
         ),
       ),
       floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
@@ -134,15 +128,50 @@ class MohajonWarm {
         elevation: 6,
         shape: const CircleBorder(),
       ),
-      dividerTheme: base.dividerTheme.copyWith(
-        color: const Color(0xFFF3ECDA),
+      dividerTheme: base.dividerTheme.copyWith(color: const Color(0xFFF3ECDA)),
+      dialogTheme: base.dialogTheme.copyWith(
+        backgroundColor: card,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        titleTextStyle: AppType.body(
+          const TextStyle(
+            color: ink,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+          locale: effectiveLocale,
+        ),
+        contentTextStyle: AppType.body(
+          const TextStyle(color: muted, fontSize: 13, height: 1.45),
+          locale: effectiveLocale,
+        ),
+      ),
+      bottomSheetTheme: base.bottomSheetTheme.copyWith(
+        backgroundColor: card,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
         textStyle: AppType.body(
-          const TextStyle(color: ink, fontWeight: FontWeight.w500, fontSize: 13),
-          locale: locale,
+          const TextStyle(
+            color: ink,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+          locale: effectiveLocale,
         ),
       ),
     );
+  }
+
+  static Locale? _localeFromRootTheme(ThemeData base) {
+    final families = [
+      base.textTheme.bodyLarge?.fontFamily,
+      base.textTheme.titleLarge?.fontFamily,
+      base.textTheme.labelLarge?.fontFamily,
+    ];
+    return families.contains(AppType.bengali) ? const Locale('bn') : null;
   }
 }

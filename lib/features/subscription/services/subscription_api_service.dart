@@ -110,6 +110,11 @@ class SubscriptionApiService {
     }
   }
 
+  Future<AiCreditStatus> fetchAiCredits() async {
+    final data = await _api.get('/api/v1/assistant/credits');
+    return AiCreditStatus.fromJson(data);
+  }
+
   /// Cached status, trusted for up to [_cacheTrustDays] days while offline.
   SubscriptionInfo? get cachedStatus {
     final raw = _settings.get(_cachedStatusKey) as String?;

@@ -762,9 +762,13 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
       });
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          ),
+        ),
+      );
     }
   }
 

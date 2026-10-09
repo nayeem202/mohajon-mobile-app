@@ -146,7 +146,7 @@ pw.Widget buildRasterCompanyColumn(
   const indigo = ui.Color(0xFF1E3A8A);
   const grey600 = ui.Color(0xFF525252);
   const grey500 = ui.Color(0xFF737373);
-  return pw.Column(
+  final details = pw.Column(
     mainAxisAlignment: pw.MainAxisAlignment.start,
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
@@ -165,6 +165,24 @@ pw.Widget buildRasterCompanyColumn(
       if (company.email.isNotEmpty)
         raster.build(pdfDocument, company.email,
             fontSize: 8, bold: false, color: grey500, width: 300),
+    ],
+  );
+  if (company.logoBytes == null) return details;
+  return pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Container(
+        width: 46,
+        height: 46,
+        padding: const pw.EdgeInsets.all(2),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey300),
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+        ),
+        child: pw.Image(pw.MemoryImage(company.logoBytes!), fit: pw.BoxFit.contain),
+      ),
+      pw.SizedBox(width: 9),
+      pw.Expanded(child: details),
     ],
   );
 }

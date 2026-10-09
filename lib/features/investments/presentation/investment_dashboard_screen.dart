@@ -123,7 +123,7 @@ class _InvestmentDashboardScreenState
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => PaywallGate.guard(
+          onPressed: () => PaywallGate.guardPro(
             context,
             ref,
             () => showModalBottomSheet(

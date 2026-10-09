@@ -9,10 +9,15 @@ class GeminiAskClient {
 
   final LocalDatabase _db;
 
-  Future<HamBotAnswer> ask(String question, String statsJson) async {
+  Future<HamBotAnswer> ask(
+    String question,
+    String statsJson, {
+    required String languageCode,
+  }) async {
     final response = await ApiClient(_db).post('/api/v1/assistant/ask', {
       'text': question,
       'stats': statsJson,
+      'language': languageCode,
     }, timeout: const Duration(seconds: 60));
     return HamBotAnswer(
       answer: (response['answer'] ?? '') as String,
@@ -23,12 +28,14 @@ class GeminiAskClient {
   Future<HamBotAnswer> askAudio(
     Uint8List wavBytes, {
     required String statsJson,
+    required String languageCode,
     String mimeType = 'audio/wav',
   }) async {
     final response = await ApiClient(_db).post('/api/v1/assistant/ask-audio', {
       'audio': base64Encode(wavBytes),
       'mimeType': mimeType,
       'stats': statsJson,
+      'language': languageCode,
     }, timeout: const Duration(seconds: 60));
     return HamBotAnswer(
       answer: (response['answer'] ?? '') as String,

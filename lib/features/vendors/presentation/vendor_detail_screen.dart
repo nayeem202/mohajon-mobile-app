@@ -17,8 +17,7 @@ class VendorDetailScreen extends ConsumerStatefulWidget {
   final Vendor vendor;
 
   @override
-  ConsumerState<VendorDetailScreen> createState() =>
-      _VendorDetailScreenState();
+  ConsumerState<VendorDetailScreen> createState() => _VendorDetailScreenState();
 }
 
 class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
@@ -36,8 +35,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
     );
     final ledger = ref.watch(vendorLedgerProvider(vendor.vendorId));
     final totalPaid = payments.fold<double>(0, (s, p) => s + p.amount);
-    final totalPurchased =
-        purchases.fold<double>(0, (s, p) => s + p.amount);
+    final totalPurchased = purchases.fold<double>(0, (s, p) => s + p.amount);
 
     return withLoadingOverlay(
       Theme(
@@ -45,9 +43,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: MohajonWarm.pageGradient,
-            ),
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
             child: SafeArea(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
@@ -167,10 +163,11 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                               : MohajonWarm.tintGreen,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: (outstanding > 0
-                                    ? MohajonWarm.red
-                                    : MohajonWarm.green)
-                                .withValues(alpha: 0.25),
+                            color:
+                                (outstanding > 0
+                                        ? MohajonWarm.red
+                                        : MohajonWarm.green)
+                                    .withValues(alpha: 0.25),
                           ),
                         ),
                         child: Column(
@@ -280,7 +277,9 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   List<Widget> _buildLedger(
-      List<VendorLedgerEntry> ledger, AppLocalizations l10n) {
+    List<VendorLedgerEntry> ledger,
+    AppLocalizations l10n,
+  ) {
     if (ledger.isEmpty) {
       return [
         Padding(
@@ -298,8 +297,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
     }
     var runningBalance = 0.0;
     return ledger.map((entry) {
-      runningBalance +=
-          entry.type == 'purchase' ? entry.amount : -entry.amount;
+      runningBalance += entry.type == 'purchase' ? entry.amount : -entry.amount;
       return _LedgerRow(
         type: entry.type,
         amount: entry.amount,
@@ -313,9 +311,9 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   void _openEditVendor(Vendor vendor) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => VendorFormScreen(vendor: vendor)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => VendorFormScreen(vendor: vendor)));
   }
 
   Future<void> _confirmDelete(Vendor vendor) async {
@@ -366,8 +364,9 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          l10n.tP('deleteVendorConfirm',
-                              {'name': vendor.companyName}),
+                          l10n.tP('deleteVendorConfirm', {
+                            'name': vendor.companyName,
+                          }),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 13,
@@ -420,9 +419,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                 onPressed: deleting
                                     ? null
                                     : () async {
-                                        setDialogState(
-                                          () => deleting = true,
-                                        );
+                                        setDialogState(() => deleting = true);
                                         try {
                                           await runBusyAction(
                                             () => ref
@@ -434,14 +431,17 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                           }
                                         } catch (error) {
                                           if (ctx.mounted) {
-                                            ScaffoldMessenger.of(ctx)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              ctx,
+                                            ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
                                                   friendlyErrorMessage(
                                                     error,
-                                                    fallback:
-                                                        l10n.t('couldNotDeleteVendor'),
+                                                    l10n: l10n,
+                                                    fallback: l10n.t(
+                                                      'couldNotDeleteVendor',
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -485,8 +485,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPurchaseSheet(Vendor vendor) async {
-    if (PaywallGate.isReadOnly(ref)) {
-      await PaywallGate.showPaywallSheet(context);
+    if (!PaywallGate.hasPro(ref)) {
+      await PaywallGate.showPaywallSheet(context, requiredTier: 'PRO');
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -549,8 +549,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   l10n.t('recordPurchaseSheet'),
@@ -578,14 +577,11 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       const SizedBox(height: 16),
                       TextField(
                         controller: amountCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(
+                        keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[0-9.]'),
-                          ),
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                         ],
                         decoration: InputDecoration(
                           labelText: l10n.t('amountStar'),
@@ -603,9 +599,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       const SizedBox(height: 12),
                       TextField(
                         controller: noteCtrl,
-                        decoration: InputDecoration(
-                          labelText: l10n.t('notes'),
-                        ),
+                        decoration: InputDecoration(labelText: l10n.t('notes')),
                       ),
                       const SizedBox(height: 18),
                       SizedBox(
@@ -635,22 +629,25 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     await ref
                                         .read(vendorServiceProvider)
                                         .recordPurchase(
-                                      vendorId: vendor.vendorId,
-                                      amount: amount,
-                                      notes: noteCtrl.text.trim(),
-                                      itemsSupplied:
-                                          itemsCtrl.text.trim(),
-                                    );
+                                          vendorId: vendor.vendorId,
+                                          amount: amount,
+                                          notes: noteCtrl.text.trim(),
+                                          itemsSupplied: itemsCtrl.text.trim(),
+                                        );
                                     if (sheetContext.mounted) {
                                       Navigator.of(sheetContext).pop();
                                     }
                                   } catch (error) {
                                     if (sheetContext.mounted) {
-                                      ScaffoldMessenger.of(sheetContext)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        sheetContext,
+                                      ).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            friendlyErrorMessage(error),
+                                            friendlyErrorMessage(
+                                              error,
+                                              l10n: l10n,
+                                            ),
                                           ),
                                         ),
                                       );
@@ -685,8 +682,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
   }
 
   Future<void> _showRecordPaymentSheet(Vendor vendor) async {
-    if (PaywallGate.isReadOnly(ref)) {
-      await PaywallGate.showPaywallSheet(context);
+    if (!PaywallGate.hasPro(ref)) {
+      await PaywallGate.showPaywallSheet(context, requiredTier: 'PRO');
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -750,8 +747,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   l10n.t('recordPaymentSheet'),
@@ -779,14 +775,11 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       const SizedBox(height: 16),
                       TextField(
                         controller: amountCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(
+                        keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[0-9.]'),
-                          ),
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                         ],
                         decoration: InputDecoration(
                           labelText: l10n.t('amountStar'),
@@ -844,9 +837,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                       const SizedBox(height: 12),
                       TextField(
                         controller: noteCtrl,
-                        decoration: InputDecoration(
-                          labelText: l10n.t('notes'),
-                        ),
+                        decoration: InputDecoration(labelText: l10n.t('notes')),
                       ),
                       const SizedBox(height: 18),
                       SizedBox(
@@ -876,22 +867,26 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen>
                                     await ref
                                         .read(vendorServiceProvider)
                                         .recordPayment(
-                                      vendorId: vendor.vendorId,
-                                      amount: amount,
-                                      method: method,
-                                      reference: refCtrl.text.trim(),
-                                      notes: noteCtrl.text.trim(),
-                                    );
+                                          vendorId: vendor.vendorId,
+                                          amount: amount,
+                                          method: method,
+                                          reference: refCtrl.text.trim(),
+                                          notes: noteCtrl.text.trim(),
+                                        );
                                     if (sheetContext.mounted) {
                                       Navigator.of(sheetContext).pop();
                                     }
                                   } catch (error) {
                                     if (sheetContext.mounted) {
-                                      ScaffoldMessenger.of(sheetContext)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        sheetContext,
+                                      ).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            friendlyErrorMessage(error),
+                                            friendlyErrorMessage(
+                                              error,
+                                              l10n: l10n,
+                                            ),
                                           ),
                                         ),
                                       );
@@ -1057,11 +1052,7 @@ class _HeaderAction extends StatelessWidget {
             borderRadius: BorderRadius.circular(11),
             border: Border.all(color: MohajonWarm.goldBorder),
           ),
-          child: Icon(
-            icon,
-            color: iconColor ?? MohajonWarm.ink,
-            size: 17,
-          ),
+          child: Icon(icon, color: iconColor ?? MohajonWarm.ink, size: 17),
         ),
       ),
     );
@@ -1378,10 +1369,7 @@ class _PanelSection extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) ...[
-                const Spacer(),
-                trailing!,
-              ],
+              if (trailing != null) ...[const Spacer(), trailing!],
             ],
           ),
           const SizedBox(height: 14),
@@ -1436,8 +1424,7 @@ class _DetailRow extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(height: 1, color: Color(0xFFF3ECDA)),
+        if (showDivider) const Divider(height: 1, color: Color(0xFFF3ECDA)),
       ],
     );
   }
@@ -1513,9 +1500,7 @@ class _LedgerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPurchase = type == 'purchase';
     final color = isPurchase ? MohajonWarm.red : MohajonWarm.green;
-    final background = isPurchase
-        ? MohajonWarm.tintRed
-        : MohajonWarm.tintGreen;
+    final background = isPurchase ? MohajonWarm.tintRed : MohajonWarm.tintGreen;
     final icon = isPurchase
         ? Icons.shopping_cart_rounded
         : Icons.payments_rounded;
@@ -1613,10 +1598,7 @@ class _LedgerRow extends StatelessWidget {
 }
 
 String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((p) => p.isNotEmpty);
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
   if (parts.isEmpty) return 'VN';
   final value = parts.take(2).map((p) => p[0].toUpperCase()).join();
   return value.length == 1 ? '${value}N' : value;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/app_error.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/shop_profile.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
@@ -52,9 +53,7 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: MohajonWarm.pageGradient,
-            ),
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
             child: SafeArea(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
@@ -83,9 +82,11 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
                         ),
                       ),
                       const SizedBox(height: 16),
-                      for (var index = 0;
-                          index < _ownerInputs.length;
-                          index++) ...[
+                      for (
+                        var index = 0;
+                        index < _ownerInputs.length;
+                        index++
+                      ) ...[
                         _OwnerEditorCard(
                           index: index,
                           totalOwners: _ownerInputs.length,
@@ -105,8 +106,7 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
                         label: const Text('Add owner'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: MohajonWarm.ink,
-                          side:
-                              const BorderSide(color: MohajonWarm.goldBorder),
+                          side: const BorderSide(color: MohajonWarm.goldBorder),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -224,7 +224,11 @@ class _InvestmentScreenState extends ConsumerState<InvestmentScreen>
       showAppSnackBar(context, 'Owner investments updated');
     } catch (error) {
       if (!mounted) return;
-      showAppSnackBar(context, friendlyErrorMessage(error), isError: true);
+      showAppSnackBar(
+        context,
+        friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+        isError: true,
+      );
     }
   }
 
@@ -436,16 +440,15 @@ class _OwnerEditorCard extends StatelessWidget {
               children: [
                 TextField(
                   controller: input.nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Owner name',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Owner name'),
                   onChanged: (_) => onChanged(),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: input.investmentController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Investment amount',
                     hintText: totalOwners == 1
@@ -538,14 +541,14 @@ class _OwnerInput {
   });
 
   factory _OwnerInput.fromOwner(ShopOwner owner) => _OwnerInput(
-        ownerId: owner.ownerId,
-        nameController: TextEditingController(text: owner.name),
-        investmentController: TextEditingController(
-          text: owner.investmentAmount == 0
-              ? '0'
-              : owner.investmentAmount.toString(),
-        ),
-      );
+    ownerId: owner.ownerId,
+    nameController: TextEditingController(text: owner.name),
+    investmentController: TextEditingController(
+      text: owner.investmentAmount == 0
+          ? '0'
+          : owner.investmentAmount.toString(),
+    ),
+  );
 
   final String ownerId;
   final TextEditingController nameController;
