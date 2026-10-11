@@ -52,3 +52,4 @@ deploy/.env
 *.jks
 *.jks.bak
 /ops/vm/deploy/haalkhata/app.jar
+/ops/vm/deploy/auth/app.jar

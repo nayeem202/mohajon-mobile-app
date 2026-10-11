@@ -36,8 +36,10 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
   })
   _compute() {
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
-    final payments = ref.watch(paymentsStreamProvider).value ?? const <Payment>[];
-    final ledgerEntries = ref.watch(customerLedgerEntriesStreamProvider).value ??
+    final payments =
+        ref.watch(paymentsStreamProvider).value ?? const <Payment>[];
+    final ledgerEntries =
+        ref.watch(customerLedgerEntriesStreamProvider).value ??
         const <CustomerLedgerEntry>[];
     final customers = ref.watch(customersProvider).value ?? const <Customer>[];
     final byCustomer = <String, Map<String, Object?>>{};
@@ -105,7 +107,8 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
         ),
         ReportSummary(
           label: 'Open Sales',
-          value: '${rows.fold<int>(0, (sum, row) => sum + (row['count'] as int))}',
+          value:
+              '${rows.fold<int>(0, (sum, row) => sum + (row['count'] as int))}',
           accent: 0xFFD97706,
         ),
       ],
@@ -134,33 +137,36 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
   }
 
   Future<void> _exportXlsx() => runExport(
-        isXlsx: true,
+    isXlsx: true,
     task: () async {
       final data = _compute();
       await DuePaymentsExcelService().saveDuePayments(
-        table: data.table,
+        table: localizedReportTable(data.table, AppLocalizations.of(context)),
         range: _allTimeRange(),
       );
     },
-    message: AppLocalizations.of(context)
-        .tP('exportedAsXlsx', {'report': AppLocalizations.of(context).t('reportDuePayments')}),
+    message: AppLocalizations.of(context).tP('exportedAsXlsx', {
+      'report': AppLocalizations.of(context).t('reportDuePayments'),
+    }),
   );
 
   Future<void> _exportPdf() => runExport(
-        isXlsx: false,
+    isXlsx: false,
     task: () async {
+      final l10n = AppLocalizations.of(context);
       final data = _compute();
       final company = await DocCompany.fromShopForExport(
         ref.read(shopProfileProvider).value,
       );
       await DuePaymentsPdfService().saveDuePayments(
-        table: data.table,
+        table: localizedReportTable(data.table, l10n),
         range: _allTimeRange(),
         company: company,
       );
     },
-    message: AppLocalizations.of(context)
-        .tP('exportedAsPdf', {'report': AppLocalizations.of(context).t('reportDuePayments')}),
+    message: AppLocalizations.of(context).tP('exportedAsPdf', {
+      'report': AppLocalizations.of(context).t('reportDuePayments'),
+    }),
   );
 
   DateTimeRange _allTimeRange() {
@@ -196,153 +202,154 @@ class _DuePaymentsScreenState extends ConsumerState<DuePaymentsScreen>
             statusBarColor: MohajonWarm.primary,
             statusBarIconBrightness: Brightness.dark,
           ),
-          actions: const [
-            NotificationBell(),
-            SizedBox(width: 6),
-            ShopAvatar(),
-          ],
+          actions: const [NotificationBell(), SizedBox(width: 6), ShopAvatar()],
         ),
         body: DecoratedBox(
           decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             top: false,
             child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          ReportBrandStrip(
-            title: l10n.t('reportDuePayments'),
-            icon: Icons.account_balance_wallet_rounded,
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: ReportSummaryCard(
-                  label: l10n.t('totalDue'),
-                  value: money(data.totalDue),
-                  valueColor: const Color(0xFFD92D20),
-                  icon: Icons.percent_rounded,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ReportSummaryCard(
-                  label: l10n.t('customersWithDue'),
-                  value: '${data.customerCount}',
-                  valueColor: MohajonWarm.goldText,
-                  icon: Icons.people_alt_outlined,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFD92D20), Color(0xFFF97316)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    l10n.t('customersOweNotice'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.4,
+                ReportBrandStrip(
+                  title: l10n.t('reportDuePayments'),
+                  icon: Icons.account_balance_wallet_rounded,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: l10n.t('totalDue'),
+                        value: money(data.totalDue),
+                        valueColor: const Color(0xFFD92D20),
+                        icon: Icons.percent_rounded,
+                      ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportSummaryCard(
+                        label: l10n.t('customersWithDue'),
+                        value: '${data.customerCount}',
+                        valueColor: MohajonWarm.goldText,
+                        icon: Icons.people_alt_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD92D20), Color(0xFFF97316)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.t('customersOweNotice'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReportExportButton(
+                        label: l10n.t('downloadXlsx'),
+                        icon: Icons.table_chart_outlined,
+                        color: const Color(0xFF059669),
+                        isBusy: exportingXlsx,
+                        onTap: _exportXlsx,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ReportExportButton(
+                        label: l10n.t('downloadPdf'),
+                        icon: Icons.picture_as_pdf_rounded,
+                        color: const Color(0xFFF97316),
+                        isBusy: exportingPdf,
+                        onTap: _exportPdf,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.t('outstandingCustomers'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF101828),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      l10n.tP('xCustomers', {'count': '${data.rows.length}'}),
+                      style: const TextStyle(
+                        color: Color(0xFF667085),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                for (final row in data.rows) ...[
+                  ReportRowTile(
+                    icon: Icons.person_outline,
+                    iconColor: const Color(0xFFD92D20),
+                    title: '${row['name']}',
+                    subtitle: (row['phone'] as String).isNotEmpty
+                        ? l10n.tP('phoneOpenSales', {
+                            'phone': '${row['phone']}',
+                            'count': '${row['count']}',
+                          })
+                        : l10n.tP('openSaleCount', {
+                            'count': '${row['count']}',
+                          }),
+                    trailing: money(row['due'] as double),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (data.rows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        l10n.t('noDuesAllClear'),
+                        style: const TextStyle(
+                          color: Color(0xFF059669),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: ReportExportButton(
-                  label: l10n.t('downloadXlsx'),
-                  icon: Icons.table_chart_outlined,
-                  color: const Color(0xFF059669),
-                  isBusy: exportingXlsx,
-                  onTap: _exportXlsx,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ReportExportButton(
-                  label: l10n.t('downloadPdf'),
-                  icon: Icons.picture_as_pdf_rounded,
-                  color: const Color(0xFFF97316),
-                  isBusy: exportingPdf,
-                  onTap: _exportPdf,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.t('outstandingCustomers'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF101828),
-                  ),
-                ),
-              ),
-              Text(
-                l10n.tP('xCustomers', {'count': '${data.rows.length}'}),
-                style: const TextStyle(
-                  color: Color(0xFF667085),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          for (final row in data.rows) ...[
-            ReportRowTile(
-              icon: Icons.person_outline,
-              iconColor: const Color(0xFFD92D20),
-              title: '${row['name']}',
-              subtitle: (row['phone'] as String).isNotEmpty
-                  ? l10n.tP('phoneOpenSales', {
-                      'phone': '${row['phone']}',
-                      'count': '${row['count']}',
-                    })
-                  : l10n.tP('openSaleCount', {'count': '${row['count']}'}),
-              trailing: money(row['due'] as double),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (data.rows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  l10n.t('noDuesAllClear'),
-                  style: const TextStyle(
-                    color: Color(0xFF059669),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-        ],
-        ),
-        ),
         ),
       ),
     );

@@ -9,6 +9,8 @@ import '../../../core/services/auth_backend.dart';
 import '../../../core/services/custom_auth_backend.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/sync_service.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/app_error.dart';
 
 /// The auth backend. The app authenticates against the self-hosted
 /// auth service (Spring Boot); there is no Firebase backend anymore.
@@ -313,8 +315,9 @@ class AuthService {
   Future<void> _hydrateShopProfile() async {
     final db = _ref.read(localDatabaseProvider);
     try {
-      final profile = await ApiClient(db)
-          .get('/api/v1/shops/me', timeout: const Duration(seconds: 3));
+      final profile = await ApiClient(
+        db,
+      ).get('/api/v1/shops/me', timeout: const Duration(seconds: 3));
       final settings = db.settings;
       final shopName = (profile['name'] ?? '').toString().trim();
       final phone = (profile['phoneNumber'] ?? '').toString().trim();
@@ -395,15 +398,22 @@ class AuthService {
   }
 }
 
-String authErrorMessage(Object error) {
+String authErrorMessage(Object error, {AppLocalizations? l10n}) {
   if (error is AuthMessageException) {
-    return error.message;
+    final message = error.message.toLowerCase();
+    if (message.contains('unsynced offline data')) {
+      return l10n?.t('errorUnsyncedChanges') ??
+          'Some changes are waiting to sync. Connect to the internet and try again.';
+    }
+    return l10n?.t('errorSomethingWentWrong') ??
+        'Something went wrong. Please try again.';
   }
   if (error is AuthException) {
-    return error.message;
+    return friendlyErrorMessage(error, l10n: l10n);
   }
   if (error is StateError) {
-    return 'Sign-in is not ready yet. Please close the screen and try again.';
+    return l10n?.t('errorSomethingWentWrong') ??
+        'Something went wrong. Please try again.';
   }
-  return 'We could not complete sign-in. Please try again.';
+  return friendlyErrorMessage(error, l10n: l10n);
 }

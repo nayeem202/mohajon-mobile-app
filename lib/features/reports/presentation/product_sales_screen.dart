@@ -162,7 +162,7 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
     task: () async {
       final data = _compute();
       await ProductSalesExcelService().saveProductSales(
-        table: data.table,
+        table: localizedReportTable(data.table, AppLocalizations.of(context)),
         range: _range,
       );
     },
@@ -174,12 +174,13 @@ class _ProductSalesScreenState extends ConsumerState<ProductSalesScreen>
   Future<void> _exportPdf() => runExport(
     isXlsx: false,
     task: () async {
+      final l10n = AppLocalizations.of(context);
       final data = _compute();
       final company = await DocCompany.fromShopForExport(
         ref.read(shopProfileProvider).value,
       );
       await ProductSalesPdfService().saveProductSales(
-        table: data.table,
+        table: localizedReportTable(data.table, l10n),
         range: _range,
         company: company,
       );

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/app_image.dart';
+import '../../../core/utils/app_error.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 
 /// Shared report identity block. Every report now starts with the same shop
@@ -77,11 +78,8 @@ class ReportBrandStrip extends ConsumerWidget {
                     : AppImage(
                         path: logo,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => Icon(
-                          icon,
-                          color: MohajonWarm.orange,
-                          size: 25,
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            Icon(icon, color: MohajonWarm.orange, size: 25),
                       ),
               ),
               const SizedBox(width: 12),
@@ -172,14 +170,16 @@ mixin ReportExportMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     try {
       await task();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString()),
+          content: Text(
+            friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -252,9 +252,7 @@ class ReportSummaryCard extends StatelessWidget {
     if (explicit != null) return explicit;
     final l = label.toLowerCase();
     if (l.contains('profit')) return Icons.trending_up_rounded;
-    if (l.contains('revenue') ||
-        l.contains('sales') ||
-        l.contains('vatable')) {
+    if (l.contains('revenue') || l.contains('sales') || l.contains('vatable')) {
       return Icons.attach_money_rounded;
     }
     if (l.contains('expense')) return Icons.receipt_long_rounded;
@@ -266,7 +264,8 @@ class ReportSummaryCard extends StatelessWidget {
       return Icons.bolt_rounded;
     }
     if (l.contains('due') || l.contains('rate')) return Icons.percent_rounded;
-    if (l.contains('vat') || l.contains('total')) return Icons.calculate_rounded;
+    if (l.contains('vat') || l.contains('total'))
+      return Icons.calculate_rounded;
     return Icons.bar_chart_rounded;
   }
 

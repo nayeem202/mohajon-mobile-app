@@ -6,6 +6,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/app_error.dart';
 import '../../../core/utils/network_guard.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../models/subscription_models.dart';
@@ -46,9 +47,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                         status.when(
                           data: (info) => _HeroBanner(
                             info: info,
-                            onRenew: () => _startPurchase(_purchasePlanFor(info)),
-                            onResume: () => _startPurchase(_purchasePlanFor(info)),
-                            onUpgrade: () => _startPurchase(_purchasePlanFor(info)),
+                            onRenew: () =>
+                                _startPurchase(_purchasePlanFor(info)),
+                            onResume: () =>
+                                _startPurchase(_purchasePlanFor(info)),
+                            onUpgrade: () =>
+                                _startPurchase(_purchasePlanFor(info)),
                           ),
                           loading: () => const SizedBox(height: 8),
                           error: (_, _) => const SizedBox.shrink(),
@@ -109,8 +113,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
 
   String _errorText(Object? error, BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (error is ApiException) return error.message;
-    return l10n.t('couldNotLoadPlans');
+    return friendlyErrorMessage(
+      error ?? StateError(''),
+      l10n: l10n,
+      fallback: l10n.t('couldNotLoadPlans'),
+    );
   }
 
   Widget _buildPlanCard(
@@ -122,7 +129,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
         .value
         ?.where((p) => p.tier == plan.tier && p.durationDays <= 31)
         .firstOrNull;
-    final months = plan.durationDays <= 31 ? null : (plan.durationDays / 30).round();
+    final months = plan.durationDays <= 31
+        ? null
+        : (plan.durationDays / 30).round();
     final savePct = monthly != null && months != null
         ? (((monthly.priceBdt * months) - plan.priceBdt) /
                   (monthly.priceBdt * months) *
@@ -199,9 +208,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
       await _confirmPayment(result);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e, l10n: l10n))),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -236,21 +245,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.t('paymentCancelled'))));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              confirmed.errorMessage?.isNotEmpty == true
-                  ? confirmed.errorMessage!
-                  : l10n.t('paymentFailed'),
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('paymentFailed'))));
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e, l10n: l10n))),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -747,7 +750,9 @@ class _PlanCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isBusiness ? Icons.groups_rounded : Icons.workspace_premium_rounded,
+                  isBusiness
+                      ? Icons.groups_rounded
+                      : Icons.workspace_premium_rounded,
                   color: Color(0xFFB45309),
                   size: 22,
                 ),
@@ -874,11 +879,22 @@ class _FreeTierCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.t('freePlanTitle'),
-                    style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink)),
+                Text(
+                  l10n.t('freePlanTitle'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(l10n.t('freePlanBody'),
-                    style: const TextStyle(fontSize: 11.5, height: 1.35, color: MohajonWarm.muted)),
+                Text(
+                  l10n.t('freePlanBody'),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    height: 1.35,
+                    color: MohajonWarm.muted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -906,24 +922,54 @@ class _AiCreditCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFD8C9F5)),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6D3BB5)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(l10n.t('aiCredits'),
-              style: const TextStyle(fontWeight: FontWeight.w900, color: MohajonWarm.ink))),
-          Text('${credits.remaining}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF6D3BB5))),
-        ]),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(value: progress, minHeight: 7, borderRadius: BorderRadius.circular(99),
-            backgroundColor: const Color(0xFFE8E0F7), color: const Color(0xFF6D3BB5)),
-        const SizedBox(height: 8),
-        Text(l10n.tP('aiCreditsDetail', {
-          'monthly': '${credits.monthlyRemaining}',
-          'welcome': '${credits.welcomeRemaining}',
-        }), style: const TextStyle(fontSize: 11.5, color: MohajonWarm.muted, fontWeight: FontWeight.w600)),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6D3BB5)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.t('aiCredits'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+              ),
+              Text(
+                '${credits.remaining}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF6D3BB5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 7,
+            borderRadius: BorderRadius.circular(99),
+            backgroundColor: const Color(0xFFE8E0F7),
+            color: const Color(0xFF6D3BB5),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.tP('aiCreditsDetail', {
+              'monthly': '${credits.monthlyRemaining}',
+              'welcome': '${credits.welcomeRemaining}',
+            }),
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: MohajonWarm.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

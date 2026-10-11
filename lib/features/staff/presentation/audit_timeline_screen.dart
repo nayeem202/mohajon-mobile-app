@@ -106,7 +106,12 @@ class _AuditTimelineScreenState extends ConsumerState<AuditTimelineScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: MohajonWarm.primary,
       appBar: AppBar(
+        backgroundColor: MohajonWarm.primary,
+        foregroundColor: MohajonWarm.ink,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         title: Text(l10n.t('auditTimeline')),
         // NotificationBell already includes the single app-wide sync status
         // control. Adding another one here made the network indicator appear

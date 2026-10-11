@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_typography.dart';
@@ -104,7 +105,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     AuthHeading(
-                                      title: bangla ? 'রেজিস্টার করুন' : 'Register',
+                                      title: bangla
+                                          ? 'রেজিস্টার করুন'
+                                          : 'Register',
                                       subtitle: bangla
                                           ? 'আপনার নতুন অ্যাকাউন্ট তৈরি করুন'
                                           : 'Create your new account',
@@ -267,7 +270,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           ),
           const SizedBox(height: 4),
           AuthFooterLink(
-            prompt: _bn ? 'ইতিমধ্যে অ্যাকাউন্ট আছে?' : 'Already have an account?',
+            prompt: _bn
+                ? 'ইতিমধ্যে অ্যাকাউন্ট আছে?'
+                : 'Already have an account?',
             action: _bn ? 'সাইন ইন' : 'Sign in',
             onPressed: isBusy ? null : () => Navigator.of(context).maybePop(),
           ),
@@ -335,12 +340,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   String? _passwordValidator(String? value) {
     final text = value ?? '';
     if (text.length < 6) {
-      return _bn ? 'কমপক্ষে ৬টি অক্ষর ব্যবহার করুন।' : 'Use at least 6 characters.';
+      return _bn
+          ? 'কমপক্ষে ৬টি অক্ষর ব্যবহার করুন।'
+          : 'Use at least 6 characters.';
     }
     return null;
   }
 
   Future<void> _continueWithGoogle() async {
+    final l10n = AppLocalizations.of(context);
     await runBusyAction(() async {
       setState(() => _message = null);
       try {
@@ -350,19 +358,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         // AuthenticatedEntry, which then shows the required category setup.
         if (mounted) Navigator.of(context).pop('__authenticated__');
       } catch (error) {
-        _showError(authErrorMessage(error));
+        _showError(authErrorMessage(error, l10n: l10n));
       }
     });
   }
 
   Future<void> _continueWithFacebook() async {
+    final l10n = AppLocalizations.of(context);
     await runBusyAction(() async {
       setState(() => _message = null);
       try {
         await ref.read(authServiceProvider).signInWithFacebook();
         if (mounted) Navigator.of(context).pop('__authenticated__');
       } catch (error) {
-        _showError(authErrorMessage(error));
+        _showError(authErrorMessage(error, l10n: l10n));
       }
     });
   }
@@ -376,6 +385,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   }
 
   Future<void> _signup() async {
+    final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     await runBusyAction(() async {
@@ -402,7 +412,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             // generic auth service must not own business fields. Sign in now
             // so AuthService can persist those fields through Haalkhata's
             // authenticated shop-profile endpoint before routing to setup.
-            await ref.read(authServiceProvider).signInWithEmail(
+            await ref
+                .read(authServiceProvider)
+                .signInWithEmail(
                   email: _email.text.trim(),
                   password: _password.text,
                 );
@@ -413,7 +425,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         }
         if (mounted) setState(() => _submitted = true);
       } catch (error) {
-        _showError(authErrorMessage(error));
+        _showError(authErrorMessage(error, l10n: l10n));
       }
     });
   }

@@ -12,7 +12,6 @@ class InvestorSelector extends ConsumerStatefulWidget {
     required this.onChanged,
     this.showSharePercentage = false,
     this.autoCalculatePercentage = false,
-
   });
 
   final List<SelectedInvestor> selectedInvestors;
@@ -32,7 +31,7 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
 
     return investorsAsync.when(
       data: (investors) => _buildContent(investors, l10n),
-      error: (e, _) => Text(l10n.tP('errorText', {'error': '$e'})),
+      error: (e, _) => Text(l10n.t('errorCouldNotLoadInvestors')),
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
@@ -61,19 +60,24 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        initialValue:
-                            si.investorId.isEmpty ? null : si.investorId,
+                        initialValue: si.investorId.isEmpty
+                            ? null
+                            : si.investorId,
                         decoration: InputDecoration(
                           labelText: l10n.t('investorRequired'),
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         items: investors
-                            .map((inv) => DropdownMenuItem(
-                                  value: inv.id,
-                                  child: Text(inv.name),
-                                ))
+                            .map(
+                              (inv) => DropdownMenuItem(
+                                value: inv.id,
+                                child: Text(inv.name),
+                              ),
+                            )
                             .toList(),
                         validator: (v) =>
                             v == null || v.isEmpty ? l10n.t('required') : null,
@@ -91,8 +95,10 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                     ),
                     if (widget.selectedInvestors.length > 1)
                       IconButton(
-                        icon: const Icon(Icons.remove_circle_outline_rounded,
-                            color: Color(0xFFDC2626)),
+                        icon: const Icon(
+                          Icons.remove_circle_outline_rounded,
+                          color: Color(0xFFDC2626),
+                        ),
                         onPressed: () {
                           final list = [...widget.selectedInvestors];
                           list.removeAt(index);
@@ -111,17 +117,22 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                             ? ''
                             : si.investmentAmount.toString(),
                         keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           labelText: l10n.t('amountRequired'),
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return l10n.t('required');
+                          if (v == null || v.trim().isEmpty)
+                            return l10n.t('required');
                           final amt = double.tryParse(v.trim());
-                          if (amt == null || amt <= 0) return l10n.t('mustBeGreaterThanZero');
+                          if (amt == null || amt <= 0)
+                            return l10n.t('mustBeGreaterThanZero');
                           return null;
                         },
                         onChanged: (v) {
@@ -135,13 +146,16 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                         },
                       ),
                     ),
-                    if (widget.showSharePercentage || widget.autoCalculatePercentage) ...[
+                    if (widget.showSharePercentage ||
+                        widget.autoCalculatePercentage) ...[
                       const SizedBox(width: 8),
                       Expanded(
                         child: widget.autoCalculatePercentage
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 16),
+                                  horizontal: 12,
+                                  vertical: 16,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF7F5F0),
                                   borderRadius: BorderRadius.circular(10),
@@ -162,13 +176,17 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                                 initialValue: si.sharePercentage == 0
                                     ? ''
                                     : si.sharePercentage.toString(),
-                                keyboardType: const TextInputType.numberWithOptions(
-                                    decimal: true),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
                                 decoration: InputDecoration(
                                   labelText: l10n.t('sharePercentLabel'),
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                   suffixText: '%',
                                 ),
                                 onChanged: (v) {
@@ -201,11 +219,9 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
 
   void _addInvestor() {
     final list = [...widget.selectedInvestors];
-    list.add(SelectedInvestor(
-      investorId: '',
-      investmentAmount: 0,
-      sharePercentage: 0,
-    ));
+    list.add(
+      SelectedInvestor(investorId: '', investmentAmount: 0, sharePercentage: 0),
+    );
     widget.onChanged(list);
   }
 }

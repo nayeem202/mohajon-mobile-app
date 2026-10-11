@@ -18,6 +18,7 @@ import 'auth_backend.dart';
 import 'device_session_service.dart';
 import 'secure_http.dart';
 import 'secure_tokens.dart';
+import 'session_token_refresher.dart';
 
 /// Google Sign-In instance used by the custom auth backend.
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
@@ -308,7 +309,7 @@ class CustomAuthBackend implements AuthBackend {
       // verification id in this backend.
       onCodeSent(phone.trim());
     } catch (error) {
-      onError(error is AuthException ? error.message : error.toString());
+      onError('Could not send the verification code. Please try again.');
     }
   }
 
@@ -410,6 +411,7 @@ class CustomAuthBackend implements AuthBackend {
         ),
         path: path,
         body: body,
+        allowRefresh: authenticated,
       );
     } on SocketException catch (error) {
       debugPrint('AUTH: socket error for $path: $error');
@@ -459,56 +461,34 @@ class CustomAuthBackend implements AuthBackend {
     Future<http.Response> Function() send, {
     required String path,
     Map<String, dynamic>? body,
+    bool allowRefresh = false,
   }) async {
+    final sentAccessToken = TokenStore.get(_kAccessToken);
     final response = await send().timeout(AppConfig.authTimeout);
-    if (response.statusCode == 401 && TokenStore.get(_kRefreshToken) != null) {
-      final refreshed = await _tryRefresh();
-      if (refreshed) {
+    if (allowRefresh && response.statusCode == 401) {
+      final outcome = await SessionTokenRefresher.recover(
+        rejectedAccessToken: sentAccessToken,
+      );
+      if (outcome == SessionRefreshResult.refreshed) {
         final retry = await send().timeout(AppConfig.authTimeout);
         return _decode(retry, path);
+      }
+      if (outcome == SessionRefreshResult.rejected) {
+        await _clearTokens();
+        _sessionController.add(null);
       }
     }
     return _decode(response, path);
   }
 
-  /// Single-flight refresh: concurrent 401s share ONE refresh call. Racing
-  /// refreshes against the auth service's refresh-token rotation revokes the
-  /// token mid-flight and wipes the session.
-  Future<bool>? _refreshFuture;
-
-  Future<bool> _tryRefresh() {
-    return _refreshFuture ??= _doRefresh().whenComplete(() {
-      _refreshFuture = null;
-    });
-  }
-
-  Future<bool> _doRefresh() async {
-    final refreshToken = TokenStore.get(_kRefreshToken);
-    if (refreshToken == null) return false;
-    try {
-      final client = await secureHttpClient();
-      final response = await client
-          .post(
-            _uri('/api/v1/auth/refresh'),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'refreshToken': refreshToken}),
-          )
-          .timeout(AppConfig.authTimeout);
-      if (response.statusCode != 200) {
-        // Only wipe the session when the auth service definitively rejects
-        // the refresh token (401/403). A transient 5xx must NOT log the user
-        // out — the tokens stay and a later request retries.
-        if (response.statusCode == 401 || response.statusCode == 403) {
-          await _clearTokens();
-          _sessionController.add(null);
-        }
-        return false;
-      }
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      await _saveTokens(data);
-      return true;
-    } catch (_) {
-      return false;
+  /// Refreshes an almost-expired access token without interrupting the user.
+  /// Called when the app resumes or network connectivity returns.
+  Future<void> refreshSessionIfNeeded() async {
+    if (TokenStore.get(_kAccessToken) == null) return;
+    final outcome = await SessionTokenRefresher.refreshIfExpiring();
+    if (outcome == SessionRefreshResult.rejected) {
+      await _clearTokens();
+      _sessionController.add(null);
     }
   }
 

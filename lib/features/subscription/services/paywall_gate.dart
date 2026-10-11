@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/app_error.dart';
+import '../../../core/utils/snackbar.dart';
 import '../services/paywall_service.dart';
 import '../presentation/widgets/paywall_sheet.dart';
 import '../providers/subscription_providers.dart';
@@ -18,8 +21,7 @@ import '../providers/subscription_providers.dart';
 class PaywallGate {
   PaywallGate._();
 
-  static bool isReadOnly(WidgetRef ref) =>
-      ref.read(isReadOnlyProvider);
+  static bool isReadOnly(WidgetRef ref) => ref.read(isReadOnlyProvider);
 
   static bool hasPro(WidgetRef ref) {
     final status = ref.read(subscriptionStatusProvider);
@@ -29,6 +31,46 @@ class PaywallGate {
   static bool hasBusiness(WidgetRef ref) {
     final status = ref.read(subscriptionStatusProvider);
     return status.hasValue && (status.value?.hasBusiness ?? false);
+  }
+
+  /// Waits for a verified (or valid offline-cached) subscription result.
+  /// Synchronous checks incorrectly treat the provider's initial loading state
+  /// as a definitive denial and can show a paywall on the first tap.
+  static Future<bool> hasBusinessAsync(WidgetRef ref) async =>
+      (await ref.read(subscriptionStatusProvider.future)).hasBusiness;
+
+  /// Resolves Business access before opening or mutating a Business feature.
+  /// A network/status failure is shown as an error, never as a false upgrade
+  /// prompt. The failed provider is invalidated so a later tap can retry.
+  static Future<bool> ensureBusinessAccess(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    bool allowed;
+    try {
+      allowed = await hasBusinessAsync(ref);
+    } catch (error) {
+      ref.invalidate(subscriptionStatusProvider);
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(
+            error,
+            l10n: l10n,
+            fallback: l10n.t('errorNoInternet'),
+          ),
+          isError: true,
+        );
+      }
+      return false;
+    }
+    if (!context.mounted) return false;
+    if (!allowed) {
+      await showPaywallSheet(context, requiredTier: 'BUSINESS');
+      return false;
+    }
+    return true;
   }
 
   /// Runs [action] only when the shop has full access; otherwise shows the

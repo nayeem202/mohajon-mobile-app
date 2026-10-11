@@ -34,8 +34,8 @@ final profileProvider = Provider<Profile?>((ref) {
     ownerName: shopProfile == null
         ? _deriveOwnerName(user, shopProfile)
         : (shopProfile.effectiveOwners.first.name.isNotEmpty
-            ? shopProfile.effectiveOwners.first.name
-            : 'Store Owner'),
+              ? shopProfile.effectiveOwners.first.name
+              : 'Store Owner'),
     phone: _resolvePhone(shopProfile, authUser, user),
     email: shopProfile?.ownerEmail.isNotEmpty == true
         ? shopProfile!.ownerEmail
@@ -58,7 +58,7 @@ final profileServiceProvider = Provider<ProfileService>((ref) {
 
 final profileErrorProvider = Provider<String?>((ref) {
   final shopProfile = ref.watch(shopProfileProvider);
-  if (shopProfile.hasError) return shopProfile.error.toString();
+  if (shopProfile.hasError) return 'errorSomethingWentWrong';
   return null;
 });
 
@@ -74,7 +74,11 @@ String _deriveOwnerName(AppUser user, ShopProfile? shopProfile) {
 /// 1. shop profile number (explicitly set by the owner),
 /// 2. the phone the user signed up / logged in with,
 /// 3. local user fallback.
-String _resolvePhone(ShopProfile? shopProfile, AuthSession? authUser, AppUser user) {
+String _resolvePhone(
+  ShopProfile? shopProfile,
+  AuthSession? authUser,
+  AppUser user,
+) {
   final shopPhone = shopProfile?.phoneNumber.trim() ?? '';
   if (shopPhone.isNotEmpty) return shopPhone;
   final sessionPhone = (authUser?.phone ?? '').trim();

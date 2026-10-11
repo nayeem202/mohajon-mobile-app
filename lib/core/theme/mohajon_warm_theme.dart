@@ -62,6 +62,17 @@ class MohajonWarm {
         outlineVariant: Color(0xFFFFF0A6),
       ),
       scaffoldBackgroundColor: Colors.transparent,
+      cardTheme: base.cardTheme.copyWith(
+        elevation: 0,
+        color: card,
+        margin: EdgeInsets.zero,
+        shadowColor: ink.withValues(alpha: 0.07),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: goldBorder),
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
       appBarTheme: base.appBarTheme.copyWith(
         backgroundColor: primary,
         foregroundColor: ink,

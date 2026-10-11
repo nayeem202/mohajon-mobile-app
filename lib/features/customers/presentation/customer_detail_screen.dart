@@ -39,6 +39,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
+    final l10n = AppLocalizations.of(context);
     final customer = widget.customer;
     final due = ref.watch(customerDueProvider(customer.customerId));
     final tag = ref.watch(customerTagProvider(customer.customerId));
@@ -56,318 +57,344 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
     var running = 0.0;
 
     return withLoadingOverlay(
-      Scaffold(
-        appBar: AppBar(
-          title: Text(customer.name),
-          actions: [
-            if (due > 0)
+      Theme(
+        data: MohajonWarm.theme(Theme.of(context)),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(customer.name),
+            actions: [
+              if (due > 0)
+                IconButton(
+                  tooltip: l10n.t('dueRecovery'),
+                  onPressed: () => _showDueRecovery(
+                    customer: customer,
+                    due: due,
+                    sales: sales.toList(),
+                  ),
+                  icon: const Icon(Icons.track_changes_rounded),
+                ),
               IconButton(
-                tooltip: 'Due recovery',
-                onPressed: () => _showDueRecovery(
-                  customer: customer,
-                  due: due,
-                  sales: sales.toList(),
-                ),
-                icon: const Icon(Icons.track_changes_rounded),
-              ),
-            IconButton(
-              tooltip: 'Edit customer',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => CustomerFormScreen(customer: customer),
-                ),
-              ),
-              icon: const Icon(Icons.edit_rounded),
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: isBusy
-              ? null
-              : () => PaywallGate.guard(
-                  context,
-                  ref,
-                  () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AddPaymentScreen(customer: customer),
-                    ),
+                tooltip: l10n.t('edit'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CustomerFormScreen(customer: customer),
                   ),
                 ),
-          icon: const Icon(Icons.payments_outlined),
-          label: const Text('Add payment'),
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                icon: const Icon(Icons.edit_rounded),
+              ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: isBusy
+                ? null
+                : () => PaywallGate.guard(
+                    context,
+                    ref,
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AddPaymentScreen(customer: customer),
+                      ),
+                    ),
+                  ),
+            icon: const Icon(Icons.payments_outlined),
+            label: Text(l10n.t('addPayment')),
+          ),
+          body: DecoratedBox(
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (customer.imagePath != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: AppImage.file(
-                              File(customer.imagePath!),
-                              width: 42,
-                              height: 42,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stk) =>
-                                  _iconAvatar(context),
-                            ),
-                          )
-                        else
-                          _iconAvatar(context),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                        Row(
+                          children: [
+                            if (customer.imagePath != null)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: AppImage.file(
+                                  File(customer.imagePath!),
+                                  width: 42,
+                                  height: 42,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stk) =>
+                                      _iconAvatar(context),
+                                ),
+                              )
+                            else
+                              _iconAvatar(context),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      customer.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w900,
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          customer.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                        ),
+                                      ),
+                                      if (tag.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
                                           ),
-                                    ),
+                                          decoration: BoxDecoration(
+                                            color: tag == 'VIP'
+                                                ? const Color(0xFFFFF7ED)
+                                                : const Color(0xFFF0FDF4),
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            tag,
+                                            style: TextStyle(
+                                              color: tag == 'VIP'
+                                                  ? const Color(0xFFE98300)
+                                                  : const Color(0xFF047857),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  if (tag.isNotEmpty) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: tag == 'VIP'
-                                            ? const Color(0xFFFFF7ED)
-                                            : const Color(0xFFF0FDF4),
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        tag,
-                                        style: TextStyle(
-                                          color: tag == 'VIP'
-                                              ? const Color(0xFFE98300)
-                                              : const Color(0xFF047857),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
+                                  const SizedBox(height: 3),
+                                  Text(customer.phone),
+                                  if (customer.email.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      customer.email,
+                                      style: const TextStyle(fontSize: 12),
                                     ),
                                   ],
                                 ],
                               ),
-                              const SizedBox(height: 3),
-                              Text(customer.phone),
-                              if (customer.email.isNotEmpty) ...[
-                                const SizedBox(height: 2),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
                                 Text(
-                                  customer.email,
-                                  style: const TextStyle(fontSize: 12),
+                                  money(due),
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w900),
+                                ),
+                                Text(
+                                  l10n.t('totalDue'),
+                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              money(due),
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w900),
                             ),
-                            Text(
-                              'Due balance',
-                              style: Theme.of(context).textTheme.bodySmall,
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            const gap = 8.0;
+                            final columns = constraints.maxWidth < 390 ? 2 : 3;
+                            final width =
+                                (constraints.maxWidth - gap * (columns - 1)) /
+                                columns;
+                            return Wrap(
+                              spacing: gap,
+                              runSpacing: gap,
+                              children: [
+                                SizedBox(
+                                  width: width,
+                                  child: _MiniStat(
+                                    label: l10n.t('totalSpent'),
+                                    value: money(totalSpent),
+                                    icon: Icons.payments_rounded,
+                                    color: MohajonWarm.green,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: width,
+                                  child: _MiniStat(
+                                    label: l10n.t('debit'),
+                                    value: money(debitTotal),
+                                    icon: Icons.call_made_rounded,
+                                    color: MohajonWarm.red,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: width,
+                                  child: _MiniStat(
+                                    label: l10n.t('credit'),
+                                    value: money(creditTotal),
+                                    icon: Icons.call_received_rounded,
+                                    color: MohajonWarm.green,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: isBusy
+                                    ? null
+                                    : () => _showLedgerEntrySheet(
+                                        context,
+                                        title: l10n.t('addDebit'),
+                                        icon: Icons.call_made_rounded,
+                                        color: MohajonWarm.red,
+                                        onSave: (amount, note) => ref
+                                            .read(customerLedgerServiceProvider)
+                                            .addDebit(
+                                              customerId: customer.customerId,
+                                              amount: amount,
+                                              note: note,
+                                            ),
+                                      ),
+                                icon: const Icon(Icons.add_circle_outline),
+                                label: Text(l10n.t('debit')),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: isBusy
+                                    ? null
+                                    : () => _showLedgerEntrySheet(
+                                        context,
+                                        title: l10n.t('addCredit'),
+                                        icon: Icons.call_received_rounded,
+                                        color: MohajonWarm.green,
+                                        onSave: (amount, note) => ref
+                                            .read(customerLedgerServiceProvider)
+                                            .addCredit(
+                                              customerId: customer.customerId,
+                                              amount: amount,
+                                              note: note,
+                                            ),
+                                      ),
+                                icon: const Icon(Icons.remove_circle_outline),
+                                label: Text(l10n.t('credit')),
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _MiniStat(
-                          label: 'Total Spent',
-                          value: money(totalSpent),
-                          icon: Icons.payments_rounded,
-                          color: const Color(0xFF0F766E),
-                        ),
-                        const SizedBox(width: 10),
-                        _MiniStat(
-                          label: 'Debit',
-                          value: money(debitTotal),
-                          icon: Icons.call_made_rounded,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(width: 10),
-                        _MiniStat(
-                          label: 'Credit',
-                          value: money(creditTotal),
-                          icon: Icons.call_received_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.t('ledger'),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: isBusy
-                                ? null
-                                : () => _showLedgerEntrySheet(
-                                    context,
-                                    title: 'Add debit',
-                                    icon: Icons.call_made_rounded,
-                                    color: Theme.of(context).colorScheme.error,
-                                    onSave: (amount, note) => ref
-                                        .read(customerLedgerServiceProvider)
-                                        .addDebit(
-                                          customerId: customer.customerId,
-                                          amount: amount,
-                                          note: note,
-                                        ),
-                                  ),
-                            icon: const Icon(Icons.add_circle_outline),
-                            label: const Text('Debit'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: isBusy
-                                ? null
-                                : () => _showLedgerEntrySheet(
-                                    context,
-                                    title: 'Add credit',
-                                    icon: Icons.call_received_rounded,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    onSave: (amount, note) => ref
-                                        .read(customerLedgerServiceProvider)
-                                        .addCredit(
-                                          customerId: customer.customerId,
-                                          amount: amount,
-                                          note: note,
-                                        ),
-                                  ),
-                            icon: const Icon(Icons.remove_circle_outline),
-                            label: const Text('Credit'),
-                          ),
-                        ),
-                      ],
+                    TextButton.icon(
+                      onPressed: isBusy
+                          ? null
+                          : () => _exportLedger(customer, ledger),
+                      icon: const Icon(Icons.download_rounded),
+                      label: Text(l10n.t('exportLedger')),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Ledger',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
+                const SizedBox(height: 8),
+                if (ledger.isEmpty)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.receipt_long_outlined),
+                      title: Text(l10n.t('ledgerEmptyTitle')),
+                      subtitle: Text(l10n.t('ledgerEmptyHint')),
                     ),
                   ),
-                ),
-                TextButton.icon(
-                  onPressed: isBusy
-                      ? null
-                      : () => _exportLedger(customer, ledger),
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Export Ledger'),
-                ),
+                for (final entry in ledger)
+                  Builder(
+                    builder: (context) {
+                      running += entry.signedAmount;
+                      final isPositive = entry.signedAmount > 0;
+                      final color = switch (entry.type) {
+                        LedgerEntryType.sale => Theme.of(
+                          context,
+                        ).colorScheme.error,
+                        LedgerEntryType.debit => Theme.of(
+                          context,
+                        ).colorScheme.error,
+                        LedgerEntryType.payment => Theme.of(
+                          context,
+                        ).colorScheme.primary,
+                        LedgerEntryType.credit => Theme.of(
+                          context,
+                        ).colorScheme.primary,
+                      };
+                      final icon = switch (entry.type) {
+                        LedgerEntryType.sale => Icons.point_of_sale_rounded,
+                        LedgerEntryType.debit => Icons.arrow_upward_rounded,
+                        LedgerEntryType.payment => Icons.payments_rounded,
+                        LedgerEntryType.credit => Icons.arrow_downward_rounded,
+                      };
+                      final prefix = isPositive ? '+' : '-';
+
+                      return Card(
+                        child: ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(icon, color: color),
+                          ),
+                          title: Text(entry.description),
+                          subtitle: Text(
+                            entry.createdAt
+                                .toLocal()
+                                .toString()
+                                .split('.')
+                                .first,
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '$prefix${money(entry.amount)}',
+                                style: TextStyle(
+                                  color: color,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                '${l10n.t('balance')} ${money(running)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
-            if (ledger.isEmpty)
-              const Card(
-                child: ListTile(
-                  leading: Icon(Icons.receipt_long_outlined),
-                  title: Text('No ledger activity yet'),
-                  subtitle: Text(
-                    'Add a debit or credit to track the customer balance.',
-                  ),
-                ),
-              ),
-            for (final entry in ledger)
-              Builder(
-                builder: (context) {
-                  running += entry.signedAmount;
-                  final isPositive = entry.signedAmount > 0;
-                  final color = switch (entry.type) {
-                    LedgerEntryType.sale => Theme.of(context).colorScheme.error,
-                    LedgerEntryType.debit => Theme.of(
-                      context,
-                    ).colorScheme.error,
-                    LedgerEntryType.payment => Theme.of(
-                      context,
-                    ).colorScheme.primary,
-                    LedgerEntryType.credit => Theme.of(
-                      context,
-                    ).colorScheme.primary,
-                  };
-                  final icon = switch (entry.type) {
-                    LedgerEntryType.sale => Icons.point_of_sale_rounded,
-                    LedgerEntryType.debit => Icons.arrow_upward_rounded,
-                    LedgerEntryType.payment => Icons.payments_rounded,
-                    LedgerEntryType.credit => Icons.arrow_downward_rounded,
-                  };
-                  final prefix = isPositive ? '+' : '-';
-
-                  return Card(
-                    child: ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(icon, color: color),
-                      ),
-                      title: Text(entry.description),
-                      subtitle: Text(
-                        entry.createdAt.toLocal().toString().split('.').first,
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '$prefix${money(entry.amount)}',
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            'Bal ${money(running)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
+          ),
         ),
       ),
       label: 'Saving entry...',
@@ -893,43 +920,54 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 18),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(11),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: Theme.of(context).textTheme.bodySmall),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+            child: Icon(icon, color: color, size: 17),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

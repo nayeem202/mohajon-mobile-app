@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../localization/app_localizations.dart';
 import '../services/api_client.dart';
+import '../services/auth_backend.dart';
 import 'money.dart';
 
 /// A validation failure whose amount must be presented in the selected app
@@ -20,7 +21,7 @@ String friendlyErrorMessage(
   AppLocalizations? l10n,
   String? fallback,
 }) {
-  debugPrint('APP_ERROR >>> ${error.runtimeType}: $error');
+  if (kDebugMode) debugPrint('APP_ERROR >>> ${error.runtimeType}: $error');
   final fallbackMessage =
       fallback ??
       _text(
@@ -70,11 +71,19 @@ String friendlyErrorMessage(
     if (error.statusCode == 409) {
       return _text(l10n, 'errorAlreadyExists', 'This item already exists.');
     }
-    // Retain server text for legacy call sites until they supply l10n. Every
-    // localized screen receives a safe translated fallback instead.
-    if (l10n == null && error.message.trim().isNotEmpty) {
-      return error.message.trim();
+    return fallbackMessage;
+  }
+
+  if (error is AuthException) {
+    if (_isSignInCancelled(error.message, error.code)) {
+      return _text(
+        l10n,
+        'errorSignInCancelled',
+        'Sign-in was cancelled. You can try again whenever you are ready.',
+      );
     }
+    final byCode = _authCodeMessage(error.code, l10n);
+    if (byCode != null) return byCode;
     return fallbackMessage;
   }
 
@@ -82,10 +91,16 @@ String friendlyErrorMessage(
     final msg = error.message.trim();
     final translated = _stateErrorMessage(msg, l10n);
     if (translated != null) return translated;
-    if (l10n == null && msg.isNotEmpty) return msg;
     return fallbackMessage;
   }
   final s = error.toString().toLowerCase();
+  if (_isSignInCancelled(s, s)) {
+    return _text(
+      l10n,
+      'errorSignInCancelled',
+      'Sign-in was cancelled. You can try again whenever you are ready.',
+    );
+  }
   if (s.contains('socketexception') ||
       s.contains('connection refused') ||
       s.contains('clientexception') ||
@@ -143,8 +158,94 @@ String friendlyErrorMessage(
   return fallbackMessage;
 }
 
+bool _isSignInCancelled(String message, String code) {
+  final value = '$message $code'.toLowerCase();
+  if (code.toLowerCase().contains('cancel')) return true;
+  return value.contains('sign_in_canceled') ||
+      value.contains('sign-in canceled') ||
+      value.contains('sign in canceled') ||
+      value.contains('sign_in_cancelled') ||
+      value.contains('sign-in cancelled') ||
+      value.contains('user_cancelled') ||
+      value.contains('user canceled') ||
+      value.contains('user cancelled') ||
+      value.contains('canceled by user') ||
+      value.contains('cancelled by user');
+}
+
+String? _authCodeMessage(String code, AppLocalizations? l10n) {
+  switch (code.trim().toUpperCase()) {
+    case 'INVALID_CREDENTIALS':
+    case 'INVALID_RECOVERY':
+      return _text(
+        l10n,
+        'errorInvalidCredentials',
+        'Email or password is incorrect.',
+      );
+    case 'INVALID_OTP':
+      return _text(
+        l10n,
+        'errorInvalidVerificationCode',
+        'That verification code is incorrect or has expired. Request a new code and try again.',
+      );
+    case 'VERIFICATION_REQUIRED':
+      return _text(
+        l10n,
+        'errorVerificationRequired',
+        'Verify your email before signing in.',
+      );
+    case 'EMAIL_ALREADY_EXISTS':
+      return _text(
+        l10n,
+        'errorEmailAlreadyExists',
+        'An account already uses this email.',
+      );
+    case 'PHONE_ALREADY_EXISTS':
+      return _text(
+        l10n,
+        'errorPhoneAlreadyExists',
+        'An account already uses this phone number.',
+      );
+    case 'ACCOUNT_DISABLED':
+    case 'ACCOUNT_LOCKED':
+      return _text(
+        l10n,
+        'errorAccountUnavailable',
+        'This account is temporarily unavailable. Contact support if you need help.',
+      );
+    case 'VERIFICATION_CODE_ACTIVE':
+      return _text(
+        l10n,
+        'errorVerificationCodeActive',
+        'A verification code was sent recently. Please wait before requesting another.',
+      );
+    case 'TOO_MANY_ATTEMPTS':
+      return _text(
+        l10n,
+        'errorTooManyAttempts',
+        'Too many attempts. Please wait a little and try again.',
+      );
+    case 'NO_RECOVERY_EMAIL':
+      return _text(
+        l10n,
+        'errorNoRecoveryEmail',
+        'No recovery email is available for this account. Contact support.',
+      );
+    case 'INVALID_CURRENT_PASSWORD':
+      return _text(
+        l10n,
+        'errorInvalidCurrentPassword',
+        'Your current password is incorrect.',
+      );
+  }
+  return null;
+}
+
 String? _apiCodeMessage(ApiException error, AppLocalizations? l10n) {
-  switch (error.code.trim().toUpperCase()) {
+  final normalizedCode = error.code.trim().toUpperCase();
+  final authMessage = _authCodeMessage(normalizedCode, l10n);
+  if (authMessage != null) return authMessage;
+  switch (normalizedCode) {
     case 'CREDIT_LIMIT_EXCEEDED':
       return _creditLimitMessage(l10n, _availableCreditFrom(error.message));
     case 'INSUFFICIENT_STOCK':
@@ -257,6 +358,27 @@ String? _stateErrorMessage(String message, AppLocalizations? l10n) {
       l10n,
       'errorInsufficientStock',
       'There is not enough stock for this action.',
+    );
+  }
+  if (normalized.contains('whole numbers')) {
+    return _text(
+      l10n,
+      'wholeNumbersRequired',
+      'Enter whole-number quantities.',
+    );
+  }
+  if (normalized.contains('reason is required for damaged')) {
+    return _text(
+      l10n,
+      'damageReasonRequired',
+      'Add a short reason for damaged or rejected items.',
+    );
+  }
+  if (normalized.contains('add a note explaining')) {
+    return _text(
+      l10n,
+      'invoiceDifferenceNoteRequired',
+      'Add a note explaining the invoice difference.',
     );
   }
   return null;

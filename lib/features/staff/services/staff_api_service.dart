@@ -51,15 +51,26 @@ class StaffApiService {
       final staff = data
           .map((e) => StaffMember.fromApi(Map<String, dynamic>.from(e as Map)))
           .toList();
-      await _db.settings.put('cachedStaffList', staff.map((s) => s.toJson()).toList());
+      await _db.settings.put(
+        'cachedStaffList',
+        staff.map((s) => s.toJson()).toList(),
+      );
       return staff;
     } catch (error) {
+      // A plan denial is authoritative; never disguise it by returning a
+      // cached staff list. Only transient/offline failures may use the cache.
+      if (error is ApiException &&
+          (error.statusCode == 403 || error.code == 'SUBSCRIPTION_REQUIRED')) {
+        rethrow;
+      }
       // Offline: show the last known staff list so the shop can still open
       // the team screen while disconnected.
       final cached = _db.settings.get('cachedStaffList');
       if (cached is List) {
         return cached
-            .map((e) => StaffMember.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) => StaffMember.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
             .toList();
       }
       rethrow;

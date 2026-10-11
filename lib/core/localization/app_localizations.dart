@@ -39,6 +39,26 @@ class AppLocalizations {
           'Customer credit limit has been reached. Available credit: {amount}.',
       'errorInsufficientStock': 'There is not enough stock for this action.',
       'errorInvalidCredentials': 'Email or password is incorrect.',
+      'errorInvalidVerificationCode':
+          'That verification code is incorrect or has expired. Request a new code and try again.',
+      'errorSignInCancelled':
+          'Sign-in was cancelled. You can try again whenever you are ready.',
+      'errorEmailAlreadyExists': 'An account already uses this email.',
+      'errorPhoneAlreadyExists': 'An account already uses this phone number.',
+      'errorAccountUnavailable':
+          'This account is temporarily unavailable. Contact support if you need help.',
+      'errorVerificationCodeActive':
+          'A verification code was sent recently. Please wait before requesting another.',
+      'errorTooManyAttempts':
+          'Too many attempts. Please wait a little and try again.',
+      'errorNoRecoveryEmail':
+          'No recovery email is available for this account. Contact support.',
+      'errorCouldNotLoadVendors':
+          'Could not load suppliers. Check your connection and try again.',
+      'errorCouldNotLoadInvestors':
+          'Could not load investors. Check your connection and try again.',
+      'errorUnsyncedChanges':
+          'Some changes are waiting to sync. Connect to the internet and try again.',
       'errorVerificationRequired': 'Verify your email before signing in.',
       'errorInvalidCurrentPassword': 'Your current password is incorrect.',
       'errorSubscriptionRequired':
@@ -367,6 +387,15 @@ class AppLocalizations {
       'home': 'Home',
       'investors': 'Investors',
       'reports': 'Reports',
+      'reportGroupOverview': 'Overview',
+      'reportGroupFinance': 'Finance',
+      'reportGroupOperations': 'Operations',
+      'reportGroupTeam': 'Team',
+      'reportGroupBusinessOverview': 'Business overview',
+      'reportGroupMoneyCollections': 'Money & collections',
+      'reportGroupStockOperations': 'Stock & operations',
+      'reportGroupTeamPerformance': 'Team performance',
+      'curatedReportsCount': '{count} curated reports',
       'menu': 'Menu',
       'more': 'More',
       'sales': 'Sales',
@@ -430,6 +459,13 @@ class AppLocalizations {
       'payNow': 'Save Payment',
       'customerInvoice': 'Invoice',
       'ledger': 'Ledger',
+      'debit': 'Debit',
+      'addDebit': 'Add debit',
+      'addCredit': 'Add credit',
+      'exportLedger': 'Export ledger',
+      'ledgerEmptyTitle': 'No ledger activity yet',
+      'ledgerEmptyHint': 'Add a debit or credit to track the customer balance.',
+      'dueRecovery': 'Due recovery',
       'paid': 'Paid',
       'partial': 'Partial',
       'cash': 'Cash',
@@ -583,6 +619,9 @@ class AppLocalizations {
       'manageYourPlan': 'Manage your plan',
       'chooseYourPlan': 'Choose your plan',
       'bkashPayment': 'bKash Payment',
+      'securePaymentCheckout': 'Complete your subscription payment securely',
+      'paymentPageLoadFailed':
+          'Payment page could not be loaded. Check your connection and try again.',
       'isActive': 'is active',
       'daysRemaining': 'Days remaining:',
       'expiresOn': 'Expires',
@@ -1775,6 +1814,28 @@ If you have any privacy questions, reach out via the Contact Support option in S
           'কাস্টমারের বাকির সীমা শেষ। এখনো ব্যবহার করা যাবে: {amount}।',
       'errorInsufficientStock': 'এই কাজের জন্য পর্যাপ্ত স্টক নেই।',
       'errorInvalidCredentials': 'ইমেইল বা পাসওয়ার্ড সঠিক নয়।',
+      'errorInvalidVerificationCode':
+          'যাচাই কোডটি ভুল অথবা মেয়াদ শেষ। নতুন কোড নিয়ে আবার চেষ্টা করুন।',
+      'errorSignInCancelled':
+          'সাইন-ইন বাতিল করা হয়েছে। চাইলে আবার চেষ্টা করতে পারেন।',
+      'errorEmailAlreadyExists':
+          'এই ইমেইল দিয়ে আগে থেকেই একটি অ্যাকাউন্ট আছে।',
+      'errorPhoneAlreadyExists':
+          'এই ফোন নম্বর দিয়ে আগে থেকেই একটি অ্যাকাউন্ট আছে।',
+      'errorAccountUnavailable':
+          'এই অ্যাকাউন্টটি আপাতত ব্যবহার করা যাচ্ছে না। সাহায্যের জন্য সাপোর্টে যোগাযোগ করুন।',
+      'errorVerificationCodeActive':
+          'সম্প্রতি একটি যাচাই কোড পাঠানো হয়েছে। নতুন কোড চাইতে একটু অপেক্ষা করুন।',
+      'errorTooManyAttempts':
+          'অনেকবার চেষ্টা করা হয়েছে। একটু অপেক্ষা করে আবার চেষ্টা করুন।',
+      'errorNoRecoveryEmail':
+          'এই অ্যাকাউন্টে কোনো রিকভারি ইমেইল নেই। সাপোর্টে যোগাযোগ করুন।',
+      'errorCouldNotLoadVendors':
+          'সরবরাহকারীদের তথ্য আনা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
+      'errorCouldNotLoadInvestors':
+          'বিনিয়োগকারীদের তথ্য আনা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
+      'errorUnsyncedChanges':
+          'কিছু পরিবর্তন এখনো সিঙ্ক হয়নি। ইন্টারনেটে যুক্ত হয়ে আবার চেষ্টা করুন।',
       'errorVerificationRequired': 'সাইন ইন করার আগে ইমেইল যাচাই করুন।',
       'errorInvalidCurrentPassword': 'বর্তমান পাসওয়ার্ড সঠিক নয়।',
       'errorSubscriptionRequired':
@@ -2096,6 +2157,15 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'home': 'হোম',
       'investors': 'বিনিয়োগকারী',
       'reports': 'রিপোর্ট',
+      'reportGroupOverview': 'একনজরে',
+      'reportGroupFinance': 'আয়-ব্যয়',
+      'reportGroupOperations': 'স্টক ও কাজ',
+      'reportGroupTeam': 'কর্মী',
+      'reportGroupBusinessOverview': 'ব্যবসার সারসংক্ষেপ',
+      'reportGroupMoneyCollections': 'টাকা ও আদায়',
+      'reportGroupStockOperations': 'স্টক ও কার্যক্রম',
+      'reportGroupTeamPerformance': 'কর্মীদের কাজের হিসাব',
+      'curatedReportsCount': '{count}টি দরকারি রিপোর্ট',
       'menu': 'মেনু',
       'more': 'আরও',
       'sales': 'বিক্রয়',
@@ -2158,6 +2228,13 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'payNow': 'পেমেন্ট সংরক্ষণ করুন',
       'customerInvoice': 'ইনভয়েস',
       'ledger': 'খতিয়ান',
+      'debit': 'ডেবিট',
+      'addDebit': 'ডেবিট যোগ',
+      'addCredit': 'ক্রেডিট যোগ',
+      'exportLedger': 'খতিয়ান এক্সপোর্ট',
+      'ledgerEmptyTitle': 'এখনও কোনো খতিয়ান নেই',
+      'ledgerEmptyHint': 'কাস্টমারের হিসাব রাখতে ডেবিট বা ক্রেডিট যোগ করুন।',
+      'dueRecovery': 'বাকি আদায়',
       'paid': 'পরিশোধিত',
       'partial': 'আংশিক',
       'cash': 'ক্যাশ',
@@ -2310,6 +2387,9 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'manageYourPlan': 'আপনার প্ল্যান পরিচালনা করুন',
       'chooseYourPlan': 'আপনার প্ল্যান নির্বাচন করুন',
       'bkashPayment': 'বিকাশ পেমেন্ট',
+      'securePaymentCheckout': 'নিরাপদে সাবস্ক্রিপশনের পেমেন্ট সম্পন্ন করুন',
+      'paymentPageLoadFailed':
+          'পেমেন্ট পেজ খোলা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
       'isActive': 'সক্রিয় আছে',
       'daysRemaining': 'বাকি দিন:',
       'expiresOn': 'মেয়াদ শেষ',

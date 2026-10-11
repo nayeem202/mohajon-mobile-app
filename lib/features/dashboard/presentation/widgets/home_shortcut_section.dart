@@ -36,6 +36,7 @@ class HomeShortcutSection extends ConsumerWidget {
               : _ShortcutRow(
                   key: ValueKey(shortcuts.map((s) => s.id).join(',')),
                   shortcuts: shortcuts,
+                  ref: ref,
                 ),
         ),
       ],
@@ -137,13 +138,21 @@ class _SectionHeader extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(children: [Expanded(child: title), edit]),
+              Row(
+                children: [
+                  Expanded(child: title),
+                  edit,
+                ],
+              ),
             ],
           );
         }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.end,
-          children: [Expanded(child: title), edit],
+          children: [
+            Expanded(child: title),
+            edit,
+          ],
         );
       },
     );
@@ -152,8 +161,9 @@ class _SectionHeader extends StatelessWidget {
 
 class _ShortcutRow extends StatelessWidget {
   final List<ShortcutItem> shortcuts;
+  final WidgetRef ref;
 
-  const _ShortcutRow({super.key, required this.shortcuts});
+  const _ShortcutRow({super.key, required this.shortcuts, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -183,16 +193,15 @@ class _ShortcutRow extends StatelessWidget {
             final columns = availableWidth >= 520
                 ? 5
                 : availableWidth >= 360
-                    ? 4
-                    : availableWidth >= 240
-                        ? 3
-                        : availableWidth >= 160
-                            ? 2
-                            : 1;
+                ? 4
+                : availableWidth >= 240
+                ? 3
+                : availableWidth >= 160
+                ? 2
+                : 1;
             const gap = 4.0;
-            final width =
-                ((availableWidth - (columns - 1) * gap) / columns)
-                    .clamp(48.0, 180.0);
+            final width = ((availableWidth - (columns - 1) * gap) / columns)
+                .clamp(48.0, 180.0);
             return Wrap(
               spacing: gap,
               runSpacing: gap,
@@ -203,7 +212,7 @@ class _ShortcutRow extends StatelessWidget {
                       height: 82,
                       child: _ShortcutCard(
                         item: item,
-                        onTap: () => navigateToShortcut(context, item),
+                        onTap: () => navigateToShortcut(context, ref, item),
                       ),
                     ),
                   )

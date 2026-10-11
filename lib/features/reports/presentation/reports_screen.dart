@@ -197,8 +197,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ? _ReportGroup.overview
         : _activeGroup;
     final reports = _reportsForGroup(allReports, activeGroup);
-    final featured = reports.isNotEmpty ? reports.first : null;
-    final remaining = reports.skip(1).toList(growable: false);
 
     return Theme(
       data: MohajonWarm.theme(Theme.of(context)),
@@ -241,35 +239,33 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 _ReportGroupPicker(
                   active: activeGroup,
                   reports: allReports,
+                  l10n: l10n,
                   onChanged: (group) => setState(() => _activeGroup = group),
                 ),
                 const SizedBox(height: 22),
                 _SectionLabel(
-                  label: activeGroup.title,
-                  subtitle: '${reports.length} curated reports',
+                  label: activeGroup.title(l10n),
+                  subtitle: l10n.tP('curatedReportsCount', {
+                    'count': '${reports.length}',
+                  }),
                   icon: activeGroup.icon,
                 ),
                 const SizedBox(height: 12),
-                if (featured != null) ...[
-                  _FeaturedReportCard(
-                    item: featured,
-                    onTap: () => _open(featured, context),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.94,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: MediaQuery.sizeOf(context).width < 340
+                        ? 2
+                        : 3,
+                    mainAxisExtent: 128,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 8,
                   ),
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: remaining.length,
-                  itemBuilder: (_, index) => _ReportGridCard(
-                    item: remaining[index],
-                    onTap: () => _open(remaining[index], context),
+                  itemCount: reports.length,
+                  itemBuilder: (_, index) => _ReportIconItem(
+                    item: reports[index],
+                    onTap: () => _open(reports[index], context),
                   ),
                 ),
               ],
@@ -340,18 +336,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 enum _ReportGroup { overview, finance, operations, team }
 
 extension on _ReportGroup {
-  String get title => switch (this) {
-    _ReportGroup.overview => 'Business overview',
-    _ReportGroup.finance => 'Money & collections',
-    _ReportGroup.operations => 'Stock & operations',
-    _ReportGroup.team => 'Team performance',
+  String title(AppLocalizations l10n) => switch (this) {
+    _ReportGroup.overview => l10n.t('reportGroupBusinessOverview'),
+    _ReportGroup.finance => l10n.t('reportGroupMoneyCollections'),
+    _ReportGroup.operations => l10n.t('reportGroupStockOperations'),
+    _ReportGroup.team => l10n.t('reportGroupTeamPerformance'),
   };
 
-  String get shortTitle => switch (this) {
-    _ReportGroup.overview => 'Overview',
-    _ReportGroup.finance => 'Finance',
-    _ReportGroup.operations => 'Operations',
-    _ReportGroup.team => 'Team',
+  String shortTitle(AppLocalizations l10n) => switch (this) {
+    _ReportGroup.overview => l10n.t('reportGroupOverview'),
+    _ReportGroup.finance => l10n.t('reportGroupFinance'),
+    _ReportGroup.operations => l10n.t('reportGroupOperations'),
+    _ReportGroup.team => l10n.t('reportGroupTeam'),
   };
 
   IconData get icon => switch (this) {
@@ -768,11 +764,13 @@ class _ReportGroupPicker extends StatelessWidget {
   const _ReportGroupPicker({
     required this.active,
     required this.reports,
+    required this.l10n,
     required this.onChanged,
   });
 
   final _ReportGroup active;
   final List<ReportItem> reports;
+  final AppLocalizations l10n;
   final ValueChanged<_ReportGroup> onChanged;
 
   @override
@@ -834,7 +832,7 @@ class _ReportGroupPicker extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
                     Text(
-                      group.shortTitle,
+                      group.shortTitle(l10n),
                       style: TextStyle(
                         color: selected ? Colors.white : MohajonWarm.ink,
                         fontSize: 12,
@@ -931,8 +929,8 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-class _FeaturedReportCard extends StatelessWidget {
-  const _FeaturedReportCard({required this.item, required this.onTap});
+class _ReportIconItem extends StatelessWidget {
+  const _ReportIconItem({required this.item, required this.onTap});
 
   final ReportItem item;
   final VoidCallback onTap;
@@ -940,311 +938,48 @@ class _FeaturedReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final available = item.available;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+    return Opacity(
+      opacity: available ? 1 : 0.52,
+      child: InkResponse(
         onTap: onTap,
-        child: Ink(
-          height: 156,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [item.startColor, item.endColor],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: item.startColor.withValues(alpha: 0.32),
-                blurRadius: 18,
-                offset: const Offset(0, 9),
-              ),
-            ],
-          ),
-          child: Stack(
+        radius: 58,
+        containedInkWell: true,
+        highlightShape: BoxShape.rectangle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Positioned(
-                right: -20,
-                bottom: -36,
-                child: Container(
-                  width: 168,
-                  height: 168,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.12),
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      item.startColor.withValues(alpha: 0.17),
+                      item.endColor.withValues(alpha: 0.10),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: item.startColor.withValues(alpha: 0.24),
                   ),
                 ),
+                child: Icon(item.icon, color: item.startColor, size: 27),
               ),
-              Positioned(
-                right: 18,
-                top: 18,
-                child: Icon(
-                  item.icon,
-                  size: 68,
-                  color: Colors.white.withValues(alpha: 0.2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.24),
-                        ),
-                      ),
-                      child: Text(
-                        available ? 'FEATURED REPORT' : 'COMING SOON',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.description,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.84),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 29,
-                          height: 29,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 17,
-                            color: item.startColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportGridCard extends StatelessWidget {
-  const _ReportGridCard({required this.item, required this.onTap});
-
-  final ReportItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final available = item.available;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Color(0xFFFFF9E9)],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: MohajonWarm.goldBorder),
-            boxShadow: [
-              BoxShadow(
-                color: MohajonWarm.ink.withValues(alpha: 0.07),
-                blurRadius: 16,
-                offset: const Offset(0, 7),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [item.startColor, item.endColor],
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(18),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -22,
-                right: -22,
-                child: Container(
-                  width: 92,
-                  height: 92,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: item.startColor.withValues(
-                      alpha: available ? 0.09 : 0.05,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(15, 17, 15, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: available
-                                ? LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [item.startColor, item.endColor],
-                                  )
-                                : null,
-                            color: available ? null : MohajonWarm.tintYellow,
-                            borderRadius: BorderRadius.circular(13),
-                            boxShadow: available
-                                ? [
-                                    BoxShadow(
-                                      color: item.startColor.withValues(
-                                        alpha: 0.32,
-                                      ),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 5),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Icon(
-                            item.icon,
-                            color: available ? Colors.white : item.startColor,
-                            size: 23,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: available
-                                ? item.startColor.withValues(alpha: 0.10)
-                                : MohajonWarm.tintYellow,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            available ? 'LIVE' : l10n.t('soon'),
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.7,
-                              color: available
-                                  ? item.startColor
-                                  : MohajonWarm.goldText,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 13),
-                    Text(
-                      item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: MohajonWarm.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Expanded(
-                      child: Text(
-                        item.description,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.35,
-                          color: MohajonWarm.muted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: available
-                              ? MohajonWarm.ink
-                              : MohajonWarm.tintYellow,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          available
-                              ? Icons.arrow_forward_rounded
-                              : Icons.lock_clock_rounded,
-                          size: 15,
-                          color: available
-                              ? Colors.white
-                              : MohajonWarm.goldText,
-                        ),
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 8),
+              Text(
+                item.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  height: 1.18,
+                  fontWeight: FontWeight.w800,
+                  color: MohajonWarm.ink,
                 ),
               ),
             ],

@@ -180,7 +180,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
     task: () async {
       final data = _compute();
       await PaymentMethodsExcelService().savePaymentMethods(
-        table: data.table,
+        table: localizedReportTable(data.table, AppLocalizations.of(context)),
         range: _range,
       );
     },
@@ -192,12 +192,13 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen>
   Future<void> _exportPdf() => runExport(
     isXlsx: false,
     task: () async {
+      final l10n = AppLocalizations.of(context);
       final data = _compute();
       final company = await DocCompany.fromShopForExport(
         ref.read(shopProfileProvider).value,
       );
       await PaymentMethodsPdfService().savePaymentMethods(
-        table: data.table,
+        table: localizedReportTable(data.table, l10n),
         range: _range,
         company: company,
       );

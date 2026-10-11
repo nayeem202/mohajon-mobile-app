@@ -205,7 +205,7 @@ class _DailyTransactionsScreenState
     task: () async {
       final data = _compute();
       await DailyTransactionsExcelService().saveDailyTransactions(
-        table: data.table,
+        table: localizedReportTable(data.table, AppLocalizations.of(context)),
         range: _range,
       );
     },
@@ -217,12 +217,13 @@ class _DailyTransactionsScreenState
   Future<void> _exportPdf() => runExport(
     isXlsx: false,
     task: () async {
+      final l10n = AppLocalizations.of(context);
       final data = _compute();
       final company = await DocCompany.fromShopForExport(
         ref.read(shopProfileProvider).value,
       );
       await DailyTransactionsPdfService().saveDailyTransactions(
-        table: data.table,
+        table: localizedReportTable(data.table, l10n),
         range: _range,
         company: company,
       );

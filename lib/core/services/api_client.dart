@@ -9,6 +9,7 @@ import '../config/app_config.dart';
 import '../offline/local_database.dart';
 import 'secure_http.dart';
 import 'secure_tokens.dart';
+import 'session_token_refresher.dart';
 
 /// Thrown when the Haalkhata business service returns a non-2xx response.
 class ApiException implements Exception {
@@ -21,14 +22,6 @@ class ApiException implements Exception {
   @override
   String toString() => 'ApiException($statusCode, $code): $message';
 }
-
-/// Outcome of a refresh-token exchange, which decides whether the stored
-/// session survives.
-///
-/// The distinction matters: a rejected token is dead forever and the user must
-/// sign in again, while an unreachable auth service says nothing about the
-/// token's validity and must not cost the user their session.
-enum _RefreshOutcome { refreshed, rejected, unreachable }
 
 /// HTTP client for the Haalkhata business service.
 ///
@@ -92,11 +85,12 @@ class ApiClient {
     Duration? timeout,
   }) async {
     final client = await secureHttpClient();
+    final sentAccessToken = accessToken;
     var response = await client
         .get(_uri(path, query), headers: _headers())
         .timeout(timeout ?? _timeout);
-    if (response.statusCode == 401 || response.statusCode == 403) {
-      if (await _recoverFromUnauthorized()) {
+    if (response.statusCode == 401) {
+      if (await _recoverFromUnauthorized(sentAccessToken)) {
         response = await client
             .get(_uri(path, query), headers: _headers())
             .timeout(timeout ?? _timeout);
@@ -184,9 +178,12 @@ class ApiClient {
       return http.Response.fromStream(streamed);
     }
 
+    final sentAccessToken = accessToken;
     var response = await sendUpload();
-    if (response.statusCode == 401 || response.statusCode == 403) {
-      if (await _recoverFromUnauthorized()) response = await sendUpload();
+    if (response.statusCode == 401) {
+      if (await _recoverFromUnauthorized(sentAccessToken)) {
+        response = await sendUpload();
+      }
     }
     final data = _decode(response, path);
     return (data is Map<String, dynamic>) ? data : const {};
@@ -215,9 +212,10 @@ class ApiClient {
     required String path,
     Duration? timeout,
   }) async {
+    final sentAccessToken = accessToken;
     var response = await send().timeout(timeout ?? _timeout);
-    if (response.statusCode == 401 || response.statusCode == 403) {
-      if (await _recoverFromUnauthorized()) {
+    if (response.statusCode == 401) {
+      if (await _recoverFromUnauthorized(sentAccessToken)) {
         response = await send().timeout(timeout ?? _timeout);
       }
     }
@@ -234,74 +232,27 @@ class ApiClient {
   ///
   /// Wiping is deliberately left to the caller so [onSessionInvalidated] fires
   /// exactly once for a dead session rather than once per rejected request.
-  Future<bool> _recoverFromUnauthorized() async {
+  Future<bool> _recoverFromUnauthorized(String? rejectedAccessToken) async {
     if (TokenStore.get(_kRefreshToken) == null) {
       // Nothing left to recover with: the access token is dead and there is no
       // way to mint a replacement, so this session can never succeed.
       await _clearTokens();
       return false;
     }
-    switch (await _tryRefresh()) {
-      case _RefreshOutcome.refreshed:
+    switch (await SessionTokenRefresher.recover(
+      rejectedAccessToken: rejectedAccessToken,
+    )) {
+      case SessionRefreshResult.refreshed:
         return true;
-      case _RefreshOutcome.rejected:
+      case SessionRefreshResult.rejected:
         // The auth service refused the refresh token. It is spent for good.
         await _clearTokens();
         return false;
-      case _RefreshOutcome.unreachable:
+      case SessionRefreshResult.unreachable:
         // Offline or the auth service is down. Keep the session so a later
         // request can still recover once connectivity returns — signing out
         // here would punish a flaky network with a lost session.
         return false;
-    }
-  }
-
-  /// Single-flight refresh: when many requests hit 401/403 at once (e.g.
-  /// parallel polling), they all await this ONE refresh instead of racing.
-  /// Racing causes the auth service's refresh-token rotation to revoke the
-  /// token mid-flight and wipe the session.
-  Future<_RefreshOutcome>? _refreshFuture;
-
-  Future<_RefreshOutcome> _tryRefresh() {
-    return _refreshFuture ??= _doRefresh().whenComplete(() {
-      _refreshFuture = null;
-    });
-  }
-
-  Future<_RefreshOutcome> _doRefresh() async {
-    final refreshToken = TokenStore.get(_kRefreshToken);
-    if (refreshToken == null) return _RefreshOutcome.rejected;
-    try {
-      final client = await secureHttpClient();
-      final response = await client
-          .post(
-            Uri.parse('${AppConfig.authBaseUrl}/api/v1/auth/refresh'),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'refreshToken': refreshToken}),
-          )
-          .timeout(_timeout);
-      if (response.statusCode == 401 || response.statusCode == 403) {
-        // The auth service looked at the token and refused it.
-        return _RefreshOutcome.rejected;
-      }
-      if (response.statusCode != 200) {
-        // Some other failure (5xx, bad gateway). The token may still be good.
-        return _RefreshOutcome.unreachable;
-      }
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final access = (data['accessToken'] as String?)?.trim() ?? '';
-      final refresh = (data['refreshToken'] as String?)?.trim() ?? '';
-      if (access.isEmpty || refresh.isEmpty) {
-        // A malformed success response cannot recover the session. Treat it
-        // as rejected instead of retaining the expired access token forever.
-        return _RefreshOutcome.rejected;
-      }
-      await TokenStore.put(_kAccessToken, access);
-      await TokenStore.put(_kRefreshToken, refresh);
-      return _RefreshOutcome.refreshed;
-    } catch (_) {
-      // Network/timeout error — keep tokens and let a later request retry.
-      return _RefreshOutcome.unreachable;
     }
   }
 

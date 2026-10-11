@@ -7,6 +7,7 @@ import '../../../core/models/product.dart';
 import '../../../core/models/stock_adjustment.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/snackbar.dart';
+import '../../../core/utils/app_error.dart';
 import '../../branches/providers/branch_providers.dart';
 import '../providers/product_providers.dart';
 
@@ -61,7 +62,13 @@ class _StockAdjustmentScreenState extends ConsumerState<StockAdjustmentScreen> {
             : l10n.t('adjustmentApproved'),
       );
     } catch (error) {
-      if (mounted) showAppSnackBar(context, error.toString(), isError: true);
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: l10n),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

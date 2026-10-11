@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 import '../../../core/app/authenticated_entry.dart';
 import '../../../core/app/app_providers.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/auth_backend.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -139,17 +140,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                                   child: AuthHeading(
                                     title: _isReturningUser
-                                        ? (isBangla ? 'আবার স্বাগতম' : 'Welcome back')
+                                        ? (isBangla
+                                              ? 'আবার স্বাগতম'
+                                              : 'Welcome back')
                                         : (isBangla
-                                            ? 'মহাজনে আপনাকে স্বাগতম'
-                                            : 'Welcome to Mohajon'),
+                                              ? 'মহাজনে আপনাকে স্বাগতম'
+                                              : 'Welcome to Mohajon'),
                                     subtitle: _isReturningUser
                                         ? (isBangla
-                                            ? 'যেখানে শেষ করেছিলেন, সেখান থেকেই শুরু করুন'
-                                            : 'Sign in to pick up where you left off')
+                                              ? 'যেখানে শেষ করেছিলেন, সেখান থেকেই শুরু করুন'
+                                              : 'Sign in to pick up where you left off')
                                         : (isBangla
-                                            ? 'সাইন ইন করুন, অথবা বিনামূল্যে অ্যাকাউন্ট তৈরি করুন'
-                                            : 'Sign in, or create a free account'),
+                                              ? 'সাইন ইন করুন, অথবা বিনামূল্যে অ্যাকাউন্ট তৈরি করুন'
+                                              : 'Sign in, or create a free account'),
                                     topPadding: compact ? 2 : 8,
                                   ),
                                 ),
@@ -201,7 +204,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Future<void> _setLanguage(bool bangla) async {
     final language = bangla ? 'bn' : 'en';
     ref.read(localeProvider.notifier).state = Locale(language);
-    await ref.read(localDatabaseProvider).settings.put('languageCode', language);
+    await ref
+        .read(localDatabaseProvider)
+        .settings
+        .put('languageCode', language);
   }
 
   Future<void> _setRememberMe(bool value) async {
@@ -212,6 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _signIn() async {
+    final l10n = AppLocalizations.of(context);
     final email = _email.text.trim();
     if (email.isEmpty) {
       _showMessage('Please enter your email address');
@@ -259,31 +266,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           if (verified && mounted) await _signIn();
           return;
         }
-        _showMessage(authErrorMessage(error));
+        _showMessage(authErrorMessage(error, l10n: l10n));
       }
     });
   }
 
   Future<void> _signInWithGoogle() async {
+    final l10n = AppLocalizations.of(context);
     await runBusyAction(() async {
       setState(() => _message = null);
       try {
         await ref.read(authServiceProvider).signInWithGoogle();
         if (mounted) _openApp();
       } catch (error) {
-        _showMessage(authErrorMessage(error));
+        _showMessage(authErrorMessage(error, l10n: l10n));
       }
     });
   }
 
   Future<void> _signInWithFacebook() async {
+    final l10n = AppLocalizations.of(context);
     await runBusyAction(() async {
       setState(() => _message = null);
       try {
         await ref.read(authServiceProvider).signInWithFacebook();
         if (mounted) _openApp();
       } catch (error) {
-        _showMessage(authErrorMessage(error));
+        _showMessage(authErrorMessage(error, l10n: l10n));
       }
     });
   }
@@ -508,10 +517,14 @@ class _LoginForm extends StatelessWidget {
             onSubmitted: (_) => passwordFocus.requestFocus(),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return bangla ? 'আপনার ইমেইল লিখুন' : 'Please enter your email address';
+                return bangla
+                    ? 'আপনার ইমেইল লিখুন'
+                    : 'Please enter your email address';
               }
               if (!value.contains('@') || !value.contains('.')) {
-                return bangla ? 'সঠিক ইমেইল লিখুন' : 'Please enter a valid email address';
+                return bangla
+                    ? 'সঠিক ইমেইল লিখুন'
+                    : 'Please enter a valid email address';
               }
               return null;
             },
@@ -528,7 +541,9 @@ class _LoginForm extends StatelessWidget {
             onSubmitted: (_) => onSignIn(),
             onToggleVisibility: onTogglePassword,
             validator: (value) => value == null || value.isEmpty
-                ? (bangla ? 'আপনার পাসওয়ার্ড লিখুন' : 'Please enter your password')
+                ? (bangla
+                      ? 'আপনার পাসওয়ার্ড লিখুন'
+                      : 'Please enter your password')
                 : null,
           ),
           const SizedBox(height: 8),
@@ -573,7 +588,9 @@ class _LoginForm extends StatelessWidget {
             onPressed: isBusy ? null : onSignup,
           ),
           const SizedBox(height: 22),
-          AuthOrDivider(label: bangla ? 'অথবা ব্যবহার করুন' : 'Or continue with'),
+          AuthOrDivider(
+            label: bangla ? 'অথবা ব্যবহার করুন' : 'Or continue with',
+          ),
           const SizedBox(height: 18),
           SocialAuthRow(
             onGoogle: isBusy ? null : onGoogleSignIn,
@@ -641,9 +658,9 @@ class _RememberToggle extends StatelessWidget {
                 bangla ? 'আমাকে মনে রাখুন' : 'Remember me',
                 style: AppType.body(
                   const TextStyle(
-                  color: AuthBrand.panelMuted,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13.5,
+                    color: AuthBrand.panelMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
                   ),
                   locale: Localizations.localeOf(context),
                 ),

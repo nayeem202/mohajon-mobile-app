@@ -9,7 +9,9 @@ import '../constants/app_constants.dart';
 import '../models/app_user.dart';
 import '../offline/local_database.dart';
 import '../services/auth_backend.dart';
+import '../services/custom_auth_backend.dart';
 import '../services/sync_service.dart';
+import '../utils/app_error.dart';
 import '../../features/auth/providers/auth_providers.dart';
 
 final localDatabaseProvider = Provider<LocalDatabase>((ref) => LocalDatabase());
@@ -72,21 +74,32 @@ final syncStateProvider = StateNotifierProvider<SyncController, SyncState>((
   return SyncController(
     ref.watch(syncServiceProvider),
     ref.watch(shopIdProvider),
+    refreshSession: () async {
+      final backend = ref.read(authBackendProvider);
+      if (backend is CustomAuthBackend) {
+        await backend.refreshSessionIfNeeded();
+      }
+    },
   );
 });
 
 class SyncController extends StateNotifier<SyncState> {
-  SyncController(this._syncService, this._shopId)
-    : super(
-        SyncState(
-          phase: SyncPhase.idle,
-          pendingCount: _syncService.pendingCount(shopId: _shopId),
-        ),
-      ) {
+  SyncController(
+    this._syncService,
+    this._shopId, {
+    required Future<void> Function() refreshSession,
+  }) : _refreshSession = refreshSession,
+       super(
+         SyncState(
+           phase: SyncPhase.idle,
+           pendingCount: _syncService.pendingCount(shopId: _shopId),
+         ),
+       ) {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       results,
     ) {
       if (results.any((result) => result != ConnectivityResult.none)) {
+        unawaited(_refreshSession());
         syncIfOnline();
       }
     });
@@ -94,6 +107,7 @@ class SyncController extends StateNotifier<SyncState> {
 
   final SyncService _syncService;
   final String _shopId;
+  final Future<void> Function() _refreshSession;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _syncing = false;
 
@@ -111,7 +125,7 @@ class SyncController extends StateNotifier<SyncState> {
       // unexpected local/database error escapes SyncService.
       state = SyncState(
         phase: SyncPhase.failed,
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         pendingCount: _syncService.pendingCount(shopId: _shopId),
       );
     } finally {

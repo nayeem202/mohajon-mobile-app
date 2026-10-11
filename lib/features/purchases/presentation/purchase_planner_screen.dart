@@ -10,6 +10,7 @@ import '../../../core/models/purchase.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/app_error.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/insight_widgets.dart';
 import '../../customers/providers/customer_providers.dart';
@@ -319,7 +320,9 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+          content: Text(
+            friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          ),
         ),
       );
     }
@@ -352,14 +355,7 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
       }
     } catch (error) {
       if (!mounted) return;
-      final raw = error.toString().replaceFirst('Bad state: ', '');
-      final message = raw.contains('whole numbers')
-          ? l10n.t('wholeNumbersRequired')
-          : raw.contains('reason is required for damaged')
-          ? l10n.t('damageReasonRequired')
-          : raw.contains('Add a note explaining')
-          ? l10n.t('invoiceDifferenceNoteRequired')
-          : raw;
+      final message = friendlyErrorMessage(error, l10n: l10n);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));

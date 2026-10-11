@@ -39,8 +39,8 @@ Future<void> staffApiAction(
   final api = ref.read(staffApiServiceProvider);
   try {
     await action(api);
-  } catch (error) {
-    throw StaffApiException(error.toString());
+  } catch (_) {
+    rethrow;
   }
   ref.invalidate(staffListProvider);
 }

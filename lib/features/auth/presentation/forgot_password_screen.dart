@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app/app_providers.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/async_action_state.dart';
 import 'auth_brand.dart';
 import '../providers/auth_providers.dart';
@@ -109,15 +110,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             title: _completed
                 ? (bangla ? 'পাসওয়ার্ড আপডেট হয়েছে' : 'Password updated')
                 : (_sent
-                    ? (bangla ? 'রিসেট কোড লিখুন' : 'Enter reset code')
-                    : (bangla ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset password')),
+                      ? (bangla ? 'রিসেট কোড লিখুন' : 'Enter reset code')
+                      : (bangla ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset password')),
             subtitle: _sent
                 ? (bangla
-                    ? 'ইমেইলে পাঠানো কোড লিখে নতুন পাসওয়ার্ড নির্বাচন করুন।'
-                    : 'Enter the code from your email and choose a new password.')
+                      ? 'ইমেইলে পাঠানো কোড লিখে নতুন পাসওয়ার্ড নির্বাচন করুন।'
+                      : 'Enter the code from your email and choose a new password.')
                 : (bangla
-                    ? 'রেজিস্টার করা ইমেইল লিখলে আমরা রিসেট কোড পাঠাব।'
-                    : 'Enter your registered email and we will send you a reset link.'),
+                      ? 'রেজিস্টার করা ইমেইল লিখলে আমরা রিসেট কোড পাঠাব।'
+                      : 'Enter your registered email and we will send you a reset link.'),
           ),
           if (_sent) ...[
             const SizedBox(height: 14),
@@ -132,7 +133,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               ).copyWith(counterText: ''),
               validator: (value) => (value?.trim().length ?? 0) == 6
                   ? null
-                  : (bangla ? '৬ সংখ্যার রিসেট কোড লিখুন' : 'Enter the 6-digit reset code'),
+                  : (bangla
+                        ? '৬ সংখ্যার রিসেট কোড লিখুন'
+                        : 'Enter the 6-digit reset code'),
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -145,7 +148,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               ),
               validator: (value) => (value?.length ?? 0) >= 6
                   ? null
-                  : (bangla ? 'কমপক্ষে ৬টি অক্ষর ব্যবহার করুন' : 'Use at least 6 characters'),
+                  : (bangla
+                        ? 'কমপক্ষে ৬টি অক্ষর ব্যবহার করুন'
+                        : 'Use at least 6 characters'),
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -153,7 +158,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               obscureText: true,
               textInputAction: TextInputAction.done,
               decoration: AuthFieldDecoration(
-                hint: bangla ? 'নতুন পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm new password',
+                hint: bangla
+                    ? 'নতুন পাসওয়ার্ড নিশ্চিত করুন'
+                    : 'Confirm new password',
                 icon: Icons.lock_reset_outlined,
               ),
               validator: (value) => value == _newPassword.text
@@ -198,14 +205,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             label: _completed
                 ? (bangla ? 'সাইন ইন-এ ফিরুন' : 'Back to sign in')
                 : (_sent
-                    ? (bangla ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset password')
-                    : (bangla ? 'রিসেট কোড পাঠান' : 'Send reset code')),
+                      ? (bangla ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset password')
+                      : (bangla ? 'রিসেট কোড পাঠান' : 'Send reset code')),
             busyLabel: _sent ? 'Updating...' : 'Sending...',
           ),
           if (!_sent || _completed) ...[
             const SizedBox(height: 6),
             AuthFooterLink(
-              prompt: bangla ? 'পাসওয়ার্ড মনে পড়েছে?' : 'Remembered your password?',
+              prompt: bangla
+                  ? 'পাসওয়ার্ড মনে পড়েছে?'
+                  : 'Remembered your password?',
               action: bangla ? 'সাইন ইন' : 'Sign in',
               onPressed: () => Navigator.of(context).maybePop(),
             ),
@@ -251,7 +260,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
       } catch (error) {
         if (mounted) {
           setState(() {
-            _message = authErrorMessage(error);
+            _message = authErrorMessage(
+              error,
+              l10n: AppLocalizations.of(context),
+            );
             _messageIsError = true;
           });
         }
@@ -265,7 +277,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     await runBusyAction(() async {
       setState(() => _message = null);
       try {
-        await ref.read(authServiceProvider).resetPassword(
+        await ref
+            .read(authServiceProvider)
+            .resetPassword(
               email: _email.text.trim(),
               code: _code.text.trim(),
               newPassword: _newPassword.text,
@@ -280,7 +294,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
       } catch (error) {
         if (mounted) {
           setState(() {
-            _message = authErrorMessage(error);
+            _message = authErrorMessage(
+              error,
+              l10n: AppLocalizations.of(context),
+            );
             _messageIsError = true;
           });
         }

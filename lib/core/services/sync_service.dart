@@ -7,6 +7,7 @@ import '../offline/local_collection.dart';
 import '../offline/local_database.dart';
 import 'api_client.dart';
 import 'file_upload_service.dart';
+import '../utils/app_error.dart';
 import '../../features/purchases/models/purchase_order.dart';
 import '../../features/purchases/models/purchase_receipt.dart';
 
@@ -275,7 +276,7 @@ class SyncService {
     } catch (error) {
       return SyncState(
         phase: SyncPhase.failed,
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         pendingCount: pendingCount(shopId: shopId),
       );
     }

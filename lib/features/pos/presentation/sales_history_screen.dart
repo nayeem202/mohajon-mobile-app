@@ -11,6 +11,7 @@ import '../../../core/services/invoice_service.dart';
 import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/app_error.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -399,7 +400,13 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen>
         }
       });
     } catch (error) {
-      if (mounted) showAppSnackBar(context, error.toString(), isError: true);
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          isError: true,
+        );
+      }
     }
   }
 

@@ -19,6 +19,7 @@ import '../../features/dashboard/presentation/business_health_screen.dart';
 import '../../features/dashboard/presentation/day_closing_screen.dart';
 import '../../features/dashboard/presentation/customer_growth_screen.dart';
 import '../../features/branches/presentation/branches_screen.dart';
+import '../../features/subscription/services/paywall_gate.dart';
 import '../localization/app_localizations.dart';
 import '../services/sync_service.dart';
 import '../theme/mohajon_warm_theme.dart';
@@ -128,156 +129,181 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
     final user = ref.watch(authStateProvider).value;
     final isOwner =
         user?.roles.any(
-          (role) => role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
+          (role) =>
+              role.toUpperCase() == 'OWNER' || role.toUpperCase() == 'ADMIN',
         ) ??
         false;
     final displayName = user?.displayName;
     final grantedMenus = ref.watch(myMenuCodesProvider).value;
 
-    final operations = <_FeatureItem>[
-      _FeatureItem(
-        icon: Icons.store_rounded,
-        title: l10n.t('vendors'),
-        subtitle: l10n.t('vendorsSubtitle'),
-        color: MohajonWarm.goldText,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.vendors,
-        onTap: () => _open(const VendorListScreen()),
-        itemKey: widget.tourVendorsKey,
-      ),
-      _FeatureItem(
-        icon: Icons.account_tree_rounded,
-        title: l10n.t('branches'),
-        subtitle: l10n.t('branchesSubtitle'),
-        color: MohajonWarm.green,
-        background: MohajonWarm.tintGreen,
-        menu: MenuCodes.settings,
-        onTap: () => _open(const BranchesScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.monitor_heart_rounded,
-        title: l10n.t('businessHealth'),
-        subtitle: l10n.t('businessHealthSubtitle'),
-        color: MohajonWarm.ink,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const BusinessHealthScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.auto_awesome_motion_rounded,
-        title: l10n.t('featurePurchasePlanner'),
-        subtitle: l10n.t('featurePurchasePlannerSubtitle'),
-        color: MohajonWarm.green,
-        background: MohajonWarm.tintGreen,
-        menu: MenuCodes.purchase,
-        onTap: () => _open(const PurchasePlannerScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.fact_check_rounded,
-        title: l10n.t('featureDayClosing'),
-        subtitle: l10n.t('featureDayClosingSubtitle'),
-        color: MohajonWarm.orange,
-        background: MohajonWarm.tintOrange,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const DayClosingScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.insights_rounded,
-        title: l10n.t('featureCustomerGrowth'),
-        subtitle: l10n.t('featureCustomerGrowthSubtitle'),
-        color: MohajonWarm.ink,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const CustomerGrowthScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.payments_rounded,
-        title: l10n.t('expenses'),
-        subtitle: l10n.t('expensesSubtitle'),
-        color: MohajonWarm.orange,
-        background: MohajonWarm.tintOrange,
-        menu: MenuCodes.expenses,
-        onTap: () => _open(const ExpensesScreen()),
-        itemKey: widget.tourExpensesKey,
-      ),
-      _FeatureItem(
-        icon: Icons.people_alt_rounded,
-        title: l10n.t('investors'),
-        subtitle: l10n.t('investorsSubtitle'),
-        color: MohajonWarm.green,
-        background: MohajonWarm.tintGreen,
-        menu: MenuCodes.investors,
-        onTap: () => _open(const InvestorListScreen()),
-        itemKey: widget.tourInvestorsKey,
-      ),
-      _FeatureItem(
-        icon: Icons.group_outlined,
-        title: l10n.t('staff'),
-        subtitle: l10n.t('staffSubtitle'),
-        color: MohajonWarm.goldText,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.staff,
-        onTap: () => _open(const StaffListScreen()),
-        itemKey: widget.tourStaffKey,
-      ),
-      _FeatureItem(
-        icon: Icons.history_rounded,
-        title: l10n.t('auditTimeline'),
-        subtitle: l10n.t('noAuditEvents'),
-        color: MohajonWarm.ink,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const AuditTimelineScreen()),
-      ),
-    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+    final operations =
+        <_FeatureItem>[
+              _FeatureItem(
+                icon: Icons.store_rounded,
+                title: l10n.t('vendors'),
+                subtitle: l10n.t('vendorsSubtitle'),
+                color: MohajonWarm.goldText,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.vendors,
+                onTap: () => _open(const VendorListScreen()),
+                itemKey: widget.tourVendorsKey,
+              ),
+              _FeatureItem(
+                icon: Icons.account_tree_rounded,
+                title: l10n.t('branches'),
+                subtitle: l10n.t('branchesSubtitle'),
+                color: MohajonWarm.green,
+                background: MohajonWarm.tintGreen,
+                menu: MenuCodes.settings,
+                onTap: () => _openBusiness(const BranchesScreen()),
+              ),
+              _FeatureItem(
+                icon: Icons.monitor_heart_rounded,
+                title: l10n.t('businessHealth'),
+                subtitle: l10n.t('businessHealthSubtitle'),
+                color: MohajonWarm.ink,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.reports,
+                onTap: () => _open(const BusinessHealthScreen()),
+              ),
+              _FeatureItem(
+                icon: Icons.auto_awesome_motion_rounded,
+                title: l10n.t('featurePurchasePlanner'),
+                subtitle: l10n.t('featurePurchasePlannerSubtitle'),
+                color: MohajonWarm.green,
+                background: MohajonWarm.tintGreen,
+                menu: MenuCodes.purchase,
+                onTap: () => _open(const PurchasePlannerScreen()),
+              ),
+              _FeatureItem(
+                icon: Icons.fact_check_rounded,
+                title: l10n.t('featureDayClosing'),
+                subtitle: l10n.t('featureDayClosingSubtitle'),
+                color: MohajonWarm.orange,
+                background: MohajonWarm.tintOrange,
+                menu: MenuCodes.reports,
+                onTap: () => _open(const DayClosingScreen()),
+              ),
+              _FeatureItem(
+                icon: Icons.insights_rounded,
+                title: l10n.t('featureCustomerGrowth'),
+                subtitle: l10n.t('featureCustomerGrowthSubtitle'),
+                color: MohajonWarm.ink,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.reports,
+                onTap: () => _open(const CustomerGrowthScreen()),
+              ),
+              _FeatureItem(
+                icon: Icons.payments_rounded,
+                title: l10n.t('expenses'),
+                subtitle: l10n.t('expensesSubtitle'),
+                color: MohajonWarm.orange,
+                background: MohajonWarm.tintOrange,
+                menu: MenuCodes.expenses,
+                onTap: () => _open(const ExpensesScreen()),
+                itemKey: widget.tourExpensesKey,
+              ),
+              _FeatureItem(
+                icon: Icons.people_alt_rounded,
+                title: l10n.t('investors'),
+                subtitle: l10n.t('investorsSubtitle'),
+                color: MohajonWarm.green,
+                background: MohajonWarm.tintGreen,
+                menu: MenuCodes.investors,
+                onTap: () => _open(const InvestorListScreen()),
+                itemKey: widget.tourInvestorsKey,
+              ),
+              _FeatureItem(
+                icon: Icons.group_outlined,
+                title: l10n.t('staff'),
+                subtitle: l10n.t('staffSubtitle'),
+                color: MohajonWarm.goldText,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.staff,
+                onTap: () => _openBusiness(const StaffListScreen()),
+                itemKey: widget.tourStaffKey,
+              ),
+              _FeatureItem(
+                icon: Icons.history_rounded,
+                title: l10n.t('auditTimeline'),
+                subtitle: l10n.t('noAuditEvents'),
+                color: MohajonWarm.ink,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.reports,
+                onTap: () => _openBusiness(const AuditTimelineScreen()),
+              ),
+            ]
+            .where(
+              (item) =>
+                  hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner),
+            )
+            .toList();
 
-    final finance = <_FeatureItem>[
-      _FeatureItem(
-        icon: Icons.account_balance_rounded,
-        title: l10n.t('investments'),
-        subtitle: l10n.t('investmentsSubtitle'),
-        color: MohajonWarm.ink,
-        background: MohajonWarm.tintGreen,
-        menu: MenuCodes.investments,
-        onTap: () => _open(const InvestmentDashboardScreen()),
-        itemKey: widget.tourInvestmentsKey,
-      ),
-    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+    final finance =
+        <_FeatureItem>[
+              _FeatureItem(
+                icon: Icons.account_balance_rounded,
+                title: l10n.t('investments'),
+                subtitle: l10n.t('investmentsSubtitle'),
+                color: MohajonWarm.ink,
+                background: MohajonWarm.tintGreen,
+                menu: MenuCodes.investments,
+                onTap: () => _open(const InvestmentDashboardScreen()),
+                itemKey: widget.tourInvestmentsKey,
+              ),
+            ]
+            .where(
+              (item) =>
+                  hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner),
+            )
+            .toList();
 
-    final reports = <_FeatureItem>[
-      _FeatureItem(
-        icon: Icons.pie_chart_outline_rounded,
-        title: l10n.t('reports'),
-        subtitle: l10n.t('reportsSubtitle'),
-        color: MohajonWarm.ink,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.reports,
-        onTap: () => _open(const ReportsScreen()),
-        itemKey: widget.tourReportsKey,
-      ),
-    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+    final reports =
+        <_FeatureItem>[
+              _FeatureItem(
+                icon: Icons.pie_chart_outline_rounded,
+                title: l10n.t('reports'),
+                subtitle: l10n.t('reportsSubtitle'),
+                color: MohajonWarm.ink,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.reports,
+                onTap: () => _open(const ReportsScreen()),
+                itemKey: widget.tourReportsKey,
+              ),
+            ]
+            .where(
+              (item) =>
+                  hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner),
+            )
+            .toList();
 
-    final appItems = <_FeatureItem>[
-      _FeatureItem(
-        icon: Icons.person_rounded,
-        title: l10n.t('myProfile'),
-        subtitle: l10n.t('myProfileSubtitle'),
-        color: MohajonWarm.goldText,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.profile,
-        onTap: () => _open(const ProfileOverviewScreen()),
-      ),
-      _FeatureItem(
-        icon: Icons.settings_rounded,
-        title: l10n.t('settings'),
-        subtitle: l10n.t('appPreferencesMore'),
-        color: MohajonWarm.goldText,
-        background: MohajonWarm.tintYellow,
-        menu: MenuCodes.settings,
-        onTap: () => _open(const SettingsScreen()),
-        itemKey: widget.tourSettingsKey,
-      ),
-    ].where((item) => hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner)).toList();
+    final appItems =
+        <_FeatureItem>[
+              _FeatureItem(
+                icon: Icons.person_rounded,
+                title: l10n.t('myProfile'),
+                subtitle: l10n.t('myProfileSubtitle'),
+                color: MohajonWarm.goldText,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.profile,
+                onTap: () => _open(const ProfileOverviewScreen()),
+              ),
+              _FeatureItem(
+                icon: Icons.settings_rounded,
+                title: l10n.t('settings'),
+                subtitle: l10n.t('appPreferencesMore'),
+                color: MohajonWarm.goldText,
+                background: MohajonWarm.tintYellow,
+                menu: MenuCodes.settings,
+                onTap: () => _open(const SettingsScreen()),
+                itemKey: widget.tourSettingsKey,
+              ),
+            ]
+            .where(
+              (item) =>
+                  hasMenuAccess(grantedMenus, item.menu, isOwner: isOwner),
+            )
+            .toList();
 
     final accountItems = <_FeatureItem>[
       _FeatureItem(
@@ -297,9 +323,7 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: MohajonWarm.pageGradient,
-            ),
+            decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
             child: Stack(
               children: [
                 Positioned(
@@ -363,13 +387,14 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
                       ),
                       const SizedBox(height: 26),
                       if (operations.isNotEmpty) ...[
-                        const _SectionHeader(label: 'operations', hasSubtitle: true),
+                        const _SectionHeader(
+                          label: 'operations',
+                          hasSubtitle: true,
+                        ),
                         const SizedBox(height: 12),
                         _Entrance(
                           delay: const Duration(milliseconds: 90),
-                          child: _IconFeaturePanel(
-                            items: operations,
-                          ),
+                          child: _IconFeaturePanel(items: operations),
                         ),
                         const SizedBox(height: 22),
                       ],
@@ -429,6 +454,12 @@ class _FeatureHubScreenState extends ConsumerState<FeatureHubScreen>
 
   void _open(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Future<void> _openBusiness(Widget screen) async {
+    if (!await PaywallGate.ensureBusinessAccess(context, ref)) return;
+    if (!mounted) return;
+    _open(screen);
   }
 
   Future<void> _syncNow() async {
@@ -677,8 +708,7 @@ class DashedLine extends StatelessWidget {
       builder: (context, constraints) {
         const dashWidth = 5.0;
         const dashGap = 4.0;
-        final count =
-            (constraints.maxWidth / (dashWidth + dashGap)).floor();
+        final count = (constraints.maxWidth / (dashWidth + dashGap)).floor();
         return Row(
           children: [
             for (var i = 0; i < count; i++)
@@ -833,7 +863,8 @@ class _IconFeaturePanel extends StatelessWidget {
               mainAxisExtent: 102,
             ),
             itemCount: items.length,
-            itemBuilder: (context, index) => _IconFeatureTile(item: items[index]),
+            itemBuilder: (context, index) =>
+                _IconFeatureTile(item: items[index]),
           ),
         );
       },
@@ -870,10 +901,7 @@ class _IconFeatureTile extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white,
-                        background,
-                      ],
+                      colors: [Colors.white, background],
                     ),
                     border: Border.all(color: color.withValues(alpha: 0.12)),
                     boxShadow: [
@@ -994,10 +1022,7 @@ class _PremiumTile extends StatelessWidget {
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
-                                  color,
-                                  color.withValues(alpha: 0.72),
-                                ],
+                                colors: [color, color.withValues(alpha: 0.72)],
                               ),
                               borderRadius: BorderRadius.circular(
                                 tileSize * 0.32,
@@ -1196,11 +1221,7 @@ class _WideCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Icon(
-                          item.icon,
-                          color: palette.icon,
-                          size: 26,
-                        ),
+                        child: Icon(item.icon, color: palette.icon, size: 26),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

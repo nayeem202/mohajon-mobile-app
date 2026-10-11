@@ -28,17 +28,33 @@ Future<Uint8List> buildTablePdf(
   final cellWidths = <double>[
     for (var i = 0; i < table.columns.length; i++) _cellWidth(columnWidths, i),
   ];
+  final valueWidth = _summaryValueWidth(table, tableWidth);
+  final hasBangla = RegExp(r'[\u0980-\u09FF]').hasMatch(table.title);
+  final noData = hasBangla
+      ? 'নির্বাচিত সময়ে কোনো তথ্য নেই'
+      : 'No data in the selected period';
+  final generatedLine =
+      '${hasBangla ? 'তৈরির সময়' : 'Generated'}: '
+      '${DateFormat('MMM dd, yyyy HH:mm').format(now)}';
+  final periodLine = '${hasBangla ? 'সময়কাল' : 'Period'}: ${table.subtitle}';
+  final reportTypeLine =
+      '${hasBangla ? 'রিপোর্টের ধরন' : 'Report Type'}: ${table.title}';
+  final periodBadge = '${hasBangla ? 'সময়কাল' : 'Period'}: ${table.subtitle}';
+  final typeBadge =
+      '${hasBangla ? 'রিপোর্টের ধরন' : 'Report Type'}: ${table.title}';
 
   await _prepareCompany(raster, company);
   for (var index = 0; index < table.columns.length; index++) {
     final column = table.columns[index];
     final width = cellWidths[index];
-    await raster.prepare(column.header,
-        fontSize: 9,
-        bold: true,
-        color: _white,
-        width: width,
-        textAlign: column.rightAlign ? ui.TextAlign.right : ui.TextAlign.left);
+    await raster.prepare(
+      column.header,
+      fontSize: 9,
+      bold: true,
+      color: _white,
+      width: width,
+      textAlign: column.rightAlign ? ui.TextAlign.right : ui.TextAlign.left,
+    );
     for (final row in table.rows) {
       await raster.prepare(
         _cellText(row[column.key]),
@@ -51,18 +67,68 @@ Future<Uint8List> buildTablePdf(
     }
   }
   if (table.rows.isEmpty) {
-    await raster.prepare('No data in the selected period',
-        fontSize: 9, bold: false, color: _gray600, width: tableWidth);
+    await raster.prepare(
+      noData,
+      fontSize: 9,
+      bold: false,
+      color: _gray600,
+      width: tableWidth,
+    );
   }
-
-  final valueWidth = _summaryValueWidth(table, tableWidth);
+  await raster.prepare(
+    table.title,
+    fontSize: 14,
+    bold: true,
+    color: _white,
+    width: 200,
+    maxLines: 1,
+  );
+  for (final line in [generatedLine, periodLine, reportTypeLine]) {
+    await raster.prepare(
+      line,
+      fontSize: 8,
+      bold: false,
+      color: const ui.Color(0xFF525252),
+      width: 210,
+      maxLines: 1,
+    );
+  }
+  for (final badge in [periodBadge, typeBadge]) {
+    await raster.prepare(
+      badge,
+      fontSize: 9,
+      bold: true,
+      color: const ui.Color(0xFF1E3A8A),
+      width: 240,
+      maxLines: 1,
+    );
+  }
   for (final summary in table.summaries) {
-    await raster.prepare(summary.value,
-        fontSize: 18,
-        bold: true,
-        color: ui.Color(summary.accent),
-        width: valueWidth,
-        maxLines: 1);
+    await raster.prepare(
+      summary.label,
+      fontSize: 9,
+      bold: false,
+      color: const ui.Color(0xFF737373),
+      width: valueWidth,
+      maxLines: 2,
+    );
+  }
+  await raster.prepare(
+    noData,
+    fontSize: 9,
+    bold: false,
+    color: _gray600,
+    width: tableWidth,
+  );
+  for (final summary in table.summaries) {
+    await raster.prepare(
+      summary.value,
+      fontSize: 18,
+      bold: true,
+      color: ui.Color(summary.accent),
+      width: valueWidth,
+      maxLines: 1,
+    );
   }
 
   final doc = pw.Document(theme: theme);
@@ -74,13 +140,13 @@ Future<Uint8List> buildTablePdf(
       header: (context) => _header(doc.document, raster, table, company, now),
       footer: (context) => _pageFooter(context, now),
       build: (context) => [
-        _reportMetaBar(table),
+        _reportMetaBar(doc.document, raster, table, hasBangla),
         pw.SizedBox(height: 16),
         if (table.summaries.isNotEmpty) ...[
           _summaryRow(doc.document, raster, table.summaries, valueWidth),
           pw.SizedBox(height: 20),
         ],
-        _dataTable(doc.document, raster, table, cellWidths),
+        _dataTable(doc.document, raster, table, cellWidths, noData),
       ],
     ),
   );
@@ -100,10 +166,7 @@ double _tableWidth() => PdfPageFormat.a4.availableWidth - 72;
 double _cellWidth(Map<int, double> widths, int index) =>
     (widths[index] ?? 0) - 12;
 
-Map<int, double> _columnWidths(
-  ReportTableData table,
-  double tableWidth,
-) {
+Map<int, double> _columnWidths(ReportTableData table, double tableWidth) {
   final totalWeight = table.columns.fold<double>(
     0,
     (sum, column) => sum + column.weight,
@@ -122,6 +185,7 @@ pw.Widget _header(
   DocCompany company,
   DateTime now,
 ) {
+  final hasBangla = RegExp(r'[\u0980-\u09FF]').hasMatch(table.title);
   return pw.Column(
     children: [
       pw.Row(
@@ -147,22 +211,35 @@ pw.Widget _header(
                       pw.Radius.circular(4),
                     ),
                   ),
-                  child: pw.Text(
+                  child: raster.build(
+                    pdf,
                     table.title,
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
+                    fontSize: 14,
+                    bold: true,
+                    color: _white,
+                    width: 200,
+                    maxLines: 1,
                   ),
                 ),
                 pw.SizedBox(height: 8),
                 _metaRow(
-                  'Generated',
+                  pdf,
+                  raster,
+                  hasBangla ? 'তৈরির সময়' : 'Generated',
                   DateFormat('MMM dd, yyyy HH:mm').format(now),
                 ),
-                _metaRow('Period', table.subtitle),
-                _metaRow('Report Type', table.title),
+                _metaRow(
+                  pdf,
+                  raster,
+                  hasBangla ? 'সময়কাল' : 'Period',
+                  table.subtitle,
+                ),
+                _metaRow(
+                  pdf,
+                  raster,
+                  hasBangla ? 'রিপোর্টের ধরন' : 'Report Type',
+                  table.title,
+                ),
               ],
             ),
           ),
@@ -180,32 +257,33 @@ pw.Widget _header(
   );
 }
 
-pw.Widget _metaRow(String label, String value) {
+pw.Widget _metaRow(
+  PdfDocument pdf,
+  PdfRasterText raster,
+  String label,
+  String value,
+) {
   return pw.Padding(
     padding: const pw.EdgeInsets.only(bottom: 3),
-    child: pw.RichText(
-      textAlign: pw.TextAlign.end,
-      text: pw.TextSpan(
-        children: [
-          pw.TextSpan(
-            text: '$label: ',
-            style: pw.TextStyle(
-              fontSize: 8,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.grey700,
-            ),
-          ),
-          pw.TextSpan(
-            text: value,
-            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-          ),
-        ],
-      ),
+    child: raster.build(
+      pdf,
+      '$label: $value',
+      fontSize: 8,
+      bold: false,
+      color: const ui.Color(0xFF525252),
+      width: 210,
+      alignment: pw.Alignment.centerRight,
+      maxLines: 1,
     ),
   );
 }
 
-pw.Widget _reportMetaBar(ReportTableData table) {
+pw.Widget _reportMetaBar(
+  PdfDocument pdf,
+  PdfRasterText raster,
+  ReportTableData table,
+  bool hasBangla,
+) {
   return pw.Container(
     padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
     decoration: pw.BoxDecoration(
@@ -215,29 +293,40 @@ pw.Widget _reportMetaBar(ReportTableData table) {
     ),
     child: pw.Row(
       children: [
-        _metaBadge('Period', table.subtitle),
-        pw.SizedBox(width: 16),
-        _metaBadge('Report Type', table.title),
+        _metaBadge(
+          pdf,
+          raster,
+          hasBangla ? 'সময়কাল' : 'Period',
+          table.subtitle,
+        ),
+        pw.SizedBox(width: 8),
+        _metaBadge(
+          pdf,
+          raster,
+          hasBangla ? 'রিপোর্টের ধরন' : 'Report Type',
+          table.title,
+        ),
       ],
     ),
   );
 }
 
-pw.Widget _metaBadge(String label, String value) {
+pw.Widget _metaBadge(
+  PdfDocument pdf,
+  PdfRasterText raster,
+  String label,
+  String value,
+) {
   return pw.Row(
     mainAxisSize: pw.MainAxisSize.min,
     children: [
-      pw.Text(
-        '$label: ',
-        style: pw.TextStyle(
-          fontSize: 9,
-          fontWeight: pw.FontWeight.bold,
-          color: _indigo,
-        ),
-      ),
-      pw.Text(
-        value,
-        style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+      raster.build(
+        pdf,
+        '$label: $value',
+        fontSize: 9,
+        bold: true,
+        color: const ui.Color(0xFF1E3A8A),
+        width: 240,
       ),
     ],
   );
@@ -253,9 +342,7 @@ pw.Widget _summaryRow(
     children: [
       for (var i = 0; i < summaries.length; i++) ...[
         if (i > 0) pw.SizedBox(width: 10),
-        pw.Expanded(
-          child: _summaryCard(pdf, raster, summaries[i], valueWidth),
-        ),
+        pw.Expanded(child: _summaryCard(pdf, raster, summaries[i], valueWidth)),
       ],
     ],
   );
@@ -287,9 +374,14 @@ pw.Widget _summaryCard(
           ),
         ),
         pw.SizedBox(height: 8),
-        pw.Text(
+        raster.build(
+          pdf,
           summary.label,
-          style: pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
+          fontSize: 9,
+          bold: false,
+          color: const ui.Color(0xFF737373),
+          width: valueWidth,
+          maxLines: 2,
         ),
         pw.SizedBox(height: 3),
         raster.build(
@@ -311,16 +403,14 @@ pw.Widget _dataTable(
   PdfRasterText raster,
   ReportTableData table,
   List<double> cellWidths,
+  String noData,
 ) {
   final columnWidths = <int, pw.TableColumnWidth>{
     for (var i = 0; i < table.columns.length; i++)
       i: pw.FixedColumnWidth(cellWidths[i] + 12),
   };
   final border = pw.TableBorder(
-    horizontalInside: pw.BorderSide(
-      color: PdfColors.grey300,
-      width: 0.5,
-    ),
+    horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
     bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
     top: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
   );
@@ -330,10 +420,7 @@ pw.Widget _dataTable(
     children: [
       for (var index = 0; index < table.columns.length; index++)
         pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 8,
-          ),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: _headerCell(
             pdf,
             raster,
@@ -353,28 +440,20 @@ pw.Widget _dataTable(
           defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
           columnWidths: columnWidths,
           border: border,
-          children: [
-            headerRow,
-          ],
+          children: [headerRow],
         ),
         pw.Container(
           width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(
-            horizontal: 4,
-            vertical: 12,
-          ),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 12),
           decoration: pw.BoxDecoration(
             color: _cardBg,
             border: pw.Border(
-              bottom: pw.BorderSide(
-                color: PdfColors.grey600,
-                width: 0.5,
-              ),
+              bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.5),
             ),
           ),
           child: raster.build(
             pdf,
-            'No data in the selected period',
+            noData,
             fontSize: 9,
             bold: false,
             color: _gray600,
@@ -466,14 +545,29 @@ Future<void> _prepareCompany(PdfRasterText raster, DocCompany company) async {
   const indigo = ui.Color(0xFF1E3A8A);
   const grey600 = ui.Color(0xFF525252);
   const grey500 = ui.Color(0xFF737373);
-  await raster.prepare(company.name,
-      fontSize: 20, bold: true, color: indigo, width: 300);
-  await raster.prepare(company.tagline,
-      fontSize: 9, bold: false, color: grey600, width: 300);
+  await raster.prepare(
+    company.name,
+    fontSize: 20,
+    bold: true,
+    color: indigo,
+    width: 300,
+  );
+  await raster.prepare(
+    company.tagline,
+    fontSize: 9,
+    bold: false,
+    color: grey600,
+    width: 300,
+  );
   for (final field in <String>[company.address, company.phone, company.email]) {
     if (field.isNotEmpty) {
-      await raster.prepare(field,
-          fontSize: 8, bold: false, color: grey500, width: 300);
+      await raster.prepare(
+        field,
+        fontSize: 8,
+        bold: false,
+        color: grey500,
+        width: 300,
+      );
     }
   }
 }

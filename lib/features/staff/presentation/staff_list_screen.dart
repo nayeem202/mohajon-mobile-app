@@ -40,8 +40,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
   }
 
   Future<void> _openForm({StaffMember? staff}) async {
-    if (!PaywallGate.hasBusiness(ref)) {
-      await PaywallGate.showPaywallSheet(context, requiredTier: 'BUSINESS');
+    if (!await PaywallGate.ensureBusinessAccess(context, ref) || !mounted) {
       return;
     }
     final saved = await Navigator.of(context).push<bool>(

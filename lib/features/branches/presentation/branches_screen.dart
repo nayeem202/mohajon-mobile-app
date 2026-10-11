@@ -200,8 +200,8 @@ class BranchesScreen extends ConsumerWidget {
   }
 
   Future<void> _create(BuildContext context, WidgetRef ref) async {
-    if (!PaywallGate.hasBusiness(ref)) {
-      await PaywallGate.showPaywallSheet(context, requiredTier: 'BUSINESS');
+    if (!await PaywallGate.ensureBusinessAccess(context, ref) ||
+        !context.mounted) {
       return;
     }
     final result = await showModalBottomSheet<bool>(

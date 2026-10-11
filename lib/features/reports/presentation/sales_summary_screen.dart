@@ -8,6 +8,7 @@ import '../../../core/models/sale.dart';
 import '../../../core/services/pdf_doc.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/app_error.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../settings/providers/shop_profile_providers.dart';
 import '../models/daily_sales.dart';
@@ -46,7 +47,11 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     super.initState();
     final end = DateTime.now();
     _range = DateTimeRange(
-      start: DateTime(end.year, end.month, end.day).subtract(const Duration(days: 9)),
+      start: DateTime(
+        end.year,
+        end.month,
+        end.day,
+      ).subtract(const Duration(days: 9)),
       end: end,
     );
   }
@@ -67,10 +72,8 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       lastDate: now,
       helpText: l10n.t('selectDateRange'),
       confirmText: l10n.t('applyLabel'),
-      builder: (context, child) => Theme(
-        data: MohajonWarm.theme(Theme.of(context)),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: MohajonWarm.theme(Theme.of(context)), child: child!),
     );
     if (picked != null && mounted) {
       setState(() {
@@ -102,8 +105,11 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
 
   void _lastMonth() {
     final now = DateTime.now();
-    final lastOfLast =
-        DateTime(now.year, now.month, 1).subtract(const Duration(days: 1));
+    final lastOfLast = DateTime(
+      now.year,
+      now.month,
+      1,
+    ).subtract(const Duration(days: 1));
     setState(() {
       _range = DateTimeRange(
         start: DateTime(lastOfLast.year, lastOfLast.month, 1),
@@ -123,15 +129,23 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     final now = DateTime.now();
     setState(() {
       _range = DateTimeRange(
-        start: DateTime(now.year, now.month, now.day)
-            .subtract(const Duration(days: 29)),
+        start: DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: 29)),
         end: now,
       );
     });
   }
 
-  ({List<DailySales> days, double totalSales, int transactions,
-      double averageOrder}) _compute() {
+  ({
+    List<DailySales> days,
+    double totalSales,
+    int transactions,
+    double averageOrder,
+  })
+  _compute() {
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
     final byDay = <DateTime, List<Sale>>{};
     for (final sale in sales) {
@@ -147,8 +161,10 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     final dayKeys = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
     var maxAmount = 0.0;
     for (final day in dayKeys) {
-      final amount =
-          byDay[day]!.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      final amount = byDay[day]!.fold<double>(
+        0,
+        (sum, sale) => sum + sale.totalAmount,
+      );
       if (amount > maxAmount) maxAmount = amount;
     }
 
@@ -156,8 +172,10 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     for (var i = 0; i < dayKeys.length; i++) {
       final day = dayKeys[i];
       final daySales = byDay[day]!;
-      final amount =
-          daySales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      final amount = daySales.fold<double>(
+        0,
+        (sum, sale) => sum + sale.totalAmount,
+      );
       days.add(
         DailySales(
           date: day,
@@ -190,18 +208,14 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     setState(() => _exportingXlsx = true);
     try {
       final data = _compute();
-      await _excelService.saveSalesSummary(
-        days: data.days,
-        range: _range,
-      );
+      await _excelService.saveSalesSummary(days: data.days, range: _range);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context).tP(
-              'exportedAsXlsx',
-              {'report': AppLocalizations.of(context).t('reportSalesSummary')},
-            ),
+            AppLocalizations.of(context).tP('exportedAsXlsx', {
+              'report': AppLocalizations.of(context).t('reportSalesSummary'),
+            }),
           ),
         ),
       );
@@ -209,7 +223,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString()),
+          content: Text(
+            friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -235,10 +251,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context).tP(
-              'exportedAsPdf',
-              {'report': AppLocalizations.of(context).t('reportSalesSummary')},
-            ),
+            AppLocalizations.of(context).tP('exportedAsPdf', {
+              'report': AppLocalizations.of(context).t('reportSalesSummary'),
+            }),
           ),
         ),
       );
@@ -246,7 +261,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString()),
+          content: Text(
+            friendlyErrorMessage(error, l10n: AppLocalizations.of(context)),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -303,11 +320,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
             statusBarColor: MohajonWarm.primary,
             statusBarIconBrightness: Brightness.dark,
           ),
-          actions: const [
-            NotificationBell(),
-            SizedBox(width: 6),
-            ShopAvatar(),
-          ],
+          actions: const [NotificationBell(), SizedBox(width: 6), ShopAvatar()],
         ),
         body: DecoratedBox(
           decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
@@ -438,10 +451,7 @@ class _ExportButton extends StatelessWidget {
               SizedBox(
                 width: 13,
                 height: 13,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
               )
             else
               Icon(icon, size: 16, color: color),

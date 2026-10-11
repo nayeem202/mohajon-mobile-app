@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
 import '../../features/customers/presentation/customer_list_screen.dart';
+import '../../features/auth/providers/auth_providers.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/products/presentation/product_list_screen.dart';
@@ -18,6 +21,7 @@ import 'feature_hub_screen.dart';
 import 'app_lock_controller.dart';
 import 'app_lock_screen.dart';
 import 'app_providers.dart';
+import '../services/custom_auth_backend.dart';
 import 'tour_models.dart';
 import 'tour_overlay.dart';
 
@@ -73,15 +77,17 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   void _refreshPaywall() {
-    ref
-        .read(paywallStateProvider.notifier)
-        .refresh(online: true);
+    ref.read(paywallStateProvider.notifier).refresh(online: true);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _refreshPaywall();
+      final backend = ref.read(authBackendProvider);
+      if (backend is CustomAuthBackend) {
+        unawaited(backend.refreshSessionIfNeeded());
+      }
     }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
@@ -363,7 +369,7 @@ class _AppShellState extends ConsumerState<AppShell>
         ) ??
         false;
     final tabs = _buildTabs(l10n, grantedMenus, isOwner);
-if (tabs.isEmpty) {
+    if (tabs.isEmpty) {
       return Scaffold(
         body: SafeArea(
           child: Center(
@@ -408,10 +414,7 @@ if (tabs.isEmpty) {
                       switchInCurve: Curves.easeOut,
                       switchOutCurve: Curves.easeIn,
                       transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        );
+                        return FadeTransition(opacity: animation, child: child);
                       },
                       child: KeyedSubtree(
                         key: ValueKey(_index),
@@ -747,9 +750,7 @@ class _HambotNavButton extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFFFC800), Color(0xFFFFE36E)],
               ),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.40),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.40)),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFFFFC800).withValues(alpha: 0.4),

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/app_error.dart';
 import '../providers/auth_providers.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -125,7 +127,7 @@ class _EmailVerificationDialogState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = friendlyErrorMessage(e, l10n: AppLocalizations.of(context));
           _notice = false;
         });
       }
@@ -155,7 +157,7 @@ class _EmailVerificationDialogState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = friendlyErrorMessage(e, l10n: AppLocalizations.of(context));
           _notice = false;
         });
       }

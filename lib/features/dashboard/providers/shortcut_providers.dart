@@ -16,6 +16,7 @@ import '../../purchases/presentation/purchase_screen.dart';
 import '../../reports/presentation/reports_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../../staff/presentation/staff_list_screen.dart';
+import '../../subscription/services/paywall_gate.dart';
 import '../../vendors/presentation/vendor_list_screen.dart';
 import '../data/shortcut_repository.dart';
 import '../presentation/models/shortcut_model.dart';
@@ -27,9 +28,9 @@ final shortcutRepositoryProvider = Provider<ShortcutRepository>((ref) {
 
 final selectedShortcutIdsProvider =
     StateNotifierProvider<ShortcutIdsNotifier, List<String>>((ref) {
-  final repo = ref.watch(shortcutRepositoryProvider);
-  return ShortcutIdsNotifier(repo);
-});
+      final repo = ref.watch(shortcutRepositoryProvider);
+      return ShortcutIdsNotifier(repo);
+    });
 
 class ShortcutIdsNotifier extends StateNotifier<List<String>> {
   final ShortcutRepository _repo;
@@ -71,7 +72,11 @@ final selectedShortcutsProvider = Provider<List<ShortcutItem>>((ref) {
   ];
 });
 
-void navigateToShortcut(BuildContext context, ShortcutItem item) {
+Future<void> navigateToShortcut(
+  BuildContext context,
+  WidgetRef ref,
+  ShortcutItem item,
+) async {
   Widget screen;
   switch (item.action) {
     case ShortcutAction.newSale:
@@ -104,5 +109,10 @@ void navigateToShortcut(BuildContext context, ShortcutItem item) {
     case ShortcutAction.investments:
       screen = const InvestmentDashboardScreen();
   }
+  if (item.action == ShortcutAction.staff &&
+      !await PaywallGate.ensureBusinessAccess(context, ref)) {
+    return;
+  }
+  if (!context.mounted) return;
   Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
 }

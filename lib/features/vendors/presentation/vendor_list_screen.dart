@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/utils/app_error.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../models/vendor.dart';
 import '../providers/vendor_providers.dart';
@@ -49,9 +50,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: MohajonWarm.pageGradient,
-          ),
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             child: vendorsAsync.when(
               data: (items) {
@@ -89,23 +88,25 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
                           selectedCategory: selectedCategory,
                           onSearchChanged: (value) =>
                               ref
-                                  .read(vendorSearchQueryProvider.notifier)
-                                  .state = value,
+                                      .read(vendorSearchQueryProvider.notifier)
+                                      .state =
+                                  value,
                           onClearSearch: () {
                             _searchController.clear();
-                            ref
-                                .read(vendorSearchQueryProvider.notifier)
-                                .state = '';
+                            ref.read(vendorSearchQueryProvider.notifier).state =
+                                '';
                           },
                           onSortChanged: (sort) {
                             setState(() => _sort = sort);
-                            ref.read(vendorSortProvider.notifier).state =
-                                sort;
+                            ref.read(vendorSortProvider.notifier).state = sort;
                           },
                           onCategoryChanged: (cat) =>
                               ref
-                                  .read(vendorCategoryFilterProvider.notifier)
-                                  .state = cat,
+                                      .read(
+                                        vendorCategoryFilterProvider.notifier,
+                                      )
+                                      .state =
+                                  cat,
                         ),
                       ],
                       const SizedBox(height: 18),
@@ -122,18 +123,21 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
                       else
                         _VendorList(
                           vendors: filtered,
-                          onVendorTap: (vendor) =>
-                              _openVendorDetail(vendor),
+                          onVendorTap: (vendor) => _openVendorDetail(vendor),
                         ),
                     ],
                   ),
                 );
               },
-              error: (error, _) => EmptyState(message: error.toString()),
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: MohajonWarm.primary,
+              error: (error, _) => EmptyState(
+                message: friendlyErrorMessage(
+                  error,
+                  l10n: l10n,
+                  fallback: l10n.t('errorCouldNotLoadVendors'),
                 ),
+              ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: MohajonWarm.primary),
               ),
             ),
           ),
@@ -151,9 +155,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
                 }
               },
               child: Icon(
-                _showSearch
-                    ? Icons.search_off_rounded
-                    : Icons.search_rounded,
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
                 size: 22,
               ),
             ),
@@ -447,9 +449,7 @@ class _PendingPaymentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final color = hasPending ? MohajonWarm.red : MohajonWarm.green;
-    final background = hasPending
-        ? MohajonWarm.tintRed
-        : MohajonWarm.tintGreen;
+    final background = hasPending ? MohajonWarm.tintRed : MohajonWarm.tintGreen;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -489,9 +489,7 @@ class _PendingPaymentCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      hasPending
-                          ? l10n.t('needsSettlement')
-                          : l10n.t('noDues'),
+                      hasPending ? l10n.t('needsSettlement') : l10n.t('noDues'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -606,8 +604,9 @@ class _SearchAndFilters extends StatelessWidget {
                                 color: MohajonWarm.muted,
                               ),
                             ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -738,9 +737,7 @@ class _FilterChip extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: selected
-                    ? const Color(0xFF5D4A00)
-                    : MohajonWarm.muted,
+                color: selected ? const Color(0xFF5D4A00) : MohajonWarm.muted,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -753,10 +750,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _VendorList extends StatelessWidget {
-  const _VendorList({
-    required this.vendors,
-    required this.onVendorTap,
-  });
+  const _VendorList({required this.vendors, required this.onVendorTap});
 
   final List<Vendor> vendors;
   final ValueChanged<Vendor> onVendorTap;
@@ -778,10 +772,7 @@ class _VendorList extends StatelessWidget {
 }
 
 class _VendorCard extends ConsumerStatefulWidget {
-  const _VendorCard({
-    required this.vendor,
-    required this.onTap,
-  });
+  const _VendorCard({required this.vendor, required this.onTap});
 
   final Vendor vendor;
   final VoidCallback onTap;
@@ -930,7 +921,9 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                         ),
                         child: Text(
                           hasDue
-                              ? l10n.tP('vendorDueAmount', {'n': money(vendor.pendingAmount)})
+                              ? l10n.tP('vendorDueAmount', {
+                                  'n': money(vendor.pendingAmount),
+                                })
                               : l10n.t('cleared'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -946,8 +939,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                       const SizedBox(height: 5),
                       Text(
                         vendor.lastPurchaseDate != null
-                            ? _formatDate(vendor.lastPurchaseDate!,
-                                l10n)
+                            ? _formatDate(vendor.lastPurchaseDate!, l10n)
                             : l10n.t('noPurchases'),
                         style: const TextStyle(
                           color: MohajonWarm.muted,
@@ -959,8 +951,7 @@ class _VendorCardState extends ConsumerState<_VendorCard>
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () =>
-                        setState(() => _expanded = !_expanded),
+                    onTap: () => setState(() => _expanded = !_expanded),
                     child: AnimatedRotation(
                       turns: _expanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
@@ -1002,9 +993,7 @@ class _VendorExpandedDetails extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final outstanding = ref.watch(
-      vendorOutstandingProvider(vendor.vendorId),
-    );
+    final outstanding = ref.watch(vendorOutstandingProvider(vendor.vendorId));
     final purchases = ref.watch(
       vendorPurchasesForVendorProvider(vendor.vendorId),
     );
@@ -1053,9 +1042,7 @@ class _VendorExpandedDetails extends ConsumerWidget {
               _MiniStat(
                 label: outstanding > 0 ? l10n.t('due') : l10n.t('cleared'),
                 value: money(outstanding),
-                color: outstanding > 0
-                    ? MohajonWarm.red
-                    : MohajonWarm.green,
+                color: outstanding > 0 ? MohajonWarm.red : MohajonWarm.green,
                 background: outstanding > 0
                     ? MohajonWarm.tintRed
                     : MohajonWarm.tintGreen,
@@ -1135,9 +1122,9 @@ class _VendorExpandedDetails extends ConsumerWidget {
   void _launchEmail(BuildContext context, String email) {
     final l10n = AppLocalizations.of(context);
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.t('noEmailAvailable'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('noEmailAvailable'))));
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(

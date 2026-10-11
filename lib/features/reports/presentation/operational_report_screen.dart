@@ -230,7 +230,8 @@ class _OperationalReportScreenState
               .where((r) => !r.isDeleted && _sameDay(r.createdAt, d))
               .fold<double>(
                 0,
-                (s, x) => s +
+                (s, x) =>
+                    s +
                     (x.refundMethod.toUpperCase() == 'CASH'
                         ? x.refundAmount
                         : 0),
@@ -648,12 +649,16 @@ class _OperationalReportScreenState
         rows: data.rows,
         summaries: data.summaries,
       );
+      final exportTable = localizedReportTable(
+        table,
+        AppLocalizations.of(context),
+      );
       final Uint8List bytes;
       final String mime;
       final String extension;
       if (pdf) {
         bytes = await buildTablePdf(
-          table,
+          exportTable,
           await DocCompany.fromShopForExport(
             ref.read(shopProfileProvider).value,
           ),
@@ -661,7 +666,7 @@ class _OperationalReportScreenState
         mime = 'application/pdf';
         extension = 'pdf';
       } else {
-        bytes = buildTableXlsx(table);
+        bytes = buildTableXlsx(exportTable);
         mime =
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         extension = 'xlsx';
@@ -731,7 +736,10 @@ class _OperationalReportScreenState
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             children: [
-              ReportBrandStrip(title: data.title, icon: Icons.analytics_rounded),
+              ReportBrandStrip(
+                title: data.title,
+                icon: Icons.analytics_rounded,
+              ),
               const SizedBox(height: 14),
               ReportRangeSelector(
                 range: _range,
