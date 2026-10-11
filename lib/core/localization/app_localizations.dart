@@ -100,6 +100,54 @@ class AppLocalizations {
       'purchaseOrders': 'Purchase orders',
       'receivePurchase': 'Receive purchase',
       'receivedQuantity': 'Received quantity',
+      'purchaseReceiptTitle': 'Check delivered items',
+      'purchaseReceiptSubtitle':
+          'Record the delivery and verify the supplier invoice.',
+      'receiptItemsSection': 'Delivery check',
+      'receiptInvoiceSection': 'Invoice reconciliation',
+      'receiptAttachmentSection': 'Invoice evidence',
+      'receiptReconciliation': 'Amount check',
+      'supplierOrderCount': '{count} orders',
+      'purchaseItemsCount': '{count} items',
+      'purchaseStatusReceived': 'Received',
+      'purchaseStatusPending': 'In progress',
+      'orderedQtyRemaining': 'Still expected: {qty}',
+      'deliveredQty': 'Delivered',
+      'damagedQty': 'Damaged',
+      'damageReason': 'Damage / rejection reason',
+      'damageReasonRequired':
+          'Add a short reason for damaged or rejected items.',
+      'shortQty': 'Short',
+      'actualUnitCost': 'Unit cost',
+      'supplierInvoiceNumber': 'Invoice number',
+      'supplierInvoiceAmount': 'Invoice total',
+      'freightCost': 'Transport cost',
+      'supplierDiscount': 'Discount',
+      'supplierDiscountTooHigh':
+          'Discount cannot exceed the received goods and transport total.',
+      'receiptNotes': 'Notes / issue details',
+      'attachInvoicePhoto': 'Attach invoice photo',
+      'removeAttachment': 'Remove attachment',
+      'attachmentAdded': 'Invoice photo attached',
+      'receiptAttachmentFailed':
+          'Could not attach the photo. Please try again.',
+      'receiveAndReconcile': 'Save receipt',
+      'receiptInvalidLine': 'Check delivered, damaged and unit-cost values.',
+      'wholeNumbersRequired': 'Stock quantities must be whole numbers.',
+      'invoiceDifferenceNoteRequired':
+          'The invoice differs from the expected total. Add a note explaining why.',
+      'receiptInvalidSummary':
+          'Enter a valid invoice summary and at least one delivered quantity.',
+      'supplierReceiptSaved':
+          'Delivery recorded; stock and invoice reconciliation updated.',
+      'supplierPerformance': 'Supplier delivery summary',
+      'supplierLabel': 'Supplier',
+      'supplierFillRate': 'Accepted delivery',
+      'supplierIssueRate': 'Short or damaged',
+      'supplierInvoiceVariance': 'Invoice difference',
+      'expectedInvoiceTotal': 'Expected from order and delivery',
+      'noSupplierReceiptHistory':
+          'Supplier performance appears after deliveries are recorded.',
       'receive': 'Receive',
       'purchaseReceived': 'Purchase received and stock updated.',
       'supplierReturn': 'Supplier return',
@@ -1681,10 +1729,22 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'noInternetTitle': 'No Internet Connection',
       'noInternetMessage':
           'This feature needs the internet. Turn on your internet and retry.',
-      'hambotSubtitle': 'Ask anything about your shop — voice or text',
+      'hambotSubtitle':
+          'Ask about your shop in Bangla or English — by voice or text',
+      'hambotLanguageHint':
+          'Bangla questions get Bangla replies. Use the translate icon to choose a reply language.',
+      'hambotReplyLanguage': 'Reply language',
+      'hambotReplyAuto': 'Auto (app language / question)',
+      'hambotReplyBangla': 'Bangla',
+      'hambotReplyEnglish': 'English',
       'hambotHint': 'Ask a question…',
       'hambotSpeaking': '🎤 Spoken question…',
       'hambotNoAnswer': 'I don\'t have that data yet. Try another question.',
+      'hambotSource': 'Mohajon AI guidance',
+      'hambotSuggestionSales': 'How much did I sell today?',
+      'hambotSuggestionDue': 'Who owes me the most?',
+      'hambotSuggestionStock': 'Which products are low in stock?',
+      'hambotSuggestionCash': 'How much cash did I receive today?',
       'hambotAiError':
           'Could not reach the assistant right now. Check your connection and try again.',
       'hambotQuotaExhausted':
@@ -1774,6 +1834,52 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'purchaseOrders': 'ক্রয় অর্ডার',
       'receivePurchase': 'ক্রয় গ্রহণ করুন',
       'receivedQuantity': 'প্রাপ্ত পরিমাণ',
+      'purchaseReceiptTitle': 'আসা পণ্য যাচাই করুন',
+      'purchaseReceiptSubtitle':
+          'পণ্য আসার তথ্য দিন এবং সাপ্লায়ারের চালান মিলিয়ে নিন।',
+      'receiptItemsSection': 'পণ্য আসার হিসাব',
+      'receiptInvoiceSection': 'চালানের হিসাব মিলান',
+      'receiptAttachmentSection': 'চালানের প্রমাণ',
+      'receiptReconciliation': 'টাকার হিসাব যাচাই',
+      'supplierOrderCount': '{count}টি অর্ডার',
+      'purchaseItemsCount': '{count}টি পণ্য',
+      'purchaseStatusReceived': 'পণ্য গ্রহণ হয়েছে',
+      'purchaseStatusPending': 'কাজ চলছে',
+      'orderedQtyRemaining': 'এখনও আসার কথা: {qty}',
+      'deliveredQty': 'এসেছে',
+      'damagedQty': 'নষ্ট',
+      'damageReason': 'নষ্ট / বাতিলের কারণ',
+      'damageReasonRequired': 'নষ্ট বা বাতিল পণ্যের সংক্ষিপ্ত কারণ লিখুন।',
+      'shortQty': 'কম এসেছে',
+      'actualUnitCost': 'প্রতি এককের দাম',
+      'supplierInvoiceNumber': 'চালান নম্বর',
+      'supplierInvoiceAmount': 'চালানের মোট',
+      'freightCost': 'পরিবহন খরচ',
+      'supplierDiscount': 'ছাড়',
+      'supplierDiscountTooHigh':
+          'ছাড় পণ্য ও পরিবহন খরচের মোটের চেয়ে বেশি হতে পারবে না।',
+      'receiptNotes': 'নোট / সমস্যার বিবরণ',
+      'attachInvoicePhoto': 'চালানের ছবি যোগ করুন',
+      'removeAttachment': 'ছবি সরান',
+      'attachmentAdded': 'চালানের ছবি যোগ হয়েছে',
+      'receiptAttachmentFailed': 'ছবিটি যোগ করা যায়নি। আবার চেষ্টা করুন।',
+      'receiveAndReconcile': 'গ্রহণ সেভ করুন',
+      'receiptInvalidLine': 'আসা, নষ্ট ও একক দামের পরিমাণগুলো যাচাই করুন।',
+      'wholeNumbersRequired': 'স্টকের পরিমাণ পূর্ণ সংখ্যা হতে হবে।',
+      'invoiceDifferenceNoteRequired':
+          'চালানের মোট প্রত্যাশিত হিসাবের সঙ্গে মিলছে না। কারণটি নোটে লিখুন।',
+      'receiptInvalidSummary':
+          'সঠিক চালানের হিসাব ও অন্তত একটি আসা পণ্যের পরিমাণ দিন।',
+      'supplierReceiptSaved':
+          'পণ্য আসার তথ্য সেভ হয়েছে; স্টক ও চালানের হিসাব আপডেট হয়েছে।',
+      'supplierPerformance': 'সাপ্লায়ার সরবরাহের সারাংশ',
+      'supplierLabel': 'সাপ্লায়ার',
+      'supplierFillRate': 'ঠিকভাবে পাওয়া',
+      'supplierIssueRate': 'কম বা নষ্ট এসেছে',
+      'supplierInvoiceVariance': 'চালানের পার্থক্য',
+      'expectedInvoiceTotal': 'অর্ডার ও সরবরাহ অনুযায়ী প্রত্যাশিত',
+      'noSupplierReceiptHistory':
+          'পণ্য আসার তথ্য যোগ হলে সাপ্লায়ারের কার্যকারিতা দেখা যাবে।',
       'receive': 'গ্রহণ',
       'purchaseReceived': 'ক্রয় গ্রহণ হয়েছে এবং স্টক আপডেট হয়েছে।',
       'supplierReturn': 'সাপ্লায়ার রিটার্ন',
@@ -1936,7 +2042,7 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'dayCloseFailed': 'দিনের হিসাব বন্ধ করা যায়নি।',
       'ownerActionCenter': 'মালিকের করণীয়',
       'ownerActionCenterSubtitle': 'আজ যেগুলো আপনার নজরে দরকার',
-      'ownerActionsCount': '{count}টি করণীয়',
+      'ownerActionsCount': '{count} টি করণীয়',
       'ownerCashVarianceTitle': 'ক্যাশের পার্থক্য যাচাই করুন',
       'ownerCashVarianceBody': 'আজ ক্যাশে {amount} পার্থক্য আছে।',
       'ownerCloseCashTitle': 'আজকের ক্যাশ মিলিয়ে নিন',
@@ -3352,10 +3458,22 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'noInternetTitle': 'ইন্টারনেট সংযোগ নেই',
       'noInternetMessage':
           'এই ফিচারটি ব্যবহারে ইন্টারনেট দরকার। ইন্টারনেট চালু করে আবার চেষ্টা করুন।',
-      'hambotSubtitle': 'দোকান নিয়ে যেকোনো প্রশ্ন করুন — ভয়েস বা টাইপ করে',
+      'hambotSubtitle':
+          'দোকান নিয়ে বাংলা বা ইংরেজিতে প্রশ্ন করুন — লিখে বা ভয়েসে',
+      'hambotLanguageHint':
+          'অ্যাপ ইংরেজিতে থাকলেও বাংলায় প্রশ্ন করলে বাংলায় উত্তর পাবেন। অনুবাদ আইকন থেকে উত্তরের ভাষা বেছে নিন।',
+      'hambotReplyLanguage': 'উত্তরের ভাষা',
+      'hambotReplyAuto': 'স্বয়ংক্রিয় (অ্যাপ/প্রশ্নের ভাষা)',
+      'hambotReplyBangla': 'বাংলা',
+      'hambotReplyEnglish': 'ইংরেজি',
       'hambotHint': 'প্রশ্ন লিখুন…',
       'hambotSpeaking': '🎤 বলা প্রশ্ন…',
       'hambotNoAnswer': 'এই তথ্যটি এখনো নেই। আরেকটি প্রশ্ন করুন।',
+      'hambotSource': 'মহাজন AI পরামর্শ',
+      'hambotSuggestionSales': 'আজ কত টাকার বিক্রি হলো?',
+      'hambotSuggestionDue': 'কার কাছে আমার সবচেয়ে বেশি পাওনা?',
+      'hambotSuggestionStock': 'কোন পণ্যের স্টক কম?',
+      'hambotSuggestionCash': 'আজ কত টাকা ক্যাশ পেয়েছি?',
       'hambotAiError':
           'এই মুহূর্তে সহকারী বলা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।',
       'hambotQuotaExhausted':
@@ -3365,6 +3483,9 @@ If you have any privacy questions, reach out via the Contact Support option in S
 
   String t(String key) =>
       _values[locale.languageCode]?[key] ?? _values['en']![key] ?? key;
+
+  String tForLanguage(String key, String languageCode) =>
+      _values[languageCode]?[key] ?? t(key);
 
   String tP(String key, Map<String, String> params) {
     var result = t(key);

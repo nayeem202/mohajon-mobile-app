@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,6 +18,7 @@ import '../../products/providers/product_providers.dart';
 import '../../branches/providers/branch_providers.dart';
 import '../providers/purchase_providers.dart';
 import '../models/purchase_order.dart';
+import 'purchase_receipt_dialog.dart';
 import '../services/purchase_order_service.dart';
 
 class PurchasePlannerScreen extends ConsumerStatefulWidget {
@@ -185,6 +188,11 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
                           ? null
                           : () => _returnOrder(order),
                     ),
+                  finalSupplierInsights(
+                    orders,
+                    db.suppliers.valuesForShop(ref.read(shopIdProvider)),
+                    l10n,
+                  ),
                   const SizedBox(height: 8),
                 ],
               );
@@ -319,75 +327,42 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
 
   Future<void> _receiveOrder(PurchaseOrder order) async {
     final l10n = AppLocalizations.of(context);
-    final controllers = <String, TextEditingController>{
-      for (final item in order.items)
-        item.productId: TextEditingController(
-          text: (item.qty - (order.receivedQty[item.productId] ?? 0))
-              .clamp(0, double.infinity)
-              .toStringAsFixed(0),
-        ),
-    };
+    final receipt = await showPurchaseReceiptDialog(context, order);
+    if (receipt == null || !mounted) return;
     try {
-      final quantities = await showDialog<Map<String, double>>(
-        context: context,
-        builder: (dialogContext) => Theme(
-          data: MohajonWarm.theme(Theme.of(context)),
-          child: AlertDialog(
-            title: Text(l10n.t('receivePurchase')),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final item in order.items) ...[
-                    Text(
-                      '${item.name} • remaining ${item.qty - (order.receivedQty[item.productId] ?? 0)}',
-                    ),
-                    TextField(
-                      controller: controllers[item.productId],
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: l10n.t('receivedQuantity'),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(l10n.t('cancel')),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(
-                  dialogContext,
-                  controllers.map(
-                    (key, controller) =>
-                        MapEntry(key, double.tryParse(controller.text) ?? 0),
-                  ),
-                ),
-                child: Text(l10n.t('receive')),
-              ),
-            ],
-          ),
-        ),
-      );
-      if (quantities == null || !mounted) return;
       await ref
           .read(purchaseServiceProvider)
-          .receiveOrder(orderId: order.orderId, quantities: quantities);
+          .receiveOrder(
+            orderId: order.orderId,
+            deliveredQuantities: receipt.delivered,
+            damagedQuantities: receipt.damaged,
+            actualUnitCosts: receipt.unitCosts,
+            itemIssueNotes: receipt.issueNotes,
+            invoiceAmount: receipt.invoiceAmount,
+            invoiceNumber: receipt.invoiceNumber,
+            freightAmount: receipt.freightAmount,
+            discountAmount: receipt.discountAmount,
+            attachmentPath: receipt.attachmentPath,
+            notes: receipt.notes,
+          );
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.t('purchaseReceived'))));
+        ).showSnackBar(SnackBar(content: Text(l10n.t('supplierReceiptSaved'))));
       }
-    } finally {
-      for (final controller in controllers.values) {
-        controller.dispose();
-      }
+    } catch (error) {
+      if (!mounted) return;
+      final raw = error.toString().replaceFirst('Bad state: ', '');
+      final message = raw.contains('whole numbers')
+          ? l10n.t('wholeNumbersRequired')
+          : raw.contains('reason is required for damaged')
+          ? l10n.t('damageReasonRequired')
+          : raw.contains('Add a note explaining')
+          ? l10n.t('invoiceDifferenceNoteRequired')
+          : raw;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -473,6 +448,240 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
   }
 }
 
+Widget finalSupplierInsights(
+  List<PurchaseOrder> orders,
+  List<dynamic> suppliers,
+  AppLocalizations l10n,
+) {
+  final completed = orders
+      .where((order) => order.status == 'RECEIVED')
+      .toList();
+  if (completed.isEmpty) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        l10n.t('noSupplierReceiptHistory'),
+        style: const TextStyle(color: MohajonWarm.muted, fontSize: 12),
+      ),
+    );
+  }
+  final metrics = <String, _SupplierMetric>{};
+  for (final order in completed) {
+    final metric = metrics.putIfAbsent(order.supplierId, _SupplierMetric.new);
+    metric.orderCount++;
+    for (final item in order.items) {
+      metric.ordered += item.qty;
+      metric.accepted += order.receivedQty[item.productId] ?? 0;
+      metric.damaged += order.receipts
+          .expand((receipt) => receipt.items)
+          .where((receiptItem) => receiptItem.productId == item.productId)
+          .fold<double>(0, (sum, receiptItem) => sum + receiptItem.damagedQty);
+      metric.delivered +=
+          order.deliveredQty[item.productId] ??
+          order.receivedQty[item.productId] ??
+          0;
+    }
+    metric.invoiceVariance += order.receipts.fold<double>(
+      0,
+      (sum, receipt) => sum + receipt.invoiceVariance,
+    );
+  }
+  if (metrics.isEmpty) return const SizedBox.shrink();
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      InsightSectionTitle(
+        title: l10n.t('supplierPerformance'),
+        icon: Icons.local_shipping_rounded,
+      ),
+      for (final entry in metrics.entries)
+        _SupplierPerformanceCard(
+          name:
+              suppliers
+                  .where((item) => item.supplierId == entry.key)
+                  .map((item) => item.name as String)
+                  .firstOrNull ??
+              l10n.t('supplierLabel'),
+          metric: entry.value,
+          l10n: l10n,
+        ),
+    ],
+  );
+}
+
+class _SupplierMetric {
+  int orderCount = 0;
+  double ordered = 0;
+  double accepted = 0;
+  double delivered = 0;
+  double damaged = 0;
+  double invoiceVariance = 0;
+}
+
+class _SupplierPerformanceCard extends StatelessWidget {
+  const _SupplierPerformanceCard({
+    required this.name,
+    required this.metric,
+    required this.l10n,
+  });
+  final String name;
+  final _SupplierMetric metric;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final fillRate = metric.ordered <= 0
+        ? 0.0
+        : metric.accepted / metric.ordered;
+    final issueRate = metric.ordered <= 0
+        ? 0.0
+        : ((metric.ordered - metric.delivered + metric.damaged) /
+                  metric.ordered)
+              .clamp(0, 1);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: InsightTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: MohajonWarm.tintOrange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: MohajonWarm.orange,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.tP('supplierOrderCount', {
+                        'count': '${metric.orderCount}',
+                      }),
+                      style: const TextStyle(
+                        color: MohajonWarm.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 390;
+              final gap = 8.0;
+              final tileWidth = compact
+                  ? (constraints.maxWidth - gap) / 2
+                  : (constraints.maxWidth - gap * 2) / 3;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  _SupplierMetricValue(
+                    width: tileWidth,
+                    label: l10n.t('supplierFillRate'),
+                    value: '${(fillRate * 100).round()}%',
+                    accent: MohajonWarm.green,
+                  ),
+                  _SupplierMetricValue(
+                    width: tileWidth,
+                    label: l10n.t('supplierIssueRate'),
+                    value: '${(issueRate * 100).round()}%',
+                    accent: issueRate > 0
+                        ? MohajonWarm.orange
+                        : MohajonWarm.green,
+                  ),
+                  _SupplierMetricValue(
+                    width: tileWidth,
+                    label: l10n.t('supplierInvoiceVariance'),
+                    value: money(metric.invoiceVariance),
+                    accent: metric.invoiceVariance.abs() > .01
+                        ? MohajonWarm.orange
+                        : MohajonWarm.ink,
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupplierMetricValue extends StatelessWidget {
+  const _SupplierMetricValue({
+    required this.width,
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+  final double width;
+  final String label;
+  final String value;
+  final Color accent;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: width,
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .72),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: MohajonWarm.goldBorder.withValues(alpha: .7)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: MohajonWarm.muted,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: accent,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _OrderCard extends StatelessWidget {
   const _OrderCard({
     required this.order,
@@ -485,55 +694,200 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = order.status == 'RECEIVED'
         ? MohajonWarm.green
         : MohajonWarm.orange;
+    final statusLabel = order.status == 'RECEIVED'
+        ? l10n.t('purchaseStatusReceived')
+        : l10n.t('purchaseStatusPending');
+    final latestReceipt = order.receipts.isEmpty ? null : order.receipts.last;
+    final damaged =
+        latestReceipt?.items.fold<double>(
+          0,
+          (sum, item) => sum + item.damagedQty,
+        ) ??
+        0;
+    final short =
+        latestReceipt?.items.fold<double>(
+          0,
+          (sum, item) => sum + item.shortQty,
+        ) ??
+        0;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: InsightTokens.cardDecoration(radius: 16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.local_shipping_rounded, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${order.items.length} items • ${order.status}',
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.local_shipping_rounded,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.tP('purchaseItemsCount', {
+                    'count': '${order.items.length}',
+                  }),
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     color: MohajonWarm.ink,
                   ),
                 ),
-                const SizedBox(height: 3),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 48),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
                   money(order.totalAmount),
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: MohajonWarm.muted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: MohajonWarm.ink,
                   ),
                 ),
+                if (latestReceipt != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '${l10n.t('supplierInvoiceNumber')}: ${latestReceipt.invoiceNumber.isEmpty ? '—' : latestReceipt.invoiceNumber}  •  ${money(latestReceipt.invoiceAmount)}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: MohajonWarm.muted,
+                    ),
+                  ),
+                  Text(
+                    '${l10n.t('damagedQty')}: ${damaged.toStringAsFixed(0)}  •  ${l10n.t('shortQty')}: ${short.toStringAsFixed(0)}  •  ${l10n.t('supplierInvoiceVariance')}: ${money(latestReceipt.invoiceVariance)}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: latestReceipt.invoiceVariance.abs() > 0.01
+                          ? MohajonWarm.orange
+                          : MohajonWarm.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (latestReceipt.attachmentPath.isNotEmpty)
+                    _ReceiptAttachment(path: latestReceipt.attachmentPath),
+                ],
               ],
             ),
           ),
-          if (onReceive != null)
-            IconButton(
-              onPressed: onReceive,
-              tooltip: AppLocalizations.of(context).t('receivePurchase'),
-              icon: const Icon(Icons.move_to_inbox_rounded),
+          if (onReceive != null || onReturn != null) ...[
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: MohajonWarm.goldBorder),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 6,
+                children: [
+                  if (onReceive != null)
+                    TextButton.icon(
+                      onPressed: onReceive,
+                      icon: const Icon(Icons.move_to_inbox_rounded, size: 17),
+                      label: Text(l10n.t('receivePurchase')),
+                    ),
+                  if (onReturn != null)
+                    TextButton.icon(
+                      onPressed: onReturn,
+                      icon: const Icon(
+                        Icons.assignment_return_outlined,
+                        size: 17,
+                      ),
+                      label: Text(l10n.t('supplierReturn')),
+                    ),
+                ],
+              ),
             ),
-          if (onReturn != null)
-            IconButton(
-              onPressed: onReturn,
-              tooltip: AppLocalizations.of(context).t('supplierReturn'),
-              icon: const Icon(Icons.assignment_return_outlined),
-            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _ReceiptAttachment extends StatelessWidget {
+  const _ReceiptAttachment({required this.path});
+  final String path;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (context) => Dialog(
+            child: InteractiveViewer(
+              child: path.startsWith('http')
+                  ? Image.network(path, fit: BoxFit.contain)
+                  : Image.file(File(path), fit: BoxFit.contain),
+            ),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: path.startsWith('http')
+              ? Image.network(
+                  path,
+                  width: 52,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.broken_image_outlined),
+                )
+              : Image.file(
+                  File(path),
+                  width: 52,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.broken_image_outlined),
+                ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _RecommendationCard extends StatelessWidget {

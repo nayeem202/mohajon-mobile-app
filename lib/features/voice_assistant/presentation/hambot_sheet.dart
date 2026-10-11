@@ -31,6 +31,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
   bool _busy = false;
   bool _matching = false;
   String? _error;
+  String _replyLanguageOverride = 'auto';
   MohajonTts? _tts;
 
   @override
@@ -106,6 +107,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
   Future<void> _ask({String? text, Uint8List? audio}) async {
     if ((text == null || text.isEmpty) && audio == null) return;
     final l10n = AppLocalizations.of(context);
+    final responseLanguageCode = _responseLanguageCode(text);
     final db = ref.read(localDatabaseProvider);
     final shopId = ref.read(shopIdProvider);
 
@@ -117,7 +119,7 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
         db,
         shopId: shopId,
         question: text,
-        languageCode: Localizations.localeOf(context).languageCode,
+        languageCode: responseLanguageCode,
       );
       if (verified != null) {
         setState(() {
@@ -148,14 +150,15 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
       }
       try {
         final stats = HamBotStats.build(db, shopId: shopId);
-        final languageCode = Localizations.localeOf(context).languageCode;
         final HamBotAnswer result = audio != null
-            ? await GeminiAskClient(
-                db,
-              ).askAudio(audio, statsJson: stats, languageCode: languageCode)
+            ? await GeminiAskClient(db).askAudio(
+                audio,
+                statsJson: stats,
+                languageCode: responseLanguageCode,
+              )
             : await GeminiAskClient(
                 db,
-              ).ask(text!, stats, languageCode: languageCode);
+              ).ask(text!, stats, languageCode: responseLanguageCode);
         if (!mounted) return;
         // The subscription screen caches this FutureProvider. Invalidate it
         // after a billable server answer so returning to that screen fetches
@@ -166,15 +169,13 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
           _turns[_turns.length - 1] = _ChatTurn(
             question: _turns.last.question,
             answer: result.answer.isEmpty
-                ? l10n.t('hambotNoAnswer')
+                ? l10n.tForLanguage('hambotNoAnswer', responseLanguageCode)
                 : result.answer,
-            source: Localizations.localeOf(context).languageCode == 'bn'
-                ? 'Mohajon AI পরামর্শ'
-                : 'Mohajon AI guidance',
+            source: l10n.tForLanguage('hambotSource', responseLanguageCode),
           );
         });
         final answer = result.answer.isEmpty
-            ? l10n.t('hambotNoAnswer')
+            ? l10n.tForLanguage('hambotNoAnswer', responseLanguageCode)
             : result.answer;
         await _speak(answer);
       } catch (err) {
@@ -191,8 +192,9 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
           _turns.add(
             _ChatTurn(
               question: last.question,
-              answer: l10n.t(
+              answer: l10n.tForLanguage(
                 isQuota ? 'hambotQuotaExhausted' : 'hambotAiError',
+                responseLanguageCode,
               ),
               isError: true,
             ),
@@ -200,6 +202,18 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
         });
       }
     });
+  }
+
+  String _responseLanguageCode(String? question) {
+    if (_replyLanguageOverride == 'bn' || _replyLanguageOverride == 'en') {
+      return _replyLanguageOverride;
+    }
+    // Keep replies aligned with the app preference, but honor a Bengali-script
+    // question even when the surrounding UI is set to English.
+    if (question != null && RegExp(r'[\u0980-\u09FF]').hasMatch(question)) {
+      return 'bn';
+    }
+    return Localizations.localeOf(context).languageCode;
   }
 
   bool get _hasTurns => _turns.isNotEmpty;
@@ -236,7 +250,10 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
                         );
                       },
                     )
-                  : _IdleHint(l10n: l10n),
+                  : _IdleHint(
+                      l10n: l10n,
+                      onPromptTap: (text) => _ask(text: text),
+                    ),
             ),
             if (_error != null)
               Padding(
@@ -287,6 +304,34 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
             ],
           ),
           const Spacer(),
+          PopupMenuButton<String>(
+            tooltip: l10n.t('hambotReplyLanguage'),
+            initialValue: _replyLanguageOverride,
+            onSelected: (value) =>
+                setState(() => _replyLanguageOverride = value),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'auto',
+                child: Text(l10n.t('hambotReplyAuto')),
+              ),
+              PopupMenuItem(
+                value: 'bn',
+                child: Text(l10n.t('hambotReplyBangla')),
+              ),
+              PopupMenuItem(
+                value: 'en',
+                child: Text(l10n.t('hambotReplyEnglish')),
+              ),
+            ],
+            child: const Padding(
+              padding: EdgeInsets.all(10),
+              child: Icon(
+                Icons.translate_rounded,
+                color: MohajonWarm.muted,
+                size: 20,
+              ),
+            ),
+          ),
           if (_busy)
             _buildMultiStatePulse()
           else
@@ -577,9 +622,10 @@ class _ErrorBanner extends StatelessWidget {
 }
 
 class _IdleHint extends StatelessWidget {
-  const _IdleHint({required this.l10n});
+  const _IdleHint({required this.l10n, required this.onPromptTap});
 
   final AppLocalizations l10n;
+  final ValueChanged<String> onPromptTap;
 
   @override
   Widget build(BuildContext context) {
@@ -618,14 +664,30 @@ class _IdleHint extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(color: MohajonWarm.muted, fontSize: 13),
             ),
-            const SizedBox(height: 18),
-            _ExampleChip(text: 'আজ কত টাকার বিক্রি হলো?'),
             const SizedBox(height: 8),
-            _ExampleChip(text: 'কার কাছ থেকে সবচেয়ে বেশি বাকি পাবো?'),
-            const SizedBox(height: 8),
-            _ExampleChip(text: 'কোন পণ্যের স্টক এখন কম?'),
-            const SizedBox(height: 8),
-            _ExampleChip(text: 'আজ কত টাকা ক্যাশ পেয়েছি?'),
+            Text(
+              l10n.t('hambotLanguageHint'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: MohajonWarm.goldText,
+                fontSize: 11.5,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final key in const [
+              'hambotSuggestionSales',
+              'hambotSuggestionDue',
+              'hambotSuggestionStock',
+              'hambotSuggestionCash',
+            ]) ...[
+              _ExampleChip(
+                text: l10n.t(key),
+                onTap: () => onPromptTap(l10n.t(key)),
+              ),
+              if (key != 'hambotSuggestionCash') const SizedBox(height: 8),
+            ],
           ],
         ),
       ),
@@ -634,22 +696,30 @@ class _IdleHint extends StatelessWidget {
 }
 
 class _ExampleChip extends StatelessWidget {
-  const _ExampleChip({required this.text});
+  const _ExampleChip({required this.text, required this.onTap});
 
   final String text;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: MohajonWarm.card,
+    return Material(
+      color: MohajonWarm.card,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MohajonWarm.goldBorder),
+        side: const BorderSide(color: MohajonWarm.goldBorder),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(color: MohajonWarm.goldText, fontSize: 13),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: MohajonWarm.goldText, fontSize: 13),
+          ),
+        ),
       ),
     );
   }

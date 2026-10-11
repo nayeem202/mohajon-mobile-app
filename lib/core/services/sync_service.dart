@@ -6,7 +6,9 @@ import '../models/syncable.dart';
 import '../offline/local_collection.dart';
 import '../offline/local_database.dart';
 import 'api_client.dart';
+import 'file_upload_service.dart';
 import '../../features/purchases/models/purchase_order.dart';
+import '../../features/purchases/models/purchase_receipt.dart';
 
 enum SyncPhase { idle, syncing, offline, notSignedIn, failed }
 
@@ -284,12 +286,17 @@ class SyncService {
       final remote = await _api.getJson('/api/v1/purchase-orders');
       if (remote is List) {
         for (final raw in remote.whereType<Map>()) {
-          final order = PurchaseOrder.fromJson(raw).copyWith(
+          final remoteOrder = PurchaseOrder.fromJson(raw).copyWith(
             shopId: shopId,
             synced: true,
             syncStatus: SyncStatus.synced,
           );
-          await _db.purchaseOrders.put(order);
+          final localOrder = _db.purchaseOrders.getForShop(
+            shopId,
+            remoteOrder.orderId,
+          );
+          if (localOrder != null && !localOrder.synced) continue;
+          await _db.purchaseOrders.put(remoteOrder);
         }
       }
     } catch (_) {
@@ -298,16 +305,45 @@ class SyncService {
     for (final order
         in _db.purchaseOrders
             .valuesForShop(shopId, includeDeleted: true)
-            .where((item) => !item.synced && !item.isDeleted)) {
+            .where((item) => !item.synced)) {
       try {
-        await _api.post('/api/v1/purchase-orders', order.toJson());
-        await _db.purchaseOrders.put(
-          order.copyWith(
-            synced: true,
-            syncStatus: SyncStatus.synced,
-            updatedAt: DateTime.now(),
-          ),
+        final fileUploads = FileUploadService(_db);
+        final receipts = <PurchaseReceipt>[];
+        for (final receipt in order.receipts) {
+          final uploadedPath = await fileUploads.uploadIfNeeded(
+            receipt.attachmentPath,
+          );
+          receipts.add(receipt.copyWith(attachmentPath: uploadedPath ?? ''));
+        }
+        final outgoing = order.copyWith(
+          receipts: receipts,
+          updatedAt: DateTime.now(),
+          synced: false,
+          syncStatus: SyncStatus.pending,
         );
+        // Persist uploaded URLs before posting the PO so a retry does not
+        // upload the same invoice image repeatedly if the API call fails.
+        await _db.purchaseOrders.put(outgoing);
+        final response = await _api.post(
+          '/api/v1/purchase-orders',
+          outgoing.toJson(),
+        );
+        final saved = PurchaseOrder.fromJson(response);
+        final savedReceiptIds = saved.receipts
+            .map((receipt) => receipt.receiptId)
+            .toSet();
+        if (saved.orderId.isNotEmpty &&
+            outgoing.receipts.every(
+              (receipt) => savedReceiptIds.contains(receipt.receiptId),
+            )) {
+          await _db.purchaseOrders.put(
+            saved.copyWith(
+              shopId: shopId,
+              synced: true,
+              syncStatus: SyncStatus.synced,
+            ),
+          );
+        }
       } catch (_) {
         // Keep the pending record for the next retry. No local data is removed.
       }
