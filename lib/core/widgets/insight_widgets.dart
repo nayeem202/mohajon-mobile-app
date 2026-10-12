@@ -9,24 +9,30 @@ import 'premium_header.dart';
 class InsightTokens {
   InsightTokens._();
 
-  /// Cream card gradient used by every insight surface.
-  static const cardGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [MohajonWarm.card, Color(0xFFFFFBEF)],
-  );
-
-  /// Outer decoration shared by premium insight cards.
-  static BoxDecoration cardDecoration({double radius = 18}) {
+  /// Outer decoration shared by premium insight cards. Match the Clients and
+  /// Stock stat cards: a very soft semantic pastel fading into warm cream.
+  static BoxDecoration cardDecoration({double radius = 18, Color? accent}) {
+    final tint = switch (accent) {
+      final color when color == MohajonWarm.green => MohajonWarm.tintGreen,
+      final color when color == MohajonWarm.orange => MohajonWarm.tintOrange,
+      final color when color == MohajonWarm.red => MohajonWarm.tintRed,
+      _ => MohajonWarm.tintYellow,
+    };
     return BoxDecoration(
-      gradient: cardGradient,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [tint, MohajonWarm.card],
+      ),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(color: MohajonWarm.goldBorder),
       boxShadow: [
         BoxShadow(
-          color: MohajonWarm.ink.withValues(alpha: 0.06),
+          color: (accent ?? MohajonWarm.ink).withValues(
+            alpha: accent == null ? 0.06 : 0.09,
+          ),
           blurRadius: 12,
-          offset: const Offset(0, 5),
+          offset: const Offset(0, 4),
         ),
       ],
     );
@@ -206,7 +212,10 @@ class InsightHeroCard extends StatelessWidget {
                       ),
                       if (badge != null) ...[
                         const SizedBox(height: 9),
-                        InsightBadge(label: badge!, accent: badgeAccent ?? accent),
+                        InsightBadge(
+                          label: badge!,
+                          accent: badgeAccent ?? accent,
+                        ),
                       ],
                     ],
                   ),
@@ -311,54 +320,69 @@ class InsightMetricTile extends StatelessWidget {
     return Container(
       // Keep metric cards aligned when one tile has an optional caption
       // (for example the Cashflow Radar "Runway/Cholbe" tile).
-      constraints: const BoxConstraints(minHeight: 124),
+      constraints: const BoxConstraints(minHeight: 130),
       padding: const EdgeInsets.all(14),
-      decoration: InsightTokens.cardDecoration(),
+      decoration: InsightTokens.cardDecoration(radius: 20, accent: accent),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [accent, accent.withValues(alpha: 0.65)],
-              ),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.28),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(icon, size: 17, color: Colors.white),
+                child: Icon(icon, size: 17, color: accent),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 11),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              color: MohajonWarm.muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-              color: accent,
-              letterSpacing: -0.3,
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                color: MohajonWarm.ink,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
           // Reserve the footer line in every tile. Without it, a tile such
@@ -401,8 +425,8 @@ class InsightMetricGrid extends StatelessWidget {
         final columns = constraints.maxWidth >= 720
             ? 4
             : constraints.maxWidth >= 380
-                ? 2
-                : 1;
+            ? 2
+            : 1;
         final width =
             (constraints.maxWidth - spacing * (columns - 1)) / columns;
         return Wrap(
@@ -494,7 +518,7 @@ class InsightRowTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(dense ? 12 : 14),
-      decoration: InsightTokens.cardDecoration(radius: 16),
+      decoration: InsightTokens.cardDecoration(radius: 18, accent: accent),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -540,10 +564,7 @@ class InsightRowTile extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 10),
-            trailing!,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 10), trailing!],
         ],
       ),
     );
@@ -570,7 +591,7 @@ class InsightEmptyCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: InsightTokens.cardDecoration(),
+      decoration: InsightTokens.cardDecoration(accent: accent),
       child: Row(
         children: [
           Container(

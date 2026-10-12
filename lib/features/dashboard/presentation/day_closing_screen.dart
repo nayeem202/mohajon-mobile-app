@@ -40,8 +40,9 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final value =
-          await ApiClient(ref.read(localDatabaseProvider)).get('/api/v1/day-closing');
+      final value = await ApiClient(
+        ref.read(localDatabaseProvider),
+      ).get('/api/v1/day-closing');
       if (mounted) {
         setState(() => _data = value);
         if (value['status'] != 'CLOSED') {
@@ -60,9 +61,9 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
     final opening = double.tryParse(_opening.text.trim());
     final actual = double.tryParse(_actual.text.trim());
     if (opening == null || actual == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.t('dayInvalidCash'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('dayInvalidCash'))));
       return;
     }
     setState(() => _saving = true);
@@ -77,15 +78,15 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
       );
       if (mounted) {
         setState(() => _data = value);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.t('dayClosedSuccess'))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('dayClosedSuccess'))));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.t('dayCloseFailed'))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.t('dayCloseFailed'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -101,8 +102,8 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
     final accent = variance == null
         ? const Color(0xFF4F46E5)
         : variance.abs() < 1
-            ? MohajonWarm.green
-            : MohajonWarm.orange;
+        ? MohajonWarm.green
+        : MohajonWarm.orange;
 
     return PremiumInsightPage(
       title: l10n.t('dayClosingTitle'),
@@ -114,10 +115,15 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
         InsightHeroCard(
           icon: Icons.fact_check_rounded,
           accent: accent,
-          title: closed ? l10n.t('dayClosingLocked') : l10n.t('dayClosingBrief'),
-          body: '${l10n.t('dayClosingExpected')} '
+          title: closed
+              ? l10n.t('dayClosingLocked')
+              : l10n.t('dayClosingBrief'),
+          body:
+              '${l10n.t('dayClosingExpected')} '
               '${money((data['expectedCash'] ?? data['cashSales']) as num? ?? 0)}',
-          trailingValue: money((data['expectedCash'] ?? data['cashSales']) as num? ?? 0),
+          trailingValue: money(
+            (data['expectedCash'] ?? data['cashSales']) as num? ?? 0,
+          ),
           trailingLabel: l10n.t('dayClosingExpected'),
           badge: closed ? l10n.t('dayStatusClosed') : l10n.t('dayStatusOpen'),
           badgeAccent: closed ? MohajonWarm.green : accent,
@@ -150,7 +156,9 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
             ),
             InsightMetricTile(
               label: l10n.t('dayClosingExpected'),
-              value: money((data['expectedCash'] ?? data['cashSales']) as num? ?? 0),
+              value: money(
+                (data['expectedCash'] ?? data['cashSales']) as num? ?? 0,
+              ),
               icon: Icons.savings_rounded,
               accent: const Color(0xFFEA580C),
             ),
@@ -163,14 +171,18 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: InsightTokens.cardDecoration(),
+            decoration: InsightTokens.cardDecoration(
+              radius: 20,
+              accent: MohajonWarm.primary,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: _opening,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: l10n.t('dayClosingOpening'),
                     prefixText: '৳ ',
@@ -179,8 +191,9 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _actual,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: l10n.t('dayClosingActual'),
                     prefixText: '৳ ',
@@ -190,8 +203,9 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
                 TextField(
                   controller: _note,
                   maxLines: 2,
-                  decoration:
-                      InputDecoration(labelText: l10n.t('dayClosingNote')),
+                  decoration: InputDecoration(
+                    labelText: l10n.t('dayClosingNote'),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(

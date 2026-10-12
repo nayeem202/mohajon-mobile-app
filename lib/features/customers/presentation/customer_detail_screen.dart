@@ -13,6 +13,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/async_action_state.dart';
 import '../../../core/widgets/app_image.dart';
+import '../../../core/widgets/insight_widgets.dart';
 import '../../payments/presentation/add_payment_screen.dart';
 import 'customer_form_screen.dart';
 import '../providers/customer_providers.dart';
@@ -105,7 +106,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               children: [
-                Card(
+                Container(
+                  decoration: InsightTokens.cardDecoration(
+                    radius: 20,
+                    accent: due > 0 ? MohajonWarm.orange : MohajonWarm.green,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -318,12 +323,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                 ),
                 const SizedBox(height: 8),
                 if (ledger.isEmpty)
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.receipt_long_outlined),
-                      title: Text(l10n.t('ledgerEmptyTitle')),
-                      subtitle: Text(l10n.t('ledgerEmptyHint')),
-                    ),
+                  InsightEmptyCard(
+                    message: l10n.t('ledgerEmptyTitle'),
+                    caption: l10n.t('ledgerEmptyHint'),
+                    icon: Icons.receipt_long_outlined,
+                    accent: MohajonWarm.muted,
                   ),
                 for (final entry in ledger)
                   Builder(
@@ -352,14 +356,30 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen>
                       };
                       final prefix = isPositive ? '+' : '-';
 
-                      return Card(
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: InsightTokens.cardDecoration(
+                          radius: 18,
+                          accent: color,
+                        ),
                         child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 3,
+                          ),
                           leading: Container(
-                            width: 40,
-                            height: 40,
+                            width: 42,
+                            height: 42,
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(13),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.16),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Icon(icon, color: color),
                           ),

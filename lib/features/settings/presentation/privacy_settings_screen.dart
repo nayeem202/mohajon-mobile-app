@@ -11,6 +11,7 @@ import '../../../core/services/api_client.dart';
 import '../../../core/services/app_feedback.dart';
 import '../../../core/services/download_export_service.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/widgets/insight_widgets.dart';
 import '../../auth/providers/auth_providers.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
@@ -32,24 +33,30 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                     children: [
-                  const _SectionTitle('Login Activity',
-                      subtitle: 'Devices where your account is signed in'),
-                  const SizedBox(height: 10),
-                  _SessionsPanel(ref: ref),
-                  const SizedBox(height: 24),
-                  const _SectionTitle('Privacy Preferences',
-                      subtitle: 'Control how your data is used'),
-                  const SizedBox(height: 10),
-                  const _PrivacyPrefsCard(),
-                  const SizedBox(height: 24),
-                  const _SectionTitle('Your Data',
-                      subtitle: 'Manage or remove your information'),
-                  const SizedBox(height: 10),
-                  _DataActionsCard(onPolicy: () => _showPolicy(context)),
-                ],
-              ),
-            ),
+                      const _SectionTitle(
+                        'Login Activity',
+                        subtitle: 'Devices where your account is signed in',
+                      ),
+                      const SizedBox(height: 10),
+                      _SessionsPanel(ref: ref),
+                      const SizedBox(height: 24),
+                      const _SectionTitle(
+                        'Privacy Preferences',
+                        subtitle: 'Control how your data is used',
+                      ),
+                      const SizedBox(height: 10),
+                      const _PrivacyPrefsCard(),
+                      const SizedBox(height: 24),
+                      const _SectionTitle(
+                        'Your Data',
+                        subtitle: 'Manage or remove your information',
+                      ),
+                      const SizedBox(height: 10),
+                      _DataActionsCard(onPolicy: () => _showPolicy(context)),
+                    ],
+                  ),
           ),
+        ),
       ),
     );
   }
@@ -109,9 +116,7 @@ class _SessionsPanel extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return const Center(
-            child: Text('Could not load login sessions.'),
-          );
+          return const Center(child: Text('Could not load login sessions.'));
         }
         final docs = snapshot.data ?? const [];
         if (docs.isEmpty) {
@@ -169,7 +174,11 @@ class _PrivacyPrefsCardState extends State<_PrivacyPrefsCard> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Card(
+    return Container(
+      decoration: InsightTokens.cardDecoration(
+        radius: 20,
+        accent: MohajonWarm.primary,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 14),
         child: Column(
@@ -250,9 +259,13 @@ class _ToggleRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 14)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
@@ -282,7 +295,11 @@ class _DataActionsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
-    return Card(
+    return Container(
+      decoration: InsightTokens.cardDecoration(
+        radius: 20,
+        accent: MohajonWarm.primary,
+      ),
       child: Column(
         children: [
           _ActionRow(
@@ -291,16 +308,24 @@ class _DataActionsCard extends ConsumerWidget {
             subtitle: 'Save a copy of your information',
             onTap: () => _downloadMyData(context, ref),
           ),
-          Divider(height: 1, indent: 64, endIndent: 16,
-              color: colors.outlineVariant),
+          Divider(
+            height: 1,
+            indent: 64,
+            endIndent: 16,
+            color: colors.outlineVariant,
+          ),
           _ActionRow(
             icon: Icons.policy_outlined,
             label: 'Privacy Policy',
             subtitle: 'Read our privacy policy',
             onTap: onPolicy,
           ),
-          Divider(height: 1, indent: 64, endIndent: 16,
-              color: colors.outlineVariant),
+          Divider(
+            height: 1,
+            indent: 64,
+            endIndent: 16,
+            color: colors.outlineVariant,
+          ),
           _ActionRow(
             icon: Icons.delete_outline_rounded,
             label: 'Delete My Data',
@@ -317,21 +342,56 @@ class _DataActionsCard extends ConsumerWidget {
     final db = ref.read(localDatabaseProvider);
     final snapshot = <String, dynamic>{
       'exportedAt': DateTime.now().toIso8601String(),
-      'activeShopId':
-          ref.read(shopIdProvider),
+      'activeShopId': ref.read(shopIdProvider),
       'collections': {
-        'products': db.products.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'customers': db.customers.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'sales': db.sales.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'customerLedgerEntries': db.customerLedgerEntries.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'payments': db.payments.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'purchases': db.purchases.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'suppliers': db.suppliers.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'vendors': db.vendors.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'vendorPurchases': db.vendorPurchases.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'vendorPayments': db.vendorPayments.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'expenses': db.expenses.values(includeDeleted: true).map((e) => e.toJson()).toList(),
-        'users': db.users.values(includeDeleted: true).map((e) => e.toJson()).toList(),
+        'products': db.products
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'customers': db.customers
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'sales': db.sales
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'customerLedgerEntries': db.customerLedgerEntries
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'payments': db.payments
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'purchases': db.purchases
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'suppliers': db.suppliers
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'vendors': db.vendors
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'vendorPurchases': db.vendorPurchases
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'vendorPayments': db.vendorPayments
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'expenses': db.expenses
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
+        'users': db.users
+            .values(includeDeleted: true)
+            .map((e) => e.toJson())
+            .toList(),
       },
       'profile': {
         for (final key in const [
@@ -340,7 +400,8 @@ class _DataActionsCard extends ConsumerWidget {
           'profile_phone',
           'profile_email',
           'profile_address',
-        ]) if (db.settings.get(key) != null) key: db.settings.get(key),
+        ])
+          if (db.settings.get(key) != null) key: db.settings.get(key),
       },
     };
     return snapshot;
@@ -348,11 +409,14 @@ class _DataActionsCard extends ConsumerWidget {
 
   Future<void> _downloadMyData(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(
+    messenger.showSnackBar(
+      SnackBar(
         content: const Text('Preparing your data export…'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24)));
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      ),
+    );
     try {
       final json = jsonEncode(await _buildExport(ref));
       final bytes = Uint8List.fromList(utf8.encode(json));
@@ -365,9 +429,12 @@ class _DataActionsCard extends ConsumerWidget {
         bytes: bytes,
       );
       if (!context.mounted) return;
-      _toast(context, path == null
-          ? 'Your data export is ready.'
-          : 'Saved to Downloads: $path');
+      _toast(
+        context,
+        path == null
+            ? 'Your data export is ready.'
+            : 'Saved to Downloads: $path',
+      );
     } catch (error) {
       if (!context.mounted) return;
       _toast(context, 'Export failed: $error');
@@ -405,11 +472,14 @@ class _DataActionsCard extends ConsumerWidget {
     if (confirmed != true) return;
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(
+    messenger.showSnackBar(
+      SnackBar(
         content: const Text('Deleting your data…'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24)));
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      ),
+    );
     try {
       final db = ref.read(localDatabaseProvider);
       try {
@@ -496,8 +566,10 @@ class _ActionRow extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                color: colors.onSurface.withValues(alpha: 0.4)),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: colors.onSurface.withValues(alpha: 0.4),
+            ),
           ],
         ),
       ),
@@ -550,7 +622,11 @@ class _SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final lastLogin = data['lastLoginAt'];
-    return Card(
+    return Container(
+      decoration: InsightTokens.cardDecoration(
+        radius: 20,
+        accent: MohajonWarm.primary,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

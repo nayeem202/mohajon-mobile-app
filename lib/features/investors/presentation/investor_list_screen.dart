@@ -17,8 +17,7 @@ class InvestorListScreen extends ConsumerStatefulWidget {
   const InvestorListScreen({super.key});
 
   @override
-  ConsumerState<InvestorListScreen> createState() =>
-      _InvestorListScreenState();
+  ConsumerState<InvestorListScreen> createState() => _InvestorListScreenState();
 }
 
 class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
@@ -45,31 +44,29 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
       child: Scaffold(
         backgroundColor: MohajonWarm.surface,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: MohajonWarm.pageGradient,
-          ),
+          decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
           child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
               child: Column(
                 children: [
-                  _Header(
-                    onBack: () => Navigator.of(context).maybePop(),
-                  ),
+                  _Header(onBack: () => Navigator.of(context).maybePop()),
                   const SizedBox(height: 18),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: MohajonWarm.card,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [MohajonWarm.tintYellow, MohajonWarm.card],
+                      ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: MohajonWarm.goldBorder),
                       boxShadow: [
                         BoxShadow(
-                          color: MohajonWarm.primary.withValues(
-                            alpha: 0.14,
-                          ),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          color: MohajonWarm.primary.withValues(alpha: 0.10),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
@@ -244,10 +241,8 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                 ),
                               ),
                               AnimatedRotation(
-                                turns:
-                                    _pnlExpanded ? 0.5 : 0,
-                                duration:
-                                    const Duration(milliseconds: 200),
+                                turns: _pnlExpanded ? 0.5 : 0,
+                                duration: const Duration(milliseconds: 200),
                                 child: const Icon(
                                   Icons.keyboard_arrow_down_rounded,
                                   color: MohajonWarm.muted,
@@ -258,14 +253,12 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                         ),
                         ClipRect(
                           child: AnimatedAlign(
-                            duration:
-                                const Duration(milliseconds: 200),
+                            duration: const Duration(milliseconds: 200),
                             curve: Curves.easeInOut,
                             alignment: Alignment.topCenter,
                             heightFactor: _pnlExpanded ? 1 : 0,
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 14),
                                 IntrinsicHeight(
@@ -275,35 +268,26 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                     children: [
                                       Expanded(
                                         child: Container(
-                                          padding:
-                                              const EdgeInsets.all(12),
+                                          padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: MohajonWarm
-                                                .tintYellow,
-                                            borderRadius:
-                                                BorderRadius.circular(
+                                            color: MohajonWarm.tintYellow,
+                                            borderRadius: BorderRadius.circular(
                                               12,
                                             ),
                                             border: Border.all(
-                                              color: MohajonWarm
-                                                  .primary
-                                                  .withValues(
-                                                alpha: 0.35,
-                                              ),
+                                              color: MohajonWarm.primary
+                                                  .withValues(alpha: 0.35),
                                             ),
                                           ),
-                                          child:
-                                              Column(
+                                          child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 l10n.t('proportional'),
                                                 style: const TextStyle(
-                                                  fontWeight:
-                                                      FontWeight.w900,
-                                                  color:
-                                                      Color(0xFF5D4A00),
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Color(0xFF5D4A00),
                                                   fontSize: 13,
                                                 ),
                                               ),
@@ -313,8 +297,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                                 style: const TextStyle(
                                                   color: Color(0xFF8A6500),
                                                   fontSize: 11,
-                                                  fontWeight:
-                                                      FontWeight.w600,
+                                                  fontWeight: FontWeight.w600,
                                                   height: 1.4,
                                                 ),
                                               ),
@@ -325,29 +308,24 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Container(
-                                          padding:
-                                              const EdgeInsets.all(12),
+                                          padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(
+                                            borderRadius: BorderRadius.circular(
                                               12,
                                             ),
                                             border: Border.all(
-                                              color: MohajonWarm
-                                                  .goldBorder,
+                                              color: MohajonWarm.goldBorder,
                                             ),
                                           ),
-                                          child:
-                                              Column(
+                                          child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 l10n.t('fixedRate'),
                                                 style: const TextStyle(
-                                                  fontWeight:
-                                                      FontWeight.w900,
+                                                  fontWeight: FontWeight.w900,
                                                   color: MohajonWarm.ink,
                                                   fontSize: 13,
                                                 ),
@@ -358,8 +336,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                                 style: const TextStyle(
                                                   color: MohajonWarm.muted,
                                                   fontSize: 11,
-                                                  fontWeight:
-                                                      FontWeight.w600,
+                                                  fontWeight: FontWeight.w600,
                                                   height: 1.4,
                                                 ),
                                               ),
@@ -424,8 +401,7 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
                                   _searchController.clear();
                                   ref
                                       .read(
-                                        investorSearchQueryProvider
-                                            .notifier,
+                                        investorSearchQueryProvider.notifier,
                                       )
                                       .update('');
                                 },
@@ -500,9 +476,9 @@ class _InvestorListScreenState extends ConsumerState<InvestorListScreen> {
     PaywallGate.guard(
       context,
       ref,
-      () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const InvestorFormScreen()),
-      ),
+      () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const InvestorFormScreen())),
     );
   }
 }
@@ -613,9 +589,7 @@ class _HeroPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: MohajonWarm.tintYellow,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: MohajonWarm.primary.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: MohajonWarm.primary.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
@@ -647,71 +621,84 @@ class _SummaryBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 130),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [background, MohajonWarm.card],
+          colors: [background.withValues(alpha: 0.88), MohajonWarm.card],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: MohajonWarm.goldBorder),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.16),
+            color: color.withValues(alpha: 0.10),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.18),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
+                child: Icon(icon, color: color, size: 17),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                   child: Text(
-                    value,
+                    label,
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
+                      fontSize: 10,
                       color: color,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: MohajonWarm.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 19,
+                color: MohajonWarm.ink,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
         ],
@@ -908,10 +895,7 @@ class _StepRow extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      MohajonWarm.primary,
-                      MohajonWarm.primaryPale,
-                    ],
+                    colors: [MohajonWarm.primary, MohajonWarm.primaryPale],
                   ),
                   shape: BoxShape.circle,
                 ),
@@ -948,8 +932,7 @@ class _StepRow extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(height: 1, color: Color(0xFFF3ECDA)),
+        if (showDivider) const Divider(height: 1, color: Color(0xFFF3ECDA)),
       ],
     );
   }

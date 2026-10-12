@@ -133,7 +133,9 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: InsightTokens.cardDecoration(),
+            decoration: InsightTokens.cardDecoration(
+              accent: MohajonWarm.primary,
+            ),
             child: TextField(
               controller: _budgetController,
               keyboardType: const TextInputType.numberWithOptions(
@@ -227,7 +229,9 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: InsightTokens.cardDecoration(),
+              decoration: InsightTokens.cardDecoration(
+                accent: MohajonWarm.green,
+              ),
               child: Column(
                 children: [
                   SizedBox(
@@ -538,7 +542,7 @@ class _SupplierPerformanceCard extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
-      decoration: InsightTokens.cardDecoration(),
+      decoration: InsightTokens.cardDecoration(accent: MohajonWarm.orange),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -713,7 +717,7 @@ class _OrderCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
-      decoration: InsightTokens.cardDecoration(radius: 16),
+      decoration: InsightTokens.cardDecoration(radius: 18, accent: color),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -902,7 +906,7 @@ class _RecommendationCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: InsightTokens.cardDecoration(radius: 16),
+      decoration: InsightTokens.cardDecoration(radius: 18, accent: accent),
       child: Row(
         children: [
           Container(

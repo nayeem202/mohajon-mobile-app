@@ -28,8 +28,9 @@ class _CustomerGrowthScreenState extends ConsumerState<CustomerGrowthScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final value = await ApiClient(ref.read(localDatabaseProvider))
-          .get('/api/v1/customer-growth');
+      final value = await ApiClient(
+        ref.read(localDatabaseProvider),
+      ).get('/api/v1/customer-growth');
       if (mounted) setState(() => _data = value);
     } catch (_) {
       if (mounted) {
@@ -49,15 +50,17 @@ class _CustomerGrowthScreenState extends ConsumerState<CustomerGrowthScreen> {
     final l10n = AppLocalizations.of(context);
     final segments =
         (_data?['segments'] as Map?)?.map(
-              (key, value) => MapEntry(
-                key.toString(),
-                value is List ? value : const <dynamic>[],
-              ),
-            ) ??
-            const <String, dynamic>{};
+          (key, value) => MapEntry(
+            key.toString(),
+            value is List ? value : const <dynamic>[],
+          ),
+        ) ??
+        const <String, dynamic>{};
     final recommendations =
-        (_data?['recommendations'] as List?)?.whereType<Map<String, dynamic>>().toList() ??
-            const <Map<String, dynamic>>[];
+        (_data?['recommendations'] as List?)
+            ?.whereType<Map<String, dynamic>>()
+            .toList() ??
+        const <Map<String, dynamic>>[];
 
     final totalCustomers = segments.values.fold<int>(
       0,
@@ -65,9 +68,7 @@ class _CustomerGrowthScreenState extends ConsumerState<CustomerGrowthScreen> {
     );
     final vipCount = (segments['VIP'] as List?)?.length ?? 0;
     final atRiskCount = (segments['AT_RISK'] as List?)?.length ?? 0;
-    final accent = atRiskCount > 0
-        ? MohajonWarm.orange
-        : MohajonWarm.green;
+    final accent = atRiskCount > 0 ? MohajonWarm.orange : MohajonWarm.green;
 
     return PremiumInsightPage(
       title: l10n.t('growthTitle'),
@@ -179,7 +180,8 @@ class _CustomerGrowthScreenState extends ConsumerState<CustomerGrowthScreen> {
               icon: Icons.campaign_rounded,
               accent: const Color(0xFFEA580C),
               title: _recommendationTitle(item['segment']?.toString(), l10n),
-              body: '${_recommendationBody(item['segment']?.toString(), l10n)}\n'
+              body:
+                  '${_recommendationBody(item['segment']?.toString(), l10n)}\n'
                   'Customers: ${item['count'] ?? 0}',
             ),
             const SizedBox(height: 8),
@@ -218,16 +220,16 @@ String _segmentDescription(String key, AppLocalizations l10n) => switch (key) {
 
 String _recommendationTitle(String? segment, AppLocalizations l10n) =>
     switch (segment) {
-  'INACTIVE' => l10n.t('growthInactiveTitle'),
-  'VIP' => l10n.t('growthVipTitle'),
-  'AT_RISK' => l10n.t('growthRiskTitle'),
-  _ => l10n.t('growthActions'),
-};
+      'INACTIVE' => l10n.t('growthInactiveTitle'),
+      'VIP' => l10n.t('growthVipTitle'),
+      'AT_RISK' => l10n.t('growthRiskTitle'),
+      _ => l10n.t('growthActions'),
+    };
 
 String _recommendationBody(String? segment, AppLocalizations l10n) =>
     switch (segment) {
-  'INACTIVE' => l10n.t('growthInactiveBody'),
-  'VIP' => l10n.t('growthVipBody'),
-  'AT_RISK' => l10n.t('growthRiskBody'),
-  _ => l10n.t('growthBrief'),
-};
+      'INACTIVE' => l10n.t('growthInactiveBody'),
+      'VIP' => l10n.t('growthVipBody'),
+      'AT_RISK' => l10n.t('growthRiskBody'),
+      _ => l10n.t('growthBrief'),
+    };

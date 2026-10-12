@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/mohajon_warm_theme.dart';
+
 class AccountMenuTile extends StatelessWidget {
   const AccountMenuTile({
     super.key,
@@ -25,12 +27,16 @@ class AccountMenuTile extends StatelessWidget {
     final effectiveTitleColor = titleColor ?? colors.onSurface;
 
     return Card(
+      color: MohajonWarm.card,
+      elevation: 1.5,
+      shadowColor: effectiveIconColor.withValues(alpha: 0.12),
+      margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(19),
+        side: BorderSide(color: MohajonWarm.goldBorder),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(19),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -40,8 +46,15 @@ class AccountMenuTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: effectiveIconColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: effectiveIconColor.withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(icon, color: effectiveIconColor, size: 22),
               ),
