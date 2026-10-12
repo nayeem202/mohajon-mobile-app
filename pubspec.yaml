@@ -136,26 +136,6 @@ flutter:
           weight: 400
         - asset: assets/fonts/NotoSansBengali-Bold.ttf
           weight: 700
-    # Brand / display voice: logo, welcome + login/register headings, buttons.
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700
-    # UI / data voice: form labels, input text, dashboards, tables, numbers.
-    - family: Inter
-      fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Inter-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Inter-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Inter-Bold.ttf
-          weight: 700
     - family: Roboto
       fonts:
         - asset: assets/fonts/Roboto-Regular.ttf

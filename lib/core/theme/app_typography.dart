@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 ///
 /// | Voice | Family | Used for |
 /// |---|---|---|
-/// | Brand | Poppins | logo, welcome heading, login/register heading, buttons |
-/// | Data | Inter | form labels, input text, dashboards, tables, numbers |
+/// | Brand + Data | Roboto | all English UI text |
 ///
 /// Both families are Latin-only, so every style carries a Bangla fallback.
 /// That matters because the English UI still shows Bangla strings in a few
@@ -18,11 +17,11 @@ import 'package:flutter/material.dart';
 class AppType {
   const AppType._();
 
-  /// Display / brand voice.
-  static const brand = 'Poppins';
+  /// Shared English typeface, matching the Roboto lettering in the reference.
+  static const brand = 'Roboto';
 
-  /// UI and data voice.
-  static const data = 'Inter';
+  /// Keep headings, controls and data in one consistent English typeface.
+  static const data = 'Roboto';
 
   /// Bangla display font, unchanged from before.
   static const bengali = 'Kalpurush';
@@ -32,36 +31,33 @@ class AppType {
 
   static const _fallback = [bengali, bengaliUi, 'Roboto'];
 
-  /// Heading weight. Poppins SemiBold is the sweet spot - Bold reads heavy at
-  /// display sizes and the extra weight makes small screens feel cramped.
+  /// Heading weight. Medium/SemiBold keeps headings clear without crowding.
   static const brandWeight = FontWeight.w600;
 
   /// Button weight sits between Medium and SemiBold so long labels such as
   /// "Send verification email" stay comfortable.
   static const buttonWeight = FontWeight.w600;
 
-  static bool isBengali(Locale? locale) =>
-      locale?.languageCode == 'bn';
+  static bool isBengali(Locale? locale) => locale?.languageCode == 'bn';
 
   /// Family for a heading in [locale].
   static String brandFamily(Locale? locale) =>
       isBengali(locale) ? bengali : brand;
 
   /// Family for body copy, labels, inputs, tables and numbers in [locale].
-  static String dataFamily(Locale? locale) => isBengali(locale) ? bengali : data;
+  static String dataFamily(Locale? locale) =>
+      isBengali(locale) ? bengali : data;
 
   static List<String> fallback(Locale? locale) => _fallback;
 
-  /// Rebases [base] onto the two voices. Heading slots take Poppins, everything
-  /// else takes Inter. Weights are only applied where the base did not already
-  /// pick something deliberate, so existing tuning survives.
+  /// Rebases [base] onto the shared English typeface. Weights are only applied
+  /// where the base did not already pick something deliberate, preserving the
+  /// existing visual hierarchy.
   static TextTheme textTheme(TextTheme base, Locale? locale) {
     if (isBengali(locale)) return base;
 
-    TextStyle asBrand(TextStyle? style) => (style ?? const TextStyle()).copyWith(
-      fontFamily: brand,
-      fontFamilyFallback: _fallback,
-    );
+    TextStyle asBrand(TextStyle? style) => (style ?? const TextStyle())
+        .copyWith(fontFamily: brand, fontFamilyFallback: _fallback);
 
     TextStyle asData(TextStyle? style) => (style ?? const TextStyle()).copyWith(
       fontFamily: data,

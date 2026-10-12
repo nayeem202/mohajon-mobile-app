@@ -10,36 +10,120 @@
           <span>Operations console</span>
         </div>
       </div>
-      <h1>Everything under control.</h1>
-      <p class="muted">A protected workspace for payments, shop support, and platform health.</p>
-      <label
-        >Email address
-        <input
-          [(ngModel)]="email"
-          type="email"
-          autocomplete="email"
-          placeholder="admin@company.com"
-        />
-      </label>
-      <label
-        >Password
-        <input
-          [(ngModel)]="password"
-          type="password"
-          autocomplete="current-password"
-          (keyup.enter)="signIn()"
-          placeholder="Enter your password"
-        />
-      </label>
-      @if (error()) {
-        <p class="form-error">{{ error() }}</p>
+      @if (resetMode()) {
+        <h1>Reset your password.</h1>
+        <p class="muted">Verify your email with a one-time code to set a new password.</p>
+        <p class="reset-disclaimer">
+          This changes the password for this account in both the Mohajon app and Admin Portal.
+        </p>
+        <label
+          >Email address
+          <input
+            [(ngModel)]="email"
+            type="email"
+            autocomplete="email"
+            [readonly]="resetCodeSent()"
+            placeholder="admin@company.com"
+          />
+        </label>
+        @if (!resetCodeSent()) {
+          <button
+            class="primary wide"
+            [disabled]="loading() || !email"
+            (click)="requestResetCode()"
+          >
+            {{ loading() ? 'Sending code…' : 'Send reset code' }} <span>→</span>
+          </button>
+        } @else {
+          <label
+            >Email verification code
+            <input
+              [(ngModel)]="resetCode"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              (keyup.enter)="completePasswordReset()"
+              placeholder="Enter the code from your email"
+            />
+          </label>
+          <label
+            >New password
+            <input
+              [(ngModel)]="newPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="At least 8 characters"
+            />
+          </label>
+          <label
+            >Confirm new password
+            <input
+              [(ngModel)]="confirmPassword"
+              type="password"
+              autocomplete="new-password"
+              (keyup.enter)="completePasswordReset()"
+              placeholder="Enter the new password again"
+            />
+          </label>
+          <button
+            class="primary wide"
+            [disabled]="loading() || !resetCode || !newPassword || !confirmPassword"
+            (click)="completePasswordReset()"
+          >
+            {{ loading() ? 'Updating password…' : 'Update password' }} <span>→</span>
+          </button>
+          <p class="small reset-expiry-note">
+            If the code expires, go back to sign in and request a new one.
+          </p>
+        }
+        @if (error()) {
+          <p class="form-error" role="alert">{{ error() }}</p>
+        }
+        @if (notice()) {
+          <p class="form-notice" role="status">{{ notice() }}</p>
+        }
+        <button class="text-button back-button" [disabled]="loading()" (click)="backToSignIn()">
+          ← Back to sign in
+        </button>
+      } @else {
+        <h1>Everything under control.</h1>
+        <p class="muted">A protected workspace for payments, shop support, and platform health.</p>
+        <label
+          >Email address
+          <input
+            [(ngModel)]="email"
+            type="email"
+            autocomplete="email"
+            placeholder="admin@company.com"
+          />
+        </label>
+        <label
+          >Password
+          <input
+            [(ngModel)]="password"
+            type="password"
+            autocomplete="current-password"
+            (keyup.enter)="signIn()"
+            placeholder="Enter your password"
+          />
+        </label>
+        <button class="text-button forgot-button" [disabled]="loading()" (click)="openPasswordReset()">
+          Forgot password?
+        </button>
+        @if (error()) {
+          <p class="form-error" role="alert">{{ error() }}</p>
+        }
+        @if (notice()) {
+          <p class="form-notice" role="status">{{ notice() }}</p>
+        }
+        <button class="primary wide" [disabled]="loading() || !email || !password" (click)="signIn()">
+          {{ loading() ? 'Checking access…' : 'Sign in securely' }} <span>→</span>
+        </button>
+        <p class="small">
+          <span class="secure-dot"></span>Access is restricted to approved platform administrators.
+        </p>
       }
-      <button class="primary wide" [disabled]="loading() || !email || !password" (click)="signIn()">
-        {{ loading() ? 'Checking access…' : 'Sign in securely' }} <span>→</span>
-      </button>
-      <p class="small">
-        <span class="secure-dot"></span>Access is restricted to approved platform administrators.
-      </p>
     </section>
   </main>
 } @else {

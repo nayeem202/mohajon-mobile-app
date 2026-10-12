@@ -22,6 +22,8 @@ export class App implements OnInit {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly notice = signal('');
+  readonly resetMode = signal(false);
+  readonly resetCodeSent = signal(false);
   readonly overview = signal<Record<string, number> | null>(null);
   readonly payments = signal<PageState<PaymentRow>>({ items: [], page: -1, hasMore: false });
   readonly tickets = signal<PageState<any>>({ items: [], page: -1, hasMore: false });
@@ -31,6 +33,9 @@ export class App implements OnInit {
 
   email = '';
   password = '';
+  resetCode = '';
+  newPassword = '';
+  confirmPassword = '';
   reply = '';
   pushAudience: 'ALL' | 'USER' = 'ALL';
   recipientEmail = '';
@@ -52,6 +57,61 @@ export class App implements OnInit {
       await this.api.login(this.email.trim(), this.password);
       this.password = '';
       await this.loadInitialData();
+    });
+  }
+
+  openPasswordReset(): void {
+    this.error.set('');
+    this.notice.set('');
+    this.resetMode.set(true);
+    this.resetCodeSent.set(false);
+    this.resetCode = '';
+    this.newPassword = '';
+    this.confirmPassword = '';
+  }
+
+  backToSignIn(): void {
+    this.resetMode.set(false);
+    this.resetCodeSent.set(false);
+    this.resetCode = '';
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.error.set('');
+    this.notice.set('');
+  }
+
+  async requestResetCode(): Promise<void> {
+    const email = this.email.trim();
+    if (!email) {
+      this.error.set('Enter the email address for your account.');
+      return;
+    }
+    await this.run(async () => {
+      await this.api.requestPasswordReset(email);
+      this.resetCodeSent.set(true);
+      this.notice.set('If an account exists, a reset code has been sent to its email address.');
+    });
+  }
+
+  async completePasswordReset(): Promise<void> {
+    const email = this.email.trim();
+    if (!this.resetCode.trim()) {
+      this.error.set('Enter the reset code from your email.');
+      return;
+    }
+    if (this.newPassword.length < 8) {
+      this.error.set('Use a password with at least 8 characters.');
+      return;
+    }
+    if (this.newPassword !== this.confirmPassword) {
+      this.error.set('The passwords do not match.');
+      return;
+    }
+    await this.run(async () => {
+      await this.api.resetPassword(email, this.resetCode.trim(), this.newPassword);
+      this.password = '';
+      this.backToSignIn();
+      this.notice.set('Password updated. Sign in using your new password.');
     });
   }
 

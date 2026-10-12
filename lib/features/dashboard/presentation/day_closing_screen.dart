@@ -253,16 +253,21 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [accent, accent.withValues(alpha: 0.62)],
-                    ),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(13),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     variance != null && variance.abs() < 1
                         ? Icons.verified_rounded
                         : Icons.warning_amber_rounded,
-                    color: Colors.white,
+                    color: accent,
                     size: 21,
                   ),
                 ),

@@ -85,6 +85,7 @@ services:
       CORS_ALLOWED_ORIGINS: https://104.207.93.99
       PUBLIC_BASE_URL: https://104.207.93.99
       SUBSCRIPTION_ENFORCEMENT: "true"
+      PLATFORM_ADMIN_USER_IDS: ${PLATFORM_ADMIN_USER_IDS:-}
       MAIL_PROVIDER: console
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
@@ -116,6 +117,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/mohajon/admin-portal:/srv/admin-portal:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot:ro
       - caddy_data:/data

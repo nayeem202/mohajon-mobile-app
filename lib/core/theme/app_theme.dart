@@ -5,8 +5,8 @@ import 'app_typography.dart';
 class AppTheme {
   const AppTheme._();
 
-  /// Primary family for a plain `Text` in [locale]. Headings use Poppins and
-  /// body copy Inter, so this returns the data voice - see [AppType].
+  /// Primary family for a plain `Text` in [locale]. English text uses Roboto;
+  /// Bangla text uses Kalpurush - see [AppType].
   static String fontFamilyFor(Locale? locale) => AppType.dataFamily(locale);
 
   static ThemeData light([Locale? locale]) {
@@ -121,10 +121,7 @@ class AppTheme {
           locale: locale,
           weight: FontWeight.w500,
         ),
-        hintStyle: AppType.body(
-          const TextStyle(fontSize: 14),
-          locale: locale,
-        ),
+        hintStyle: AppType.body(const TextStyle(fontSize: 14), locale: locale),
         prefixStyle: AppType.body(
           const TextStyle(fontSize: 14),
           locale: locale,

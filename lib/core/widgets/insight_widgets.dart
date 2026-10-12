@@ -9,15 +9,17 @@ import 'premium_header.dart';
 class InsightTokens {
   InsightTokens._();
 
+  static Color _softTint(Color? accent) => switch (accent) {
+    final color when color == MohajonWarm.green => MohajonWarm.tintGreen,
+    final color when color == MohajonWarm.orange => MohajonWarm.tintOrange,
+    final color when color == MohajonWarm.red => MohajonWarm.tintRed,
+    _ => MohajonWarm.tintYellow,
+  };
+
   /// Outer decoration shared by premium insight cards. Match the Clients and
   /// Stock stat cards: a very soft semantic pastel fading into warm cream.
   static BoxDecoration cardDecoration({double radius = 18, Color? accent}) {
-    final tint = switch (accent) {
-      final color when color == MohajonWarm.green => MohajonWarm.tintGreen,
-      final color when color == MohajonWarm.orange => MohajonWarm.tintOrange,
-      final color when color == MohajonWarm.red => MohajonWarm.tintRed,
-      _ => MohajonWarm.tintYellow,
-    };
+    final tint = _softTint(accent);
     return BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
@@ -40,22 +42,20 @@ class InsightTokens {
 
   /// Soft accent-tinted decoration used for hero/banner surfaces.
   static BoxDecoration heroDecoration(Color accent, {double radius = 20}) {
+    final tint = _softTint(accent);
     return BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          accent.withValues(alpha: 0.16),
-          accent.withValues(alpha: 0.03),
-        ],
+        colors: [tint, MohajonWarm.card],
       ),
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: accent.withValues(alpha: 0.24)),
+      border: Border.all(color: MohajonWarm.goldBorder),
       boxShadow: [
         BoxShadow(
-          color: accent.withValues(alpha: 0.12),
-          blurRadius: 14,
-          offset: const Offset(0, 6),
+          color: accent.withValues(alpha: 0.09),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
         ),
       ],
     );
@@ -116,7 +116,7 @@ class PremiumInsightPage extends StatelessWidget {
   }
 }
 
-/// Accent-tinted hero banner: icon pill, headline, supporting copy and an
+/// Soft-gradient hero banner: icon pill, headline, supporting copy and an
 /// optional large trailing value with a status badge.
 class InsightHeroCard extends StatelessWidget {
   const InsightHeroCard({
@@ -158,7 +158,7 @@ class InsightHeroCard extends StatelessWidget {
                 height: 84,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: accent.withValues(alpha: 0.1),
+                  color: accent.withValues(alpha: 0.045),
                 ),
               ),
             ),
@@ -169,21 +169,17 @@ class InsightHeroCard extends StatelessWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [accent, accent.withValues(alpha: 0.62)],
-                    ),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [
                       BoxShadow(
-                        color: accent.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: accent.withValues(alpha: 0.16),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 24),
+                  child: Icon(icon, color: accent, size: 24),
                 ),
                 const SizedBox(width: 13),
                 Expanded(

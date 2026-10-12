@@ -286,24 +286,33 @@ class _HambotSheetState extends ConsumerState<HambotSheet> {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Mohajon AI',
-                style: const TextStyle(
-                  color: MohajonWarm.ink,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Mohajon AI',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.ink,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              Text(
-                l10n.t('hambotSubtitle'),
-                style: const TextStyle(color: MohajonWarm.muted, fontSize: 12),
-              ),
-            ],
+                Text(
+                  l10n.t('hambotSubtitle'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MohajonWarm.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
           PopupMenuButton<String>(
             tooltip: l10n.t('hambotReplyLanguage'),
             initialValue: _replyLanguageOverride,
@@ -477,7 +486,11 @@ class _TurnBubble extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.only(top: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            constraints: const BoxConstraints(maxWidth: 300),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width < 400
+                  ? MediaQuery.sizeOf(context).width * 0.78
+                  : 320,
+            ),
             decoration: BoxDecoration(
               color: MohajonWarm.orange,
               borderRadius: const BorderRadius.only(
@@ -499,7 +512,11 @@ class _TurnBubble extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.only(top: 8),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              constraints: const BoxConstraints(maxWidth: 320),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width < 400
+                    ? MediaQuery.sizeOf(context).width * 0.78
+                    : 320,
+              ),
               decoration: BoxDecoration(
                 color: MohajonWarm.card,
                 borderRadius: const BorderRadius.only(
@@ -629,66 +646,77 @@ class _IdleHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: MohajonWarm.tintYellow,
-                border: Border.all(color: MohajonWarm.goldBorder),
-              ),
-              child: const Icon(
-                Icons.auto_awesome_rounded,
-                color: MohajonWarm.orange,
-                size: 26,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: MohajonWarm.tintYellow,
+                      border: Border.all(color: MohajonWarm.goldBorder),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: MohajonWarm.orange,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Mohajon AI',
+                    style: TextStyle(
+                      color: MohajonWarm.ink,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.t('hambotSubtitle'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: MohajonWarm.muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.t('hambotLanguageHint'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: MohajonWarm.goldText,
+                      fontSize: 11.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  for (final key in const [
+                    'hambotSuggestionSales',
+                    'hambotSuggestionDue',
+                    'hambotSuggestionStock',
+                    'hambotSuggestionCash',
+                  ]) ...[
+                    _ExampleChip(
+                      text: l10n.t(key),
+                      onTap: () => onPromptTap(l10n.t(key)),
+                    ),
+                    if (key != 'hambotSuggestionCash')
+                      const SizedBox(height: 8),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 14),
-            const Text(
-              'Mohajon AI',
-              style: TextStyle(
-                color: MohajonWarm.ink,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.t('hambotSubtitle'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: MohajonWarm.muted, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.t('hambotLanguageHint'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: MohajonWarm.goldText,
-                fontSize: 11.5,
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            for (final key in const [
-              'hambotSuggestionSales',
-              'hambotSuggestionDue',
-              'hambotSuggestionStock',
-              'hambotSuggestionCash',
-            ]) ...[
-              _ExampleChip(
-                text: l10n.t(key),
-                onTap: () => onPromptTap(l10n.t(key)),
-              ),
-              if (key != 'hambotSuggestionCash') const SizedBox(height: 8),
-            ],
-          ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,6 @@
  * without rebuilding the portal. HTTPS URLs must be used in production.
  */
 window.__MOHAJON_ADMIN_CONFIG__ = {
-  authBaseUrl: 'http://localhost:8080',
-  apiBaseUrl: 'http://localhost:8081',
+  authBaseUrl: 'https://104.207.93.99',
+  apiBaseUrl: 'https://104.207.93.99',
 };

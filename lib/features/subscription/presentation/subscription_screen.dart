@@ -796,33 +796,49 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 16),
           const Divider(height: 1, thickness: 1, color: Color(0xFFF3ECDA)),
           const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final price = Text(
                 money(plan.priceBdt),
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   color: MohajonWarm.ink,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.tP('perDay', {
-                    'amount': money(plan.priceBdt / plan.durationDays),
-                  }),
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: MohajonWarm.muted,
-                  ),
+              );
+              final perDay = Text(
+                l10n.tP('perDay', {
+                  'amount': money(plan.priceBdt / plan.durationDays),
+                }),
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: MohajonWarm.muted,
                 ),
-              ),
-              _Badge(color: badgeColor, label: badgeText),
-            ],
+              );
+              if (constraints.maxWidth < 340) {
+                return Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 5,
+                  children: [
+                    price,
+                    _Badge(color: badgeColor, label: badgeText),
+                    SizedBox(width: constraints.maxWidth, child: perDay),
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  price,
+                  const SizedBox(width: 8),
+                  Expanded(child: perDay),
+                  _Badge(color: badgeColor, label: badgeText),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 14),
           _FeatureTile(
@@ -1075,12 +1091,16 @@ class _FeatureTile extends StatelessWidget {
       children: [
         Icon(icon, size: 15, color: MohajonWarm.goldText),
         const SizedBox(width: 7),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: MohajonWarm.ink,
+        Expanded(
+          child: Text(
+            label,
+            softWrap: true,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: MohajonWarm.ink,
+            ),
           ),
         ),
       ],

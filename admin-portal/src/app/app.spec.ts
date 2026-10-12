@@ -15,10 +15,11 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render the admin portal login title and password reset entry point', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, admin-portal');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Everything under control.');
+    expect(compiled.textContent).toContain('Forgot password?');
   });
 });

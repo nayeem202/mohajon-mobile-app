@@ -2,7 +2,7 @@
   color: #292d24;
   display: block;
   font-family:
-    Inter,
+    Roboto,
     ui-sans-serif,
     system-ui,
     -apple-system,
@@ -225,6 +225,54 @@ textarea:focus {
   font-size: 13px;
   line-height: 1.45;
   margin: 16px 0 -5px;
+}
+.form-notice {
+  background: #eef8ef;
+  border: 1px solid #cfe8d1;
+  border-radius: 10px;
+  color: #286b3d;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 16px 0 -4px;
+  padding: 10px 12px;
+}
+.reset-disclaimer {
+  background: #f8f5e9;
+  border-left: 3px solid #d4ad2a;
+  border-radius: 0 8px 8px 0;
+  color: #6e6753;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 14px 0 4px;
+  padding: 9px 11px;
+}
+.reset-expiry-note {
+  margin-top: 12px;
+}
+.text-button {
+  background: transparent;
+  border: 0;
+  color: #80640c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 0;
+}
+.text-button:hover:not(:disabled) {
+  color: #4d3b00;
+  text-decoration: underline;
+}
+.text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.forgot-button {
+  display: block;
+  margin: 8px 0 -8px auto;
+}
+.back-button {
+  margin-top: 12px;
 }
 .small {
   align-items: center;

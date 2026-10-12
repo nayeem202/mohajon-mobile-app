@@ -5,7 +5,7 @@ import 'package:inventory_1/core/theme/app_typography.dart';
 import 'package:inventory_1/core/theme/app_theme.dart';
 
 void main() {
-  testWidgets('English theme routes headings to Poppins and body to Inter', (
+  testWidgets('English theme uses Roboto for headings and body text', (
     tester,
   ) async {
     final theme = AppTheme.light(const Locale('en'));

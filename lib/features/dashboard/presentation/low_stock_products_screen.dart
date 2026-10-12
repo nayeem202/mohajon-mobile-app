@@ -32,39 +32,39 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
   }
 
   Widget _productIcon() => Container(
-        width: 56,
-        height: 56,
+    width: 56,
+    height: 56,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFF0C2), Color(0xFFFCE3B4)],
+      ),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Center(
+      child: Container(
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFFF0C2), Color(0xFFFCE3B4)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFE98300).withValues(alpha: 0.18),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+          color: Colors.white.withValues(alpha: 0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE98300).withValues(alpha: 0.18),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(
-              Icons.inventory_2_rounded,
-              color: Color(0xFFE98300),
-              size: 18,
-            ),
-          ),
+          ],
         ),
-      );
+        child: const Icon(
+          Icons.inventory_2_rounded,
+          color: Color(0xFFE98300),
+          size: 18,
+        ),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -73,13 +73,15 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
     final filtered = query.isEmpty
         ? widget.products
         : widget.products
-            .where((product) =>
-                product
-                    .displayName(localeCode)
-                    .toLowerCase()
-                    .contains(query) ||
-                product.category.toLowerCase().contains(query))
-            .toList();
+              .where(
+                (product) =>
+                    product
+                        .displayName(localeCode)
+                        .toLowerCase()
+                        .contains(query) ||
+                    product.category.toLowerCase().contains(query),
+              )
+              .toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -95,40 +97,43 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
           statusBarIconBrightness: Brightness.dark,
         ),
       ),
-      floatingActionButton: Material(
-        shape: const CircleBorder(),
-        elevation: 4,
-        color: MohajonWarm.primary,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () {
-            setState(() {
-              _showSearch = !_showSearch;
-              if (!_showSearch) {
-                _searchController.clear();
-                _searchQuery = '';
-              }
-            });
-          },
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: Icon(
-              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
-              size: 22,
-              color: MohajonWarm.ink,
+      floatingActionButton: widget.products.isEmpty
+          ? null
+          : Material(
+              shape: const CircleBorder(),
+              elevation: 4,
+              color: MohajonWarm.primary,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  setState(() {
+                    _showSearch = !_showSearch;
+                    if (!_showSearch) {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    }
+                  });
+                },
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(
+                    _showSearch
+                        ? Icons.search_off_rounded
+                        : Icons.search_rounded,
+                    size: 22,
+                    color: MohajonWarm.ink,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: DecoratedBox(
         decoration: const BoxDecoration(gradient: MohajonWarm.pageGradient),
         child: widget.products.isEmpty
             ? Center(
                 child: EmptyState(
-                  message: AppLocalizations.of(context)
-                      .t('noLowStockRightNow'),
+                  message: AppLocalizations.of(context).t('noLowStockRightNow'),
                   icon: Icons.warning_amber_rounded,
                 ),
               )
@@ -156,20 +161,22 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                         if (filtered.isEmpty) {
                           return Center(
                             child: EmptyState(
-                              message: AppLocalizations.of(context)
-                                  .t('noProductsMatchSearch'),
+                              message: AppLocalizations.of(
+                                context,
+                              ).t('noProductsMatchSearch'),
                               icon: Icons.search_off_rounded,
                             ),
                           );
                         }
                         final product = filtered[index];
                         final isOut = product.stockQty <= 0;
-                        final statusColor =
-                            isOut ? MohajonWarm.red : MohajonWarm.orange;
-                        final level = (product.stockQty /
-                                (product.lowStockAlert * 2))
-                            .clamp(0.0, 1.0)
-                            .toDouble();
+                        final statusColor = isOut
+                            ? MohajonWarm.red
+                            : MohajonWarm.orange;
+                        final level =
+                            (product.stockQty / (product.lowStockAlert * 2))
+                                .clamp(0.0, 1.0)
+                                .toDouble();
 
                         return Card(
                           elevation: 0,
@@ -194,8 +201,9 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                 children: [
                                   product.imagePath != null
                                       ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                           child: AppImage.file(
                                             File(product.imagePath!),
                                             width: 56,
@@ -227,30 +235,37 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                           spacing: 6,
                                           runSpacing: 6,
                                           children: [
-                                            _ProductChip(product.category
-                                                    .isEmpty
-                                                ? AppLocalizations.of(context)
-                                                    .t('general')
-                                                : product.category),
                                             _ProductChip(
-                                              AppLocalizations.of(context)
-                                                  .tP('stockQtyLabel',
-                                                      {'n': '${product.stockQty}'}),
-                                              tint: statusColor
-                                                  .withValues(alpha: 0.12),
+                                              product.category.isEmpty
+                                                  ? AppLocalizations.of(
+                                                      context,
+                                                    ).t('general')
+                                                  : product.category,
+                                            ),
+                                            _ProductChip(
+                                              AppLocalizations.of(context).tP(
+                                                'stockQtyLabel',
+                                                {'n': '${product.stockQty}'},
+                                              ),
+                                              tint: statusColor.withValues(
+                                                alpha: 0.12,
+                                              ),
                                               textColor: statusColor,
                                             ),
                                             _ProductChip(
-                                                AppLocalizations.of(context)
-                                                    .tP('alertQtyLabel', {
-                                                  'n': '${product.lowStockAlert}'
-                                                })),
+                                              AppLocalizations.of(
+                                                context,
+                                              ).tP('alertQtyLabel', {
+                                                'n': '${product.lowStockAlert}',
+                                              }),
+                                            ),
                                           ],
                                         ),
                                         const SizedBox(height: 9),
                                         ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(999),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
                                           child: Container(
                                             height: 5,
                                             color: MohajonWarm.tintYellow,
@@ -267,7 +282,8 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                          999),
+                                                        999,
+                                                      ),
                                                 ),
                                               ),
                                             ),
@@ -278,8 +294,7 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.end,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
                                         money(product.sellingPrice),
@@ -296,10 +311,12 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: statusColor
-                                              .withValues(alpha: 0.12),
-                                          borderRadius:
-                                              BorderRadius.circular(999),
+                                          color: statusColor.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -316,11 +333,11 @@ class _LowStockProductsScreenState extends State<LowStockProductsScreen> {
                                             Text(
                                               isOut
                                                   ? AppLocalizations.of(
-                                                          context)
-                                                      .t('outOfStockShort')
+                                                      context,
+                                                    ).t('outOfStockShort')
                                                   : AppLocalizations.of(
-                                                          context)
-                                                      .t('lowStockShort'),
+                                                      context,
+                                                    ).t('lowStockShort'),
                                               style: TextStyle(
                                                 color: statusColor,
                                                 fontSize: 10,
@@ -385,8 +402,9 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppLocalizations.of(context)
-                      .tP('productsRunningLow', {'n': '$count'}),
+                  AppLocalizations.of(
+                    context,
+                  ).tP('productsRunningLow', {'n': '$count'}),
                   style: const TextStyle(
                     color: MohajonWarm.ink,
                     fontWeight: FontWeight.w900,
@@ -447,10 +465,12 @@ class _SearchPanel extends StatelessWidget {
           controller: controller,
           onChanged: onSearchChanged,
           decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)
-                .t('searchProductCategory'),
-            prefixIcon:
-                Icon(Icons.search_rounded, size: 20, color: MohajonWarm.primary),
+            hintText: AppLocalizations.of(context).t('searchProductCategory'),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              size: 20,
+              color: MohajonWarm.primary,
+            ),
             suffixIcon: query.isEmpty
                 ? null
                 : IconButton(

@@ -20,6 +20,13 @@ https://104.207.93.99 {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
+	@adminRoot path /admin
+	redir @adminRoot /admin/ 308
+	handle_path /admin/* {
+		root * /srv/admin-portal
+		try_files {path} /index.html
+		file_server
+	}
 	@actuator path /actuator/*
 	respond @actuator 404
 	@auth path /api/v1/auth/* /api/v1/users/* /oauth2/* /.well-known/*
