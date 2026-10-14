@@ -812,7 +812,7 @@ class _OperationalReportScreenState
                   ),
                 )
               else
-                _DataTableCard(data: data),
+                _DataTableCard(data: data, l10n: l10n),
             ],
           ),
         ),
@@ -837,8 +837,9 @@ class _OperationalData {
 }
 
 class _DataTableCard extends StatelessWidget {
-  const _DataTableCard({required this.data});
+  const _DataTableCard({required this.data, required this.l10n});
   final _OperationalData data;
+  final AppLocalizations l10n;
   @override
   Widget build(BuildContext context) => Container(
     decoration: reportCardDecoration(radius: 18),
@@ -847,7 +848,7 @@ class _DataTableCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${data.rows.length} records',
+          l10n.tP('reportRecordsCount', {'count': '${data.rows.length}'}),
           style: const TextStyle(
             fontWeight: FontWeight.w900,
             color: MohajonWarm.ink,
@@ -873,7 +874,10 @@ class _DataTableCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Flexible(
                   child: Text(
-                    row.entries.skip(1).map((e) => '${e.value}').join(' · '),
+                    row.entries
+                        .skip(1)
+                        .map((e) => localizedReportText('${e.value}', l10n))
+                        .join(' · '),
                     textAlign: TextAlign.right,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

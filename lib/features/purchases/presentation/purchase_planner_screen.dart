@@ -72,6 +72,14 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
       0,
       (sum, item) => sum + item.estimatedTotal,
     );
+    final stockAttention = recommendations
+        .where(
+          (item) =>
+              item.product.stockQty <= 0 ||
+              item.product.isLowStock ||
+              (item.dailyVelocity > 0 && item.coverageDays <= 7),
+        )
+        .toList();
     final l10n = AppLocalizations.of(context);
     final overBudget = total > budget;
 
@@ -201,6 +209,19 @@ class _PurchasePlannerScreenState extends ConsumerState<PurchasePlannerScreen>
               );
             },
           ),
+          if (stockAttention.isNotEmpty) ...[
+            InsightSectionTitle(
+              title: l10n.t('purchaseStockAttention'),
+              icon: Icons.notification_important_rounded,
+              accent: MohajonWarm.red,
+              trailing: InsightBadge(
+                label: '${stockAttention.length}',
+                accent: MohajonWarm.red,
+              ),
+            ),
+            _StockAttentionCard(items: stockAttention),
+            const SizedBox(height: 8),
+          ],
           if (recommendations.isEmpty) ...[
             InsightSectionTitle(
               title: l10n.t('purchaseBrief'),
@@ -898,6 +919,7 @@ class _RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final language = l10n.locale.languageCode;
     final accent = item.product.stockQty <= 0
         ? MohajonWarm.red
         : item.dailyVelocity >= 1
@@ -944,7 +966,7 @@ class _RecommendationCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  item.product.nameEn,
+                  item.product.displayName(language),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -959,14 +981,33 @@ class _RecommendationCard extends StatelessWidget {
                   runSpacing: 4,
                   children: [
                     _MiniChip(
-                      label: '${item.product.stockQty} in stock',
+                      label: l10n.tP('qtyInStock', {
+                        'qty': '${item.product.stockQty}',
+                      }),
                       accent: item.product.stockQty <= 0
                           ? MohajonWarm.red
                           : MohajonWarm.muted,
                     ),
                     _MiniChip(
-                      label: '${item.dailyVelocity.toStringAsFixed(1)}/day',
+                      label: l10n.tP('purchaseDailyVelocity', {
+                        'qty': item.dailyVelocity.toStringAsFixed(1),
+                      }),
                       accent: accent,
+                    ),
+                    _MiniChip(
+                      label: item.product.stockQty <= 0
+                          ? l10n.t('outOfStock')
+                          : item.dailyVelocity <= 0 ||
+                                item.coverageDays.isInfinite
+                          ? l10n.t('purchaseCoverUnknown')
+                          : l10n.tP('purchaseStockCoverDays', {
+                              'days': '${item.coverageDays.ceil()}',
+                            }),
+                      accent: item.product.stockQty <= 0
+                          ? MohajonWarm.red
+                          : item.coverageDays <= 7
+                          ? MohajonWarm.red
+                          : MohajonWarm.green,
                     ),
                   ],
                 ),
@@ -1005,6 +1046,68 @@ class _RecommendationCard extends StatelessWidget {
                 color: MohajonWarm.muted,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StockAttentionCard extends StatelessWidget {
+  const _StockAttentionCard({required this.items});
+
+  final List<PurchaseRecommendation> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final outOfStock = items.where((item) => item.product.stockQty <= 0).length;
+    final runningOut = items
+        .where(
+          (item) =>
+              item.product.stockQty > 0 &&
+              item.dailyVelocity > 0 &&
+              item.coverageDays <= 7,
+        )
+        .length;
+    final message = outOfStock > 0
+        ? l10n.tP('purchaseOutOfStockCount', {'count': '$outOfStock'})
+        : runningOut > 0
+        ? l10n.tP('purchaseRunningOutCount', {'count': '$runningOut'})
+        : l10n.tP('purchaseBelowMinimumCount', {'count': '${items.length}'});
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            MohajonWarm.red.withValues(alpha: 0.12),
+            Colors.white.withValues(alpha: 0.94),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: MohajonWarm.red.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: MohajonWarm.red,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: MohajonWarm.ink,
+                fontSize: 13,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

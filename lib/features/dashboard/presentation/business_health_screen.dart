@@ -7,6 +7,7 @@ import '../../../core/models/payment.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
+import '../../../core/utils/money.dart';
 import '../../../core/widgets/insight_widgets.dart';
 import '../../customers/providers/customer_providers.dart';
 import '../../expenses/providers/expense_providers.dart';
@@ -29,7 +30,8 @@ class BusinessHealthScreen extends ConsumerWidget {
     final sales = ref.watch(salesStreamProvider).value ?? const <Sale>[];
     final products = ref.watch(productsProvider).value ?? const <Product>[];
     final customers = ref.watch(customersProvider).value ?? const <Customer>[];
-    final payments = ref.watch(paymentsStreamProvider).value ?? const <Payment>[];
+    final payments =
+        ref.watch(paymentsStreamProvider).value ?? const <Payment>[];
     final expenses = ref.watch(expensesProvider).value ?? const [];
     final insights = businessCoachService.generate(
       sales: sales,
@@ -40,22 +42,57 @@ class BusinessHealthScreen extends ConsumerWidget {
     );
     final activeProducts = products.where((item) => !item.isDeleted);
     final lowStock = activeProducts.where((item) => item.isLowStock).length;
-    final due = sales.where((item) => !item.isDeleted).fold<double>(
-          0,
-          (sum, sale) => sum + sale.dueAmount,
-        ) -
+    final due =
+        sales
+            .where((item) => !item.isDeleted)
+            .fold<double>(0, (sum, sale) => sum + sale.dueAmount) -
         payments
             .where((item) => !item.isDeleted && item.saleId == null)
             .fold<double>(0, (sum, payment) => sum + payment.amount);
     final urgent = insights.where((item) => item.priority >= 90).length;
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final tomorrow = todayStart.add(const Duration(days: 1));
+    final weekStart = todayStart.subtract(const Duration(days: 6));
+    final validSales = sales.where((sale) => !sale.isDeleted);
+    final todaySales = validSales
+        .where(
+          (sale) =>
+              !sale.createdAt.isBefore(todayStart) &&
+              sale.createdAt.isBefore(tomorrow),
+        )
+        .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+    final weekSales = validSales
+        .where(
+          (sale) =>
+              !sale.createdAt.isBefore(weekStart) &&
+              sale.createdAt.isBefore(tomorrow),
+        )
+        .fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+    final weekExpenses = expenses
+        .where(
+          (expense) =>
+              !expense.isDeleted &&
+              !expense.date.isBefore(weekStart) &&
+              expense.date.isBefore(tomorrow),
+        )
+        .fold<double>(0, (sum, expense) => sum + expense.amount);
+    final todayExpenses = expenses
+        .where(
+          (expense) =>
+              !expense.isDeleted &&
+              !expense.date.isBefore(todayStart) &&
+              expense.date.isBefore(tomorrow),
+        )
+        .fold<double>(0, (sum, expense) => sum + expense.amount);
     final score = (100 - urgent * 15 - lowStock * 4 - (due / 1000).clamp(0, 25))
         .round()
         .clamp(0, 100);
     final accent = score >= 75
         ? MohajonWarm.green
         : score >= 50
-            ? MohajonWarm.orange
-            : MohajonWarm.red;
+        ? MohajonWarm.orange
+        : MohajonWarm.red;
     return PremiumInsightPage(
       title: l10n.t('businessHealth'),
       subtitle: l10n.t('businessHealthSubtitle'),
@@ -75,25 +112,47 @@ class BusinessHealthScreen extends ConsumerWidget {
           badgeAccent: accent,
         ),
         const SizedBox(height: 14),
+        InsightSectionTitle(
+          title: l10n.t('businessHealthSnapshot'),
+          icon: Icons.calendar_view_week_rounded,
+        ),
         InsightMetricGrid(
           tiles: [
             InsightMetricTile(
+              label: l10n.t('todaysSales'),
+              value: money(todaySales),
+              icon: Icons.point_of_sale_rounded,
+              accent: MohajonWarm.green,
+            ),
+            InsightMetricTile(
+              label: l10n.t('businessHealthWeekSales'),
+              value: money(weekSales),
+              icon: Icons.trending_up_rounded,
+              accent: MohajonWarm.orange,
+            ),
+            InsightMetricTile(
               label: l10n.t('businessHealthDueRisk'),
-              value: '৳${due.clamp(0, double.infinity).toStringAsFixed(0)}',
+              value: money(due.clamp(0, double.infinity).toDouble()),
               icon: Icons.account_balance_wallet_rounded,
               accent: due > 0 ? MohajonWarm.orange : MohajonWarm.green,
+            ),
+            InsightMetricTile(
+              label: l10n.t('businessHealthTodayExpenses'),
+              value: money(todayExpenses),
+              icon: Icons.receipt_rounded,
+              accent: MohajonWarm.red,
+            ),
+            InsightMetricTile(
+              label: l10n.t('businessHealthWeekExpenses'),
+              value: money(weekExpenses),
+              icon: Icons.receipt_long_rounded,
+              accent: MohajonWarm.red,
             ),
             InsightMetricTile(
               label: l10n.t('businessHealthLowStock'),
               value: '$lowStock',
               icon: Icons.inventory_2_rounded,
               accent: lowStock > 0 ? MohajonWarm.orange : MohajonWarm.green,
-            ),
-            InsightMetricTile(
-              label: l10n.t('businessHealthInsights'),
-              value: '${insights.length}',
-              icon: Icons.lightbulb_rounded,
-              accent: urgent > 0 ? MohajonWarm.red : MohajonWarm.primary,
             ),
           ],
         ),
@@ -107,10 +166,14 @@ class BusinessHealthScreen extends ConsumerWidget {
           for (final insight in insights.take(3)) ...[
             InsightRowTile(
               icon: Icons.lightbulb_circle_rounded,
-              accent: insight.priority >= 90 ? MohajonWarm.red : MohajonWarm.orange,
+              accent: insight.priority >= 90
+                  ? MohajonWarm.red
+                  : MohajonWarm.orange,
               title: insight.titleEn,
               body: insight.bodyEn,
-              trailing: insight.amount == null ? null : Text('৳${insight.amount!.toStringAsFixed(0)}'),
+              trailing: insight.amount == null
+                  ? null
+                  : Text('৳${insight.amount!.toStringAsFixed(0)}'),
             ),
             const SizedBox(height: 8),
           ],

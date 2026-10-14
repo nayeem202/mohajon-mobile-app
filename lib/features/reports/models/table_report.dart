@@ -42,6 +42,19 @@ class ReportTableData {
   final List<ReportSummary> summaries;
 }
 
+String localizedReportText(String text, AppLocalizations l10n) {
+  if (l10n.locale.languageCode != 'bn') return text;
+  return localizedReportTable(
+    ReportTableData(
+      title: text,
+      subtitle: '',
+      columns: const [],
+      rows: const [],
+    ),
+    l10n,
+  ).title;
+}
+
 /// Localizes report metadata for exported PDF/XLSX files while preserving
 /// user-entered names and row values exactly as stored.
 ReportTableData localizedReportTable(
@@ -128,6 +141,12 @@ ReportTableData localizedReportTable(
     'Audit status': 'অডিট অবস্থা',
     'Period': 'সময়কাল',
     'Report Type': 'রিপোর্টের ধরন',
+    'Live business insight, ready to export':
+        'ব্যবসার হালনাগাদ হিসাব, রপ্তানির জন্য প্রস্তুত',
+    'Local trail': 'ডিভাইসের কার্যক্রম',
+    'High': 'উচ্চ',
+    'Medium': 'মাঝারি',
+    'Low': 'কম',
   };
   String localize(String text) => labels[text] ?? text;
   return ReportTableData(

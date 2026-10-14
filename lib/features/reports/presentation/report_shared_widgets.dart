@@ -7,6 +7,7 @@ import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/utils/app_error.dart';
 import '../../settings/providers/shop_profile_providers.dart';
+import '../models/table_report.dart';
 
 /// Shared report identity block. Every report now starts with the same shop
 /// context, so the screen and its exported document feel like one product.
@@ -24,6 +25,7 @@ class ReportBrandStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final shop = ref.watch(shopProfileProvider).value;
     final logo = (shop?.reportLogoPath ?? '').trim();
     final shopName = (shop?.shopName ?? '').trim();
@@ -88,7 +90,7 @@ class ReportBrandStrip extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      localizedReportText(title, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -100,7 +102,7 @@ class ReportBrandStrip extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      subtitle,
+                      localizedReportText(subtitle, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -264,8 +266,9 @@ class ReportSummaryCard extends StatelessWidget {
       return Icons.bolt_rounded;
     }
     if (l.contains('due') || l.contains('rate')) return Icons.percent_rounded;
-    if (l.contains('vat') || l.contains('total'))
+    if (l.contains('vat') || l.contains('total')) {
       return Icons.calculate_rounded;
+    }
     return Icons.bar_chart_rounded;
   }
 
@@ -273,6 +276,10 @@ class ReportSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = _icon();
     final accent = valueColor;
+    final localizedLabel = localizedReportText(
+      label,
+      AppLocalizations.of(context),
+    );
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -333,7 +340,7 @@ class ReportSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    label,
+                    localizedLabel,
                     style: const TextStyle(
                       fontSize: 11,
                       color: MohajonWarm.muted,

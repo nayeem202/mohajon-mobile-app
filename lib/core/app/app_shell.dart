@@ -22,6 +22,8 @@ import 'app_lock_controller.dart';
 import 'app_lock_screen.dart';
 import 'app_providers.dart';
 import '../services/custom_auth_backend.dart';
+import '../../features/dashboard/providers/home_announcement_providers.dart';
+import '../widgets/app_image.dart';
 import 'tour_models.dart';
 import 'tour_overlay.dart';
 
@@ -45,6 +47,8 @@ class _AppShellState extends ConsumerState<AppShell>
     with WidgetsBindingObserver {
   late int _index;
   bool _tourChecked = false;
+  bool _announcementShowing = false;
+  bool _announcementResolved = false;
 
   // Tour state
   bool _tourActive = false;
@@ -64,8 +68,9 @@ class _AppShellState extends ConsumerState<AppShell>
     WidgetsBinding.instance.addObserver(this);
     final box = Hive.box(HiveBoxes.settings);
     _index = box.get('selectedTab', defaultValue: 0) as int;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _refreshPaywall();
+      await _showLoginAnnouncement();
       if (!_tourChecked && mounted) {
         _tourChecked = true;
         final hasSeenTour = box.get('hasSeenTour', defaultValue: false) as bool;
@@ -74,6 +79,146 @@ class _AppShellState extends ConsumerState<AppShell>
         }
       }
     });
+  }
+
+  Future<void> _showLoginAnnouncement() async {
+    if (!mounted ||
+        _lockRequired() ||
+        _announcementShowing ||
+        _announcementResolved) {
+      return;
+    }
+    _announcementShowing = true;
+    try {
+      ref.invalidate(homeAnnouncementsProvider);
+      final announcements = await ref
+          .read(homeAnnouncementsProvider.future)
+          .timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      final now = DateTime.now();
+      HomeAnnouncement? announcement;
+      for (final item in announcements) {
+        if (item.expiresAt != null && item.expiresAt!.isAfter(now)) {
+          announcement = item;
+          break;
+        }
+      }
+      if (_lockRequired()) return;
+      _announcementResolved = true;
+      if (announcement == null) return;
+      final activeAnnouncement = announcement;
+
+      final languageCode = Localizations.localeOf(context).languageCode;
+      final imageUrl = activeAnnouncement.imageUrl;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          final l10n = AppLocalizations.of(dialogContext);
+          final size = MediaQuery.sizeOf(dialogContext);
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 22,
+              vertical: 24,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 460,
+                maxHeight: size.height * 0.82,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (imageUrl != null)
+                            AppImage(
+                              path: imageUrl,
+                              width: double.infinity,
+                              height: 190,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3C2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    l10n.t('notifications').toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Color(0xFF8A6900),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.7,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  activeAnnouncement.localizedTitle(languageCode),
+                                  style: const TextStyle(
+                                    color: Color(0xFF2F3028),
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.25,
+                                  ),
+                                ),
+                                if (activeAnnouncement.localizedBody(languageCode)
+                                    .isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    activeAnnouncement.localizedBody(languageCode),
+                                    style: const TextStyle(
+                                      color: Color(0xFF666456),
+                                      fontSize: 14,
+                                      height: 1.55,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        child: Text(l10n.t('ok')),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } catch (_) {
+      // Login stays usable if announcements cannot be fetched (e.g. offline).
+    } finally {
+      _announcementShowing = false;
+    }
   }
 
   void _refreshPaywall() {
@@ -358,6 +503,11 @@ class _AppShellState extends ConsumerState<AppShell>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AppLockState>(appLockProvider, (previous, next) {
+      if (previous?.unlocked == false && next.unlocked) {
+        unawaited(_showLoginAnnouncement());
+      }
+    });
     final l10n = AppLocalizations.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final grantedMenus = ref.watch(myMenuCodesProvider).value;

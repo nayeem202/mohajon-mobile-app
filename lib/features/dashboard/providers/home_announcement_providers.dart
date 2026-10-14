@@ -12,6 +12,7 @@ class HomeAnnouncement {
     required this.bodyBn,
     required this.imageUrl,
     required this.createdAt,
+    required this.expiresAt,
   });
 
   final String id;
@@ -21,6 +22,7 @@ class HomeAnnouncement {
   final String? bodyBn;
   final String? imageUrl;
   final DateTime createdAt;
+  final DateTime? expiresAt;
 
   factory HomeAnnouncement.fromJson(Map<dynamic, dynamic> json) {
     String? optionalText(String key) {
@@ -38,6 +40,7 @@ class HomeAnnouncement {
       createdAt:
           DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
           DateTime.now(),
+      expiresAt: DateTime.tryParse(json['expiresAt']?.toString() ?? ''),
     );
   }
 
@@ -48,8 +51,8 @@ class HomeAnnouncement {
       languageCode == 'bn' && bodyBn != null ? bodyBn! : body;
 }
 
-/// The home screen fetches only the latest three platform announcements. This
-/// endpoint is intentionally separate from the full notification history.
+/// Fetch active platform announcements for the post-login dialog. The endpoint
+/// returns only unexpired announcements and is separate from notification history.
 final homeAnnouncementsProvider = FutureProvider<List<HomeAnnouncement>>((
   ref,
 ) async {

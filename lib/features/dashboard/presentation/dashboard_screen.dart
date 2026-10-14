@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/app/app_providers.dart';
-import '../../../core/config/app_config.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/product.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
@@ -25,8 +24,6 @@ import '../../settings/providers/shop_profile_providers.dart';
 import '../../../core/utils/snackbar.dart';
 import '../presentation/low_stock_products_screen.dart';
 import '../providers/dashboard_providers.dart';
-import '../providers/home_announcement_providers.dart';
-import 'models/weekly_sales.dart';
 import 'widgets/home_shortcut_section.dart';
 import 'widgets/owner_action_center.dart';
 import 'widgets/sales_chart_card.dart';
@@ -40,12 +37,6 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardProvider);
     final profile = ref.watch(profileProvider);
-    final announcements = ref.watch(homeAnnouncementsProvider);
-    final homeAnnouncements = announcements.when(
-      data: (items) => items,
-      loading: () => const <HomeAnnouncement>[],
-      error: (_, __) => const <HomeAnnouncement>[],
-    );
     final theme = Theme.of(context);
     final homeTheme = theme.copyWith(
       colorScheme: theme.colorScheme.copyWith(
@@ -90,7 +81,6 @@ class DashboardScreen extends ConsumerWidget {
             child: RefreshIndicator(
               onRefresh: () async {
                 await ref.read(syncStateProvider.notifier).syncNow();
-                ref.invalidate(homeAnnouncementsProvider);
               },
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
@@ -110,12 +100,6 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   OwnerActionCenter(summary: summary),
-                  if (homeAnnouncements.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _PlatformAnnouncementCard(
-                      announcement: homeAnnouncements.first,
-                    ),
-                  ],
                   const SizedBox(height: 20),
                   const HomeShortcutSection(),
                   const SizedBox(height: 20),
@@ -142,113 +126,6 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PlatformAnnouncementCard extends StatelessWidget {
-  const _PlatformAnnouncementCard({required this.announcement});
-
-  final HomeAnnouncement announcement;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final languageCode = Localizations.localeOf(context).languageCode;
-    final imageUrl = announcement.imageUrl == null
-        ? null
-        : '${AppConfig.apiBaseUrl}${announcement.imageUrl}';
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xFF4D2848),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4D2848).withValues(alpha: 0.28),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (imageUrl != null)
-            AppImage(
-              path: imageUrl,
-              width: double.infinity,
-              height: 166,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(
-                    Icons.campaign_rounded,
-                    color: Color(0xFFFFD83D),
-                    size: 19,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.t('notifications').toUpperCase(),
-                        style: const TextStyle(
-                          color: Color(0xFFFFD83D),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        announcement.localizedTitle(languageCode),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          height: 1.25,
-                        ),
-                      ),
-                      if (announcement
-                          .localizedBody(languageCode)
-                          .isNotEmpty) ...[
-                        const SizedBox(height: 5),
-                        Text(
-                          announcement.localizedBody(languageCode),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.82),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
