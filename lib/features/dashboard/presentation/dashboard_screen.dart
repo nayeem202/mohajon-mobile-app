@@ -124,18 +124,7 @@ class DashboardScreen extends ConsumerWidget {
                     child: _OverviewStats(summary: summary),
                   ),
                   const SizedBox(height: 20),
-                  SalesChartCard(
-                    data: summary.dayWiseSales
-                        .map(
-                          (d) => WeeklySalesData(
-                            dayLabel: d.label,
-                            fullDayName: DateFormat('EEEE').format(d.date),
-                            sales: d.sales,
-                          ),
-                        )
-                        .toList(),
-                    weekChangePercent: summary.weekChangePercent,
-                  ),
+                  const SalesChartCard(),
                   const SizedBox(height: 20),
                   _RecentSalesCard(sales: summary.recentSales),
                   if (summary.dueCustomers.isNotEmpty) ...[

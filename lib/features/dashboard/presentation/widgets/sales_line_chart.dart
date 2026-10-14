@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/weekly_sales.dart';
 
 class SalesLineChart extends StatelessWidget {
-  const SalesLineChart({
-    super.key,
-    required this.data,
-    this.animate = true,
-  });
+  const SalesLineChart({super.key, required this.data, this.animate = true});
 
   final List<WeeklySalesData> data;
   final bool animate;
@@ -62,14 +58,13 @@ class SalesLineChart extends StatelessWidget {
   }
 
   FlTitlesData _titlesData(ColorScheme colors, double maxY) {
+    final labelInterval = data.length > 7
+        ? (data.length / 6).ceilToDouble()
+        : 1.0;
     return FlTitlesData(
       show: true,
-      topTitles: const AxisTitles(
-        sideTitles: SideTitles(showTitles: false),
-      ),
-      rightTitles: const AxisTitles(
-        sideTitles: SideTitles(showTitles: false),
-      ),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
@@ -86,9 +81,13 @@ class SalesLineChart extends StatelessWidget {
         sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 28,
-          interval: 1,
+          interval: labelInterval,
           getTitlesWidget: (value, meta) {
-            final idx = value.toInt();
+            final idx = value.round();
+            if ((value - idx).abs() > 0.01 ||
+                (idx % labelInterval.toInt() != 0 && idx != data.length - 1)) {
+              return const SizedBox.shrink();
+            }
             if (idx < 0 || idx >= data.length) {
               return const SizedBox.shrink();
             }
@@ -194,10 +193,7 @@ class SalesLineChart extends StatelessWidget {
       getTouchedSpotIndicator: (barData, spotIndexes) {
         return spotIndexes.map((idx) {
           return TouchedSpotIndicatorData(
-            FlLine(
-              color: primaryOrange.withValues(alpha: 0.3),
-              strokeWidth: 1,
-            ),
+            FlLine(color: primaryOrange.withValues(alpha: 0.3), strokeWidth: 1),
             FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) {
