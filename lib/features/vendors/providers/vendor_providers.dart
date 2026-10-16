@@ -21,9 +21,19 @@ final vendorSearchQueryProvider = StateProvider.autoDispose<String>(
 
 final vendorCategoryFilterProvider = StateProvider<String>((ref) => '');
 
-final vendorSortProvider = StateProvider<VendorSort>((ref) => VendorSort.newest);
+final vendorSortProvider = StateProvider<VendorSort>(
+  (ref) => VendorSort.newest,
+);
 
-enum VendorSort { newest, oldest, highestDue, lowestDue, mostOrders, highestPurchase, alphabetical }
+enum VendorSort {
+  newest,
+  oldest,
+  highestDue,
+  lowestDue,
+  mostOrders,
+  highestPurchase,
+  alphabetical,
+}
 
 final filteredVendorsProvider = Provider<List<Vendor>>((ref) {
   final vendors = ref.watch(vendorsProvider).value ?? const <Vendor>[];
@@ -47,17 +57,20 @@ final filteredVendorsProvider = Provider<List<Vendor>>((ref) {
     filtered = filtered.where((v) => v.category == category).toList();
   }
 
-  filtered = [...filtered]..sort((a, b) {
-    return switch (sort) {
-      VendorSort.newest => b.updatedAt.compareTo(a.updatedAt),
-      VendorSort.oldest => a.updatedAt.compareTo(b.updatedAt),
-      VendorSort.highestDue => b.pendingAmount.compareTo(a.pendingAmount),
-      VendorSort.lowestDue => a.pendingAmount.compareTo(b.pendingAmount),
-      VendorSort.mostOrders => b.totalOrders.compareTo(a.totalOrders),
-      VendorSort.highestPurchase => b.totalSpent.compareTo(a.totalSpent),
-      VendorSort.alphabetical => a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()),
-    };
-  });
+  filtered = [...filtered]
+    ..sort((a, b) {
+      return switch (sort) {
+        VendorSort.newest => b.updatedAt.compareTo(a.updatedAt),
+        VendorSort.oldest => a.updatedAt.compareTo(b.updatedAt),
+        VendorSort.highestDue => b.pendingAmount.compareTo(a.pendingAmount),
+        VendorSort.lowestDue => a.pendingAmount.compareTo(b.pendingAmount),
+        VendorSort.mostOrders => b.totalOrders.compareTo(a.totalOrders),
+        VendorSort.highestPurchase => b.totalSpent.compareTo(a.totalSpent),
+        VendorSort.alphabetical => a.companyName.toLowerCase().compareTo(
+          b.companyName.toLowerCase(),
+        ),
+      };
+    });
 
   return filtered;
 });
@@ -72,17 +85,24 @@ final vendorPaymentsProvider = StreamProvider<List<VendorPayment>>((ref) {
   return ref.watch(localDatabaseProvider).vendorPayments.watchForShop(shopId);
 });
 
-final vendorPurchasesForVendorProvider = Provider.family<List<VendorPurchase>, String>((ref, vendorId) {
-  final all = ref.watch(vendorPurchasesProvider).value ?? const <VendorPurchase>[];
-  return all.where((p) => p.vendorId == vendorId).toList();
-});
+final vendorPurchasesForVendorProvider =
+    Provider.family<List<VendorPurchase>, String>((ref, vendorId) {
+      final all =
+          ref.watch(vendorPurchasesProvider).value ?? const <VendorPurchase>[];
+      return all.where((p) => p.vendorId == vendorId).toList();
+    });
 
-final vendorPaymentsForVendorProvider = Provider.family<List<VendorPayment>, String>((ref, vendorId) {
-  final all = ref.watch(vendorPaymentsProvider).value ?? const <VendorPayment>[];
-  return all.where((p) => p.vendorId == vendorId).toList();
-});
+final vendorPaymentsForVendorProvider =
+    Provider.family<List<VendorPayment>, String>((ref, vendorId) {
+      final all =
+          ref.watch(vendorPaymentsProvider).value ?? const <VendorPayment>[];
+      return all.where((p) => p.vendorId == vendorId).toList();
+    });
 
-final vendorOutstandingProvider = Provider.family<double, String>((ref, vendorId) {
+final vendorOutstandingProvider = Provider.family<double, String>((
+  ref,
+  vendorId,
+) {
   final purchases = ref.watch(vendorPurchasesForVendorProvider(vendorId));
   final payments = ref.watch(vendorPaymentsForVendorProvider(vendorId));
   final totalPurchase = purchases.fold<double>(0, (s, p) => s + p.amount);
@@ -110,7 +130,10 @@ class VendorLedgerEntry {
   });
 }
 
-final vendorLedgerProvider = Provider.family<List<VendorLedgerEntry>, String>((ref, vendorId) {
+final vendorLedgerProvider = Provider.family<List<VendorLedgerEntry>, String>((
+  ref,
+  vendorId,
+) {
   final purchases = ref.watch(vendorPurchasesForVendorProvider(vendorId));
   final payments = ref.watch(vendorPaymentsForVendorProvider(vendorId));
 
@@ -239,27 +262,35 @@ class VendorService {
     );
     final db = _ref.read(localDatabaseProvider);
     await db.vendorPurchases.put(purchase);
-    _ref.read(notificationServiceProvider).add(
+    _ref
+        .read(notificationServiceProvider)
+        .add(
           type: NotificationType.stock,
           title: 'Vendor stock received',
-          message: '৳${amount.toStringAsFixed(2)} purchase recorded from vendor.',
+          message:
+              '৳${amount.toStringAsFixed(2)} purchase recorded from vendor.',
           sourceKey: 'vendor-purchase:${purchase.purchaseId}',
         );
 
     final vendor = db.vendors.getForShop(_ref.read(shopIdProvider), vendorId);
     if (vendor != null) {
-      final updatedProducts = itemsSupplied.isNotEmpty && !vendor.products.contains(itemsSupplied)
-          ? (vendor.products.isEmpty ? itemsSupplied : '${vendor.products}, $itemsSupplied')
+      final updatedProducts =
+          itemsSupplied.isNotEmpty && !vendor.products.contains(itemsSupplied)
+          ? (vendor.products.isEmpty
+                ? itemsSupplied
+                : '${vendor.products}, $itemsSupplied')
           : vendor.products;
-      await db.vendors.put(vendor.copyWith(
-        totalOrders: vendor.totalOrders + 1,
-        totalSpent: vendor.totalSpent + amount,
-        pendingAmount: vendor.pendingAmount + amount,
-        lastPurchaseDate: date ?? now,
-        products: updatedProducts,
-        updatedAt: now,
-        syncStatus: SyncStatus.pending,
-      ));
+      await db.vendors.put(
+        vendor.copyWith(
+          totalOrders: vendor.totalOrders + 1,
+          totalSpent: vendor.totalSpent + amount,
+          pendingAmount: vendor.pendingAmount + amount,
+          lastPurchaseDate: date ?? now,
+          products: updatedProducts,
+          updatedAt: now,
+          syncStatus: SyncStatus.pending,
+        ),
+      );
     }
 
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
@@ -277,7 +308,9 @@ class VendorService {
     final now = DateTime.now();
     final outstanding = _ref.read(vendorOutstandingProvider(vendorId));
     if (amount <= 0 || amount > outstanding) {
-      throw StateError('Vendor payment must be positive and cannot exceed the outstanding balance.');
+      throw StateError(
+        'Vendor payment must be positive and cannot exceed the outstanding balance.',
+      );
     }
     final payment = VendorPayment(
       paymentId: _uuid.v4(),
@@ -293,7 +326,9 @@ class VendorService {
     );
     final db = _ref.read(localDatabaseProvider);
     await db.vendorPayments.put(payment);
-    _ref.read(notificationServiceProvider).add(
+    _ref
+        .read(notificationServiceProvider)
+        .add(
           type: NotificationType.payment,
           title: 'Vendor payment recorded',
           message: '৳${amount.toStringAsFixed(2)} vendor payment recorded.',
@@ -302,33 +337,20 @@ class VendorService {
 
     final vendor = db.vendors.getForShop(_ref.read(shopIdProvider), vendorId);
     if (vendor != null) {
-      final newPending = (vendor.pendingAmount - amount).clamp(0.0, double.infinity);
-      await db.vendors.put(vendor.copyWith(
-        pendingAmount: newPending,
-        updatedAt: now,
-        syncStatus: SyncStatus.pending,
-      ));
+      final newPending = (vendor.pendingAmount - amount).clamp(
+        0.0,
+        double.infinity,
+      );
+      await db.vendors.put(
+        vendor.copyWith(
+          pendingAmount: newPending,
+          updatedAt: now,
+          syncStatus: SyncStatus.pending,
+        ),
+      );
     }
 
     await _ref.read(syncStateProvider.notifier).syncIfOnline();
     return payment;
   }
 }
-
-const vendorCategories = [
-  'Food & Beverage',
-  'Dairy',
-  'Personal Care',
-  'Grains',
-  'Beverages',
-  'Meat & Poultry',
-  'Health & Hygiene',
-  'Vegetables',
-  'Fruits',
-  'Snacks',
-  'Spices',
-  'Frozen Foods',
-  'Cleaning Supplies',
-  'Packaging',
-  'Other',
-];

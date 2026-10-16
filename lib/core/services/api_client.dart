@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
@@ -49,6 +50,38 @@ class ApiClient {
 
   String? get accessToken => TokenStore.get(_kAccessToken);
 
+  Future<http.Client> _requestClient() async {
+    // Fail quickly on devices with no network instead of leaving cloud-backed
+    // screens (branches, subscription, support, etc.) spinning for 20 seconds.
+    // Keep localhost available for local services reached through adb reverse.
+    final endpoint = Uri.tryParse(_baseUrl);
+    final isLocalEndpoint =
+        endpoint != null &&
+        (endpoint.host == 'localhost' ||
+            endpoint.host == '127.0.0.1' ||
+            endpoint.host == '::1');
+    if (!isLocalEndpoint) {
+      try {
+        final connections = await Connectivity().checkConnectivity().timeout(
+          const Duration(milliseconds: 500),
+        );
+        if (connections.every((item) => item == ConnectivityResult.none)) {
+          throw const ApiException(
+            0,
+            'NO_INTERNET',
+            'Internet is required for this feature.',
+          );
+        }
+      } on ApiException {
+        rethrow;
+      } catch (_) {
+        // OS connectivity is a hint only; attempt the actual request if the
+        // connectivity plugin is unavailable or slow to respond.
+      }
+    }
+    return secureHttpClient();
+  }
+
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$_baseUrl$path').replace(queryParameters: query);
 
@@ -58,7 +91,7 @@ class ApiClient {
     Map<String, String>? query,
     Duration? timeout,
   }) async {
-    final client = await secureHttpClient();
+    final client = await _requestClient();
     return _send(
       () => client.get(_uri(path, query), headers: _headers()),
       path: path,
@@ -84,7 +117,7 @@ class ApiClient {
     Map<String, String>? query,
     Duration? timeout,
   }) async {
-    final client = await secureHttpClient();
+    final client = await _requestClient();
     final sentAccessToken = accessToken;
     var response = await client
         .get(_uri(path, query), headers: _headers())
@@ -112,7 +145,7 @@ class ApiClient {
     Map<String, dynamic> body, {
     Duration? timeout,
   }) async {
-    final client = await secureHttpClient();
+    final client = await _requestClient();
     final data = await _send(
       () => client.post(
         _uri(path),
@@ -129,7 +162,7 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
-    final client = await secureHttpClient();
+    final client = await _requestClient();
     final data = await _send(
       () => client.put(
         _uri(path),
@@ -145,7 +178,7 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
-    final client = await secureHttpClient();
+    final client = await _requestClient();
     final data = await _send(
       () => client.patch(
         _uri(path),
@@ -158,7 +191,7 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> delete(String path) async {
-    final client = await secureHttpClient();
+    final client = await _requestClient();
     final data = await _send(
       () => client.delete(_uri(path), headers: _headers()),
       path: path,

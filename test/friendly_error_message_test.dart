@@ -25,6 +25,26 @@ void main() {
     expect(message, isNot(contains('upstream host leaked')));
   });
 
+  test(
+    'maps offline-only API requests to bilingual internet-required copy',
+    () {
+      expect(
+        friendlyErrorMessage(
+          const ApiException(0, 'NO_INTERNET', 'technical details'),
+          l10n: AppLocalizations(const Locale('en')),
+        ),
+        contains('This feature needs the internet'),
+      );
+      expect(
+        friendlyErrorMessage(
+          const ApiException(0, 'NO_INTERNET', 'technical details'),
+          l10n: AppLocalizations(const Locale('bn')),
+        ),
+        contains('ইন্টারনেট দরকার'),
+      );
+    },
+  );
+
   test('maps provider cancellation as a non-technical sign-in message', () {
     final english = AppLocalizations(const Locale('en'));
     expect(

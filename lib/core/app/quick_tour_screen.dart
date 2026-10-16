@@ -31,9 +31,9 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
 
   void _finish() {
     Hive.box(HiveBoxes.settings).put('hasSeenOnboarding', true);
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   void _next() {
@@ -61,27 +61,40 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
             width: 130,
             height: 130,
             fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
           ),
           title: l10n.t('welcomeToMohajon'),
           description: l10n.t('tourWelcomeDesc'),
         ),
       _Slide(
-        hero: const _SlideIcon(icon: Icons.dashboard_rounded, color: MohajonWarm.goldText),
+        hero: const _SlideIcon(
+          icon: Icons.dashboard_rounded,
+          color: MohajonWarm.goldText,
+        ),
         title: l10n.t('tourDashboardTitle'),
         description: l10n.t('tourDashboardDesc'),
       ),
       _Slide(
-        hero: const _SlideIcon(icon: Icons.point_of_sale_rounded, color: MohajonWarm.green),
+        hero: const _SlideIcon(
+          icon: Icons.point_of_sale_rounded,
+          color: MohajonWarm.green,
+        ),
         title: l10n.t('tourPosTitle'),
         description: l10n.t('tourPosDesc'),
       ),
       _Slide(
-        hero: const _SlideIcon(icon: Icons.inventory_2_rounded, color: MohajonWarm.orange),
+        hero: const _SlideIcon(
+          icon: Icons.inventory_2_rounded,
+          color: MohajonWarm.orange,
+        ),
         title: l10n.t('tourStockTitle'),
         description: l10n.t('tourStockDesc'),
       ),
       _Slide(
-        hero: const _SlideIcon(icon: Icons.people_alt_rounded, color: MohajonWarm.goldText),
+        hero: const _SlideIcon(
+          icon: Icons.people_alt_rounded,
+          color: MohajonWarm.goldText,
+        ),
         title: l10n.t('tourClientsTitle'),
         description: l10n.t('tourClientsDesc'),
       ),
@@ -101,7 +114,10 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
                     onPressed: _finish,
                     style: TextButton.styleFrom(
                       foregroundColor: MohajonWarm.muted,
-                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                     child: Text(l10n.t('skip')),
                   ),
@@ -111,7 +127,8 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
                 child: PageView.builder(
                   controller: _controller,
                   itemCount: _slideCount,
-                  onPageChanged: (index) => setState(() => _currentPage = index),
+                  onPageChanged: (index) =>
+                      setState(() => _currentPage = index),
                   itemBuilder: (context, index) {
                     final slide = slides[index];
                     return Padding(
@@ -125,10 +142,15 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
                             decoration: BoxDecoration(
                               color: MohajonWarm.card,
                               borderRadius: BorderRadius.circular(32),
-                              border: Border.all(color: MohajonWarm.goldBorder, width: 1.4),
+                              border: Border.all(
+                                color: MohajonWarm.goldBorder,
+                                width: 1.4,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: MohajonWarm.primary.withValues(alpha: 0.35),
+                                  color: MohajonWarm.primary.withValues(
+                                    alpha: 0.35,
+                                  ),
                                   blurRadius: 24,
                                   offset: const Offset(0, 10),
                                 ),
@@ -179,7 +201,9 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
                           width: active ? 22 : 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: active ? MohajonWarm.primary : MohajonWarm.goldBorder,
+                            color: active
+                                ? MohajonWarm.primary
+                                : MohajonWarm.goldBorder,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         );
@@ -203,7 +227,9 @@ class _QuickTourScreenState extends State<QuickTourScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        child: Text(isLast ? l10n.t('getStarted') : l10n.t('next')),
+                        child: Text(
+                          isLast ? l10n.t('getStarted') : l10n.t('next'),
+                        ),
                       ),
                     ),
                   ],

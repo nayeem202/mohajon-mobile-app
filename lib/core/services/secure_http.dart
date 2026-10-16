@@ -23,14 +23,15 @@ Future<http.Client> createSecureHttpClient() async {
   final context = SecurityContext(withTrustedRoots: true);
   context.setTrustedCertificatesBytes(utf8.encode(pem));
 
-  return IOClient(HttpClient(context: context));
+  final client = HttpClient(context: context)
+    ..connectionTimeout = const Duration(seconds: 3);
+  return IOClient(client);
 }
 
 Future<http.Client>? _cachedClient;
 
 /// Lazily-created, cached secure client shared by all API callers.
-Future<http.Client> secureHttpClient() =>
-    _cachedClient ??= _createHttpClient();
+Future<http.Client> secureHttpClient() => _cachedClient ??= _createHttpClient();
 
 Future<http.Client> _createHttpClient() {
   // Local development uses plain HTTP. Trying to load the bundled TLS CA for
@@ -39,6 +40,9 @@ Future<http.Client> _createHttpClient() {
   final usesLocalHttp =
       AppConfig.authBaseUrl.startsWith('http://') ||
       AppConfig.apiBaseUrl.startsWith('http://');
-  if (usesLocalHttp) return Future.value(http.Client());
+  if (usesLocalHttp) {
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
+    return Future.value(IOClient(client));
+  }
   return createSecureHttpClient();
 }

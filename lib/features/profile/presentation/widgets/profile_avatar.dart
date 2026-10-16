@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
@@ -60,10 +61,7 @@ class ProfileAvatar extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white,
-            width: 2,
-          ),
+          border: Border.all(color: Colors.white, width: 2),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(size / 2),
@@ -83,15 +81,11 @@ class ProfileAvatar extends StatelessWidget {
   }
 
   Widget _defaultAvatar() {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        image: DecorationImage(
-          image: AssetImage(defaultAvatarAsset),
-          fit: BoxFit.cover,
-        ),
+    return ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: SvgPicture.asset(defaultAvatarAsset, fit: BoxFit.cover),
       ),
     );
   }

@@ -31,23 +31,21 @@ val localProperties = Properties().apply {
 // directly placed in the manifest"), so a resource is required, not just
 // preferable.
 //
-// The same value has to be handed to Dart with
-// --dart-define=FACEBOOK_APP_ID=... ; CustomAuthBackend refuses to open the
-// Facebook flow when that define is missing, so the placeholder below can only
-// ever surface as the friendly "not configured" message.
+// The same value is the Dart default for the main Mohajon app; a build-time
+// define can override it for another environment. The native SDK reads the
+// resource generated below.
 val facebookAppId: String =
     localProperties.getProperty("facebook.app.id")?.trim().orEmpty()
         .ifEmpty { "000000000000000" }
 
-// Facebook Client Token (Meta developer console -> Settings -> Basic).
+// Facebook Client Token (Meta developer console -> App settings -> Advanced).
 //
 // Distinct from the App ID and from the App Secret. It is a public,
 // client-side value, shipped inside every install, and the SDK refuses to
 // initialise without it ("A valid Facebook app client token must be set").
-// Meta presents it in the form <app-id>|<hash>.
+// Meta provides this as a separate value; do not combine it with the App ID.
 val facebookClientToken: String =
     localProperties.getProperty("facebook.client.token")?.trim().orEmpty()
-        .ifEmpty { "$facebookAppId|00000000000000000000000000000000" }
 
 android {
     namespace = "com.example.inventory_1"

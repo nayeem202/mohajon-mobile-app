@@ -63,9 +63,19 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     _batchNumber.text = product?.batchNumber ?? '';
     _sku.text = product?.sku ?? '';
     _variantName.text = product?.variantName ?? '';
-    _selectedCategory = product?.category.isNotEmpty == true
-        ? product!.category
-        : 'Grocery';
+    if (product?.category.trim().isNotEmpty == true) {
+      _selectedCategory = product!.category.trim();
+    } else {
+      final businessType =
+          ref.read(localDatabaseProvider).settings.get('profile_businessType')
+              as String?;
+      final suggestedCategories = ShopCategoryTemplates.forId(
+        businessType,
+      ).categories;
+      _selectedCategory = suggestedCategories.isNotEmpty
+          ? suggestedCategories.first
+          : 'Grocery';
+    }
     _selectedUnit = product?.unit.isNotEmpty == true ? product!.unit : 'pcs';
     _imagePath = product?.imagePath;
   }
@@ -225,7 +235,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                                     children: [
                                       for (final unit in _units)
                                         _PillChip(
-                                          label: unit,
+                                          label: _unitLabel(
+                                            unit,
+                                            l10n.locale.languageCode,
+                                          ),
                                           selected: _selectedUnit == unit,
                                           onTap: () => setState(
                                             () => _selectedUnit = unit,
@@ -666,26 +679,34 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
   }
 
   String _categoryLabel(String category, AppLocalizations l10n) {
-    switch (category) {
-      case 'Grocery':
-        return l10n.t('catGrocery');
-      case 'Beverages':
-        return l10n.t('catBeverages');
-      case 'Personal Care':
-        return l10n.t('catPersonalCare');
-      case 'Rice':
-        return l10n.t('catRice');
-      case 'Dairy':
-        return l10n.t('catDairy');
-      case 'Meat':
-        return l10n.t('catMeat');
-      case 'Vegetables':
-        return l10n.t('catVegetables');
-      case 'Health':
-        return l10n.t('catHealth');
-      default:
-        return category;
+    return ShopCategoryLabels.product(category, l10n.locale.languageCode);
+  }
+
+  String _unitLabel(String unit, String languageCode) {
+    if (languageCode != 'bn') {
+      return switch (unit) {
+        'pcs' => 'Piece',
+        'kg' => 'Kilogram (kg)',
+        'g' => 'Gram (g)',
+        'L' => 'Liter (L)',
+        'ml' => 'Milliliter (ml)',
+        'dozen' => 'Dozen',
+        'box' => 'Box',
+        'pack' => 'Pack',
+        _ => unit,
+      };
     }
+    return switch (unit) {
+      'pcs' => 'পিস',
+      'kg' => 'কেজি',
+      'g' => 'গ্রাম',
+      'L' => 'লিটার',
+      'ml' => 'মিলিলিটার',
+      'dozen' => 'ডজন',
+      'box' => 'বাক্স',
+      'pack' => 'প্যাকেট',
+      _ => unit,
+    };
   }
 
   Future<void> _scanBarcode() async {

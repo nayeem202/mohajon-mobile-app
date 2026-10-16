@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/app_error.dart';
+import '../../../core/app/app_providers.dart';
+import '../../../core/constants/shop_category_templates.dart';
 
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/snackbar.dart';
@@ -63,6 +65,17 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isEditing = widget.vendor != null;
+    final businessType =
+        ref.read(localDatabaseProvider).settings.get('profile_businessType')
+            as String?;
+    final supplierCategories = <String>[
+      ...ShopCategoryTemplates.forId(businessType).supplierCategories,
+      if (_category.trim().isNotEmpty &&
+          !ShopCategoryTemplates.forId(
+            businessType,
+          ).supplierCategories.contains(_category))
+        _category,
+    ];
     return withLoadingOverlay(
       Theme(
         data: MohajonWarm.theme(Theme.of(context)),
@@ -303,10 +316,15 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen>
                                       Icons.keyboard_arrow_down_rounded,
                                       color: MohajonWarm.muted,
                                     ),
-                                    items: vendorCategories.map((cat) {
+                                    items: supplierCategories.map((cat) {
                                       return DropdownMenuItem(
                                         value: cat,
-                                        child: Text(cat),
+                                        child: Text(
+                                          ShopCategoryLabels.supplier(
+                                            cat,
+                                            l10n.locale.languageCode,
+                                          ),
+                                        ),
                                       );
                                     }).toList(),
                                     onChanged: (v) =>

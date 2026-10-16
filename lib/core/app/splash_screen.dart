@@ -10,6 +10,7 @@ import '../constants/app_constants.dart';
 import 'app_providers.dart';
 import 'authenticated_entry.dart';
 import 'quick_tour_screen.dart';
+import 'splash_branding.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -19,6 +20,8 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
+  final _brandingReady = Completer<void>();
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +44,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         // relaunching the app enters the home screen immediately.
         unawaited(ref.read(syncStateProvider.notifier).syncNow());
       }
+      await _brandingReady.future;
+      if (!mounted) return;
+      await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
       await Future<void>.delayed(const Duration(milliseconds: 200));
       if (mounted) {
         final session = ref.read(authStateProvider).value;
@@ -49,60 +55,42 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           next = const AuthenticatedEntry();
         } else {
           final hasSeenOnboarding =
-              Hive.box(HiveBoxes.settings).get('hasSeenOnboarding', defaultValue: false) as bool;
-          next = hasSeenOnboarding ? const LoginScreen() : const QuickTourScreen();
+              Hive.box(
+                    HiveBoxes.settings,
+                  ).get('hasSeenOnboarding', defaultValue: false)
+                  as bool;
+          next = hasSeenOnboarding
+              ? const LoginScreen()
+              : const QuickTourScreen();
         }
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => next),
+          PageRouteBuilder<void>(
+            pageBuilder: (context, animation, secondaryAnimation) => next,
+            transitionDuration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 220),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+          ),
         );
       }
     });
   }
 
   @override
+  void dispose() {
+    if (!_brandingReady.isCompleted) _brandingReady.complete();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8E1),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/brand/mohajon.png',
-              width: 180,
-              height: 180,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'মহাজন',
-              style: const TextStyle(
-                color: Color(0xFF2F3028),
-                fontSize: 30,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'আপনার ব্যবসার হিসাবের সঙ্গী',
-              style: const TextStyle(
-                color: Color(0xFF77735F),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 32),
-            const SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFC800)),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return SplashBranding(
+      onReady: () {
+        if (!_brandingReady.isCompleted) _brandingReady.complete();
+      },
     );
   }
 }

@@ -13,13 +13,15 @@ class SaleSuccessSheet extends StatelessWidget {
     super.key,
     required this.onPrint,
     required this.onSave,
+    this.isOnline,
     this.whatsappPhone,
     required this.whatsappMessage,
     this.onDigitalInvoice,
   });
 
   final VoidCallback onPrint;
-  final VoidCallback onSave;
+  final Future<String> Function() onSave;
+  final Future<bool> Function()? isOnline;
   final String? whatsappPhone;
   final String whatsappMessage;
   final Future<void> Function()? onDigitalInvoice;
@@ -103,16 +105,26 @@ class SaleSuccessSheet extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                onPressed: onDigitalInvoice,
+                onPressed: () async {
+                  final shareInvoice = onDigitalInvoice;
+                  if (shareInvoice == null) return;
+                  Navigator.of(context).pop();
+                  await shareInvoice();
+                },
                 icon: const Icon(Icons.link_rounded, size: 19),
                 label: Text(
                   l10n.t('shareDigitalInvoice'),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: MohajonWarm.green,
                   side: const BorderSide(color: MohajonWarm.green),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
@@ -121,7 +133,24 @@ class SaleSuccessSheet extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: OutlinedButton.icon(
-              onPressed: onSave,
+              onPressed: () async {
+                try {
+                  final path = await onSave();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
+                  showAppSnackBar(
+                    context,
+                    l10n.tP('receiptSavedAt', {'path': path}),
+                  );
+                } catch (_) {
+                  if (!context.mounted) return;
+                  showAppSnackBar(
+                    context,
+                    l10n.t('receiptSaveFailed'),
+                    isError: true,
+                  );
+                }
+              },
               style: OutlinedButton.styleFrom(
                 foregroundColor: MohajonWarm.ink,
                 side: const BorderSide(color: MohajonWarm.ink),
@@ -151,6 +180,23 @@ class SaleSuccessSheet extends StatelessWidget {
                     context,
                     AppLocalizations.of(context).t('whatsappNoPhone'),
                     isError: true,
+                  );
+                  return;
+                }
+                if (isOnline != null && !await isOnline!()) {
+                  if (!context.mounted) return;
+                  await showDialog<void>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(l10n.t('internetRequiredTitle')),
+                      content: Text(l10n.t('whatsappInternetRequired')),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: Text(l10n.t('close')),
+                        ),
+                      ],
+                    ),
                   );
                   return;
                 }

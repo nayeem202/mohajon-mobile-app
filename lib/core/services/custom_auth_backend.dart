@@ -53,7 +53,13 @@ class CustomAuthBackend implements AuthBackend {
   /// value has to reach the Android manifest for the native SDK to initialise,
   /// so it is declared in one place here and mirrored in
   /// `android/app/src/main/AndroidManifest.xml`.
-  static const _facebookAppId = String.fromEnvironment('FACEBOOK_APP_ID');
+  // App ID is public configuration. Keep the build-time override for staging
+  // or alternate Meta apps, while making the configured Mohajon app work with
+  // the repository's standard build command (which does not pass this define).
+  static const _facebookAppId = String.fromEnvironment(
+    'FACEBOOK_APP_ID',
+    defaultValue: '1101302406039305',
+  );
 
   static const _kAccessToken = 'auth_access_token';
   static const _kRefreshToken = 'auth_refresh_token';

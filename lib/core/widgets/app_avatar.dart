@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'app_image.dart';
 
 /// Default avatar placeholder shown while no profile picture is set,
 /// used consistently across the whole app.
-const String defaultAvatarAsset = 'assets/images/default_avatar.png';
+const String defaultAvatarAsset = 'assets/images/default_avatar.svg';
 
 class AppAvatar extends StatelessWidget {
   const AppAvatar({
@@ -53,8 +54,8 @@ class AppAvatar extends StatelessWidget {
   Widget _defaultAvatar(Color? backgroundColor) {
     return ColoredBox(
       color: backgroundColor ?? const Color(0xFFD6F2EA),
-      child: Image(
-        image: const AssetImage(defaultAvatarAsset),
+      child: SvgPicture.asset(
+        defaultAvatarAsset,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,

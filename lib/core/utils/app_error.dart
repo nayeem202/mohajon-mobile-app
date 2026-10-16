@@ -246,6 +246,12 @@ String? _apiCodeMessage(ApiException error, AppLocalizations? l10n) {
   final authMessage = _authCodeMessage(normalizedCode, l10n);
   if (authMessage != null) return authMessage;
   switch (normalizedCode) {
+    case 'NO_INTERNET':
+      return _text(
+        l10n,
+        'noInternetMessage',
+        'This feature needs the internet. Connect and try again.',
+      );
     case 'CREDIT_LIMIT_EXCEEDED':
       return _creditLimitMessage(l10n, _availableCreditFrom(error.message));
     case 'INSUFFICIENT_STOCK':

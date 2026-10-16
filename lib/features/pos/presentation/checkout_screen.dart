@@ -1232,60 +1232,53 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                   );
                                                 },
                                                 onSave: () async {
-                                                  String? path;
-                                                  try {
-                                                    final bytes = await InvoiceService()
-                                                        .buildThermalReceipt(
-                                                          sale,
-                                                          customerName:
-                                                              selectedCustomer
-                                                                  ?.name ??
-                                                              '',
-                                                          customerPhone:
-                                                              selectedCustomer
-                                                                  ?.phone ??
-                                                              '',
-                                                          company:
-                                                              DocCompany.fromShop(
-                                                                shopProfile,
-                                                              ),
-                                                        );
-                                                    path = await DownloadExportService()
-                                                        .saveFileToDownloads(
-                                                          fileName:
-                                                              'receipt-${sale.saleId}.pdf',
-                                                          mimeType:
-                                                              'application/pdf',
-                                                          bytes: bytes,
-                                                        );
-                                                  } catch (_) {
-                                                    if (!context.mounted) {
-                                                      return;
-                                                    }
-                                                    showAppSnackBar(
-                                                      context,
-                                                      l10n.t(
-                                                        'receiptSaveFailed',
-                                                      ),
-                                                      isError: true,
-                                                    );
-                                                    return;
-                                                  }
-                                                  if (!context.mounted) {
-                                                    return;
-                                                  }
-                                                  showAppSnackBar(
-                                                    context,
-                                                    l10n.tP('receiptSavedAt', {
-                                                      'path':
-                                                          path ?? 'Download',
-                                                    }),
-                                                  );
+                                                  final bytes =
+                                                      await InvoiceService()
+                                                          .buildThermalReceipt(
+                                                            sale,
+                                                            customerName:
+                                                                selectedCustomer
+                                                                    ?.name ??
+                                                                '',
+                                                            customerPhone:
+                                                                selectedCustomer
+                                                                    ?.phone ??
+                                                                '',
+                                                            company:
+                                                                DocCompany.fromShop(
+                                                                  shopProfile,
+                                                                ),
+                                                          );
+                                                  final path =
+                                                      await DownloadExportService()
+                                                          .saveFileToDownloads(
+                                                            fileName:
+                                                                'receipt-${sale.saleId}.pdf',
+                                                            mimeType:
+                                                                'application/pdf',
+                                                            bytes: bytes,
+                                                          );
+                                                  return path ?? 'Downloads';
                                                 },
+                                                isOnline: () => ref
+                                                    .read(syncServiceProvider)
+                                                    .isOnline,
                                                 whatsappPhone:
                                                     selectedCustomer?.phone,
                                                 whatsappMessage: billMessage,
                                                 onDigitalInvoice: () async {
+                                                  final customerPhone =
+                                                      selectedCustomer?.phone
+                                                          .trim() ??
+                                                      '';
+                                                  if (customerPhone.isEmpty) {
+                                                    showAppSnackBar(
+                                                      context,
+                                                      l10n.t('whatsappNoPhone'),
+                                                      isError: true,
+                                                    );
+                                                    return;
+                                                  }
                                                   final isOnline = await ref
                                                       .read(syncServiceProvider)
                                                       .isOnline;
@@ -1324,10 +1317,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                     }
                                                     final ok =
                                                         await WhatsAppService.openChat(
-                                                          phone:
-                                                              selectedCustomer
-                                                                  ?.phone ??
-                                                              '',
+                                                          phone: customerPhone,
                                                           message:
                                                               '${l10n.t('digitalInvoiceMessage')}\n$uri',
                                                         );

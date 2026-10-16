@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/app/app_providers.dart';
+import '../../../core/constants/shop_category_templates.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/app_error.dart';
@@ -55,6 +57,20 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
             child: vendorsAsync.when(
               data: (items) {
                 final filtered = ref.watch(filteredVendorsProvider);
+                final businessType =
+                    ref
+                            .read(localDatabaseProvider)
+                            .settings
+                            .get('profile_businessType')
+                        as String?;
+                final supplierCategories = <String>{
+                  ...ShopCategoryTemplates.forId(
+                    businessType,
+                  ).supplierCategories,
+                  ...items
+                      .map((vendor) => vendor.category.trim())
+                      .where((category) => category.isNotEmpty),
+                }.toList();
                 final totalSpent = items.fold<double>(
                   0,
                   (s, v) => s + v.totalSpent,
@@ -82,6 +98,7 @@ class _VendorListScreenState extends ConsumerState<VendorListScreen> {
                       if (_showSearch) ...[
                         const SizedBox(height: 16),
                         _SearchAndFilters(
+                          categories: supplierCategories,
                           controller: _searchController,
                           searchQuery: searchQuery,
                           selectedSort: _sort,
@@ -543,6 +560,7 @@ class _PendingPaymentCard extends StatelessWidget {
 class _SearchAndFilters extends StatelessWidget {
   const _SearchAndFilters({
     required this.controller,
+    required this.categories,
     required this.searchQuery,
     required this.selectedSort,
     required this.selectedCategory,
@@ -553,6 +571,7 @@ class _SearchAndFilters extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final List<String> categories;
   final String searchQuery;
   final VendorSort selectedSort;
   final String selectedCategory;
@@ -676,7 +695,7 @@ class _SearchAndFilters extends StatelessWidget {
             height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: vendorCategories.length + 1,
+              itemCount: categories.length + 1,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 if (index == 0) {
@@ -686,9 +705,12 @@ class _SearchAndFilters extends StatelessWidget {
                     onTap: () => onCategoryChanged(''),
                   );
                 }
-                final cat = vendorCategories[index - 1];
+                final cat = categories[index - 1];
                 return _FilterChip(
-                  label: cat,
+                  label: ShopCategoryLabels.supplier(
+                    cat,
+                    l10n.locale.languageCode,
+                  ),
                   selected: selectedCategory == cat,
                   onTap: () =>
                       onCategoryChanged(selectedCategory == cat ? '' : cat),

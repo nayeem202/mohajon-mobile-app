@@ -684,6 +684,9 @@ class AppLocalizations {
       'sendDueReminder': 'Send due reminder',
       'whatsappNoPhone': 'No phone number saved for this customer',
       'whatsappFailed': 'Could not open WhatsApp',
+      'whatsappInternetRequired':
+          'Internet is needed to open WhatsApp and send this bill. Connect and try again.',
+      'internetRequiredTitle': 'Internet connection required',
       'saleCompleteTitle': 'Sale complete',
       'printInvoice': 'Print invoice',
       'saveReceipt': 'Save to phone',
@@ -2474,6 +2477,9 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'sendDueReminder': 'বাকির রিমাইন্ডার পাঠান',
       'whatsappNoPhone': 'এই কাস্টমারের নম্বর সংরক্ষিত নেই',
       'whatsappFailed': 'WhatsApp খোলা যায়নি',
+      'whatsappInternetRequired':
+          'WhatsApp-এ বিল পাঠাতে ইন্টারনেট দরকার। ইন্টারনেটে যুক্ত হয়ে আবার চেষ্টা করুন।',
+      'internetRequiredTitle': 'ইন্টারনেট সংযোগ দরকার',
       'saleCompleteTitle': 'বিক্রয় সম্পন্ন',
       'printInvoice': 'ইনভয়েস প্রিন্ট করুন',
       'saveReceipt': 'ফোনে সংরক্ষণ করুন',

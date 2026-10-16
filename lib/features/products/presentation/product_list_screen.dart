@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import '../../../core/utils/app_error.dart';
 
 import '../../../core/models/product.dart';
+import '../../../core/constants/shop_category_templates.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money.dart';
@@ -27,6 +28,9 @@ final GlobalKey tourAddProductKey = GlobalKey();
 
 enum _StockFilter { all, low, out, expiring, expired }
 
+const _allStockCategories = '__all_stock_categories__';
+const _uncategorizedStockCategory = '__uncategorized_stock_category__';
+
 class ProductListScreen extends ConsumerStatefulWidget {
   const ProductListScreen({super.key, this.showExpiringOnly = false});
 
@@ -41,6 +45,7 @@ class ProductListScreen extends ConsumerStatefulWidget {
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   late final TextEditingController _searchController;
   late _StockFilter _filter;
+  String _selectedCategory = _allStockCategories;
   bool _showSearch = false;
 
   @override
@@ -87,7 +92,25 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             child: productsAsync.when(
               data: (items) {
                 final filteredBySearch = ref.watch(filteredProductsProvider);
-                final visibleProducts = _applyFilter(filteredBySearch);
+                final categories =
+                    items
+                        .map((product) => product.category.trim())
+                        .where((category) => category.isNotEmpty)
+                        .toSet()
+                        .toList()
+                      ..sort(
+                        (a, b) => _categoryLabel(
+                          a,
+                          l10n,
+                        ).compareTo(_categoryLabel(b, l10n)),
+                      );
+                if (items.any((product) => product.category.trim().isEmpty)) {
+                  categories.insert(0, _uncategorizedStockCategory);
+                }
+                final visibleProducts = _applyFilter(
+                  filteredBySearch,
+                  categories,
+                );
                 final totalValue = items.fold<double>(
                   0,
                   (sum, product) =>
@@ -128,6 +151,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           controller: _searchController,
                           searchQuery: searchQuery,
                           selectedFilter: _filter,
+                          categories: categories,
+                          selectedCategory:
+                              categories.contains(_selectedCategory)
+                              ? _selectedCategory
+                              : _allStockCategories,
                           onSearchChanged: (value) =>
                               ref
                                       .read(productSearchQueryProvider.notifier)
@@ -142,6 +170,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           },
                           onFilterChanged: (filter) =>
                               setState(() => _filter = filter),
+                          onCategoryChanged: (category) =>
+                              setState(() => _selectedCategory = category),
                         ),
                       ],
                       const SizedBox(height: 18),
@@ -186,6 +216,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 if (!_showSearch) {
                   _searchController.clear();
                   ref.read(productSearchQueryProvider.notifier).state = '';
+                  _filter = _StockFilter.all;
+                  _selectedCategory = _allStockCategories;
                 }
               },
               child: Icon(
@@ -216,8 +248,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     );
   }
 
-  List<Product> _applyFilter(List<Product> products) {
-    return switch (_filter) {
+  List<Product> _applyFilter(
+    List<Product> products,
+    List<String> availableCategories,
+  ) {
+    final byStatus = switch (_filter) {
       _StockFilter.all => products,
       _StockFilter.low =>
         products.where((product) => product.isLowStock).toList(),
@@ -228,7 +263,23 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       _StockFilter.expired =>
         products.where((product) => product.isExpired).toList(),
     };
+    if (_selectedCategory == _allStockCategories ||
+        !availableCategories.contains(_selectedCategory)) {
+      return byStatus;
+    }
+    if (_selectedCategory == _uncategorizedStockCategory) {
+      return byStatus
+          .where((product) => product.category.trim().isEmpty)
+          .toList();
+    }
+    return byStatus
+        .where((product) => product.category.trim() == _selectedCategory)
+        .toList();
   }
+}
+
+String _categoryLabel(String category, AppLocalizations l10n) {
+  return ShopCategoryLabels.product(category, l10n.locale.languageCode);
 }
 
 class _StockTopBar extends StatelessWidget {
@@ -557,17 +608,23 @@ class _SearchAndFilters extends StatelessWidget {
     required this.controller,
     required this.searchQuery,
     required this.selectedFilter,
+    required this.categories,
+    required this.selectedCategory,
     required this.onSearchChanged,
     required this.onClearSearch,
     required this.onFilterChanged,
+    required this.onCategoryChanged,
   });
 
   final TextEditingController controller;
   final String searchQuery;
   final _StockFilter selectedFilter;
+  final List<String> categories;
+  final String selectedCategory;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onClearSearch;
   final ValueChanged<_StockFilter> onFilterChanged;
+  final ValueChanged<String> onCategoryChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -613,6 +670,46 @@ class _SearchAndFilters extends StatelessWidget {
               ),
             ),
           ),
+          if (categories.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: selectedCategory,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              decoration: InputDecoration(
+                labelText: l10n.t('category'),
+                prefixIcon: const Icon(
+                  Icons.category_outlined,
+                  size: 20,
+                  color: MohajonWarm.muted,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: _allStockCategories,
+                  child: Text(l10n.t('allCategories')),
+                ),
+                for (final category in categories)
+                  DropdownMenuItem(
+                    value: category,
+                    child: Text(
+                      category == _uncategorizedStockCategory
+                          ? l10n.t('general')
+                          : _categoryLabel(category, l10n),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (value) {
+                if (value != null) onCategoryChanged(value);
+              },
+            ),
+          ],
           const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
