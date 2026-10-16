@@ -53,7 +53,7 @@ class AppAvatar extends StatelessWidget {
 
   Widget _defaultAvatar(Color? backgroundColor) {
     return ColoredBox(
-      color: backgroundColor ?? const Color(0xFFD6F2EA),
+      color: backgroundColor ?? const Color(0xFFFFF3CE),
       child: SvgPicture.asset(
         defaultAvatarAsset,
         fit: BoxFit.cover,

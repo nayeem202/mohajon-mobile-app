@@ -18,6 +18,23 @@ class AppLocalizations {
   static const _values = <String, Map<String, String>>{
     'en': {
       'appName': 'Mohajon',
+      'appUpdateTitle': 'A new version is required',
+      'appUpdateBody':
+          'Update Mohajon to keep using your shop account with the latest improvements.',
+      'appUpdateChecking': 'Checking your app version…',
+      'appUpdateNow': 'Update now',
+      'appUpdateAgain': 'Check again',
+      'appUpdateCurrent': 'Your version',
+      'appUpdateLatest': 'Latest version',
+      'appUpdateStoreHint':
+          'Google Play will guide you through the update. Your saved shop data stays on your device.',
+      'appUpdateCancelled':
+          'The update was cancelled. Update the app to continue.',
+      'appUpdateOpenFailed':
+          'Could not start the update. Check your internet connection and try again.',
+      'appUpdateStoreOpened':
+          'Complete the update in the store, then reopen Mohajon.',
+      'appUpdateStarting': 'Starting update…',
       'featureBusinessCoach': 'Business Advice',
       'featureBusinessCoachSubtitle': 'Simple daily actions to improve profit',
       'creditControl': 'Credit control',
@@ -1819,6 +1836,22 @@ If you have any privacy questions, reach out via the Contact Support option in S
 
     'bn': {
       'appName': 'মহাজন',
+      'appUpdateTitle': 'নতুন সংস্করণে আপডেট করুন',
+      'appUpdateBody':
+          'আপনার দোকানের হিসাব আরও ভালোভাবে চালাতে মহাজনের নতুন সংস্করণ প্রয়োজন। আপডেট করে ব্যবহার চালিয়ে যান।',
+      'appUpdateChecking': 'অ্যাপের সংস্করণ যাচাই করা হচ্ছে…',
+      'appUpdateNow': 'এখন আপডেট করুন',
+      'appUpdateAgain': 'আবার যাচাই করুন',
+      'appUpdateCurrent': 'আপনার সংস্করণ',
+      'appUpdateLatest': 'নতুন সংস্করণ',
+      'appUpdateStoreHint':
+          'Google Play-এর নির্দেশনা অনুসরণ করে আপডেট করুন। ফোনে সংরক্ষিত দোকানের তথ্য আগের মতোই থাকবে।',
+      'appUpdateCancelled':
+          'আপডেট বন্ধ করা হয়েছে। ব্যবহার চালিয়ে যেতে অ্যাপটি আপডেট করুন।',
+      'appUpdateOpenFailed':
+          'আপডেট শুরু করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।',
+      'appUpdateStoreOpened': 'স্টোর থেকে আপডেট সম্পন্ন করে মহাজন আবার খুলুন।',
+      'appUpdateStarting': 'আপডেট শুরু হচ্ছে…',
       'featureBusinessCoach': 'বিজনেস কোচ',
       'featureBusinessCoachSubtitle': 'লাভ বাড়ানোর দৈনিক পরামর্শ',
       'creditControl': 'বাকির নিয়ন্ত্রণ',
