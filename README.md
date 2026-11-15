@@ -1,117 +1,126 @@
-# Bangla POS Inventory
+# Mohajon Mobile App
 
-Offline-first Flutter POS, inventory, customer due, and purchase management app for Bangladeshi small businesses.
+**Mohajon** is an offline-first, Bengali-first mobile operating system for
+small businesses in Bangladesh. It combines point-of-sale, inventory, customer
+dues, purchasing, accounting, and business insights in a single Flutter app.
 
-## Stack
+The app is designed for real shop workflows: records are stored locally first,
+users can keep working through unreliable connectivity, and data synchronizes
+with Mohajon's self-hosted services when a connection is available.
 
-- Flutter Material 3
-- Riverpod for app state
-- Hive for offline local storage
-- Self-hosted Java backend services (auth-service, haalkhata-service)
-- `intl` powered English/Bangla localization
-- PDF invoice generation and sharing
+## Key capabilities
 
-## Implemented Modules
+- **Point of sale** — cart, discounts, split/due payments, invoices, returns,
+  and shareable digital receipts
+- **Inventory** — products, barcode tools, batches, expiry data, stock alerts,
+  stock adjustments, and purchase receipts
+- **Customers and dues** — chronological ledgers, partial payments, recovery
+  plans, follow-ups, and customer import
+- **Purchasing and vendors** — suppliers, purchase orders, vendor balances,
+  and supplier returns
+- **Business operations** — branches, staff roles, audit timeline, expenses,
+  investments, daily closing, and configurable payment methods
+- **Accounting and reports** — journals, income statements, VAT, sales,
+  inventory, expense, customer, and operational reports with PDF/XLSX export
+- **Platform features** — subscriptions, bKash payment flow, notifications,
+  support inbox, release/update gate, and a voice-assistant workflow
 
-- Dashboard analytics: today sales, total due, customers due, top products, low stock, monthly chart
-- Products: add, edit, delete, stock tracking, low stock alert, barcode field
-- POS: cart, discount, paid/due calculation, stock decrement, PDF invoice
-- Customers: add, list, details
-- Due management: separate sales and payment records with chronological ledger
-- Payments: partial payments by cash, bKash, or Nagad
-- Purchases: stock increment and supplier due-ready model
-- Offline sync: Hive writes first, pending sync records, push/pull with the Haalkhata service (last-write-wins)
-- Localization: English and Bangla language switch
-- Auth module: email/password, phone OTP, and Google sign-in via the auth-service
-
-## Due Rule
-
-Customer due is never overwritten as a source of truth. It is always derived as:
-
-```text
-sum(customer sales totalAmount) - sum(customer payment amount)
-```
-
-Sales and payments are stored independently, so the ledger can show:
+## Architecture
 
 ```text
-Sale +1000
-Payment -500
-Sale +2000
-Payment -1000
-Final due = 1500
+Flutter + Riverpod UI
+        │
+        ├── Hive local database ──> offline-first reads and queued writes
+        │
+        ├── Mohajon Auth Service :8080 ──> login and JWT refresh
+        │
+        └── Mohajon Core Service :8081 ──> business APIs and sync
 ```
 
-## Sync Data Structure
+Sales and customer payments are independent ledger records. A customer's due
+is calculated from those records, instead of being overwritten as a mutable
+total, which keeps the financial history auditable.
 
-Collections synced with the Haalkhata service (`haalkhata-service`):
+## Technology
+
+| Area | Choice |
+|---|---|
+| Application | Flutter, Material 3, Dart `^3.11.5` |
+| State management | Riverpod |
+| Local persistence | Hive / Hive Flutter |
+| Backend integration | REST APIs, JWT access/refresh tokens, offline sync |
+| Device integrations | Barcode scanning, camera/image picker, contacts, file sharing |
+| Documents | PDF generation, printing, XLSX/PDF report download |
+| Localization | English and Bangla via `intl` and Flutter localization |
+
+## Project layout
 
 ```text
-shops/
-  shopId/
-    products/
-    customers/
-    sales/
-    payments/
-    purchases/
-    suppliers/
-    users/
+lib/
+├── core/          # application shell, API client, local DB, models, theme
+└── features/      # feature-specific UI, providers, domain models, services
+    ├── accounting/
+    ├── pos/
+    ├── products/
+    ├── customers/
+    ├── purchases/
+    ├── reports/
+    ├── subscription/
+    └── voice_assistant/
 ```
 
-## Google Sign-In
+## Run locally
 
-Google sign-in runs through the common authenticate service (`auth-service`):
+### Prerequisites
 
-1. The Flutter app obtains a Google ID token via `google_sign_in`.
-2. `CustomAuthBackend` posts it to `POST /api/v1/auth/google`.
-3. `GoogleIdTokenVerifier` validates the token against Google's public JWKS and
-   the configured `app.google.client-id` (env: `GOOGLE_CLIENT_ID`).
-4. The auth-service provisions/links the user and returns JWT access/refresh
-   tokens.
+- Flutter SDK compatible with Dart `^3.11.5`
+- An Android emulator/device, iOS simulator, or desktop target
+- Local Mohajon Auth and Core services for API-backed workflows
 
-On Android the web client ID used as the ID-token audience lives in
-`android/app/src/main/res/values/strings.xml` (`default_web_client_id`).
-
-## Development
+### Commands
 
 ```bash
 flutter pub get
 flutter analyze
 flutter test
-flutter run
+flutter run \
+  --dart-define=AUTH_BASE_URL=http://10.0.2.2:8080 \
+  --dart-define=HAALKHATA_BASE_URL=http://10.0.2.2:8081
 ```
 
-The Flutter CLI was not available in the current shell while this implementation was generated, so dependency resolution and analyzer checks still need to be run in a Flutter-enabled terminal.
+For Android emulators, `10.0.2.2` points to the host machine. Desktop clients
+default to `localhost`. Release builds require HTTPS URLs supplied through
+these two `--dart-define` values.
 
-## Custom Auth Backend (Auth Service)
+## Authentication and sync
 
-The app authenticates against a self-hosted auth service (Spring Boot),
-`auth-service`.
+The app uses `mohajon-auth-service` for email/password registration, email
+verification, Google sign-in, JWT session refresh, and logout. Business data
+syncs with `mohajon-core-service`; Firebase is not the primary application
+backend.
 
-**Backends:**
+Never commit production credentials, signing keys, local editor settings, or
+runtime logs. The repository ignores those files by default.
 
-Custom auth service only; Firebase Auth is no longer a backend.
-
-**Point the app at a different auth server:**
+## Tests
 
 ```bash
-flutter run --dart-define=AUTH_BASE_URL=https://auth.example.com
+flutter analyze
+flutter test
 ```
 
-Defaults: `http://10.0.2.2:8080` (Android emulator → host machine).
+The suite includes coverage for accounting calculations, cart validation,
+invoice totals, purchase receipts, app updates, responsive workflows,
+localization, and offline-collection behavior.
 
-### What happens in custom auth mode
+## Related repositories
 
-- Email/password signup with email-verification code dialog
-- Login with JWT access token + rotating refresh token
-- Tokens stored in Hive (keys `auth_access_token`, `auth_refresh_token`,
-  `auth_session`); expired access tokens are refreshed automatically on 401
-- Google sign-in via `google_sign_in`; the ID token is verified server-side
-- Logout revokes the refresh token on the server
-- Data sync uses the Haalkhata service directly (`/api/v1/sync/push|pull`);
-  there is no Firestore anymore
+- `mohajon-auth-service` — authentication, tokens, and session management
+- `mohajon-core-service` — business APIs, reporting, and synchronization
+- `mohajon-admin-portal` — platform operations and customer-support tools
 
-### Android note
+## Notes for maintainers
 
-Debug builds allow cleartext HTTP (`android:usesCleartextTraffic`) so the
-emulator can reach the local auth server. Use HTTPS for release builds.
+The Android application ID and Dart package namespace retain their existing
+`inventory_1` values because they are linked to the current Firebase/Android
+configuration and source imports. The public product name is **Mohajon**.
