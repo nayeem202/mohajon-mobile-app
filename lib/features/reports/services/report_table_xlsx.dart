@@ -25,7 +25,7 @@ Uint8List buildTableXlsx(ReportTableData table) {
     ..addFile(
       ArchiveFile(
         'xl/workbook.xml',
-        _workbookXml(table.title).length,
+        utf8.encode(_workbookXml(table.title)).length,
         utf8.encode(_workbookXml(table.title)),
       ),
     )
@@ -42,7 +42,7 @@ Uint8List buildTableXlsx(ReportTableData table) {
     ..addFile(
       ArchiveFile(
         'xl/worksheets/sheet1.xml',
-        _worksheetXml(table).length,
+        utf8.encode(_worksheetXml(table)).length,
         utf8.encode(_worksheetXml(table)),
       ),
     );

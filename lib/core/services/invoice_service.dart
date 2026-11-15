@@ -433,8 +433,9 @@ class InvoiceService {
   }
 
   pw.Widget _receiptTotals(Sale sale) {
-    final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final vatAmount = itemsTotal * (sale.vatPercent / 100);
+    final totals = sale.invoiceTotals;
+    final itemsTotal = totals.subtotal;
+    final vatAmount = totals.vatAmount;
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -821,7 +822,7 @@ class InvoiceService {
   }
 
   pw.Widget _itemsTable(PdfDocument pdf, PdfRasterText raster, Sale sale) {
-    final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
+    final itemsTotal = sale.invoiceTotals.subtotal;
     return pw.Table(
       border: pw.TableBorder(
         horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
@@ -918,11 +919,8 @@ class InvoiceService {
   }
 
   pw.Widget _summarySection(Sale sale) {
-    final itemsTotal = sale.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final taxable = (itemsTotal - sale.discount)
-        .clamp(0, double.infinity)
-        .toDouble();
-    final vatAmount = taxable * (sale.vatPercent / 100);
+    final itemsTotal = sale.invoiceTotals.subtotal;
+    final vatAmount = sale.invoiceTotals.vatAmount;
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),

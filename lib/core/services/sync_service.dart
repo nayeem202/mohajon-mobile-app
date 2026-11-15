@@ -6,6 +6,7 @@ import '../models/syncable.dart';
 import '../offline/local_collection.dart';
 import '../offline/local_database.dart';
 import 'api_client.dart';
+import 'accounting_outbox.dart';
 import 'file_upload_service.dart';
 import '../utils/app_error.dart';
 import '../../features/purchases/models/purchase_order.dart';
@@ -128,7 +129,8 @@ class SyncService {
           _db.auditEvents.pending().length +
           _db.productBatches.pending().length +
           _db.saleReturns.pending().length +
-          _db.purchaseOrders.pending().length;
+          _db.purchaseOrders.pending().length +
+          AccountingOutbox.count(_db.settings);
     }
     var total =
         _db.products.pendingForShop(shopId).length +
@@ -147,7 +149,8 @@ class SyncService {
         _db.auditEvents.pendingForShop(shopId).length +
         _db.productBatches.pendingForShop(shopId).length +
         _db.saleReturns.pendingForShop(shopId).length +
-        _db.purchaseOrders.pendingForShop(shopId).length;
+        _db.purchaseOrders.pendingForShop(shopId).length +
+        AccountingOutbox.count(_db.settings, shop: shopId);
     var quarantined = 0;
     for (final (name, _) in _collections) {
       final block = _db.settings.get(_quarantineKey(shopId, name));
@@ -267,6 +270,16 @@ class SyncService {
       // They still need the same offline-first push/pull guarantee as sales
       // and payments, otherwise reminder history can remain device-local.
       await _syncDueRecovery(shopId);
+
+      // Financial commands run after the source documents they depend on.
+      final user = _db.settings.get('activeUserId');
+      final branch = _db.settings.get('activeBranchId') ?? '$shopId-main';
+      if (user is String && branch is String) {
+        await AccountingOutbox(
+          _db.settings,
+          (path, body) => _api.post(path, body),
+        ).flush(shopId, branch, user);
+      }
 
       return SyncState(
         phase: SyncPhase.idle,

@@ -1,0 +1,7 @@
+// Used only by the local, migration-only maintenance runner. Does not start
+// Spring, an API server, scheduled jobs, email or external payment providers.
+allprojects {
+    tasks.register('accountingMaintenanceClasspath') {
+        doLast { println(sourceSets.main.runtimeClasspath.asPath) }
+    }
+}

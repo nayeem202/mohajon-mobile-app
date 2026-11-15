@@ -1,5 +1,6 @@
 import '../utils/date_time_json.dart';
 import 'payment.dart';
+import 'invoice_totals.dart';
 import 'syncable.dart';
 
 enum PaymentStatus { paid, partial, due }
@@ -93,6 +94,9 @@ class Sale with Syncable {
     required this.createdAt,
     required this.updatedAt,
     this.invoiceNumber = '',
+    this.originalTotalAmount,
+    this.initialPaidAmount,
+    this.initialPaymentId,
     this.discount = 0,
     this.vatPercent = 0,
     this.charge = 0,
@@ -110,6 +114,9 @@ class Sale with Syncable {
 
   final String saleId;
   final String invoiceNumber;
+  final double? originalTotalAmount;
+  final double? initialPaidAmount;
+  final String? initialPaymentId;
   final String customerId;
   final List<SaleItem> items;
   final double discount;
@@ -139,6 +146,13 @@ class Sale with Syncable {
   @override
   String get id => saleId;
 
+  InvoiceTotals get invoiceTotals => InvoiceTotals.calculate(
+    lineTotals: items.map((item) => item.lineTotal),
+    discount: discount,
+    vatPercent: vatPercent,
+    charge: charge,
+  );
+
   double get profit =>
       items.fold<double>(0, (total, item) => total + item.profit) - discount;
 
@@ -163,6 +177,9 @@ class Sale with Syncable {
     return Sale(
       saleId: saleId,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      originalTotalAmount: originalTotalAmount,
+      initialPaidAmount: initialPaidAmount,
+      initialPaymentId: initialPaymentId,
       customerId: customerId,
       items: items ?? this.items,
       discount: discount,
@@ -193,6 +210,9 @@ class Sale with Syncable {
   Map<String, dynamic> toJson() => {
     'saleId': saleId,
     'invoiceNumber': invoiceNumber,
+    'originalTotalAmount': originalTotalAmount,
+    'initialPaidAmount': initialPaidAmount,
+    'initialPaymentId': initialPaymentId,
     'customerId': customerId,
     'items': items.map((item) => item.toJson()).toList(),
     'discount': discount,
@@ -220,6 +240,9 @@ class Sale with Syncable {
   factory Sale.fromJson(Map<dynamic, dynamic> json) => Sale(
     saleId: json['saleId'] as String,
     invoiceNumber: (json['invoiceNumber'] ?? '') as String,
+    originalTotalAmount: (json['originalTotalAmount'] as num?)?.toDouble(),
+    initialPaidAmount: (json['initialPaidAmount'] as num?)?.toDouble(),
+    initialPaymentId: json['initialPaymentId'] as String?,
     customerId: (json['customerId'] ?? '') as String,
     items: ((json['items'] as List?) ?? const [])
         .map(

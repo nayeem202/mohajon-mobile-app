@@ -16,6 +16,7 @@ class PremiumHeader extends StatelessWidget {
     this.onBack,
     this.showBack = true,
     this.trailing,
+    this.expandedTitle = false,
   });
 
   final String title;
@@ -26,9 +27,50 @@ class PremiumHeader extends StatelessWidget {
 
   /// Optional action rendered just before the notification bell.
   final Widget? trailing;
+  final bool expandedTitle;
 
   @override
   Widget build(BuildContext context) {
+    if (expandedTitle) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (showBack)
+                IconButton(
+                  onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                ),
+              Icon(icon, color: MohajonWarm.goldText, size: 25),
+              const Spacer(),
+              ?trailing,
+              const NotificationBell(),
+              const SizedBox(width: 8),
+              const ShopAvatar(radius: 17),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.w800,
+              color: MohajonWarm.ink,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: MohajonWarm.muted,
+            ),
+          ),
+        ],
+      );
+    }
     return Row(
       children: [
         if (showBack)
@@ -123,10 +165,7 @@ class PremiumHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) ...[
-          trailing!,
-          const SizedBox(width: 14),
-        ],
+        if (trailing != null) ...[trailing!, const SizedBox(width: 14)],
         const NotificationBell(),
         const SizedBox(width: 14),
         const ShopAvatar(

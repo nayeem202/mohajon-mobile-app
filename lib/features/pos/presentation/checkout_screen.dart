@@ -112,25 +112,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         : ref.watch(customerLoyaltyProvider(selectedCustomer.customerId));
     final loyaltyOffer = ref.watch(loyaltyOfferProvider);
 
-    final vatAmount = cart.subtotal * (_vatPercent / 100);
-    final manualDiscountAmount = _discountAmount(cart.subtotal, vatAmount);
+    final manualDiscountAmount = _discountAmount(cart.subtotal);
     final loyaltyDiscount =
         _useLoyaltyReward &&
             loyaltyOffer.enabled &&
             loyalty?.points != null &&
             loyalty!.points >= loyaltyOffer.pointsRequired &&
             cart.subtotal >= loyaltyOffer.minimumPurchase
-        ? ((cart.subtotal + vatAmount) * loyaltyOffer.discountPercent / 100)
+        ? (cart.subtotal * loyaltyOffer.discountPercent / 100)
               .clamp(0, loyaltyOffer.maxDiscount)
               .toDouble()
         : 0.0;
-    final discountAmount = (manualDiscountAmount + loyaltyDiscount)
-        .clamp(0, cart.subtotal + vatAmount)
-        .toDouble();
-    final total = (cart.subtotal + vatAmount - discountAmount).clamp(
-      0,
-      double.infinity,
+    final discountAmount = moneyRound2(
+      (manualDiscountAmount + loyaltyDiscount).clamp(0, cart.subtotal),
     );
+    final preview = cart.copyWith(
+      discount: discountAmount,
+      vatPercent: _vatPercent,
+    );
+    final vatAmount = preview.vatAmount;
+    final total = preview.total;
     final canCheckout =
         !_isCheckingOut &&
         cart.items.isNotEmpty &&
@@ -1424,9 +1425,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  double _discountAmount(double subtotal, double vatAmount) {
+  double _discountAmount(double subtotal) {
     final raw = double.tryParse(_discountController.text.trim()) ?? 0;
-    final base = subtotal + vatAmount;
+    if (!raw.isFinite) return 0;
+    final base = subtotal;
     return switch (_discountMode) {
       _DiscountMode.flat => raw.clamp(0, base).toDouble(),
       _DiscountMode.percent => (base * (raw / 100)).clamp(0, base).toDouble(),

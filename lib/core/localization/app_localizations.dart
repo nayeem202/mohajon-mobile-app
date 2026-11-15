@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'accounting_localizations.dart';
 
 class AppLocalizations {
   AppLocalizations(this.locale);
@@ -17,6 +18,7 @@ class AppLocalizations {
 
   static const _values = <String, Map<String, String>>{
     'en': {
+      ...accountingEnglish,
       'appName': 'Mohajon',
       'appUpdateTitle': 'A new version is required',
       'appUpdateBody':
@@ -1526,24 +1528,15 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'tapToCopy': 'Tap to copy',
       'phoneCopied': 'Phone number copied',
       'faqTitle': 'Frequently Asked Questions',
-      'faqAddProductQ': 'How do I add a new product?',
-      'faqAddProductA':
-          'Go to the Stock tab, tap the + button, then enter the product name, price, and stock quantity.',
-      'faqSaleQ': 'How do I record a sale?',
-      'faqSaleA':
-          'Open the Sales (POS) tab, tap products to add them to the cart, choose a customer, and complete checkout.',
-      'faqDueQ': 'How does customer credit and due payment work?',
-      'faqDueA':
-          'When a client buys on credit, the amount is added to their due balance. You can track and collect it from the Clients tab.',
-      'faqOfflineQ': 'Can I use the app without internet?',
-      'faqOfflineA':
-          'Yes. Sales, stock, and client records work offline on your device and sync automatically when you are back online.',
-      'faqSyncQ': 'When does my data sync?',
-      'faqSyncA':
-          'Your data syncs to your account automatically when you have an internet connection, or you can tap Sync Now from the More tab.',
-      'faqStaffQ': 'How do I give staff access?',
-      'faqStaffA':
-          'Open the More tab, go to Staff, and add a staff member with the permissions you want them to have.',
+      'faqIntro':
+          'Find help with everyday tasks, troubleshooting and keeping your shop data safe. Search in Bangla or English.',
+      'faqSearchHint': 'Search FAQ',
+      'faqAllTopics': 'All topics',
+      'faqQuestionCount': '{count} questions',
+      'faqClearSearch': 'Clear search',
+      'faqNoResults':
+          'No matching questions. Try a different word or clear the topic filter.',
+      'faqResetFilters': 'Show all questions',
       'couldNotUploadImage': 'Could not upload profile image',
       'signOutConfirm': 'Are you sure you want to sign out of your account?',
       'storeInformation': 'Store Information',
@@ -1835,6 +1828,7 @@ If you have any privacy questions, reach out via the Contact Support option in S
     },
 
     'bn': {
+      ...accountingBangla,
       'appName': 'মহাজন',
       'appUpdateTitle': 'নতুন সংস্করণে আপডেট করুন',
       'appUpdateBody':
@@ -3336,24 +3330,15 @@ If you have any privacy questions, reach out via the Contact Support option in S
       'tapToCopy': 'কপি করতে ট্যাপ করুন',
       'phoneCopied': 'ফোন নম্বর কপি হয়েছে',
       'faqTitle': 'সাধারণ জিজ্ঞাসা',
-      'faqAddProductQ': 'আমি কীভাবে নতুন পণ্য যোগ করব?',
-      'faqAddProductA':
-          'স্টক ট্যাবে যান, + বোতামে ট্যাপ করুন, তারপর পণ্যের নাম, দাম এবং স্টক পরিমাণ লিখুন।',
-      'faqSaleQ': 'আমি কীভাবে বিক্রয় রেকর্ড করব?',
-      'faqSaleA':
-          'বিক্রয় (POS) ট্যাব খুলুন, কার্টে পণ্য যোগ করতে ট্যাপ করুন, গ্রাহক নির্বাচন করুন এবং চেকআউট সম্পন্ন করুন।',
-      'faqDueQ': 'গ্রাহকের ধার এবং বাকি পেমেন্ট কীভাবে কাজ করে?',
-      'faqDueA':
-          'যখন কোনও ক্লায়েন্ট ধারে কেনে, পরিমাণটি তার বাকি ব্যালেন্সে যোগ হয়। ক্লায়েন্ট ট্যাব থেকে আপনি তা ট্র্যাক এবং আদায় করতে পারেন।',
-      'faqOfflineQ': 'ইন্টারনেট ছাড়া অ্যাপ ব্যবহার করতে পারব কি?',
-      'faqOfflineA':
-          'হ্যাঁ। বিক্রয়, স্টক এবং ক্লায়েন্ট রেকর্ড ইন্টারনেট ছাড়াই আপনার ডিভাইসে কাজ করে এবং অনলাইনে ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হয়।',
-      'faqSyncQ': 'আমার ডেটা কখন সিঙ্ক হয়?',
-      'faqSyncA':
-          'ইন্টারনেট সংযোগ থাকলে আপনার ডেটা স্বয়ংক্রিয়ভাবে আপনার অ্যাকাউন্টে সিঙ্ক হয়; অথবা আরও ট্যাব থেকে "এখনই সিঙ্ক" ট্যাপ করতে পারেন।',
-      'faqStaffQ': 'আমি কীভাবে স্টাফকে অ্যাক্সেস দেব?',
-      'faqStaffA':
-          'আরও ট্যাব খুলুন, স্টাফ-এ যান এবং আপনি যে অনুমতি দিতে চান তা দিয়ে একজন স্টাফ সদস্য যোগ করুন।',
+      'faqIntro':
+          'দৈনন্দিন কাজ, সমস্যার সমাধান ও দোকানের তথ্য নিরাপদ রাখার উত্তর খুঁজুন। বাংলা বা ইংরেজিতে সার্চ করতে পারেন।',
+      'faqSearchHint': 'প্রশ্ন খুঁজুন',
+      'faqAllTopics': 'সব বিষয়',
+      'faqQuestionCount': '{count} টি প্রশ্ন',
+      'faqClearSearch': 'সার্চ মুছুন',
+      'faqNoResults':
+          'মিলে যায় এমন প্রশ্ন পাওয়া যায়নি। অন্য শব্দ লিখুন বা বিষয়ের ফিল্টার সরান।',
+      'faqResetFilters': 'সব প্রশ্ন দেখুন',
       'removePhoto': 'ছবি সরান',
       'couldNotUploadImage': 'প্রোফাইল ছবি আপলোড করা যায়নি',
       'signOutConfirm':

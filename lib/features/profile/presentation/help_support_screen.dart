@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/mohajon_warm_theme.dart';
 import 'support_inbox_screen.dart';
+import 'widgets/help_faq_section.dart';
 
 // Placeholder support details — update these when real contact info is ready.
 const String _supportEmail = 'support@mohajon.app';
@@ -138,26 +139,7 @@ class HelpSupportScreen extends StatelessWidget {
                         color: MohajonWarm.goldText,
                       ),
                       const SizedBox(height: 10),
-                      _SectionCard(
-                        title: '',
-                        icon: Icons.question_answer_rounded,
-                        accentColor: MohajonWarm.primary,
-                        child: Column(
-                          children: [
-                            _FaqTile(question: l10n.t('faqAddProductQ'), answer: l10n.t('faqAddProductA')),
-                            const Divider(height: 1, indent: 16, endIndent: 16, color: MohajonWarm.goldBorder),
-                            _FaqTile(question: l10n.t('faqSaleQ'), answer: l10n.t('faqSaleA')),
-                            const Divider(height: 1, indent: 16, endIndent: 16, color: MohajonWarm.goldBorder),
-                            _FaqTile(question: l10n.t('faqDueQ'), answer: l10n.t('faqDueA')),
-                            const Divider(height: 1, indent: 16, endIndent: 16, color: MohajonWarm.goldBorder),
-                            _FaqTile(question: l10n.t('faqOfflineQ'), answer: l10n.t('faqOfflineA')),
-                            const Divider(height: 1, indent: 16, endIndent: 16, color: MohajonWarm.goldBorder),
-                            _FaqTile(question: l10n.t('faqSyncQ'), answer: l10n.t('faqSyncA')),
-                            const Divider(height: 1, indent: 16, endIndent: 16, color: MohajonWarm.goldBorder),
-                            _FaqTile(question: l10n.t('faqStaffQ'), answer: l10n.t('faqStaffA')),
-                          ],
-                        ),
-                      ),
+                      const HelpFaqSection(),
                     ],
                   ),
                 ),
@@ -299,9 +281,11 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: MohajonWarm.ink),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: MohajonWarm.ink),
+          ),
         ),
       ],
     );
@@ -347,9 +331,11 @@ class _SectionCard extends StatelessWidget {
                 children: [
                   Icon(icon, size: 18, color: accentColor),
                   const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: MohajonWarm.ink),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: MohajonWarm.ink),
+                    ),
                   ),
                 ],
               ),
@@ -421,98 +407,23 @@ class _ContactRow extends StatelessWidget {
                       color: MohajonWarm.ink,
                     ),
                   ),
+                  if (onTap != null && hint.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      hint,
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: MohajonWarm.muted),
+                    ),
+                  ],
                 ],
               ),
             ),
             if (onTap != null) ...[
               const SizedBox(width: 8),
               Icon(Icons.copy_rounded, color: MohajonWarm.goldText, size: 18),
-              const SizedBox(width: 4),
-              if (hint.isNotEmpty)
-                Text(
-                  hint,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: MohajonWarm.muted),
-                ),
             ],
           ],
         ),
       ),
-    );
-  }
-}
-
-class _FaqTile extends StatefulWidget {
-  const _FaqTile({required this.question, required this.answer});
-
-  final String question;
-  final String answer;
-
-  @override
-  State<_FaqTile> createState() => _FaqTileState();
-}
-
-class _FaqTileState extends State<_FaqTile> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.question,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: MohajonWarm.ink,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                AnimatedRotation(
-                  turns: _expanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 250),
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: _expanded ? MohajonWarm.primary : MohajonWarm.tintYellow,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.keyboard_arrow_down_rounded, color: MohajonWarm.ink, size: 18),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        AnimatedCrossFade(
-          firstChild: const SizedBox(width: double.infinity),
-          secondChild: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-            child: Text(
-              widget.answer,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: MohajonWarm.muted,
-                height: 1.5,
-              ),
-            ),
-          ),
-          crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 250),
-          firstCurve: Curves.easeOut,
-          secondCurve: Curves.easeIn,
-        ),
-      ],
     );
   }
 }

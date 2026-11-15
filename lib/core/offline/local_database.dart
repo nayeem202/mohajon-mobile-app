@@ -204,7 +204,12 @@ class LocalDatabase {
       users.clear(),
     ]);
     final keys = settings.keys
-        .where((key) => key.toString().startsWith('lastPulledAt.'))
+        .where(
+          (key) =>
+              key.toString().startsWith('lastPulledAt.') ||
+              key.toString().startsWith('accounting.cache.') ||
+              key.toString().startsWith('accounting.outbox.'),
+        )
         .toList();
     await settings.deleteAll(keys);
     await settings.delete('activeUserId');

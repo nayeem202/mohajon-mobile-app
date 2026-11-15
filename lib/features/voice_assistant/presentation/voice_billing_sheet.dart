@@ -164,6 +164,14 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet>
     final l10n = AppLocalizations.of(context);
     final cart = ref.read(cartProvider.notifier);
     final items = _items;
+    if (items.any((item) => !item.hasValidCartQuantity)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.locale.languageCode == 'bn'
+            ? 'পণ্যের পরিমাণ পূর্ণ সংখ্যায় দিন। যেমন: ১, ২ বা ৩।'
+            : 'Enter whole-number quantities, such as 1, 2 or 3.'),
+      ));
+      return;
+    }
     var added = 0;
     var unresolved = 0;
     for (final item in items) {
@@ -200,7 +208,7 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet>
         items: [
           for (final item in bill.items)
             item.productId == productId
-                ? item.copyWith(quantity: (item.quantity + delta).clamp(0.5, 999))
+                ? item.copyWith(quantity: (item.quantity + delta).clamp(1, 999))
                 : item,
         ],
         reply: bill.reply,
@@ -583,7 +591,7 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet>
           ),
           _buildQtyButton(
             icon: Icons.remove_rounded,
-            onTap: () => _changeQty(item.productId, -0.5),
+            onTap: () => _changeQty(item.productId, -1),
           ),
           SizedBox(
             width: 44,
@@ -599,7 +607,7 @@ class _VoiceBillingSheetState extends ConsumerState<VoiceBillingSheet>
           ),
           _buildQtyButton(
             icon: Icons.add_rounded,
-            onTap: () => _changeQty(item.productId, 0.5),
+            onTap: () => _changeQty(item.productId, 1),
           ),
           const SizedBox(width: 6),
           SizedBox(

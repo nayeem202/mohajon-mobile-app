@@ -17,15 +17,22 @@ class VoiceBillItem {
   final int stockQty;
   final String unit;
 
+  // Inventory and the Java sale API currently use whole-number stock units.
+  bool get hasValidCartQuantity =>
+      quantity.isFinite &&
+      quantity > 0 &&
+      quantity <= 2147483647 &&
+      quantity == quantity.truncateToDouble();
+
   VoiceBillItem copyWith({double? quantity}) => VoiceBillItem(
-        productId: productId,
-        nameEn: nameEn,
-        nameBn: nameBn,
-        quantity: quantity ?? this.quantity,
-        sellingPrice: sellingPrice,
-        stockQty: stockQty,
-        unit: unit,
-      );
+    productId: productId,
+    nameEn: nameEn,
+    nameBn: nameBn,
+    quantity: quantity ?? this.quantity,
+    sellingPrice: sellingPrice,
+    stockQty: stockQty,
+    unit: unit,
+  );
 }
 
 class VoiceBill {

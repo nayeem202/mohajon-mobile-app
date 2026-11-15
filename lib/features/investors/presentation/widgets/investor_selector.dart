@@ -128,11 +128,13 @@ class _InvestorSelectorState extends ConsumerState<InvestorSelector> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return l10n.t('required');
+                          }
                           final amt = double.tryParse(v.trim());
-                          if (amt == null || amt <= 0)
+                          if (amt == null || amt <= 0) {
                             return l10n.t('mustBeGreaterThanZero');
+                          }
                           return null;
                         },
                         onChanged: (v) {

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/app/app_providers.dart';
 import '../../../core/models/payment.dart';
+import '../../../core/models/invoice_totals.dart';
 import '../../../core/models/sale.dart';
 import '../../../core/models/syncable.dart';
 import '../../../core/models/product.dart';
@@ -39,11 +40,14 @@ class CartState {
   final PaymentMethod paymentMethod;
   final int loyaltyPointsRedeemed;
 
-  double get subtotal =>
-      moneyRound2(items.fold<double>(0, (sum, item) => sum + item.lineTotal));
-  double get vatAmount => moneyRound2(subtotal * (vatPercent / 100));
-  double get total =>
-      moneyRound2((subtotal + vatAmount - discount).clamp(0, double.infinity));
+  InvoiceTotals get invoiceTotals => InvoiceTotals.calculate(
+    lineTotals: items.map((item) => item.lineTotal),
+    discount: discount,
+    vatPercent: vatPercent,
+  );
+  double get subtotal => invoiceTotals.subtotal;
+  double get vatAmount => invoiceTotals.vatAmount;
+  double get total => invoiceTotals.total;
   double get due => moneyRound2((total - paidAmount).clamp(0, double.infinity));
 
   CartState copyWith({
@@ -108,6 +112,13 @@ class CartController extends StateNotifier<CartState> {
   }
 
   void setQty(String productId, double qty) {
+    if (!qty.isFinite || qty > 2147483647 || qty != qty.truncateToDouble()) {
+      throw ArgumentError.value(
+        qty,
+        'qty',
+        'Enter a valid whole-number quantity',
+      );
+    }
     if (qty <= 0) {
       state = state.copyWith(
         items: state.items
@@ -135,18 +146,49 @@ class CartController extends StateNotifier<CartState> {
     );
   }
 
-  void setDiscount(double discount) =>
-      state = state.copyWith(discount: discount);
+  void setDiscount(double discount) {
+    _requireNonNegative(discount, 'discount');
+    state = state.copyWith(discount: moneyRound2(discount));
+  }
+
   void setCustomer(String customerId) =>
       state = state.copyWith(customerId: customerId);
-  void setPaidAmount(double amount) =>
-      state = state.copyWith(paidAmount: amount);
-  void setVatPercent(double vatPercent) =>
-      state = state.copyWith(vatPercent: vatPercent);
+  void setPaidAmount(double amount) {
+    _requireNonNegative(amount, 'amount');
+    state = state.copyWith(paidAmount: moneyRound2(amount));
+  }
+
+  void setVatPercent(double vatPercent) {
+    _requireNonNegative(vatPercent, 'vatPercent');
+    if (vatPercent > 100) {
+      throw ArgumentError.value(
+        vatPercent,
+        'vatPercent',
+        'VAT cannot exceed 100 percent',
+      );
+    }
+    state = state.copyWith(vatPercent: vatPercent);
+  }
+
   void setPaymentMethod(PaymentMethod method) =>
       state = state.copyWith(paymentMethod: method);
-  void setLoyaltyPointsRedeemed(int points) =>
-      state = state.copyWith(loyaltyPointsRedeemed: points);
+  void setLoyaltyPointsRedeemed(int points) {
+    if (points < 0) {
+      throw ArgumentError.value(points, 'points', 'Points cannot be negative');
+    }
+    state = state.copyWith(loyaltyPointsRedeemed: points);
+  }
+
+  void _requireNonNegative(double value, String name) {
+    if (!value.isFinite || value < 0) {
+      throw ArgumentError.value(
+        value,
+        name,
+        'Enter a valid non-negative amount',
+      );
+    }
+  }
+
   void clear() => state = const CartState();
 
   Future<Sale> checkout() async {
@@ -218,12 +260,18 @@ class CartController extends StateNotifier<CartState> {
     }
     final now = DateTime.now();
     final saleId = _uuid.v4();
+    final initialPaymentId = paidAmount > 0 && state.customerId.isNotEmpty
+        ? _uuid.v4()
+        : null;
     final invoiceNumber =
         'INV-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${saleId.substring(0, 6).toUpperCase()}';
     final saleItems = [...state.items];
     final sale = Sale(
       saleId: saleId,
       invoiceNumber: invoiceNumber,
+      originalTotalAmount: totalAmount,
+      initialPaidAmount: paidAmount,
+      initialPaymentId: initialPaymentId,
       customerId: state.customerId,
       items: saleItems,
       discount: state.discount,
@@ -320,7 +368,7 @@ class CartController extends StateNotifier<CartState> {
       try {
         await db.payments.put(
           Payment(
-            paymentId: _uuid.v4(),
+            paymentId: initialPaymentId!,
             customerId: state.customerId,
             saleId: sale.saleId,
             staffId: _ref.read(currentUserProvider)?.userId,

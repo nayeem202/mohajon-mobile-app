@@ -19,6 +19,10 @@ import 'profit_loss_screen.dart';
 import 'sales_summary_screen.dart';
 import 'vat_report_screen.dart';
 import 'operational_report_screen.dart';
+import '../../accounting/presentation/accounting_statement_screen.dart';
+import '../../accounting/presentation/accounting_workspace_screen.dart';
+import '../../accounting/domain/local_income_statement.dart';
+import '../../branches/providers/branch_providers.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -115,10 +119,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       ReportItem(
         id: 'profit_loss',
         icon: Icons.trending_up_rounded,
-        title: l10n.t('reportProfitLoss'),
-        description: l10n.t('profitLossDesc'),
+        title: l10n.t('acctIncome'),
+        description: l10n.t('acctSubtitle'),
         startColor: Color(0xFF059669),
         endColor: Color(0xFF6EE7B7),
+      ),
+      ReportItem(
+        id: 'balance_sheet',
+        icon: Icons.balance_rounded,
+        title: l10n.t('acctBalance'),
+        description: l10n.t('acctQualityHelp'),
+        startColor: Color(0xFF0D9488),
+        endColor: Color(0xFF99F6E4),
+      ),
+      ReportItem(
+        id: 'accounting_setup',
+        icon: Icons.account_balance_rounded,
+        title: l10n.t('acctWorkspace'),
+        description: l10n.t('acctSetupIntro'),
+        startColor: Color(0xFFB45309),
+        endColor: Color(0xFFFBBF24),
       ),
       ReportItem(
         id: 'product_sales',
@@ -177,21 +197,34 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final l10n = AppLocalizations.of(context);
     final db = ref.watch(localDatabaseProvider);
 
-    final sales = db.sales.values();
-    final totalSales = sales.fold<double>(
-      0,
-      (sum, sale) => sum + sale.totalAmount,
+    final shop = ref.watch(shopIdProvider);
+    final branch = ref.watch(currentBranchIdProvider) ?? '$shop-main';
+    final estimate = localIncomeStatement(
+      sales: db.sales.valuesForShop(shop),
+      returns: db.saleReturns.valuesForShop(shop),
+      expenses: db.expenses.valuesForShop(shop),
+      shopId: shop,
+      branchId: branch,
+      from: DateTime(2000),
+      to: DateTime.now(),
     );
-    final totalProfit = sales.fold<double>(0, (sum, sale) => sum + sale.profit);
-    final totalExpenses = db.expenses.values().fold<double>(
-      0,
-      (sum, expense) => sum + expense.amount,
-    );
+    final totalSales = (estimate['netSales'] as num).toDouble();
+    final totalProfit = (estimate['grossProfit'] as num).toDouble();
+    final totalExpenses = (estimate['operatingExpenses'] as num).toDouble();
     final hasStaff = db.users.values().any(
       (user) => user.role.name.toLowerCase() == 'staff',
     );
     final allReports = _allItems(l10n)
         .where((item) => item.id != 'staff_performance' || hasStaff)
+        .where(
+          (item) =>
+              !{
+                'profit_loss',
+                'balance_sheet',
+                'accounting_setup',
+              }.contains(item.id) ||
+              ref.watch(currentUserProvider)?.role.name == 'owner',
+        )
         .toList(growable: false);
     final activeGroup = _reportsForGroup(allReports, _activeGroup).isEmpty
         ? _ReportGroup.overview
@@ -300,6 +333,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       'inventory_report' => const InventoryReportScreen(),
       'expense_report' => const ExpenseReportScreen(),
       'profit_loss' => const ProfitLossScreen(),
+      'balance_sheet' => const AccountingStatementScreen(balanceSheet: true),
+      'accounting_setup' => const AccountingWorkspaceScreen(),
       'product_sales' => const ProductSalesScreen(),
       'daily_transactions' => const DailyTransactionsScreen(),
       'payment_methods' => const PaymentMethodsScreen(),
@@ -371,6 +406,9 @@ List<ReportItem> _reportsForGroup(
       'vat_report',
     },
     _ReportGroup.finance: {
+      'profit_loss',
+      'balance_sheet',
+      'accounting_setup',
       'daily_transactions',
       'payment_methods',
       'customer_ledger',

@@ -73,6 +73,7 @@ class PremiumInsightPage extends StatelessWidget {
     required this.children,
     this.onRefresh,
     this.headerTrailing,
+    this.expandedHeader = false,
     this.padding = const EdgeInsets.fromLTRB(18, 12, 18, 28),
   });
 
@@ -82,6 +83,7 @@ class PremiumInsightPage extends StatelessWidget {
   final List<Widget> children;
   final Future<void> Function()? onRefresh;
   final Widget? headerTrailing;
+  final bool expandedHeader;
   final EdgeInsets padding;
 
   @override
@@ -94,6 +96,7 @@ class PremiumInsightPage extends StatelessWidget {
           subtitle: subtitle,
           icon: icon,
           trailing: headerTrailing,
+          expandedTitle: expandedHeader,
         ),
         ...children,
       ],
